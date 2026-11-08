@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Router, Request, Response, NextFunction } from "express";
 import { pool } from "./db";
+const R: any = require("./rules.js");
 
 const SECRET =
   process.env.JWT_SECRET ||
@@ -69,50 +70,63 @@ authRouter.post("/login", limit, async (req, res) => {
   res.json({ token: signToken({ id: row.id, username: row.username }) });
 });
 
+// Lista os personagens da conta. Personagens antigos são ajustados às regras novas (nunca apagados).
 authRouter.get("/account", authed, async (req, res) => {
   const u = (req as any).user as AuthUser;
   const [c, a] = await Promise.all([
-    pool.query("select data from characters where account_id=$1 order by updated_at", [u.id]),
+    pool.query("select id,data from characters where account_id=$1 order by updated_at", [u.id]),
     pool.query("select stash from accounts where id=$1", [u.id]),
   ]);
-  res.json({ username: u.username, chars: c.rows.map((x) => x.data), stash: a.rows[0]?.stash || [] });
-});
-
-// Validação básica de formato. A validação de regras (XP, ouro, drops) virá com o servidor autoritativo.
-const validChar = (c: any) =>
-  c && typeof c.id === "string" && c.id.length <= 40 && typeof c.name === "string" && c.name.length >= 1 && c.name.length <= 16 &&
-  CLASSES.includes(c.cls) && Number.isInteger(c.level) && c.level >= 1 && c.level <= 200 &&
-  typeof c.gold === "number" && c.gold >= 0 && JSON.stringify(c).length < 64_000;
-
-authRouter.put("/account", authed, async (req, res) => {
-  const u = (req as any).user as AuthUser;
-  const { chars, stash } = req.body || {};
-  if (!Array.isArray(chars) || chars.length > 6 || !chars.every(validChar) || !Array.isArray(stash) || stash.length > 40)
-    return res.status(400).json({ error: "Dados inválidos." });
-  const cl = await pool.connect();
-  try {
-    await cl.query("begin");
-    await cl.query("delete from characters where account_id=$1 and not (id = any($2::text[]))", [u.id, chars.map((c: any) => c.id)]);
-    for (const c of chars) {
-      await cl.query(
-        `insert into characters(id,account_id,name,class,level,data) values($1,$2,$3,$4,$5,$6)
-         on conflict (id) do update set name=$3,class=$4,level=$5,data=$6,updated_at=now() where characters.account_id=$2`,
-        [c.id, u.id, c.name, c.cls, c.level, c]
-      );
-    }
-    await cl.query("update accounts set stash=$2 where id=$1", [u.id, JSON.stringify(stash)]);
-    await cl.query("commit");
-    res.json({ ok: true });
-  } catch (e) {
-    await cl.query("rollback").catch(() => {});
-    console.error(e);
-    res.status(500).json({ error: "Erro ao salvar." });
-  } finally {
-    cl.release();
+  const chars: any[] = [];
+  for (const row of c.rows) {
+    const d = row.data || {};
+    const old = d.v !== R.VERSION;
+    try {
+      const ch = R.migrate(d);
+      if (old) await saveChar(u.id, ch);
+      chars.push(ch);
+    } catch (e) { console.error("migrate", row.id, e); chars.push(d); }
   }
+  const st0 = a.rows[0]?.stash || [];
+  const stash = R.migrateStash(st0);
+  if (JSON.stringify(st0) !== JSON.stringify(stash)) await saveStash(u.id, stash);
+  res.json({ username: u.username, chars, stash });
 });
 
-export async function getCharacter(accountId: number, charId: string) {
-  const r = await pool.query("select name,class,level from characters where id=$1 and account_id=$2", [charId, accountId]);
-  return r.rows[0] as { name: string; class: string; level: number } | undefined;
+authRouter.post("/chars", authed, async (req, res) => {
+  const u = (req as any).user as AuthUser;
+  const { cls, name } = req.body || {};
+  const nm = String(name || "").replace(/[\u0000-\u001f<>&"]/g, "").trim();
+  if (!CLASSES.includes(cls)) return res.status(400).json({ error: "Classe inválida." });
+  if (nm.length < 1 || nm.length > 16) return res.status(400).json({ error: "Nome: 1 a 16 caracteres." });
+  const n = await pool.query("select count(*)::int as n from characters where account_id=$1", [u.id]);
+  if (n.rows[0].n >= 6) return res.status(400).json({ error: "Limite de 6 personagens." });
+  const c = R.newChar(cls, nm);
+  await saveChar(u.id, c);
+  res.json({ char: c });
+});
+
+authRouter.delete("/chars/:id", authed, async (req, res) => {
+  const u = (req as any).user as AuthUser;
+  await pool.query("delete from characters where id=$1 and account_id=$2", [String(req.params.id), u.id]);
+  res.json({ ok: true });
+});
+
+export async function saveChar(accountId: number, c: any) {
+  await pool.query(
+    `insert into characters(id,account_id,name,class,level,data) values($1,$2,$3,$4,$5,$6)
+     on conflict (id) do update set name=$3,class=$4,level=$5,data=$6,updated_at=now() where characters.account_id=$2`,
+    [c.id, accountId, c.name, c.cls, c.level, c]
+  );
+}
+export async function saveStash(accountId: number, stash: any[]) {
+  await pool.query("update accounts set stash=$2 where id=$1", [accountId, JSON.stringify(stash)]);
+}
+export async function loadCharacter(accountId: number, charId: string) {
+  const r = await pool.query("select data from characters where id=$1 and account_id=$2", [charId, accountId]);
+  return r.rows[0] ? R.migrate(r.rows[0].data) : undefined;
+}
+export async function loadStash(accountId: number) {
+  const r = await pool.query("select stash from accounts where id=$1", [accountId]);
+  return R.migrateStash(r.rows[0]?.stash || []);
 }

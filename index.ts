@@ -15,11 +15,12 @@ async function main() {
   const app = express();
   app.set("trust proxy", 1);
   app.use(express.json({ limit: "512kb" }));
-  app.get("/health", async (_q, r) => { await pool.query("select 1"); r.json({ ok: true }); });
+  app.get("/health", async (_q, r) => { await pool.query("select 1"); r.json({ ok: true, t: Date.now(), v: 4 }); });
+  app.get("/rules.js", (_q, r) => r.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, "rules.js")));
   app.get("/api/online", async (_q, r) => { const rooms = await matchMaker.query({ name: "world" }); r.json({ rooms: rooms.length, players: rooms.reduce((n: number, x: any) => n + x.clients, 0) }); });
   app.use("/api", authRouter);
   app.get("/colyseus-client/colyseus.js", (_q, r) => r.sendFile(path.join(__dirname, "colyseus-browser.js")));
-  app.get(["/", "/index.html"], (_q, r) => r.sendFile(path.join(__dirname, "index.html")));
+  app.get(["/", "/index.html"], (_q, r) => r.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, "index.html")));
   // Música do jogo: qualquer arquivo .mp3 na mesma pasta do index.html (de preferência "tema.mp3"; veja o README).
   // Sem arquivo, o jogo toca uma trilha ambiente provisória.
   const findMusic = (): string | null => {
