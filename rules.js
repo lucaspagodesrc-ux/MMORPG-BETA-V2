@@ -436,13 +436,15 @@ function take(c, id, n) { for (let i = 0; i < c.inv.length && n > 0; i++) { cons
 function stats(c) {
   const C = CLASSES[c.cls];
   const st = { str: C.base.str + c.alloc.str, agi: C.base.agi + c.alloc.agi, int: C.base.int + c.alloc.int, vit: C.base.vit + c.alloc.vit };
+  const gm = (c.gmu || 0) > Date.now();   // Buff do GM: +100 atributos, +1000 vida/mana, +200 dano/defesa
+  if (gm) { st.str += 100; st.agi += 100; st.int += 100; st.vit += 100; }
   let atk = 0, def = 0, hp = 0;
   for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; atk += eff(it, 'atk'); def += eff(it, 'def'); hp += it.hp || 0; for (const s in it.bon) st[s] += it.bon[s]; }
   const kn = c.cls === 'cavaleiro', as = c.cls === 'assassino', tk = c.cls === 'tanque', pr = c.cls === 'pierrot';
-  return { ...st, atk, def: (def + st.vit * .4) * (tk ? 1.75 : kn ? 1.4 : pr ? .8 : 1), hpBonus: hp,
-    maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1)),
-    maxMp: Math.round(30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : tk ? 15 : pr ? 10 : 0)),
-    dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1),
+  return { ...st, gm, atk, def: (def + st.vit * .4) * (tk ? 1.75 : kn ? 1.4 : pr ? .8 : 1) + (gm ? 200 : 0), hpBonus: hp,
+    maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1)) + (gm ? 1000 : 0),
+    maxMp: Math.round(30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : tk ? 15 : pr ? 10 : 0)) + (gm ? 1000 : 0),
+    dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1) + (gm ? 200 : 0),
     luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: pr ? 2.1 : 1.7,
     // Retornos decrescentes: crítico/esquiva/velocidade nunca disparam, por mais pontos que se invista.
     crit: 5 + (as ? 8 : 0) + (pr ? 14 : 0) + 45 * st.agi / (st.agi + 200),
@@ -573,6 +575,22 @@ function newChar(cls, name) {
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }
+
+/** Personagem do GM: nível máximo, melhor equipamento +10, habilidades no máximo. */
+function gmChar(cls, old) {
+  const C = CLASSES[cls], c = old || newChar(cls, 'GM ' + C.n);
+  c.gm = 1; c.gmu = 0; c.level = MAX_LEVEL; c.xp = 0; c.sp = 0; c.sk = Array(8).fill(MAXRANK);
+  const tot = PTS_PER_LEVEL * (MAX_LEVEL - 1), main = Math.round(tot * .6); c.alloc = { str: 0, agi: 0, int: 0, vit: tot - main }; c.alloc[C.main] += main; c.pts = 0;
+  c.gold = MAX_LEVEL * GOLD_CAP_PER_LEVEL;
+  const mk = (slot, w) => { const it = genItem(slot, 80, 3, cls, cls, 0, true); if (slot === 'weapon') it.cls = cls; it.plus = MAXPLUS; return it; };
+  c.eq = { weapon: mk('weapon'), helmet: mk('helmet'), armor: mk('armor'), boots: mk('boots'), ring: mk('ring'), ring2: mk('ring'), bracelet: mk('bracelet'), bracelet2: mk('bracelet'), earring: mk('earring'), earring2: mk('earring'), cape: genCape(80, cls) };
+  if (cls === 'cavaleiro') c.eq.shield = mk('shield');
+  for (const k in c.eq) c.eq[k] = cleanItem(c.eq[k]);
+  c.tb = 1; c.title = 'bright';
+  c.inv = Array(24).fill(null); c.inv[0] = { k: 'pot', id: 'hp', n: 99 }; c.inv[1] = { k: 'pot', id: 'mp', n: 99 };
+  c.bar = defBar(); c.v = R.VERSION;
+  return c;
+}
 /** Limites máximos possíveis de um equipamento (para detectar itens editados). */
 function itemMax(slot, ilvl, rar) {
   const m = RAR[rar].m * 1.09, o = { atk: 0, def: 0, hp: 0 };
@@ -616,6 +634,7 @@ function migrate(c) {
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
+  c.gm = c.gm ? 1 : 0; c.gmu = (Number(c.gmu) || 0) > Date.now() ? Number(c.gmu) : 0;
   { const dc = {}; if (c.dgc && typeof c.dgc === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.dgc[d.id]); if (n > 0) dc[d.id] = Math.min(9999, n); } c.dgc = dc; c.tb = c.tb ? 1 : 0; if (!c.tb && brightProg(c).ok) c.tb = 1; if (typeof c.title !== 'string' || (c.title && !titleHave(c, c.title))) c.title = ''; }
   { const fr = []; if (Array.isArray(c.fr)) for (const n of c.fr) { if (typeof n === 'string') { const t = n.trim().slice(0, 16); if (t && !fr.some(x => x.toLowerCase() === t.toLowerCase())) fr.push(t); } if (fr.length >= 50) break; } c.fr = fr; }
   { const tx = {}; if (c.tix && typeof c.tix === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.tix[d.id]); if (n > 0) tx[d.id] = Math.min(5, n); } c.tix = tx; }
@@ -774,7 +793,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

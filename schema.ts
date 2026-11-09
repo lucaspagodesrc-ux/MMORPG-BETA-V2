@@ -10,8 +10,9 @@ export class Player extends Schema {
   inst = 0;        // 0 = mundo aberto; >0 = instância de dungeon
   ap = "";         // aparência (equipamento) — os outros jogadores veem pelos itens
   tt = "";         // título equipado (id) — aparece acima do nome
+  gb = 0;          // 1 = sob o Buff do GM (estrelas ao redor)
 }
-defineTypes(Player, { name: "string", cls: "string", level: "number", x: "number", z: "number", dead: "boolean", inst: "uint16", ap: "string", tt: "string" });
+defineTypes(Player, { name: "string", cls: "string", level: "number", x: "number", z: "number", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8" });
 
 // Monstro simulado no servidor: todos os jogadores veem o mesmo monstro, na mesma posição e com a mesma vida.
 export class Monster extends Schema {

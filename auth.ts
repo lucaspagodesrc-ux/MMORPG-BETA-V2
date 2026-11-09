@@ -13,6 +13,19 @@ const SECRET =
     return crypto.randomBytes(32).toString("hex");
   })();
 
+// Conta GM (testes e eventos). Pode ser trocada por variáveis de ambiente no Render (GM_USER / GM_PASS).
+const GM_USER = (process.env.GM_USER || "GM123").toLowerCase();
+const GM_PASS = process.env.GM_PASS || "GMSRC";
+async function ensureGm(accountId: number) {
+  const cur = await pool.query("select id,class,data from characters where account_id=$1", [accountId]);
+  for (const cls of CLASSES) {
+    const row = cur.rows.find((r: any) => r.class === cls);
+    if (!row) { await saveChar(accountId, R.gmChar(cls)); continue; }
+    const d = row.data || {};
+    if (!d.gm || d.level < R.MAX_LEVEL) await saveChar(accountId, R.gmChar(cls, R.migrate(d)));
+  }
+}
+
 export const CLASSES = ["guerreiro", "arqueiro", "mago", "assassino", "cavaleiro", "tanque", "pierrot"];
 export type AuthUser = { id: number; username: string };
 
@@ -49,6 +62,7 @@ export const authRouter = Router();
 authRouter.post("/register", limit, async (req, res) => {
   const { username, password } = req.body || {};
   if (!/^[A-Za-z0-9_]{3,20}$/.test(String(username))) return res.status(400).json({ error: "Usuário: 3 a 20 letras, números ou _." });
+  if (String(username).toLowerCase() === GM_USER) return res.status(409).json({ error: "Esse usuário já existe." });
   if (typeof password !== "string" || password.length < 6 || password.length > 72) return res.status(400).json({ error: "A senha deve ter de 6 a 72 caracteres." });
   try {
     const hash = await bcrypt.hash(password, 10);
@@ -63,7 +77,14 @@ authRouter.post("/register", limit, async (req, res) => {
 
 authRouter.post("/login", limit, async (req, res) => {
   const { username, password } = req.body || {};
-  const r = await pool.query("select id,username,pass_hash from accounts where lower(username)=lower($1)", [String(username || "")]);
+  const isGm = String(username || "").toLowerCase() === GM_USER;
+  if (isGm && String(password || "") !== GM_PASS) return res.status(401).json({ error: "Usuário ou senha inválidos." });
+  let r = await pool.query("select id,username,pass_hash from accounts where lower(username)=lower($1)", [String(username || "")]);
+  if (isGm) {
+    if (!r.rows[0]) { await pool.query("insert into accounts(username,pass_hash) values($1,$2) on conflict do nothing", [String(username), await bcrypt.hash(GM_PASS, 10)]); r = await pool.query("select id,username,pass_hash from accounts where lower(username)=lower($1)", [String(username)]); }
+    else if (!(await bcrypt.compare(GM_PASS, r.rows[0].pass_hash))) { await pool.query("update accounts set pass_hash=$2 where id=$1", [r.rows[0].id, await bcrypt.hash(GM_PASS, 10)]); r = await pool.query("select id,username,pass_hash from accounts where id=$1", [r.rows[0].id]); }
+    await ensureGm(r.rows[0].id);
+  }
   const row = r.rows[0];
   const ok = await bcrypt.compare(String(password || ""), row ? row.pass_hash : DUMMY);
   if (!row || !ok) return res.status(401).json({ error: "Usuário ou senha inválidos." });
@@ -100,7 +121,7 @@ authRouter.post("/chars", authed, async (req, res) => {
   if (!CLASSES.includes(cls)) return res.status(400).json({ error: "Classe inválida." });
   if (nm.length < 1 || nm.length > 16) return res.status(400).json({ error: "Nome: 1 a 16 caracteres." });
   const n = await pool.query("select count(*)::int as n from characters where account_id=$1", [u.id]);
-  if (n.rows[0].n >= 6) return res.status(400).json({ error: "Limite de 6 personagens." });
+  if (n.rows[0].n >= 6 && u.username.toLowerCase() !== GM_USER) return res.status(400).json({ error: "Limite de 6 personagens." });
   const c = R.newChar(cls, nm);
   await saveChar(u.id, c);
   res.json({ char: c });

@@ -1,5 +1,10 @@
-MMORPG v1.14 - Gancho de corrente do Tanque
-- Nova arma: haste com garra de 3 pontas no topo e corrente pendurada ao lado.
-- Habilidade 1 (Gancho de Corrente): o gancho se solta da arma e voa com a corrente até o monstro; ao acertar, o monstro é puxado até você e o gancho volta para a arma.
-- Também aparece para os outros jogadores.
-Instalação: envie index.html para a raiz do GitHub, aguarde o redeploy no Render e use Ctrl+F5.
+MMORPG v1.15 - Conta GM e Buff do GM
+CONTA GM: usuário GM123 / senha GMSRC
+- Ao entrar, a conta é criada/atualizada sozinha com os 7 personagens (um de cada classe), nível 100, equipamento mais forte (épico, +10 em tudo, capa nível 80), habilidades no máximo e título "O mais brilhante".
+- Opcional (Render > Environment): GM_USER e GM_PASS trocam o login/senha do GM sem mexer no código. Atenção: como o repositório guarda a senha padrão, troque se ele for público.
+BUFF DO GM (só personagens da conta GM):
+- Clique em outro jogador no mapa > "✨ Buff do GM".
+- Painel do GM: botão ✨ no menu lateral ou tecla Y > buffar a si, todos por perto (raio 30) ou todos online.
+- Dura 5 minutos por jogador: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base, +200 defesa.
+- Quem recebe fica com estrelas pequenas girando ao redor, com rastro, e vê um contador no topo da tela.
+Instalação: envie TODOS os arquivos (index.html, rules.js, auth.ts, schema.ts, WorldRoom.ts) para a raiz do GitHub, aguarde o redeploy no Render e use Ctrl+F5.

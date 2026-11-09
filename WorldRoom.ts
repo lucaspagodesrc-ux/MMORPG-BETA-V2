@@ -43,7 +43,7 @@ export class WorldRoom extends Room<WorldState> {
 
   /* ---------- utilidades ---------- */
   private S(client: Client) { return this.sess.get(client.sessionId); }
-  private stats(s: Sess) { return s.d || (s.d = R.stats(s.c)); }
+  private stats(s: Sess) { const g = (s.c.gmu || 0) > Date.now(); if (s.d && !!s.d.gm !== g) s.d = null; return s.d || (s.d = R.stats(s.c)); }
   private touch(s: Sess) { s.d = null; s.dirty = true; }
   private buff(s: Sess, k: string) { const b = s.buffs[k]; return b && b.until > Date.now() ? b.val : 0; }
   private addBuff(s: Sess, k: string, val: number, dur: number) { s.buffs[k] = { val, until: Date.now() + dur * 1000 }; }
@@ -51,7 +51,7 @@ export class WorldRoom extends Room<WorldState> {
     const now = Date.now(); s.tokens = Math.min(30, s.tokens + (now - s.tokT) / 1000 * 12); s.tokT = now;
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
-  private sync(s: Sess) { const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; } s.client.send("sync", { c: s.c, st: s.stash }); }
+  private sync(s: Sess) { const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
     const id = ++s.dropSeq;
@@ -211,7 +211,7 @@ export class WorldRoom extends Room<WorldState> {
       slam: (x, z, r, inst) => this.broadcast("slam", { x, z, r, inst }),
     });
     this.dg = new Dungeons(this);
-    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0;
+    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0, gmAt = 0;
     this.setSimulationInterval(() => {
       const now = Date.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (this.clients.length) this.sim.update(dt);
@@ -219,6 +219,7 @@ export class WorldRoom extends Room<WorldState> {
         sweepAt = now + 2000;
         for (const s of this.sess.values()) for (const [id, d] of s.drops) if (now > d.exp) s.drops.delete(id);
       }
+      if (now > gmAt) { gmAt = now + 1000; for (const s of this.sess.values()) if (s.c.gmu && s.c.gmu <= now) { s.c.gmu = 0; this.touch(s); this.sync(s); s.client.send("gmb", { on: 0 }); } }
       if (now > dgAt) { dgAt = now + 1000; this.dg.tick(now); }
       if (now > saveAt) { saveAt = now + 12_000; for (const s of this.sess.values()) if (s.dirty) this.save(s); }
     }, 50);
@@ -333,6 +334,21 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("dgtalk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 1)) this.dg.talk(s, String(m?.id)); });
 
     /* ---- grupos ---- */
+    // Buff do GM: só personagens de conta GM. Modos: self | id (jogador clicado) | near (raio) | all (todos do mapa)
+    this.onMessage("gmbuff", (client, m) => {
+      const s = this.S(client), p = this.state.players.get(client.sessionId);
+      if (!s || !p || !s.c.gm || !this.okRate(s, 1)) return;
+      const mode = String(m?.mode || "id"), rad = Math.max(1, Math.min(60, Number(m?.r) || 30));
+      const targets: Sess[] = [];
+      for (const [sid, t] of this.sess) {
+        const q = this.state.players.get(sid); if (!q) continue;
+        const ok = mode === "self" ? sid === client.sessionId : mode === "id" ? sid === String(m?.id) : mode === "near" ? q.inst === p.inst && Math.hypot(q.x - p.x, q.z - p.z) <= rad : mode === "all" ? true : false;
+        if (ok) targets.push(t);
+      }
+      const until = Date.now() + 5 * 60_000;
+      for (const t of targets) { t.c.gmu = until; this.touch(t); this.sync(t); t.client.send("gmb", { on: 1, until, by: s.c.name }); }
+      s.client.send("res", { ok: true, out: [{ toast: targets.length ? "✨ Buff do GM aplicado em " + targets.length + " jogador(es) por 5 min" : "Nenhum jogador encontrado" }] });
+    });
     this.onMessage("pinvite", (client, m) => {
       const s = this.S(client); if (!s || !this.okRate(s, 2)) return;
       const t = this.findByName(String(m?.name || ""));

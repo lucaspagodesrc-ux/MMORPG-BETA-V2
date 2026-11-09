@@ -84,6 +84,8 @@
   #invBox button{margin-left:6px;cursor:pointer}
   #win-party{left:340px;top:230px;width:310px}
   #win-friends{left:360px;top:200px;width:320px}
+  #win-gm{left:380px;top:180px;width:300px}
+  #gmTimer{position:fixed;top:8px;left:50%;transform:translateX(-50%);display:none;z-index:25;background:#2a2108cc;border:1px solid #ffd54a;color:#ffe28a;border-radius:16px;padding:3px 14px;font-weight:700;font-size:13px;pointer-events:none}
   #pmenu{position:fixed;display:none;z-index:30;background:#101a2a;border:1px solid var(--line);border-radius:8px;padding:8px;min-width:170px;box-shadow:0 6px 20px #000a}
   #pmenu b{display:block;margin-bottom:6px}#pmenu button{display:block;width:100%;margin-top:4px;text-align:left}
   .slot .sl{position:absolute;left:2px;bottom:0;font-size:8px;color:#7fe0ff;text-shadow:0 1px 2px #000}
@@ -196,6 +198,7 @@
     <button data-win="quest" title="Missões (Q)">📜</button>
     <button data-win="party" title="Grupo (G)">👥</button>
     <button data-win="friends" title="Amigos (F)">🤝</button>
+    <button data-win="gm" id="mnuGm" title="Painel do GM (Y)" style="display:none">✨</button>
     <button data-win="titles" title="Títulos (T)">🏅</button>
     <button data-win="help" title="Ajuda (H)">❔</button>
     <button id="btnAudio" title="Áudio: música e efeitos (M = mutar música)">🔊</button>
@@ -640,7 +643,7 @@ let hover=null,ACC=null; // ACC = conta: {chars:[], stash:[40]} (baú compartilh
 
 const dirty=()=>{dcache=null;};
 const eff=(it,k)=>(it[k]||0)*(1+.12*(it.plus||0));
-function D(){return dcache||(dcache=RULES.stats(S));}
+function D(){if(dcache&&S&&!!dcache.gm!==((S.gmu||0)>Date.now()))dcache=null;return dcache||(dcache=RULES.stats(S));}
 const TOWNZ=[{x:0,z:0,r:TOWN_R,name:'🏰 Vila Aurora (Zona Segura)'},{x:SC.x,z:SC.z,r:TOWN2_R,name:'🏜️ Oásis de Solara (Zona Segura)'}];
 const townAt=(p,pad)=>TOWNZ.find(t=>Math.hypot(p.x-t.x,p.z-t.z)<t.r+(pad||0));
 const inTown=p=>!!townAt(p);const regionOf=p=>p.x>450?2:p.x>150?1:0;
@@ -1455,6 +1458,8 @@ document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" cl
 <div id="win-party" class="panel win"><h3><span>👥 Grupo</span><button class="x" data-close="party">✕</button></h3><div id="partyBody"></div></div>
 <div id="win-friends" class="panel win"><h3><span>🤝 Amigos</span><button class="x" data-close="friends">✕</button></h3><div id="friendsBody"></div></div>
 <div id="pmenu"></div>
+<div id="gmTimer"></div>
+<div id="win-gm" class="panel win"><h3><span>✨ Painel do GM</span><button class="x" data-close="gm">✕</button></h3><p class="muted">O <b>Buff do GM</b> dura 5 minutos em cada jogador: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa. Para buffar um jogador específico, clique nele no mapa.</p><div style="display:grid;gap:6px"><button data-gmb="self">✨ Buffar a mim</button><button data-gmb="near">🌟 Buffar todos por perto (raio 30)</button><button data-gmb="all">🎆 Buffar todos os jogadores online</button></div></div>
 <div id="win-titles" class="panel win"><h3><span>🏅 Títulos</span><button class="x" data-close="titles">✕</button></h3><div id="titlesBody"></div></div>`);
 function updDgHud(){
  const h=$('dgHud'),m=DG.st;if(!NET.inst||!m){h.style.display='none';return;}h.style.display='block';
@@ -1485,6 +1490,27 @@ $('win-party').addEventListener('click',e=>{
 });
 $('win-party').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='pInv'){const v=e.target.value.trim();if(v&&NET.room){NET.room.send('pinvite',{name:v});e.target.value='';}}});
 
+
+/* =================== BUFF DO GM: estrelas girando com rastro =================== */
+let GMTEX=null;
+function gmTex(){if(GMTEX)return GMTEX;const t=new BABYLON.DynamicTexture('gmstar',128,scene,true),c=t.getContext();c.clearRect(0,0,128,128);const g=c.createRadialGradient(64,64,0,64,64,60);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(255,225,110,.85)');g.addColorStop(1,'rgba(255,200,60,0)');c.fillStyle=g;c.fillRect(0,0,128,128);
+ c.fillStyle='#fff6c8';c.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,r=i%2?13:58;c.lineTo(64+Math.cos(a)*r,64+Math.sin(a)*r);}c.closePath();c.fill();t.update();t.hasAlpha=true;return GMTEX=t;}
+let GMMAT=null,GMTRM=null;
+function mkGm(o){
+ if(!GMMAT){GMMAT=new BABYLON.StandardMaterial('gmm',scene);GMMAT.disableLighting=true;GMMAT.emissiveTexture=gmTex();GMMAT.opacityTexture=gmTex();GMMAT.backFaceCulling=false;
+  GMTRM=new BABYLON.StandardMaterial('gmt',scene);GMTRM.disableLighting=true;GMTRM.emissiveColor=new C3(1,.85,.35);GMTRM.alpha=.4;GMTRM.backFaceCulling=false;}
+ const piv=new BABYLON.TransformNode('gmp',scene);piv.parent=o.root;const st=[],tr=[];
+ for(let i=0;i<5;i++){const m=B.CreatePlane('gms',{size:.3},scene);m.parent=piv;m.material=GMMAT;m.billboardMode=7;m.isPickable=false;st.push(m);
+  const t=new BABYLON.TrailMesh('gmtr',m,scene,.045,16,true);t.material=GMTRM;t.isPickable=false;tr.push(t);}
+ const A=ANCH[o.cls]||ANCH.mago;return{root:o.root,piv,st,tr,r:.8+A.sx*.7};
+}
+function disposeGm(o){const g=o.gmfx;if(!g)return;g.tr.forEach(t=>{try{t.dispose();}catch(e){}});try{g.piv.dispose();}catch(e){}o.gmfx=null;}
+function gmFx(o,on,now){
+ let g=o.gmfx;if(on&&g&&g.root!==o.root){disposeGm(o);g=null;}
+ if(on){if(!g)g=o.gmfx=mkGm(o);const t=now/1000;g.st.forEach((s,i)=>{const a=t*2.1+i*1.2566;s.position.set(Math.cos(a)*g.r,1.05+Math.sin(t*1.7+i*1.9)*.75+.2,Math.sin(a)*g.r);});}
+ else if(g)disposeGm(o);
+}
+
 /* =================== AMIGOS =================== */
 const frKey=n=>String(n||'').trim().toLowerCase();
 const isFriend=n=>!!(S&&S.fr&&S.fr.some(x=>frKey(x)===frKey(n)));
@@ -1508,13 +1534,15 @@ $('win-friends').addEventListener('click',e=>{
  const p=e.target.closest('[data-fpi]');if(p&&NET.room){NET.room.send('pinvite',{name:p.dataset.fpi});toast('Convite enviado para '+p.dataset.fpi);}
 });
 $('win-friends').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='fInp'){const v=e.target.value.trim();if(v)addFriend(v);e.target.value='';}});
+$('win-gm').addEventListener('click',e=>{const b=e.target.closest('[data-gmb]');if(b&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:b.dataset.gmb,r:30});});
 function showPMenu(o,x,y){
  const m=$('pmenu'),n=o.name||'?';const fr=isFriend(n);
- m.innerHTML=`<b>${esc(n)}${o.lv>0?' <small style="color:#ffd27a">Nv '+o.lv+'</small>':''}</b>${fr?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`}<button data-pinv2="${esc(n)}">👥 Convidar para o grupo</button><button data-pcl="1">Cancelar</button>`;
+ m.innerHTML=`<b>${esc(n)}${o.lv>0?' <small style="color:#ffd27a">Nv '+o.lv+'</small>':''}</b>${fr?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`}<button data-pinv2="${esc(n)}">👥 Convidar para o grupo</button>${S&&S.gm&&o.id?`<button data-pgm="${esc(o.id)}" style="color:#ffe28a">✨ Buff do GM</button>`:''}<button data-pcl="1">Cancelar</button>`;
  m.style.display='block';m.style.left=Math.min(x+8,innerWidth-190)+'px';m.style.top=Math.min(y+8,innerHeight-150)+'px';}
 $('pmenu').addEventListener('pointerdown',e=>e.stopPropagation());
 $('pmenu').addEventListener('click',e=>{
- const a=e.target.closest('[data-padd]'),d=e.target.closest('[data-pdel]'),i=e.target.closest('[data-pinv2]');
+ const a=e.target.closest('[data-padd]'),d=e.target.closest('[data-pdel]'),i=e.target.closest('[data-pinv2]'),gm=e.target.closest('[data-pgm]');
+ if(gm&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:'id',id:gm.dataset.pgm});
  if(a)addFriend(a.dataset.padd);else if(d)delFriend(d.dataset.pdel);else if(i&&NET.room){NET.room.send('pinvite',{name:i.dataset.pinv2});toast('Convite enviado para '+i.dataset.pinv2);}
  $('pmenu').style.display='none';});
 let FR_ON=null;
@@ -1942,6 +1970,7 @@ function updatePlayer(dt,now){
  const sw=(now-P.swingAt)/260;
  P.pos.y=P.moving?Math.abs(Math.sin(now*.013))*.09:0;
  animLimbs(P,P.pos.x,P.pos.z,now,P.swingAt,MELEE.has(S.cls));
+ {const gon=(S.gmu||0)>Date.now();gmFx(P,gon,now);const te=$('gmTimer');if(gon){const sc=Math.ceil((S.gmu-Date.now())/1000),tx='✨ Buff do GM '+Math.floor(sc/60)+':'+String(sc%60).padStart(2,'0');if(te.textContent!==tx)te.textContent=tx;te.style.display='block';}else if(te.style.display!=='none')te.style.display='none';}
  // auto coleta
  for(const d of drops.slice())if(!d.life&&hyp(P.pos,{x:d.x,z:d.z})<1.5)tryPickup(d,false);
  // fecha diálogo se afastar
@@ -1987,13 +2016,13 @@ window.addEventListener('keydown',e=>{
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){const off=AUD.toggleMusic();toast(off?'🔇 Música desligada':'🎵 Música ligada');return;}
  if(k==='b'){startRecall();return;}
- if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='f')toggleWin('friends');else if(k==='h')toggleWin('help');
- else if(k==='escape'){AUDUI.panel(false);closeDialog();['inv','char','quest','skill','party','friends','titles','help'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
+ if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='f')toggleWin('friends');else if(k==='y'&&S&&S.gm)toggleWin('gm');else if(k==='h')toggleWin('help');
+ else if(k==='escape'){AUDUI.panel(false);closeDialog();['inv','char','quest','skill','party','friends','gm','titles','help'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
 });
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 /* =================== JANELAS =================== */
-const WINID={inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',friends:'win-friends',titles:'win-titles',help:'help'};
+const WINID={inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',friends:'win-friends',gm:'win-gm',titles:'win-titles',help:'help'};
 function setWin(n,show){$(WINID[n]).style.display=show?'block':'none';if(show)refreshUI();}
 function toggleWin(n){AUD.sfx('ui');setWin(n,$(WINID[n]).style.display!=='block');}
 document.addEventListener('click',e=>{
@@ -2183,6 +2212,7 @@ function refreshUI(){
  if($('win-quest').style.display==='block')renderQuest();
  if($('win-party').style.display==='block'&&document.activeElement.id!=='pInv')renderParty();
  if($('win-friends').style.display==='block'&&document.activeElement.id!=='fInp')renderFriends();
+ $('mnuGm').style.display=S&&S.gm?'':'none';
  if($('win-skill').style.display==='block')renderSkills();
  if($('win-titles').style.display==='block')renderTitles();
  if(dlg)renderDialog();
@@ -2348,7 +2378,7 @@ async function startFlow(){
 const NET={room:null,others:new Map(),lv:0,tm:0,stop:false,off:0,ack:false,inst:0};
 const sharedNow=()=>Date.now()+NET.off;   // relógio do servidor: todos veem os NPCs no mesmo ponto
 const PCOL={tanque:'#4b5a6b',pierrot:'#d6336c',guerreiro:'#b5543a',arqueiro:'#4a9a5a',mago:'#6a4ab5',assassino:'#3a3a4a',cavaleiro:'#8a95a5'};
-function killRemote(o){o.root.dispose();o.label.remove();}
+function killRemote(o){disposeGm(o);o.root.dispose();o.label.remove();}
 function clearOthers(){for(const o of NET.others.values())killRemote(o);NET.others.clear();}
 async function netJoin(){
  if(!ONLINE||!TOKEN||!window.Colyseus||NET.room||!S)return;
@@ -2365,6 +2395,7 @@ async function netJoin(){
    if(S._respec&&!NET.ack){NET.ack=true;logMsg(`<span style="color:#ffe28a">⚖️ Seu personagem foi ajustado às novas regras de equilíbrio: seu nível foi mantido e os <b>${S.pts} pontos de atributo</b> foram devolvidos para você redistribuir (tecla C).</span>`);toast('⚖️ Personagem ajustado: redistribua seus atributos (C)');room.send('a',{t:'ack'});}
    if(S) refreshUI();});
   room.onMessage('res',m=>applyRes(m));
+  room.onMessage('gmb',m=>{dirty();if(m&&m.on){const d=D();P.hp=d.maxHp;P.mp=d.maxMp;AUD.sfx('levelUp');ring(P.pos.x,P.pos.z,5,'#ffe28a',900);toast('✨ Você recebeu o Buff do GM por 5 minutos!');logMsg('<span style="color:#ffe28a">✨ <b>Buff do GM</b> ativo por 5 minutos'+(m.by?' (de '+esc(m.by)+')':'')+'</span>');}else{afterChange();logMsg('<span style="color:#cbd6e2">✨ O Buff do GM terminou.</span>');}});
   room.onMessage('drop',m=>{spawnDrop(m.item,{x:m.x,z:m.z},m.life);const d=drops[drops.length-1];if(d)d.sid=m.id;if(m.item.k==='eq'&&m.item.rar>=2)setTimeout(()=>AUD.sfx('rare'),300);else setTimeout(()=>AUD.sfx('drop'),200);});
   room.onMessage('drm',m=>{const d=drops.find(x=>x.sid===m.id);if(d)removeDrop(d);});
   room.onMessage('dmg',m=>{const mo=monsters.find(x=>x.id===m.id);if(!mo)return;const mine=m.by===room.sessionId;
@@ -2422,7 +2453,7 @@ function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(
   if(d>25){pos.x=p.x;pos.z=p.z;}else{const k=Math.min(1,dt*10);pos.x+=dx*k;pos.z+=dz*k;}
   if(d>.05)o.root.rotation.y=Math.atan2(dx,dz);
   pos.y=d>.15?Math.abs(Math.sin(now*.012))*.07:0;
-  animLimbs(o,pos.x,pos.z,now,o.swingAt,MELEE.has(o.cls));
+  animLimbs(o,pos.x,pos.z,now,o.swingAt,MELEE.has(o.cls));gmFx(o,!!p.gb,now);
   o.root.rotation.z=p.dead?Math.PI/2:0;
   if(o.lv!==p.level||o.tt!==p.tt){o.lv=p.level;o.tt=p.tt;o.label.innerHTML=`${ttHtml(p.tt)}${esc(p.name)} <span style="color:#ffd27a">Nv ${p.level}</span>`;}
   if(hyp(P.pos,pos)<30)place(o.label,pos,3.0);else o.label.style.display='none';});
