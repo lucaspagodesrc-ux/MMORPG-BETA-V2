@@ -18,13 +18,15 @@ const xpNeed = l => Math.floor(24 * Math.pow(l, 2.3));   // XP para sair do nív
 R.PTS_PER_LEVEL = PTS_PER_LEVEL; R.MAX_LEVEL = MAX_LEVEL; R.xpNeed = xpNeed; R.VERSION = 4;
 
 const RAR=[{n:'Comum',c:'#c9d1d9',m:1},{n:'Incomum',c:'#5fd068',m:1.2},{n:'Raro',c:'#4aa3ff',m:1.45},{n:'Épico',c:'#c77dff',m:1.8}];
-const SLOTS={shield:'Escudo',weapon:'Arma',helmet:'Elmo',armor:'Armadura',boots:'Botas',ring:'Anel',bracelet:'Bracelete',earring:'Brinco'};
+const SLOTS={shield:'Escudo',weapon:'Arma',helmet:'Elmo',armor:'Armadura',boots:'Botas',ring:'Anel',bracelet:'Bracelete',earring:'Brinco',cape:'Capa'};
 const STN={str:'Força',agi:'Agilidade',int:'Inteligência',vit:'Vitalidade'};
 const WN={assassino:['Adaga Curta','Adaga de Ferro','Adaga de Aço','Lâmina Rúnica','Adaga do Eclipse','Adaga Abissal','Adaga Dracônica'],cavaleiro:['Espada Curta','Espada Longa','Espada de Cavaleiro','Espada Rúnica','Lâmina do Guardião','Espada Abissal','Espada Dracônica'],guerreiro:['Espada Enferrujada','Espada de Ferro','Espada de Aço','Lâmina Rúnica','Espada Lendária','Lâmina Abissal','Espada Dracônica'],arqueiro:['Arco Curto','Arco de Caça','Arco Composto','Arco Rúnico','Arco do Vento','Arco Abissal','Arco Dracônico'],mago:['Cajado de Madeira','Cajado de Cristal','Cajado Arcano','Cajado Rúnico','Cajado Estelar','Cajado Abissal','Cajado Dracônico']};
 const AN=['Túnica Simples','Couraça de Couro','Cota de Malha','Armadura de Placas','Armadura Rúnica','Armadura Abissal','Armadura Dracônica'];
 const HN=['Capuz de Pano','Elmo de Couro','Elmo de Ferro','Elmo de Aço','Elmo Rúnico','Elmo Abissal','Elmo Dracônico'];
 const BN=['Sandálias','Botas de Couro','Botas de Ferro','Botas de Aço','Botas Rúnicas','Botas Abissais','Botas Dracônicas'];
 const RN=['Anel de Cobre','Anel de Prata','Anel de Ouro','Anel de Rubi','Anel Rúnico','Anel Abissal','Anel Dracônico'];
+const CPN=['Capa de Pano','Capa de Viajante','Capa de Couro','Capa de Combate','Capa Rúnica','Capa Abissal','Capa Dracônica'],CMN=['Estola de Linho','Estola de Seda','Estola Encantada','Estola Arcana','Estola Rúnica','Estola Abissal','Estola Dracônica'];
+const XCP=['Capa Solar','Capa Faraônica','Capa Imortal'],XCM=['Estola Solar','Estola Faraônica','Estola Imortal'];
 const BRN=['Pulseira de Couro','Bracelete de Cobre','Bracelete de Prata','Bracelete de Ouro','Bracelete Rúnico','Bracelete Abissal','Bracelete Dracônico'];
 const ERN=['Brinco de Osso','Brinco de Cobre','Brinco de Prata','Brinco de Ouro','Brinco Rúnico','Brinco Abissal','Brinco Dracônico'];
 WN.tanque=['Gancho Enferrujado','Gancho de Ferro','Gancho de Aço','Corrente Rúnica','Gancho do Guardião','Gancho Abissal','Gancho Dracônico'];
@@ -351,13 +353,26 @@ R.TOWNS = [{ x: 0, z: 0, r: 11 }, { x: 300, z: 0, r: 13 }];   // zonas seguras (
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + '◇'.repeat(it.sl) : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
+const sellPrice = it => it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
 const upRate = p => [1, 1, 1, .85, .7, .55, .4, .3, .2][p] || 0;
 const upCost = it => { const p = it.plus || 0; return { ferro: p + 1, essencia: p >= 4 ? Math.floor(p / 2) : 0, gold: Math.round(40 * Math.pow(p + 1, 1.7)) }; };
 const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon', 'shield', 'shield'] : ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon'];
 /** Origem sorteada para itens sem monstro (caixas, missões): um monstro com nível próximo do item. */
 const originFor = ilvl => { const c = Object.keys(MT).filter(k => OG[k] && !k.startsWith('dg_') && MT[k].lv[0] <= ilvl + 4 && MT[k].lv[1] >= ilvl - 8); return c.length ? pick(c) : undefined; };
 
+/** Capas: sem raridade, atributos fixos. 'm' = estola azul (magos), 'p' = capa vermelha (físicos). */
+const isMag = cls => !!CLASSES[cls] && CLASSES[cls].main === 'int';
+function capeStats(it) {
+  const m = it.cs === 'm', L = it.ilvl;
+  it.rar = 0; it.plus = 0; it.atk = 0; it.def = Math.round(1 + L * (m ? .25 : .5)); it.hp = Math.round(L * (m ? 3 : 4));
+  it.bon = m ? { int: Math.max(1, Math.round(L / 5)), agi: Math.max(1, Math.round(L / 10)), vit: Math.max(1, Math.round(L / 10)) } : { str: Math.max(1, Math.round(L / 6)), agi: Math.max(1, Math.round(L / 8)), vit: Math.max(1, Math.round(L / 10)) };
+  it.icon = m ? '🧣' : '🧥'; delete it.sl; delete it.mo; return it;
+}
+function genCape(ilvl, cls, name) {
+  ilvl = Math.max(1, Math.min(80, Math.floor(ilvl))); const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), m = isMag(cls);
+  const it = { k: 'eq', slot: 'cape', ilvl, rar: 0, req: Math.max(1, ilvl - 1), plus: 0, cs: m ? 'm' : 'p', hp: 0, atk: 0, def: 0, bon: {} };
+  it.name = tier > 6 ? (m ? XCM : XCP)[tier - 7] : (m ? CMN : CPN)[tier]; if (name) it.name = name; return capeStats(it);
+}
 function rarRoll(b) { b = b || 0; const r = Math.random(), k = 1 + b; if (r < .02 * k) return 3; if (r < .12 * k) return 2; if (r < .4 + .05 * b) return 1; return 0; }
 /** Gera um equipamento. `cls` fixa a classe da arma; sem ela, 70% de chance de ser da classe do dono (`owner`). */
 function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
@@ -385,8 +400,12 @@ const SHOPS = {
     { id: 'hp', i: '🧪', n: 'Poção de Vida', d: 'Recupera 40% da vida', c: () => 25, mk: () => ({ k: 'pot', id: 'hp', n: 1 }) },
     { id: 'mp', i: '🔷', n: 'Poção de Mana', d: 'Recupera 40% da mana', c: () => 25, mk: () => ({ k: 'pot', id: 'mp', n: 1 }) },
     { id: 'hp5', i: '🧪', n: 'Poção de Vida ×5', d: 'Pacote econômico', c: () => 110, mk: () => ({ k: 'pot', id: 'hp', n: 5 }) },
+    { id: 'capa', i: '🧥', n: 'Capa do Aventureiro (Nv 32)', d: 'Capa vermelha para ataque físico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, f: c => !isMag(c.cls), mk: () => genCape(32, 'guerreiro', 'Capa do Aventureiro') },
+    { id: 'estola', i: '🧣', n: 'Estola do Aventureiro (Nv 32)', d: 'Estola azul fina para ataque mágico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, f: c => isMag(c.cls), mk: () => genCape(32, 'mago', 'Estola do Aventureiro') },
     { id: 'box', i: '🎁', n: 'Caixa de Equipamento', d: 'Item aleatório do seu nível. Pode vir raro ou épico!', c: c => 200 + c.level * 25, box: 1, mk: c => genItem(pick(slotPool(c.cls)), Math.max(1, c.level + ri(0, 1)), rarRoll(.5), undefined, c.cls, 0, true) }],
   solara: [
+    { id: 'capa2', i: '🧥', n: 'Capa Solar (Nv 64)', d: 'Capa vermelha para ataque físico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, f: c => !isMag(c.cls), mk: () => genCape(64, 'guerreiro') },
+    { id: 'estola2', i: '🧣', n: 'Estola Solar (Nv 64)', d: 'Estola azul fina para ataque mágico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, f: c => isMag(c.cls), mk: () => genCape(64, 'mago') },
     { id: 'hp2', i: '🍷', n: 'Poção de Vida Superior', d: 'Recupera 70% da vida', c: () => 90, mk: () => ({ k: 'pot', id: 'hp2', n: 1 }) },
     { id: 'mp2', i: '💧', n: 'Poção de Mana Superior', d: 'Recupera 70% da mana', c: () => 90, mk: () => ({ k: 'pot', id: 'mp2', n: 1 }) },
     { id: 'hp2x5', i: '🍷', n: 'Poção de Vida Superior ×5', d: 'Pacote do deserto', c: () => 400, mk: () => ({ k: 'pot', id: 'hp2', n: 5 }) },
@@ -471,6 +490,7 @@ function rollLoot(T, mlvl, cls, luck) {
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
   for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
   if (Math.random() < T.eq * (1 + luck / 100)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .015 * lk ? 2 : Math.random() < .08 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); out.push(it); } }
+  if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
   return out;
 }
@@ -488,6 +508,7 @@ function dgChestLoot(dg, tier, cls, luck) {
   };
   out.push(mk(Math.random() < [.30, .22, .12][tier - 1] / (1 + luck / 100)));
   if (tier === 3 && Math.random() < .4) out.push(mk(false));
+  if (Math.random() < [.02, .04, .1][tier - 1] * (1 + luck / 100)) out.push(genCape(ri(dg.ilvl[0], dg.ilvl[1]), cls));
   out.push({ k: 'gold', n: ri(600, 1100) * tier });
   if (Math.random() < .5) out.push({ k: 'mat', id: 'essencia', n: ri(1, 1 + tier) });
   return out;
@@ -525,6 +546,7 @@ function itemMax(slot, ilvl, rar) {
   else if (slot === 'helmet') o.def = (1 + ilvl * .6) * m;
   else if (slot === 'boots') { o.def = (1 + ilvl * .5) * m; o.hp = ilvl * 2 * RAR[rar].m; }
   else if (slot === 'bracelet') { o.atk = (1 + ilvl * .45) * m; o.def = (1 + ilvl * .3) * m; }
+  else if (slot === 'cape') { o.def = 1 + ilvl * .5; o.hp = ilvl * 4; }
   else if (slot === 'earring') { o.hp = ilvl * 5 * RAR[rar].m; o.def = (1 + ilvl * .25) * m; }
   else { o.atk = (1 + ilvl * .6) * m; o.hp = ilvl * 4 * RAR[rar].m; }
   return o;
@@ -547,6 +569,7 @@ function cleanItem(it) {
   if (typeof it.name !== 'string') it.name = SLOTS[it.slot];
   it.name = it.name.slice(0, 60);
   if (it.slot === 'weapon' && !CLASSES[it.cls]) return null;
+  if (it.slot === 'cape') { it.cs = it.cs === 'm' ? 'm' : 'p'; capeStats(it); }
   return it;
 }
 /** Atualiza personagens antigos para as regras atuais. Nunca apaga o personagem: só corrige/ajusta. */
@@ -593,6 +616,7 @@ function act(sess, m, ctx) {
     if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'eq') return fail();
     if (c.level < it.req) return fail('Nível ' + it.req + ' necessário');
     if (it.cls && it.cls !== c.cls) return fail('Item de outra classe');
+    if (it.slot === 'cape' && (it.cs === 'm') !== isMag(c.cls)) return fail(it.cs === 'm' ? 'Estola azul: só para classes de ataque mágico' : 'Capa vermelha: só para classes de ataque físico');
     const key = eqKey(c, it, m.key); const old = c.eq[key]; c.eq[key] = it; c.inv[m.i] = old || null; F('equip'); T('Equipado: ' + nm(it)); return done();
   }
   if (t === 'unequip') {
@@ -619,7 +643,7 @@ function act(sess, m, ctx) {
     L(`Você largou <b style="color:${colOf(it)}">${nm(it)}${it.n > 1 ? ' ×' + it.n : ''}</b> no chão — some em 30 s (E para pegar de volta).`); return done();
   }
   if (t === 'org') {
-    const eq = [], rest = [], pots = {}, mats = {}, tm = {}, ORD = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'shield'];
+    const eq = [], rest = [], pots = {}, mats = {}, tm = {}, ORD = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'shield', 'cape'];
     for (const it of c.inv) { if (!it) continue; if (it.k === 'eq') eq.push(it); else if (it.k === 'pot' || it.k === 'mat') { const g = it.k === 'pot' ? pots : mats; g[it.id] = (g[it.id] || 0) + it.n; tm[it.k + it.id] = it; } else rest.push(it); }
     const foreign = it => Number(!!(it.cls && it.cls !== c.cls));
     eq.sort((a, b) => ORD.indexOf(a.slot) - ORD.indexOf(b.slot) || foreign(a) - foreign(b) || b.rar - a.rar || b.ilvl - a.ilvl || (b.plus || 0) - (a.plus || 0) || String(a.name).localeCompare(String(b.name)));
@@ -641,6 +665,7 @@ function act(sess, m, ctx) {
   if (t === 'buy') {
     if (!npcFor('comprar')) return fail('Chegue perto de um comerciante.');
     const sh = (SHOPS[npcById(m.npc).shop || 'aurora'] || []).find(x => x.id === m.id); if (!sh) return fail();
+    if (sh.f && !sh.f(c)) return fail();
     const cost = sh.c(c); if (c.gold < cost) return fail('Ouro insuficiente');
     const it = sh.mk(c); if (!canAdd(c.inv, it)) return fail('Mochila cheia!'); c.gold -= cost; addItem(c.inv, it); F('coin');
     if (sh.box) { T('Você abriu: ' + nm(it)); L(`🎁 A caixa continha <b style="color:${colOf(it)}">${nm(it)}</b>`); if (it.rar >= 2) F('rare'); } return done();
@@ -666,7 +691,7 @@ function act(sess, m, ctx) {
     if (!npcFor('aprimorar')) return fail('Chegue perto do Ferreiro.');
     const ref = String(m.ref || ''); let it = null;
     if (ref.startsWith('eq:')) it = validKey(ref.slice(3)) && c.eq[ref.slice(3)]; else if (ref.startsWith('inv:')) { const i = +ref.slice(4); it = intIn(i, 0, c.inv.length) ? c.inv[i] : null; }
-    if (!it || it.k !== 'eq' || (it.plus || 0) >= 9) return fail(); const k = upCost(it);
+    if (!it || it.k !== 'eq') return fail(); if (it.slot === 'cape') return fail('Capas não podem ser aprimoradas — elas brilham junto com a armadura.'); if ((it.plus || 0) >= 9) return fail(); const k = upCost(it);
     if (have(c, 'ferro') < k.ferro || have(c, 'essencia') < k.essencia || c.gold < k.gold) return fail('Materiais ou ouro insuficientes');
     take(c, 'ferro', k.ferro); if (k.essencia) take(c, 'essencia', k.essencia); c.gold -= k.gold; const p = it.plus || 0;
     if (Math.random() < upRate(p)) { F('upOk'); it.plus = p + 1; T('✨ Sucesso! ' + nm(it)); L(`<span style="color:#6fdc7f">⬆️ ${it.name} aprimorado para +${it.plus}!</span>`); }
@@ -698,7 +723,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { genCape, isMag, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

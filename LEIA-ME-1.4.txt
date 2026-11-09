@@ -1,0 +1,12 @@
+ATUALIZAÇÃO 1.4 — Capas
+
+1. Envie index.html e rules.js para a RAIZ do repositório no GitHub (substituindo os atuais).
+2. Aguarde o redeploy do Render e abra o jogo com Ctrl+F5.
+
+- Nova peça "Capa" (janela do personagem, ao lado de Botas).
+- Estola azul fina (cachecol) para ataque mágico (Mago); capa vermelha para ataque físico (demais classes).
+- Sem raridade, atributos fixos (Defesa, Vida, Força/Inteligência, Agilidade, Vitalidade). Não podem ser aprimoradas.
+- O brilho, os efeitos +7/+9 e o elemento acompanham a ARMADURA equipada.
+- Comprar: Mercadora da Vila Aurora 50.000 (Nv 32); comerciante do deserto 75.000 (Nv 64).
+- Drop raro de monstros (chefes têm chance bem maior) e baús de masmorra.
+- Servidor não mudou nesta versão além do rules.js.

@@ -610,7 +610,7 @@ const SC={x:300,z:0}, TOWN2_R=13;   // Solara: segunda região do mundo (centro 
 const MAP=80, TOWN_R=11, SAVE_KEY='mmorpg_proto_v3', OLD_KEY='mmorpg_proto_v2';
 const RULES=window.RULES;   // regras e dados compartilhados com o servidor (rules.js)
 const {RAR,SLOTS,STN,WN,AN,HN,BN,RN,SHN,XN,SUF,MATS,POTS,MAXRANK,CLASSES,MT,ZONES,OG,DUNGEONS,QUESTS,QNAME,RECIPES,NPCS,SHOPS,xpNeed,upRate,upCost,sellPrice,nm}=RULES;
-const SLOT_ICON={shield:'🛡️',weapon:'⚔️',helmet:'🪖',armor:'🥋',boots:'👢',ring:'💍',ring2:'💍',bracelet:'📿',bracelet2:'📿',earring:'🧿',earring2:'🧿'};
+const SLOT_ICON={shield:'🛡️',weapon:'⚔️',helmet:'🪖',armor:'🥋',boots:'👢',ring:'💍',ring2:'💍',bracelet:'📿',bracelet2:'📿',earring:'🧿',earring2:'🧿',cape:'🧥'};
 const BUFFN={dmg:'⚔️ Dano',crit:'🎯 Crítico',shield:'🛡️ Escudo',haste:'💨 Rapidez',defdmg:'🛡️→⚔️ Bastião',evade:'🌑 Evasão',combo:'🔥 Combo',luck:'🍀 Sorte',clone:'👥 Clones'};
 const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',comprar:'🛒 Comprar',vender:'💰 Vender',missoes:'📜 Missões',bau:'📦 Baú'};
 /* =================== ESTADO =================== */
@@ -633,15 +633,16 @@ const addBuff=(n,val,dur)=>{P.buffs[n]={val,until:performance.now()+dur*1000};};
 const rarRoll=RULES.rarRoll;
 const genItem=(slot,ilvl,rar,cls)=>RULES.genItem(slot,ilvl,rar,cls,S&&S.cls);
 const ico=it=>it.k==='eq'?(it.plus?`<span class="ig${it.plus>=7?' hi':''}" style="--gp:${it.plus};--gc:${(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?MATS[it.id].i:it.k==='pot'?POTS[it.id].i:'💰';
-const col=it=>it.k==='eq'?RAR[it.rar].c:'#455568';
+const col=it=>it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':'#e0483f'):RAR[it.rar].c):'#455568';
 function tipOf(it){
- if(it.k==='eq'){const r=RAR[it.rar];let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n} • ${SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
+ if(it.k==='eq'){const cape=it.slot==='cape',r=cape?{c:col(it),n:it.cs==='m'?'Estola mágica':'Capa física'}:RAR[it.rar];let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n}${cape?' • sem raridade':' • '+SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
   h+=`<span class="${S.level>=it.req?'':'no'}">Nível necessário: ${it.req}</span><br>`;
   if(it.mo&&OG[it.mo]){const g=OG[it.mo];h+=`<span style="color:${g.col}">◆ Origem: ${MT[it.mo].n} • ${EL[g.el].n}</span><br>`;if(it.plus>=7)h+=`<span style="color:#ffd27a">✨ Efeito ativo: ${EL[g.el].n}</span><br>`;}else if(it.plus>=7)h+=`<span style="color:#ffd27a">✨ Efeito ativo: Brilho dourado</span><br>`;
   if(it.sl)h+=`<span style="color:#7fe0ff">Slots: ${'◇ '.repeat(it.sl)}(vazios)</span><br>`;
   if(it.atk)h+=`Ataque: <b>${Math.round(eff(it,'atk'))}</b><br>`;if(it.def)h+=`Defesa: <b>${Math.round(eff(it,'def'))}</b><br>`;if(it.hp)h+=`Vida: +${it.hp}<br>`;
   for(const s in it.bon)h+=`<span class="ok">+${it.bon[s]} ${STN[s]}</span><br>`;
   if(it.cls&&it.cls!==S.cls)h+='<span class="no">Classe incompatível</span><br>';
+  if(it.slot==='cape'){h+='<span style="color:#ffd27a">✨ Brilha junto com a sua armadura</span><br>';if((it.cs==='m')!==RULES.isMag(S.cls))h+=`<span class="no">${it.cs==='m'?'Só para ataque mágico':'Só para ataque físico'}</span><br>`;}
   return h+`<span class="muted">Venda: ${sellPrice(it)} 💰</span>`;}
  if(it.k==='mat')return `<b>${nm(it)}</b><br><span class="muted">Material de criação • ${MATS[it.id].v} 💰</span>`;
  return `<b>${nm(it)}</b><br>${POTS[it.id].d}<br><span class="muted">Use: ${it.id.startsWith('hp')?'9':'0'}</span>`;
@@ -1074,7 +1075,7 @@ const GEARS=new Set();
 function parseAp(s){const o={};if(!s)return o;for(const t of String(s).split(';')){const a=t.split('|');if(a[0])o[a[0]]={mo:a[1]||'',plus:+a[2]||0,rar:+a[3]||0};}return o;}
 function apLocal(){return S?parseAp(RULES.apOf(S)):{};}
 const gcols=w=>{const g=w.mo&&OG[w.mo];if(g)return [g.col,g.col2,g.el,g.ft];const c=w.rar>0?RAR[w.rar].c:'#b9c2cc';return [c,c,'gold',''];};
-function clearGear(o){for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
+function clearGear(o){o.gcape=null;for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
 function mkPs(o,anchor,el,rate,sc){
  const E=EL[el]||EL.gold,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.isPickable=false;em.parent=anchor;
  const ps=new BABYLON.ParticleSystem('gfx',Math.ceil(rate*1.4)+6,scene);ps.particleTexture=ptex();ps.emitter=em;sc=sc||1;
@@ -1086,7 +1087,7 @@ function mkPs(o,anchor,el,rate,sc){
  ps.start();o.gfx.push(ps);return ps;}
 function mkBolt(o,anchor,a,b,spread){const pts=[a.clone(),b.clone()];const line=B.CreateLines('bolt',{points:pts,updatable:true},scene);line.color=new C3(.75,.9,1);line.isPickable=false;line.parent=anchor;o.gbolts.push({line,a,b,spread:spread||.5,n:7});}
 function applyGear(o,ap){
- if(!o.root)return;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
+ if(!o.root)return;if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
  if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
  const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;o.gfx=[];o.gbolts=[];
  const put=(m,x,y,z,mt,par)=>{m.parent=par||g;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
@@ -1152,6 +1153,23 @@ function applyGear(o,ap){
  if(sh){const [c1,c2]=gcols(sh),kn=o.cls==='cavaleiro';
   put(B.CreateBox('sd',{width:kn?.2:.17,height:kn?1.18:.86,depth:kn?.86:.66},scene),kn?-.62:-.5,1.0,kn?.15:.1,gmat(c1,sh.plus));
   put(B.CreateSphere('sb',{diameter:.22,segments:6},scene),kn?-.74:-.6,1.05,kn?.15:.1,gmat(c2,sh.plus));}
+ // ---- capa (azul e fina para magos, vermelha e larga para classes físicas; brilho = o da armadura)
+ const cp=ap.cape;
+ if(cp){const mag=RULES.isMag(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
+  const c1=mag?'#2f6fe0':'#c4302b',c2=mag?'#a8d0ff':'#f2a548',m1=gmat(c1,pl),m2=gmat(c2,pl);o.gcape=[];
+  const hinge=(x,y,z,tilt)=>{const h=new BABYLON.TransformNode('cph',scene);h.parent=g;h.position.set(x,y,z);h.rotation.x=tilt;h._base=tilt;h._ph=Math.random()*6;o.gcape.push(h);return h;};
+  if(!mag){const bz=-(.3+(A.sx>.5?.1:0)),H=A.sy-.25,h=hinge(0,A.sy-.02,bz,.12);
+   put(B.CreateBox('cb',{width:A.sx*2+.1,height:H,depth:.05},scene),0,-H/2,0,m1,h);
+   put(B.CreateBox('ct',{width:A.sx*2+.13,height:.08,depth:.07},scene),0,-H+.04,0,m2,h);
+   put(B.CreateBox('cl',{width:A.sx*2+.13,height:.07,depth:.07},scene),0,-.03,0,m2,h);
+   for(const sx of[-1,1])put(B.CreateSphere('cg',{diameter:.1,segments:6},scene),sx*A.sx*.72,A.sy+.0,bz+.34,fxMat(c2));
+   if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=h;n.position.set(0,-H,-.05);mkPs(o,n,ael,RATE(pl)*.6,1.5);}}
+  else{const bz=-.24;
+   put(B.CreateTorus('sc',{diameter:A.sx*1.5,thickness:.1,tessellation:18},scene),0,A.sy+.05,0,m1);
+   const rb=(x,z,len,w,tilt)=>{const h=hinge(x,A.sy+.04,z,tilt);put(B.CreateBox('sr',{width:w,height:len,depth:.035},scene),0,-len/2,0,m1,h);put(B.CreateBox('se',{width:w+.02,height:.07,depth:.045},scene),0,-len+.035,0,m2,h);return h;};
+   rb(-.1,bz,1.05,.13,.14);rb(.13,bz-.02,.8,.12,.18);const f=rb(.2,.42,.62,.11,-.06);
+   if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=f;n.position.set(0,-.62,0);mkPs(o,n,ael,RATE(pl)*.5,1.1);}}
+ }
  // ---- acessórios
  const acc=(it,kind,idx)=>{if(!it)return;const [c1,c2,el]=gcols(it);const metal=!it.mo&&it.rar===0;const hex=it.mo?c1:(it.rar>0?c1:(kind==='bracelet'?'#cfd6dd':'#ffd24a'));const mt=gmat(hex,it.plus);
   if(kind==='earring'){const s=idx?-1:1;put(B.CreateSphere('er',{diameter:.09,segments:6},scene),s*(A.hr+.01),A.hy-.07,.02,mt);put(B.CreateSphere('ed',{diameter:.07,segments:6},scene),s*(A.hr+.01),A.hy-.16,.02,gmat(c2,it.plus));
@@ -1163,7 +1181,7 @@ function applyGear(o,ap){
    if(it.plus>=7){const n=new BABYLON.TransformNode('bf2',scene);n.parent=right?o.hand:g;n.position.set(right?0:(A.lx||-.5),right?-.12:.9,right?0:.2);mkPs(o,n,el,6,.6);}}
  };
  acc(ap.ring,'ring',0);acc(ap.ring2,'ring',1);acc(ap.bracelet,'bracelet',0);acc(ap.bracelet2,'bracelet',1);acc(ap.earring,'earring',0);acc(ap.earring2,'earring',1);
- if(o.gfx.length||o.gbolts.length||o.gring||o.gring2)GEARS.add(o);
+ if(o.gfx.length||o.gbolts.length||o.gring||o.gring2||o.gcape)GEARS.add(o);
 }
 let gearT=0;
 function updateGear(now){
@@ -1172,6 +1190,7 @@ function updateGear(now){
  for(const o of GEARS){
   const near=!o.root||Math.hypot(o.root.position.x-ct.x,o.root.position.z-ct.z)<24;
   for(const ps of o.gfx){if(near&&!ps.isStarted())ps.start();else if(!near&&ps.isStarted())ps.stop();}
+  if(o.gcape&&near)for(const h of o.gcape)h.rotation.x=h._base+.05*Math.sin(now*.003+h._ph);
   if(o.gring)o.gring.rotation.y=now*.002,o.gring.scaling.setAll(1+.06*Math.sin(now*.004));
   if(o.gring2)o.gring2.scaling.setAll(1+.1*Math.sin(now*.006));
   if(near&&now-gearT>90)for(const b of o.gbolts){const pts=[b.a.clone()];for(let i=1;i<b.n;i++){const t=i/b.n,p=b.a.add(b.b.subtract(b.a).scale(t));pts.push(p.add(new V3((Math.random()-.5)*b.spread,(Math.random()-.5)*b.spread,(Math.random()-.5)*b.spread)));}pts.push(b.b.add(new V3((Math.random()-.5)*b.spread,(Math.random()-.5)*b.spread*.6,0)));B.CreateLines(null,{points:pts,instance:b.line});b.line.visibility=Math.random()<.35?0:1;}
@@ -1837,7 +1856,7 @@ function useItem(i){
 }
 function renderChar(){
  const d=D(),C=CLASSES[S.cls];
- let h='<div id="eqGrid">'+(()=>{const r1=['helmet','weapon','shield','armor','boots'].filter(s=>s!=='shield'||S.cls==='cavaleiro'||S.eq.shield);while(r1.length<6)r1.push(null);return r1.concat(['ring','ring2','bracelet','bracelet2','earring','earring2']);})().map(s=>{if(!s)return '<div></div>';const it=S.eq[s];return `<div class="eqs"><div class="slot" data-eq="${s}" data-unequip="${s}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.plus?`<span class="pl">+${it.plus}</span>`:''):`<span style="opacity:.3">${SLOT_ICON[s]}</span>`}</div><small>${SLOTS[RULES.keyBase(s)]}${s.endsWith('2')?' 2':''}</small></div>`;}).join('')+'</div>';
+ let h='<div id="eqGrid">'+(()=>{const r1=['helmet','weapon','shield','armor','boots'].filter(s=>s!=='shield'||S.cls==='cavaleiro'||S.eq.shield);r1.push('cape');while(r1.length<6)r1.push(null);return r1.concat(['ring','ring2','bracelet','bracelet2','earring','earring2']);})().map(s=>{if(!s)return '<div></div>';const it=S.eq[s];return `<div class="eqs"><div class="slot" data-eq="${s}" data-unequip="${s}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.plus?`<span class="pl">+${it.plus}</span>`:''):`<span style="opacity:.3">${SLOT_ICON[s]}</span>`}</div><small>${SLOTS[RULES.keyBase(s)]}${s.endsWith('2')?' 2':''}</small></div>`;}).join('')+'</div>';
  h+=`<div class="stat"><span>${C.i} ${C.n}</span><b>Nível ${S.level}</b></div>`;
  if(S.pts>0)h+=`<div class="stat"><span class="ok">Pontos disponíveis</span><b class="ok">${S.pts}</b></div>`;
  for(const k of['str','agi','int','vit'])h+=`<div class="stat"><span>${STN[k]}${C.main===k?' ⭐':''}</span><span><b>${d[k]}</b>${S.pts>0?`<button data-stat="${k}">+</button>`:''}</span></div>`;
@@ -1882,13 +1901,13 @@ function renderDialog(){
    const ing=Object.keys(r.ing).map(k=>`<span class="${have(k)>=r.ing[k]?'ok':'no'}">${MATS[k].i} ${MATS[k].n} ${have(k)}/${r.ing[k]}</span>`).join(' · ');
    return `<div class="row2"><div class="ri">${r.icon}</div><div class="rt"><b>${r.n}</b><small>${r.d}</small><div class="ing">${ing}</div></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${r.gold}</div><button data-act="craft" data-id="${r.id}" ${okM&&okG?'':'disabled'}>Forjar</button></div></div>`;}).join('');
  }else if(dlg.tab==='aprimorar'){
-  const list=[];for(const s in S.eq)if(S.eq[s])list.push({ref:'eq:'+s,it:S.eq[s],tip:`data-eq="${s}"`,eq:true});S.inv.forEach((it,i)=>{if(it&&it.k==='eq')list.push({ref:'inv:'+i,it,tip:`data-inv="${i}"`});});
+  const list=[];for(const s in S.eq)if(S.eq[s]&&s!=='cape')list.push({ref:'eq:'+s,it:S.eq[s],tip:`data-eq="${s}"`,eq:true});S.inv.forEach((it,i)=>{if(it&&it.k==='eq'&&it.slot!=='cape')list.push({ref:'inv:'+i,it,tip:`data-inv="${i}"`});});
   h+='<p class="muted">Chance de sucesso cai a cada nível. Falhar a partir de +5 reduz o item em 1 nível. Máximo +9.</p>';
   h+=list.length?list.map(o=>{const it=o.it,p=it.plus||0;if(p>=9)return `<div class="row2"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${nm(it)}</b><small>Nível máximo de aprimoramento</small></div></div>`;
    const c=upCost(it),ok=have('ferro')>=c.ferro&&have('essencia')>=c.essencia&&S.gold>=c.gold;
    return `<div class="row2"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${nm(it)}${o.eq?' <small style="display:inline">(equipado)</small>':''}</b><small>Chance: <b>${Math.round(upRate(p)*100)}%</b> • +${p+1}</small><div class="ing"><span class="${have('ferro')>=c.ferro?'ok':'no'}">⛏️ ${have('ferro')}/${c.ferro}</span>${c.essencia?` · <span class="${have('essencia')>=c.essencia?'ok':'no'}">✨ ${have('essencia')}/${c.essencia}</span>`:''}</div></div><div class="rb"><div class="${S.gold>=c.gold?'ok':'no'}">💰 ${c.gold}</div><button data-act="up" data-id="${o.ref}" ${ok?'':'disabled'}>Aprimorar</button></div></div>`;}).join(''):'<p class="muted">Você não tem equipamentos.</p>';
  }else if(dlg.tab==='comprar'){
-  h+=(SHOPS[n.shop||'aurora']||[]).map(o=>{const c=o.c(S);return `<div class="row2"><div class="ri">${o.i}</div><div class="rt"><b>${o.n}</b><small>${o.d}</small></div><div class="rb"><div class="${S.gold>=c?'ok':'no'}">💰 ${c}</div><button data-act="buy" data-id="${o.id}" ${S.gold>=c?'':'disabled'}>Comprar</button></div></div>`;}).join('');
+  h+=(SHOPS[n.shop||'aurora']||[]).filter(o=>!o.f||o.f(S)).map(o=>{const c=o.c(S);return `<div class="row2"><div class="ri">${o.i}</div><div class="rt"><b>${o.n}</b><small>${o.d}</small></div><div class="rb"><div class="${S.gold>=c?'ok':'no'}">💰 ${c}</div><button data-act="buy" data-id="${o.id}" ${S.gold>=c?'':'disabled'}>Comprar</button></div></div>`;}).join('');
  }else if(dlg.tab==='bau'){
   const slotH=(it,act,i,at)=>`<div class="slot" data-act="${act}" data-id="${i}" ${at}="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`;
   h+=`<div class="dsec">📦 Baú compartilhado (${ACC.stash.filter(Boolean).length}/${ACC.stash.length}) — clique para retirar</div><div class="stgrid">`+ACC.stash.map((it,i)=>slotH(it,'wd',i,'data-st')).join('')+`</div><div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid">`+S.inv.map((it,i)=>slotH(it,'dep',i,'data-inv')).join('')+'</div>';
