@@ -1,0 +1,7 @@
+ATUALIZAÇÃO 1.10 — Menu na vertical
+
+Suba apenas index.html para a RAIZ do GitHub (substituindo), aguarde o redeploy e use Ctrl+F5.
+
+- Embaixo ficam só as barras de habilidades e poções.
+- Mochila, personagem, habilidades, missões, grupo, títulos, ajuda, áudio e sair ficam em coluna na direita, logo abaixo do mapa.
+- As missões ativas aparecem à esquerda dessa coluna.
