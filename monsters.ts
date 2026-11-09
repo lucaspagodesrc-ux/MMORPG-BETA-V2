@@ -16,7 +16,7 @@ export type Sim = {
   m: Monster; T: any; zone: any; atk: number; def: number; bs: number;
   sx: number; sz: number; aggro: string | null; returning: boolean;
   atkAt: number; slowUntil: number; stunUntil: number; rootUntil: number; liftUntil: number; tauntUntil: number; slamAt: number; wanderAt: number; wx: number; wz: number; deadAt: number;
-  markUntil: number; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
+  markUntil: number; slot?: number; lastDmgAt?: number; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
   inst: number; noResp: boolean; tier: number;   // instância de dungeon (0 = mundo), sem renascimento, nível do baú
 };
 export type Hooks = {
@@ -36,6 +36,7 @@ export class MonsterSim {
       const m = new Monster();
       m.id = ++id; m.type = zone.t;
       const s: Sim = { m, T, zone, atk: 0, def: 0, bs: T.boss ? 1.6 : 1, sx: 0, sz: 0, aggro: null, returning: false, atkAt: 0, slowUntil: 0, stunUntil: 0, rootUntil: 0, liftUntil: 0, tauntUntil: 0, slamAt: 0, wanderAt: 0, wx: 0, wz: 0, deadAt: 0, markUntil: 0, contrib: new Map(), boss: !!T.boss, lastHitBy: '', inst: 0, noResp: false, tier: 0 };
+      s.slot = i;
       this.respawn(s, Date.now());
       this.list.push(s); this.byId.set(m.id, s);
       state.monsters.set(String(m.id), m);
@@ -64,8 +65,12 @@ export class MonsterSim {
     m.lvl = T.boss ? T.lv[0] : ri(T.lv[0], T.lv[1]);
     const k = m.lvl - T.lv[0];
     m.maxHp = Math.round(T.hp * (1 + k * 0.2)); m.hp = m.maxHp; s.atk = T.atk * (1 + k * 0.14); s.def = T.def * (1 + k * 0.1);
-    const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * zone.r;
-    m.x = clampX(zone.x + Math.cos(a) * r, zone.x); m.z = clampZ(zone.z + Math.sin(a) * r);
+    if (zone.grid) {                                    // campo de treino: espantalhos em grade 3x3, virados para a cidade
+      const i = s.slot || 0; m.x = zone.x + ((i % 3) - 1) * zone.grid; m.z = zone.z + (Math.floor(i / 3) - 1) * zone.grid; m.rot = Math.PI; m.lvl = 1;
+    } else {
+      const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * zone.r;
+      m.x = clampX(zone.x + Math.cos(a) * r, zone.x); m.z = clampZ(zone.z + Math.sin(a) * r);
+    }
     s.sx = m.x; s.sz = m.z; s.aggro = null; s.returning = false; s.atkAt = 0; s.slowUntil = 0; s.stunUntil = s.rootUntil = s.liftUntil = s.tauntUntil = 0; m.st = 0; s.markUntil = 0; s.slamAt = now + 6000; s.wanderAt = 0;
     s.contrib.clear();
     m.alive = true;
@@ -74,6 +79,7 @@ export class MonsterSim {
   /** Dano vindo de um jogador. Devolve true se o monstro morreu com este golpe. */
   damage(sessionId: string, s: Sim, dmg: number, slowMs: number): boolean {
     if (!s.m.alive) return false;
+    s.lastDmgAt = Date.now();
     const m = s.m, real = Math.min(dmg, m.hp);
     m.hp = Math.max(0, m.hp - dmg);
     s.contrib.set(sessionId, (s.contrib.get(sessionId) || 0) + real); s.lastHitBy = sessionId;
@@ -85,7 +91,7 @@ export class MonsterSim {
 
   /** Controle de grupo: atordoar, imobilizar, levantar e puxar. Chefes resistem (35% do tempo, sem puxar/levantar). */
   cc(s: Sim, o: any, px: number, pz: number) {
-    if (!s.m.alive || s.T.chest) return;
+    if (!s.m.alive || s.T.chest || s.T.dummy) return;
     const now = Date.now(), f = s.boss ? 0.35 : 1;
     if (o.stun) s.stunUntil = Math.max(s.stunUntil, now + o.stun * f);
     if (o.root) s.rootUntil = Math.max(s.rootUntil, now + o.root * f);
@@ -104,6 +110,10 @@ export class MonsterSim {
       const { m, T } = s;
       if (!m.alive) { if (!s.noResp && now - s.deadAt > T.resp * 1000) this.respawn(s, now); continue; }
       if (T.chest) continue;                    // baús não se movem nem atacam
+      if (T.dummy) {                            // espantalho: parado, regenera rápido depois de 1s sem apanhar
+        if (m.hp < m.maxHp && now - (s.lastDmgAt || 0) > 1000) m.hp = Math.min(m.maxHp, m.hp + m.maxHp * 0.05 * dt);
+        continue;
+      }
       const lifted = now < s.liftUntil, stunned = lifted || now < s.stunUntil, rooted = now < s.rootUntil;
       const fl = (stunned ? 1 : 0) | (rooted ? 2 : 0) | (lifted ? 4 : 0); if (m.st !== fl) m.st = fl;
       if (stunned) continue;                    // atordoado/levantado: não anda nem ataca

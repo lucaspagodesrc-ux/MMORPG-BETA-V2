@@ -761,7 +761,7 @@ for(const b of BRIDGES){const z=riverZ(b),g=new BABYLON.TransformNode('br',scene
  for(const sd of[-1,1])for(const k of[-1,1]){const xa=b+k*2.4,xb=b+k*7;fence(xa,riverZ(xa)+sd*3.3,xb,riverZ(xb)+sd*3.3);}}
 fence(-40,-28,-28,-28);fence(-40,-28,-40,-20);fence(-28,-28,-28,-20);fence(-40,-20,-35,-20);fence(-33,-20,-28,-20);RES.push({x:-34,z:-24,r:10});sign(-31.5,-18.5,'🐑 Pasto da Aldeia');
 sign(3.4,12.2,'🏰 Vila Aurora • Zona Segura');
-for(const Z of ZONES){const H=Z.x>150?SC:{x:0,z:0},rx=Z.x-H.x,rz=Z.z-H.z,d=Math.hypot(rx,rz),k=Math.max(15,d-Z.r-4)/d,T=MT[Z.t],a=T.lv[0],b=T.lv[1]||a;sign(H.x+rx*k,H.z+rz*k,`${Z.name} • Nv ${a}${b>a?'–'+b:''}`);}
+for(const Z of ZONES){const H=Z.x>150?SC:{x:0,z:0},rx=Z.x-H.x,rz=Z.z-H.z,d=Math.hypot(rx,rz),k=Math.max(15,d-Z.r-4)/d,T=MT[Z.t],a=T.lv[0],b=T.lv[1]||a;sign(H.x+rx*k,H.z+rz*k,T.dummy?Z.name:`${Z.name} • Nv ${a}${b>a?'–'+b:''}`);}
 const nearNpc=(x,z,r)=>NPCS.some(n=>Math.hypot(x-n.x,z-n.z)<r)||RES.some(q=>Math.hypot(x-q.x,z-q.z)<q.r);
 for(let i=0;i<620;i++){const x=rnd(-MAP+1,MAP-1),z=rnd(-MAP+1,MAP-1);if(Math.hypot(x,z)<TOWN_R+2||nearZone(x,z,1)||nearNpc(x,z,4.5))continue;addTree(x,z);}
 for(let i=0;i<220;i++){const x=rnd(-MAP,MAP),z=rnd(-MAP,MAP);if(Math.hypot(x,z)<TOWN_R+1.5||nearZone(x,z,0)||nearNpc(x,z,4))continue;if(Math.random()<.4)addRock(x,z);}
@@ -997,7 +997,21 @@ function buildMonster(type,id){
  const LB=c=>{LM=mkLimbs(r,Object.assign({pick:1},c));r.limbs=LM;return LM;};
  const att=(m,x,y,z,mt)=>{m.parent=LM.hR;m.position.set(x,y,z);m.material=mt;return m;};
  if(type==='slime'){add(B.CreateSphere('b',{diameter:1.3,segments:10},scene),0,.6,0,mm_.slime).scaling.y=.8;add(B.CreateSphere('e',{diameter:.14},scene),-.24,.78,.52,mm_.black);add(B.CreateSphere('e',{diameter:.14},scene),.24,.78,.52,mm_.black);}
- else if(type==='lobo'){add(B.CreateBox('b',{width:.7,height:.6,depth:1.3},scene),0,.65,0,mm_.wolf);add(B.CreateBox('h',{width:.5,height:.45,depth:.5},scene),0,.85,.8,mm_.wolf);add(B.CreateBox('s',{width:.24,height:.2,depth:.3},scene),0,.76,1.12,mm_.black);
+ else if(type==='espantalho'){
+  const wood=mat('espw','#6b4a2a'),sack=mat('espb','#c2a265'),straw=mat('esps','#e6c84a'),dark=mat('espd','#3a2a18'),blk=mat('espk','#1a1208'),pat=mat('espp','#8a5a3a');
+  add(B.CreateCylinder('post',{height:3.0,diameter:.16,tessellation:8},scene),0,1.5,0,wood);
+  add(B.CreateBox('arms',{width:2.0,height:.12,depth:.12},scene),0,1.95,0,wood);
+  add(B.CreateCylinder('torso',{height:1.1,diameterTop:.6,diameterBottom:.78,tessellation:10},scene),0,1.45,0,sack);
+  add(B.CreateBox('patch',{width:.28,height:.28,depth:.05},scene),.12,1.4,.4,pat);
+  add(B.CreateSphere('head',{diameter:.6,segments:8},scene),0,2.38,0,sack);
+  add(B.CreateCylinder('brim',{height:.05,diameter:1.0,tessellation:12},scene),0,2.62,0,dark);
+  add(B.CreateCylinder('crown',{height:.38,diameterTop:.36,diameterBottom:.5,tessellation:10},scene),0,2.82,0,dark);
+  add(B.CreateSphere('e',{diameter:.09},scene),-.12,2.42,.28,blk);add(B.CreateSphere('e',{diameter:.09},scene),.12,2.42,.28,blk);
+  add(B.CreateBox('mouth',{width:.28,height:.04,depth:.04},scene),0,2.28,.29,blk);
+  for(const sx of[-1,1]){for(let k=0;k<4;k++){const h=add(B.CreateCylinder('st',{height:.34,diameter:.04,tessellation:4},scene),sx*(1.0+.02*k),1.95-.05*k,(k-1.5)*.05,straw);h.rotation.z=Math.PI/2+(k-1.5)*.18*sx;}}
+  for(let k=0;k<6;k++){const h=add(B.CreateCylinder('st',{height:.4,diameter:.04,tessellation:4},scene),(k-2.5)*.1,.9,0,straw);h.rotation.z=(k-2.5)*.14;}
+  sr=1.1;
+ }else if(type==='lobo'){add(B.CreateBox('b',{width:.7,height:.6,depth:1.3},scene),0,.65,0,mm_.wolf);add(B.CreateBox('h',{width:.5,height:.45,depth:.5},scene),0,.85,.8,mm_.wolf);add(B.CreateBox('s',{width:.24,height:.2,depth:.3},scene),0,.76,1.12,mm_.black);
   for(const sx of[-.17,.17])add(B.CreateCylinder('ear',{height:.28,diameterTop:0,diameterBottom:.18,tessellation:4},scene),sx,1.18,.72,mm_.wolf);
   const tl=add(B.CreateBox('t',{width:.12,height:.12,depth:.6},scene),0,.85,-.85,mm_.wolf);tl.rotation.x=-.5;
   for(const sx of[-.25,.25])for(const sz of[-.45,.45])add(B.CreateBox('l',{width:.14,height:.45,depth:.14},scene),sx,.22,sz,mm_.wolf);
@@ -1073,19 +1087,27 @@ function respawn(m){
  const T=m.T;m.lvl=T.boss?T.lv[0]:ri(T.lv[0],T.lv[1]);const k=m.lvl-T.lv[0];
  m.maxHp=Math.round(T.hp*(1+k*.2));m.hp=m.maxHp;m.atk=T.atk*(1+k*.14);m.def=T.def*(1+k*.1);
  m.alive=true;m.dying=false;m.aggro=false;m.returning=false;m.slow=0;m.atkAt=0;m.hitAt=0;m.lastHit=-1e9;m.slamAt=performance.now()+6000;m.wanderAt=0;m.wt=null;m.idleAt=performance.now()+rnd(2000,14000);
- const a=Math.random()*6.283,r=Math.sqrt(Math.random())*m.zone.r;
- m.pos.set(m.zone.x+Math.cos(a)*r,0,m.zone.z+Math.sin(a)*r);collide(m.pos,.7);m.spawn={x:m.pos.x,z:m.pos.z};
+ if(m.zone.grid){const g=m.zone.grid,i=m.slot||0;m.pos.set(m.zone.x+((i%3)-1)*g,0,m.zone.z+(Math.floor(i/3)-1)*g);m.root.rotation.y=Math.PI;m.spawn={x:m.pos.x,z:m.pos.z};}
+ else{const a=Math.random()*6.283,r=Math.sqrt(Math.random())*m.zone.r;
+ m.pos.set(m.zone.x+Math.cos(a)*r,0,m.zone.z+Math.sin(a)*r);collide(m.pos,.7);m.spawn={x:m.pos.x,z:m.pos.z};}
  m.root.scaling.setAll(m.bs);m.root.setEnabled(true);
- m.pn.innerHTML=`${T.n} <span>Nv ${m.lvl}</span>`;m.pf.style.width='100%';
+ m.pn.innerHTML=T.dummy?T.n:`${T.n} <span>Nv ${m.lvl}</span>`;m.pf.style.width='100%';
 }
-function spawnMonster(zone){
+function spawnMonster(zone,slot){
  const T=MT[zone.t];const id=++mid;const root=buildMonster(zone.t,id);
- const m={id,type:zone.t,T,zone,root,pos:root.position,bs:T.boss?1.6:1,alive:false,plate:null};
+ const m={id,type:zone.t,T,zone,slot,root,pos:root.position,bs:T.boss?1.6:1,alive:false,plate:null};
  root.getChildMeshes().forEach(c=>{if(c.isPickable!==false)c.metadata={t:'m',ref:m};});
  m.plate=mkLabel('<div class="pn"></div><div class="pb"><i></i></div>','plate');m.pn=m.plate.querySelector('.pn');m.pf=m.plate.querySelector('i');
  respawn(m);monsters.push(m);
 }
-ZONES.forEach(z=>{for(let i=0;i<z.n;i++)spawnMonster(z);});
+ZONES.forEach(z=>{for(let i=0;i<z.n;i++)spawnMonster(z,i);});
+for(const Z of ZONES){if(Z.t!=='espantalho')continue;   // campo de treino: cerca de madeira (lado da cidade aberto) + chão de terra
+ const h=Z.r+1.4,wm=mat('fcw'+Z.x,'#7a5a34'),post=(x,z)=>{const p=staticMesh(B.CreateCylinder('fp',{height:1.2,diameter:.22,tessellation:6},scene));p.position.set(x,.6,z);p.material=wm;obstacles.push({x,z,r:.25});};
+ const rail=(x1,z1,x2,z2)=>{for(const y of[.45,.9]){const d=Math.hypot(x2-x1,z2-z1),b=staticMesh(B.CreateBox('fr',{width:.1,height:.1,depth:d},scene));b.position.set((x1+x2)/2,y,(z1+z2)/2);b.rotation.y=Math.atan2(x2-x1,z2-z1);b.material=wm;}};
+ const N=Math.round(2*h/2.4);
+ for(let k=0;k<=N;k++){const t=-h+2*h*k/N;post(Z.x-h,Z.z+t);post(Z.x+h,Z.z+t);if(k>0){const t0=-h+2*h*(k-1)/N;rail(Z.x-h,Z.z+t0,Z.x-h,Z.z+t);rail(Z.x+h,Z.z+t0,Z.x+h,Z.z+t);}}
+ for(let k=0;k<=N;k++){const t=-h+2*h*k/N;if(k>0&&k<N)post(Z.x+t,Z.z+h);if(k>0){const t0=-h+2*h*(k-1)/N;rail(Z.x+t0,Z.z+h,Z.x+t,Z.z+h);}}
+}
 
 /* =================== PLAYER MODEL =================== */
 function buildModel(cls,o){
@@ -1889,7 +1911,8 @@ function playerHit(m,mult,opts){
  if(m.hp<=0)killMonster(m);
 }
 function killMonster(m){
- m.alive=false;m.dying=true;m.deadAt=performance.now();S.kills++;AUD.mon(m.type,'death',spat(m.pos,m.T.boss?45:28));
+ m.alive=false;m.dying=true;m.deadAt=performance.now();if(!m.T.dummy)S.kills++;AUD.mon(m.type,'death',spat(m.pos,m.T.boss?45:28));
+ if(m.T.dummy){if(P.sel===m)selectMonster(null);if(P.atkTarget===m)P.atkTarget=null;m.plate.style.display='none';return;}
  const T=m.T,xp=RULES.xpFor(T,m.lvl,S.level);
  logMsg(`<span style="color:#ffd27a">${T.n} Nv ${m.lvl} derrotado! +${xp} XP</span>`);
  dropLoot(m);if(RULES.gainXp(S,xp))levelFx(S.level);
@@ -2044,7 +2067,7 @@ function usePot(kind){
 
 /* =================== IA DOS MONSTROS =================== */
 /* Monstros compartilhados: a posição, a vida e o estado vêm do servidor; aqui só se desenha. */
-const plateTxt=m=>m.T.chest?`${m.T.n}`:`${m.T.n} <span>Nv ${m.lvl}</span>`+((m.stv&4)?' ⏫':(m.stv&1)?' 💫':'')+((m.stv&2)?' ⛓️':'');
+const plateTxt=m=>(m.T.chest||m.T.dummy)?`${m.T.n}`:`${m.T.n} <span>Nv ${m.lvl}</span>`+((m.stv&4)?' ⏫':(m.stv&1)?' 💫':'')+((m.stv&2)?' ⛓️':'');
 function syncMon(m,sm,dt,now){
  const p=m.pos,T=m.T;
  if(sm.alive&&!m.alive){m.alive=true;m.dying=false;m.root.setEnabled(true);m.root.scaling.setAll(m.bs);p.set(sm.x,0,sm.z);m.lvl=sm.lvl;m.pn.innerHTML=plateTxt(m);m.hp=sm.hp;m.maxHp=sm.maxHp;}
@@ -2096,6 +2119,7 @@ function updateMonsters(dt,now){
    if(now-m.deadAt>T.resp*1000)respawn(m);
    continue;
   }
+  if(T.dummy){if(now-(m.lastHit||-1e9)>1000&&m.hp<m.maxHp){m.hp=Math.min(m.maxHp,m.hp+m.maxHp*.05*dt);m.pf.style.width=(m.hp/m.maxHp*100)+'%';}continue;}
   const dP=P.dead?1e9:hyp(p,pp),dS=hyp(p,m.spawn);
   if(!m.aggro&&!m.returning&&now>m.idleAt){m.idleAt=now+rnd(7000,18000);if(dP<24)AUD.mon(m.type,'idle',spat(p));}   // som ambiente da criatura
   if(!m.aggro&&!m.returning&&!safe&&!P.dead&&dP<T.aggro){m.aggro=true;AUD.mon(m.type,'aggro',spat(p,T.boss?45:28));}
@@ -2181,7 +2205,7 @@ function regen(dt,now){
 const mouse={x:0,y:0,on:false};let held=false,lastMoveSet=0;
 function pickAt(x,y){const p=scene.pick(x,y,mesh=>mesh===ground||mesh===ground2||mesh===DG.ground||!!mesh.metadata);if(!p||!p.hit)return null;const md=p.pickedMesh.metadata;return {md:md&&md.t?md:null,point:p.pickedPoint};}
 function selectMonster(m){P.sel=m&&m.alive?m:null;updateTarget();}
-function updateTarget(){const t=$('target'),m=P.sel;if(m&&m.alive){t.style.display='block';$('targetName').innerHTML=`${m.T.n} <span style="color:#ffd27a">Nv ${m.lvl}</span>`;$('targetFill').style.width=(m.hp/m.maxHp*100)+'%';m.pf.style.width=(m.hp/m.maxHp*100)+'%';}else t.style.display='none';}
+function updateTarget(){const t=$('target'),m=P.sel;if(m&&m.alive){t.style.display='block';$('targetName').innerHTML=m.T.dummy?`${m.T.n} <span style="color:#ffd27a">🎯 Treino</span>`:`${m.T.n} <span style="color:#ffd27a">Nv ${m.lvl}</span>`;$('targetFill').style.width=(m.hp/m.maxHp*100)+'%';m.pf.style.width=(m.hp/m.maxHp*100)+'%';}else t.style.display='none';}
 function clickMark(pt){ring(pt.x,pt.z,.7,'#ffffff',350,.12);}
 canvas.addEventListener('pointerdown',e=>{
  $('pmenu').style.display='none';

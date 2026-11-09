@@ -134,6 +134,7 @@ const MT={
  lobo:{n:'Lobo Cinzento',lv:[4,6],hp:110,atk:11,def:4,spd:3.2,xp:60,gold:[4,8],aggro:8,rng:1.9,atkInt:1300,resp:12,leash:18,h:1.8,mats:{couro:0.468,erva:0.170,essencia:0.043},eq:0.060,pot:0.048},
  goblin:{n:'Goblin Saqueador',lv:[7,9],hp:200,atk:18,def:10,spd:2.9,xp:138,gold:[7,17],aggro:8,rng:1.8,atkInt:1400,resp:13,leash:18,h:2.4,mats:{ferro:0.425,couro:0.212,essencia:0.060},eq:0.084,pot:0.060},
  esqueleto:{n:'Esqueleto Amaldiçoado',lv:[10,12],hp:330,atk:28,def:18,spd:2.6,xp:236,gold:[15,33],aggro:8,rng:1.9,atkInt:1500,resp:14,leash:18,h:2.6,mats:{osso:0.468,ferro:0.255,essencia:0.085},eq:0.108,pot:0.060},
+ espantalho:{n:'Espantalho de Treino',lv:[1,1],hp:3000000,atk:0,def:0,spd:0,xp:0,gold:[0,0],aggro:0,rng:0,atkInt:99999,resp:.4,leash:1,h:2.9,dummy:true,mats:{},eq:0,pot:0},
  golem:{n:'Golem Ancião',lv:[15,15],hp:3200,atk:62,def:35,spd:2.0,xp:4259,gold:[180,300],aggro:9,rng:3.0,atkInt:1800,resp:150,leash:20,h:5.2,boss:true,mats:{nucleo:1,ferro:1,essencia:1},matMax:3,eq:1,pot:1,rb:3},
  aranha:{n:'Aranha Gigante',lv:[13,15],hp:520,atk:40,def:24,spd:3.4,xp:347,gold:[24,54],aggro:8,rng:1.9,atkInt:1200,resp:14,leash:18,h:2.0,mats:{seda:0.468,osso:0.170,essencia:0.102},eq:0.120,pot:0.060},
  orc:{n:'Orc Guerreiro',lv:[16,18],hp:900,atk:58,def:34,spd:2.9,xp:470,gold:[42,84],aggro:8,rng:2.1,atkInt:1500,resp:15,leash:18,h:3.2,mats:{presa:0.425,ferro:0.340,essencia:0.119},eq:0.132,pot:0.060},
@@ -231,7 +232,9 @@ const ZONES=[
  {t:'chacal',x:300,z:-52,r:10,n:9,col:'#4a3a5a',name:'Ruínas dos Chacais'},
  {t:'sacerdote',x:352,z:-52,r:10,n:9,col:'#6a4a7a',name:'Templo Proibido'},
  {t:'colosso',x:242,z:-52,r:4,n:1,col:'#2a2024',name:'Cânion do Colosso'},
- {t:'farao',x:300,z:58,r:5,n:1,col:'#8a6a1a',name:'Pirâmide do Faraó'}];
+ {t:'farao',x:300,z:58,r:5,n:1,col:'#8a6a1a',name:'Pirâmide do Faraó'},
+ {t:'espantalho',x:0,z:25,r:7,n:9,grid:4,col:'#8a7440',name:'🌾 Campo de Treino de Vila Aurora'},
+ {t:'espantalho',x:300,z:28,r:7,n:9,grid:4,col:'#a08a4a',name:'🌾 Campo de Treino de Solara'}];
 
 const Q=(id,npc,t,d,tg,qty,rec,xp,gold,x)=>({id,npc,t,d,tg,qty,rec,rw:{xp:Math.max(20,Math.round(xpNeed(rec)*(qty===1?1:.025*qty+.05))),gold:Math.round(gold*.6),...(x||{})}});
 const E=(slot,ilvl,rar)=>({eq:{slot,ilvl,rar}});

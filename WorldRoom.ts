@@ -127,6 +127,7 @@ export class WorldRoom extends Room<WorldState> {
   private later(ms: number, fn: () => void) { setTimeout(() => { try { fn(); } catch (e) { console.error(e); } }, ms); }
 
   private onKill(sim: Sim) {
+    if (sim.T.dummy) return;                                    // espantalho de treino: sem XP, drop ou missão
     const T = sim.T, mlvl = sim.m.lvl, mx = sim.m.x, mz = sim.m.z;
     if (T.chest) { this.dg.onKill(sim); return; }          // baú de dungeon: o prêmio é entregue pela instância
     let total = 0; sim.contrib.forEach((v) => (total += v));

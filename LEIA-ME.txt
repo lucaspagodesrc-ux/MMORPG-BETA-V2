@@ -1,15 +1,14 @@
-Versão 1.20 - Assassino: novas habilidades
-Requer as versões anteriores (até 1.19) já instaladas.
+Versão 1.21 - Campo de espantalhos
+Requer as versões anteriores (até 1.20) já instaladas.
 
 COMO INSTALAR
-1. Envie index.html, rules.js, WorldRoom.ts e monsters.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
+1. Envie index.html, rules.js, monsters.ts e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
 2. Aguarde o Render terminar o redeploy.
 3. No navegador, Ctrl+F5.
 
 O QUE MUDOU
-- Corte Rápido: mantém o efeito; agora os dois braços golpeiam.
-- Chuva de Adagas: leque (semi arco) de 1 adaga (nv.1) até 5 (nv. máx.), dano em área. Ficam presas no chão por 2s e voltam ao personagem (dano na volta também). Usar a habilidade de novo com elas presas chama-as de volta na hora.
-- Dança das Lâminas: o personagem gira durante a habilidade.
-- Marca da Morte: não causa mais dano, só marca o monstro (+35% de dano recebido por 6s).
-- Manto Fumaça (substitui Execução Rápida): personagem semi transparente, manto branco + fumaça, +40% de velocidade e invisível para os monstros por 10s. Sem dano.
-- Estrela Sombria (substitui Tempestade Sombria): pula em até 5 monstros em sequência causando dano e desenhando uma estrela negra no chão. Recarga 20s.
+- Um "Campo de Treino" com 9 espantalhos (grade 3x3, cercado) ao sul de Vila Aurora e outro ao sul do Oásis de Solara.
+- Espantalho: 3.000.000 de HP, não ataca, não anda, não dá XP/drop/missão.
+- A vida só começa a regenerar 1s depois do último golpe, a 5% do total por segundo.
+- Ao morrer renasce em 0,4s no mesmo lugar.
+Ajustes: HP em _data.js (hp do 'espantalho'); regeneração em monsters.ts (0.05 e 1000 ms).
