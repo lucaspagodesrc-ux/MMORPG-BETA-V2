@@ -1,0 +1,11 @@
+ATUALIZAÇÃO 1.6 — Capas: tecido fluido, 3 estilos e lojas completas
+
+Suba index.html e rules.js para a RAIZ do GitHub (substituindo), aguarde o redeploy e use Ctrl+F5.
+
+- Capas agora são de TECIDO que ondula e abre para trás quando o personagem corre (sem o "bloco de madeira").
+- Dragonas (ombreiras com franjas) nos ombros, onde a capa se prende.
+- Capa vermelha: Tanque, Guerreiro e Cavaleiro Pesado.
+- Estola azul fina (cachecol): Arqueiro, Mago e Pierrot.
+- Manto encapuzado (capuz arredondado): Assassino.
+- Lojas (Aurora 50.000 • Solara 75.000) vendem os 3 estilos.
+- Capas antigas de Arqueiro/Pierrot (vermelhas) não servem mais: elas agora usam a estola azul.

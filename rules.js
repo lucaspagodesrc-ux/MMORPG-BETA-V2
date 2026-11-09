@@ -26,6 +26,7 @@ const HN=['Capuz de Pano','Elmo de Couro','Elmo de Ferro','Elmo de Aço','Elmo R
 const BN=['Sandálias','Botas de Couro','Botas de Ferro','Botas de Aço','Botas Rúnicas','Botas Abissais','Botas Dracônicas'];
 const RN=['Anel de Cobre','Anel de Prata','Anel de Ouro','Anel de Rubi','Anel Rúnico','Anel Abissal','Anel Dracônico'];
 const CPN=['Capa de Pano','Capa de Viajante','Capa de Couro','Capa de Combate','Capa Rúnica','Capa Abissal','Capa Dracônica'],CMN=['Estola de Linho','Estola de Seda','Estola Encantada','Estola Arcana','Estola Rúnica','Estola Abissal','Estola Dracônica'];
+const CAN=['Manto de Pano','Manto de Viajante','Manto de Couro','Manto Sombrio','Manto Rúnico','Manto Abissal','Manto Dracônico'],XCA=['Manto Solar','Manto Faraônico','Manto Imortal'];
 const XCP=['Capa Solar','Capa Faraônica','Capa Imortal'],XCM=['Estola Solar','Estola Faraônica','Estola Imortal'];
 const BRN=['Pulseira de Couro','Bracelete de Cobre','Bracelete de Prata','Bracelete de Ouro','Bracelete Rúnico','Bracelete Abissal','Bracelete Dracônico'];
 const ERN=['Brinco de Osso','Brinco de Cobre','Brinco de Prata','Brinco de Ouro','Brinco Rúnico','Brinco Abissal','Brinco Dracônico'];
@@ -363,17 +364,20 @@ const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boo
 const originFor = ilvl => { const c = Object.keys(MT).filter(k => OG[k] && !k.startsWith('dg_') && MT[k].lv[0] <= ilvl + 4 && MT[k].lv[1] >= ilvl - 8); return c.length ? pick(c) : undefined; };
 
 /** Capas: sem raridade, atributos fixos. 'm' = estola azul (magos), 'p' = capa vermelha (físicos). */
-const isMag = cls => !!CLASSES[cls] && CLASSES[cls].main === 'int';
+/** Estilo da capa de cada classe: p = capa vermelha (físico), m = estola azul (mágico), a = manto encapuzado (assassino). */
+const capeKind = cls => cls === 'assassino' ? 'a' : (cls === 'mago' || cls === 'arqueiro' || cls === 'pierrot') ? 'm' : 'p';
+const isMag = cls => capeKind(cls) === 'm';
+const CAPEWHO = { p: 'Tanque, Guerreiro e Cavaleiro Pesado', m: 'Arqueiro, Mago e Pierrot', a: 'Assassino' };
 function capeStats(it) {
-  const m = it.cs === 'm', L = it.ilvl;
-  it.rar = 0; it.plus = 0; it.atk = 0; it.def = Math.round(1 + L * (m ? .25 : .5)); it.hp = Math.round(L * (m ? 3 : 4));
-  it.bon = m ? { int: Math.max(1, Math.round(L / 5)), agi: Math.max(1, Math.round(L / 10)), vit: Math.max(1, Math.round(L / 10)) } : { str: Math.max(1, Math.round(L / 6)), agi: Math.max(1, Math.round(L / 8)), vit: Math.max(1, Math.round(L / 10)) };
-  it.icon = m ? '🧣' : '🧥'; delete it.sl; delete it.mo; return it;
+  const m = it.cs === 'm', a = it.cs === 'a', L = it.ilvl;
+  it.rar = 0; it.plus = 0; it.atk = 0; it.def = Math.round(1 + L * (m ? .25 : a ? .35 : .5)); it.hp = Math.round(L * (m ? 3 : a ? 3.5 : 4));
+  it.bon = a ? { agi: Math.max(1, Math.round(L / 5)), str: Math.max(1, Math.round(L / 9)), vit: Math.max(1, Math.round(L / 10)) } : m ? { int: Math.max(1, Math.round(L / 5)), agi: Math.max(1, Math.round(L / 10)), vit: Math.max(1, Math.round(L / 10)) } : { str: Math.max(1, Math.round(L / 6)), agi: Math.max(1, Math.round(L / 8)), vit: Math.max(1, Math.round(L / 10)) };
+  it.icon = m ? '🧣' : a ? '🥷' : '🧥'; delete it.sl; delete it.mo; return it;
 }
 function genCape(ilvl, cls, name) {
-  ilvl = Math.max(1, Math.min(80, Math.floor(ilvl))); const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), m = isMag(cls);
-  const it = { k: 'eq', slot: 'cape', ilvl, rar: 0, req: Math.max(1, ilvl - 1), plus: 0, cs: m ? 'm' : 'p', hp: 0, atk: 0, def: 0, bon: {} };
-  it.name = tier > 6 ? (m ? XCM : XCP)[tier - 7] : (m ? CMN : CPN)[tier]; if (name) it.name = name; return capeStats(it);
+  ilvl = Math.max(1, Math.min(80, Math.floor(ilvl))); const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), kind = capeKind(cls), m = kind === 'm';
+  const it = { k: 'eq', slot: 'cape', ilvl, rar: 0, req: Math.max(1, ilvl - 1), plus: 0, cs: kind, hp: 0, atk: 0, def: 0, bon: {} };
+  it.name = kind === 'a' ? (tier > 6 ? XCA[tier - 7] : CAN[tier]) : tier > 6 ? (m ? XCM : XCP)[tier - 7] : (m ? CMN : CPN)[tier]; if (name) it.name = name; return capeStats(it);
 }
 function rarRoll(b) { b = b || 0; const r = Math.random(), k = 1 + b; if (r < .02 * k) return 3; if (r < .12 * k) return 2; if (r < .4 + .05 * b) return 1; return 0; }
 /** Gera um equipamento. `cls` fixa a classe da arma; sem ela, 70% de chance de ser da classe do dono (`owner`). */
@@ -402,12 +406,14 @@ const SHOPS = {
     { id: 'hp', i: '🧪', n: 'Poção de Vida', d: 'Recupera 40% da vida', c: () => 25, mk: () => ({ k: 'pot', id: 'hp', n: 1 }) },
     { id: 'mp', i: '🔷', n: 'Poção de Mana', d: 'Recupera 40% da mana', c: () => 25, mk: () => ({ k: 'pot', id: 'mp', n: 1 }) },
     { id: 'hp5', i: '🧪', n: 'Poção de Vida ×5', d: 'Pacote econômico', c: () => 110, mk: () => ({ k: 'pot', id: 'hp', n: 5 }) },
-    { id: 'capa', i: '🧥', n: 'Capa do Aventureiro (Nv 32)', d: 'Capa vermelha para ataque físico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, f: c => !isMag(c.cls), mk: () => genCape(32, 'guerreiro', 'Capa do Aventureiro') },
-    { id: 'estola', i: '🧣', n: 'Estola do Aventureiro (Nv 32)', d: 'Estola azul fina para ataque mágico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, f: c => isMag(c.cls), mk: () => genCape(32, 'mago', 'Estola do Aventureiro') },
+    { id: 'capa', i: '🧥', n: 'Capa do Aventureiro (Nv 32)', d: 'Capa vermelha — Tanque, Guerreiro e Cavaleiro Pesado. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, mk: () => genCape(32, 'guerreiro', 'Capa do Aventureiro') },
+    { id: 'estola', i: '🧣', n: 'Estola do Aventureiro (Nv 32)', d: 'Estola azul fina — Arqueiro, Mago e Pierrot. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, mk: () => genCape(32, 'mago', 'Estola do Aventureiro') },
+    { id: 'manto', i: '🥷', n: 'Manto do Aventureiro (Nv 32)', d: 'Manto encapuzado — só para o Assassino. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, mk: () => genCape(32, 'assassino', 'Manto do Aventureiro') },
     { id: 'box', i: '🎁', n: 'Caixa de Equipamento', d: 'Item aleatório do seu nível. Pode vir raro ou épico!', c: c => 200 + c.level * 25, box: 1, mk: c => genItem(pick(slotPool(c.cls)), Math.max(1, c.level + ri(0, 1)), rarRoll(.5), undefined, c.cls, 0, true) }],
   solara: [
-    { id: 'capa2', i: '🧥', n: 'Capa Solar (Nv 64)', d: 'Capa vermelha para ataque físico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, f: c => !isMag(c.cls), mk: () => genCape(64, 'guerreiro') },
-    { id: 'estola2', i: '🧣', n: 'Estola Solar (Nv 64)', d: 'Estola azul fina para ataque mágico. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, f: c => isMag(c.cls), mk: () => genCape(64, 'mago') },
+    { id: 'capa2', i: '🧥', n: 'Capa Solar (Nv 64)', d: 'Capa vermelha — Tanque, Guerreiro e Cavaleiro Pesado. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, mk: () => genCape(64, 'guerreiro') },
+    { id: 'estola2', i: '🧣', n: 'Estola Solar (Nv 64)', d: 'Estola azul fina — Arqueiro, Mago e Pierrot. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, mk: () => genCape(64, 'mago') },
+    { id: 'manto2', i: '🥷', n: 'Manto Solar (Nv 64)', d: 'Manto encapuzado — só para o Assassino. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, mk: () => genCape(64, 'assassino') },
     { id: 'hp2', i: '🍷', n: 'Poção de Vida Superior', d: 'Recupera 70% da vida', c: () => 90, mk: () => ({ k: 'pot', id: 'hp2', n: 1 }) },
     { id: 'mp2', i: '💧', n: 'Poção de Mana Superior', d: 'Recupera 70% da mana', c: () => 90, mk: () => ({ k: 'pot', id: 'mp2', n: 1 }) },
     { id: 'hp2x5', i: '🍷', n: 'Poção de Vida Superior ×5', d: 'Pacote do deserto', c: () => 400, mk: () => ({ k: 'pot', id: 'hp2', n: 5 }) },
@@ -599,7 +605,7 @@ function cleanItem(it) {
   if (typeof it.name !== 'string') it.name = SLOTS[it.slot];
   it.name = it.name.slice(0, 60);
   if (it.slot === 'weapon' && !CLASSES[it.cls]) return null;
-  if (it.slot === 'cape') { it.cs = it.cs === 'm' ? 'm' : 'p'; capeStats(it); }
+  if (it.slot === 'cape') { it.cs = it.cs === 'm' || it.cs === 'a' ? it.cs : 'p'; capeStats(it); }
   return it;
 }
 /** Atualiza personagens antigos para as regras atuais. Nunca apaga o personagem: só corrige/ajusta. */
@@ -647,7 +653,7 @@ function act(sess, m, ctx) {
     if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'eq') return fail();
     if (c.level < it.req) return fail('Nível ' + it.req + ' necessário');
     if (it.cls && it.cls !== c.cls) return fail('Item de outra classe');
-    if (it.slot === 'cape' && (it.cs === 'm') !== isMag(c.cls)) return fail(it.cs === 'm' ? 'Estola azul: só para classes de ataque mágico' : 'Capa vermelha: só para classes de ataque físico');
+    if (it.slot === 'cape' && it.cs !== capeKind(c.cls)) return fail((it.cs === 'm' ? 'Estola azul' : it.cs === 'a' ? 'Manto encapuzado' : 'Capa vermelha') + ': só para ' + CAPEWHO[it.cs]);
     const key = eqKey(c, it, m.key); const old = c.eq[key]; c.eq[key] = it; c.inv[m.i] = old || null; F('equip'); T('Equipado: ' + nm(it)); return done();
   }
   if (t === 'unequip') {
@@ -755,7 +761,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

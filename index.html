@@ -637,16 +637,16 @@ const addBuff=(n,val,dur)=>{P.buffs[n]={val,until:performance.now()+dur*1000};};
 const rarRoll=RULES.rarRoll;
 const genItem=(slot,ilvl,rar,cls)=>RULES.genItem(slot,ilvl,rar,cls,S&&S.cls);
 const ico=it=>it.k==='eq'?(it.plus?`<span class="ig${it.plus>=7?' hi':''}" style="--gp:${it.plus};--gc:${(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?MATS[it.id].i:it.k==='pot'?POTS[it.id].i:'💰';
-const col=it=>it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':'#e0483f'):RAR[it.rar].c):'#455568';
+const col=it=>it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):RAR[it.rar].c):'#455568';
 function tipOf(it){
- if(it.k==='eq'){const cape=it.slot==='cape',r=cape?{c:col(it),n:it.cs==='m'?'Estola mágica':'Capa física'}:RAR[it.rar];let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n}${cape?' • sem raridade':' • '+SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
+ if(it.k==='eq'){const cape=it.slot==='cape',r=cape?{c:col(it),n:it.cs==='m'?'Estola mágica':it.cs==='a'?'Manto encapuzado':'Capa física'}:RAR[it.rar];let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n}${cape?' • sem raridade':' • '+SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
   h+=`<span class="${S.level>=it.req?'':'no'}">Nível necessário: ${it.req}</span><br>`;
   if(it.mo&&OG[it.mo]){const g=OG[it.mo];h+=`<span style="color:${g.col}">◆ Origem: ${MT[it.mo].n} • ${EL[g.el].n}</span><br>`;if(it.plus>=7)h+=`<span style="color:#ffd27a">✨ Efeito ativo: ${EL[g.el].n}</span><br>`;}else if(it.plus>=7)h+=`<span style="color:#ffd27a">✨ Efeito ativo: Brilho dourado</span><br>`;
   if(it.sl)h+=`<span style="color:#7fe0ff">Slots: ${'◇ '.repeat(it.sl)}(vazios)</span><br>`;
   if(it.atk)h+=`Ataque: <b>${Math.round(eff(it,'atk'))}</b><br>`;if(it.def)h+=`Defesa: <b>${Math.round(eff(it,'def'))}</b><br>`;if(it.hp)h+=`Vida: +${it.hp}<br>`;
   for(const s in it.bon)h+=`<span class="ok">+${it.bon[s]} ${STN[s]}</span><br>`;
   if(it.cls&&it.cls!==S.cls)h+='<span class="no">Classe incompatível</span><br>';
-  if(it.slot==='cape'){h+='<span style="color:#ffd27a">✨ Brilha junto com a sua armadura</span><br>';if((it.cs==='m')!==RULES.isMag(S.cls))h+=`<span class="no">${it.cs==='m'?'Só para ataque mágico':'Só para ataque físico'}</span><br>`;}
+  if(it.slot==='cape'){h+='<span style="color:#ffd27a">✨ Brilha junto com a sua armadura</span><br>';if(it.cs!==RULES.capeKind(S.cls))h+=`<span class="no">Só para: ${RULES.CAPEWHO[it.cs]}</span><br>`;}
   return h+`<span class="muted">Venda: ${sellPrice(it)} 💰</span>`;}
  if(it.k==='mat')return `<b>${nm(it)}</b><br><span class="muted">Material de criação • ${MATS[it.id].v} 💰</span>`;
  return `<b>${nm(it)}</b><br>${POTS[it.id].d}<br><span class="muted">Use: ${it.id.startsWith('hp')?'9':'0'}</span>`;
@@ -1079,7 +1079,25 @@ const GEARS=new Set();
 function parseAp(s){const o={};if(!s)return o;for(const t of String(s).split(';')){const a=t.split('|');if(a[0])o[a[0]]={mo:a[1]||'',plus:+a[2]||0,rar:+a[3]||0};}return o;}
 function apLocal(){return S?parseAp(RULES.apOf(S)):{};}
 const gcols=w=>{const g=w.mo&&OG[w.mo];if(g)return [g.col,g.col2,g.el,g.ft];const c=w.rar>0?RAR[w.rar].c:'#b9c2cc';return [c,c,'gold',''];};
-function clearGear(o){o.gcape=null;for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
+function cmat(hex,plus){const k='cc|'+hex+'|'+plus;let g=GMATS.get(k);if(!g){const m=new BABYLON.StandardMaterial('cm'+k,scene),c=C3.FromHexString(hex);m.diffuseColor=c;m.specularColor=new C3(.2,.2,.2);m.backFaceCulling=false;m.twoSidedLighting=true;const base=c.scale(Math.max(.16,GLOW(plus)));m.emissiveColor=base;g={m,base,plus,pulse:plus>=7};GMATS.set(k,g);}return g.m;}
+/* tecido: malha de vértices animada (ondula parado e abre para trás quando o personagem corre) */
+function mkCloth(o,parent,x,y,z,w,Hh,nx,ny,mt,y0,y1,opt){
+ opt=opt||{};const pos=new Float32Array((nx+1)*(ny+1)*3),idx=[],uv=[];
+ for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)uv.push(i/nx,1-j/ny);
+ for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;idx.push(a,c,b,b,c,d);}
+ const m=new BABYLON.Mesh('cloth',scene),vd=new BABYLON.VertexData(),nrm=new Float32Array(pos.length);vd.positions=pos;vd.indices=idx;vd.uvs=uv;vd.normals=nrm;vd.applyToMesh(m,true);
+ m.parent=parent;m.position.set(x,y,z);m.material=mt;m.isPickable=false;m.alwaysSelectAsActiveMesh=true;
+ const cl={m,pos,idx,nrm,w,H:Hh,nx,ny,y0:y0||0,y1:y1===undefined?1:y1,fl:opt.fl===undefined?.2:opt.fl,amp:opt.amp||.28,ph:opt.ph===undefined?Math.PI*.7:opt.ph,sp:opt.sp||1,cv:opt.cv===undefined?.08:opt.cv};
+ (o.cloth=o.cloth||[]).push(cl);clothShape(cl,0,0);return cl;}
+function clothShape(cl,t,v){
+ const {pos,nx,ny}=cl;let k=0;
+ for(let j=0;j<=ny;j++){const f=cl.y0+(cl.y1-cl.y0)*j/ny;
+  for(let i=0;i<=nx;i++){const u=nx?i/nx*2-1:0,w1=Math.sin(t*2.3*cl.sp-f*3.2+u*1.3+cl.ph),w2=Math.sin(t*3.9*cl.sp-f*5.2+u*2.1+cl.ph*1.7);
+   pos[k++]=u*cl.w/2*(1+cl.fl*f)+f*f*.05*w2*(.4+v);
+   pos[k++]=-f*cl.H;
+   pos[k++]=-f*(.05+Math.min(.5,v*.22))+f*f*cl.amp*(.55*w1+.25*w2)*(.3+v)+u*u*cl.cv*(1-f);}}
+ BABYLON.VertexData.ComputeNormals(pos,cl.idx,cl.nrm);cl.m.updateVerticesData(BABYLON.VertexBuffer.PositionKind,pos,false,false);cl.m.updateVerticesData(BABYLON.VertexBuffer.NormalKind,cl.nrm,false,false);}
+function clearGear(o){o.cloth=null;for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
 function mkPs(o,anchor,el,rate,sc){
  const E=EL[el]||EL.gold,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.isPickable=false;em.parent=anchor;
  const ps=new BABYLON.ParticleSystem('gfx',Math.ceil(rate*1.4)+6,scene);ps.particleTexture=ptex();ps.emitter=em;sc=sc||1;
@@ -1157,22 +1175,28 @@ function applyGear(o,ap){
  if(sh){const [c1,c2]=gcols(sh),kn=o.cls==='cavaleiro';
   put(B.CreateBox('sd',{width:kn?.2:.17,height:kn?1.18:.86,depth:kn?.86:.66},scene),kn?-.62:-.5,1.0,kn?.15:.1,gmat(c1,sh.plus));
   put(B.CreateSphere('sb',{diameter:.22,segments:6},scene),kn?-.74:-.6,1.05,kn?.15:.1,gmat(c2,sh.plus));}
- // ---- capa (azul e fina para magos, vermelha e larga para classes físicas; brilho = o da armadura)
+ // ---- capa: tecido que ondula + dragonas nos ombros (p = capa vermelha, m = estola azul, a = manto com capuz)
  const cp=ap.cape;
- if(cp){const mag=RULES.isMag(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
-  const c1=mag?'#2f6fe0':'#c4302b',c2=mag?'#a8d0ff':'#f2a548',m1=gmat(c1,pl),m2=gmat(c2,pl);o.gcape=[];
-  const hinge=(x,y,z,tilt)=>{const h=new BABYLON.TransformNode('cph',scene);h.parent=g;h.position.set(x,y,z);h.rotation.x=tilt;h._base=tilt;h._ph=Math.random()*6;o.gcape.push(h);return h;};
-  if(!mag){const bz=-(.3+(A.sx>.5?.1:0)),H=A.sy-.25,h=hinge(0,A.sy-.02,bz,.12);
-   put(B.CreateBox('cb',{width:A.sx*2+.1,height:H,depth:.05},scene),0,-H/2,0,m1,h);
-   put(B.CreateBox('ct',{width:A.sx*2+.13,height:.08,depth:.07},scene),0,-H+.04,0,m2,h);
-   put(B.CreateBox('cl',{width:A.sx*2+.13,height:.07,depth:.07},scene),0,-.03,0,m2,h);
-   for(const sx of[-1,1])put(B.CreateSphere('cg',{diameter:.1,segments:6},scene),sx*A.sx*.72,A.sy+.0,bz+.34,fxMat(c2));
-   if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=h;n.position.set(0,-H,-.05);mkPs(o,n,ael,RATE(pl)*.6,1.5);}}
-  else{const bz=-.24;
-   put(B.CreateTorus('sc',{diameter:A.sx*1.5,thickness:.1,tessellation:18},scene),0,A.sy+.05,0,m1);
-   const rb=(x,z,len,w,tilt)=>{const h=hinge(x,A.sy+.04,z,tilt);put(B.CreateBox('sr',{width:w,height:len,depth:.035},scene),0,-len/2,0,m1,h);put(B.CreateBox('se',{width:w+.02,height:.07,depth:.045},scene),0,-len+.035,0,m2,h);return h;};
-   rb(-.1,bz,1.05,.13,.14);rb(.13,bz-.02,.8,.12,.18);const f=rb(.2,.42,.62,.11,-.06);
-   if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=f;n.position.set(0,-.62,0);mkPs(o,n,ael,RATE(pl)*.5,1.1);}}
+ if(cp){const kind=RULES.capeKind(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
+  const pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind],c1=pal[0],c2=pal[1];
+  const m1=cmat(c1,pl),m2=cmat(c2,pl),s1=gmat(c1,pl),s2=gmat(c2,pl),bz=-(.3+(A.sx>.5?.1:0)),pw=A.pad*(kind==='m'?1.0:1.25);
+  for(const sx of[-1,1]){const px=sx*A.sx,py=A.sy;   // dragonas
+   put(B.CreateSphere('dg',{diameter:pw,segments:8},scene),px,py+.07,0,s1).scaling.y=.45;
+   put(B.CreateTorus('dgt',{diameter:pw*.92,thickness:.045,tessellation:14},scene),px,py+.05,0,s2);
+   for(let i=0;i<4;i++)put(B.CreateCylinder('dgf',{height:.15,diameter:.035,tessellation:5},scene),px+sx*pw*.42,py-.03,(i-1.5)*.09,s2);}
+  if(kind==='m'){
+   put(B.CreateTorus('sc',{diameter:A.sx*1.5,thickness:.1,tessellation:18},scene),0,A.sy+.05,0,s1);
+   const strip=(x,z,len,w,amp,ph)=>{mkCloth(o,g,x,A.sy+.04,z,w,len,1,8,m1,0,1,{fl:.06,amp,ph,cv:0});mkCloth(o,g,x,A.sy+.04,z,w,len,1,1,m2,.93,1,{fl:.06,amp,ph,cv:0});};
+   strip(-.1,-.24,1.05,.14,.3,0);strip(.13,-.26,.8,.13,.3,1.7);strip(.2,.42,.62,.12,.14,3.1);
+   if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=g;n.position.set(0,A.sy-1,-.3);mkPs(o,n,ael,RATE(pl)*.5,1.1);}
+  }else{
+   const Hh=A.sy-(kind==='a'?.45:.22),w=A.sx*2+(kind==='a'?-.05:.12);
+   mkCloth(o,g,0,A.sy-.02,bz,w,Hh,6,9,m1,0,1,{fl:.22,amp:.3});mkCloth(o,g,0,A.sy-.02,bz,w,Hh,6,1,m2,.93,1,{fl:.22,amp:.3});mkCloth(o,g,0,A.sy-.02,bz,w,Hh,6,1,m2,0,.045,{fl:.22,amp:.3});
+   if(kind==='a'){const hr=A.hr,hd=put(B.CreateSphere('hood',{diameter:hr*2.55,segments:12},scene),0,A.hy-.02,-hr*.33,s1);hd.scaling.set(1,.95,1.05);
+    const rim=put(B.CreateTorus('hrim',{diameter:hr*1.85,thickness:.07,tessellation:20},scene),0,A.hy-.02,hr*.6,s2);rim.rotation.x=Math.PI/2;
+    mkCloth(o,g,0,A.hy-hr*.6,-hr*1.1,hr*1.9,.5,4,4,m1,0,1,{fl:.1,amp:.12,cv:.04});}
+   if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=g;n.position.set(0,A.sy-Hh,bz-.1);mkPs(o,n,ael,RATE(pl)*.6,1.5);}
+  }
  }
  // ---- acessórios
  const acc=(it,kind,idx)=>{if(!it)return;const [c1,c2,el]=gcols(it);const metal=!it.mo&&it.rar===0;const hex=it.mo?c1:(it.rar>0?c1:(kind==='bracelet'?'#cfd6dd':'#ffd24a'));const mt=gmat(hex,it.plus);
@@ -1185,7 +1209,7 @@ function applyGear(o,ap){
    if(it.plus>=7){const n=new BABYLON.TransformNode('bf2',scene);n.parent=right?o.hand:g;n.position.set(right?0:(A.lx||-.5),right?-.12:.9,right?0:.2);mkPs(o,n,el,6,.6);}}
  };
  acc(ap.ring,'ring',0);acc(ap.ring2,'ring',1);acc(ap.bracelet,'bracelet',0);acc(ap.bracelet2,'bracelet',1);acc(ap.earring,'earring',0);acc(ap.earring2,'earring',1);
- if(o.gfx.length||o.gbolts.length||o.gring||o.gring2||o.gcape)GEARS.add(o);
+ if(o.gfx.length||o.gbolts.length||o.gring||o.gring2||o.cloth)GEARS.add(o);
 }
 let gearT=0;
 function updateGear(now){
@@ -1194,7 +1218,7 @@ function updateGear(now){
  for(const o of GEARS){
   const near=!o.root||Math.hypot(o.root.position.x-ct.x,o.root.position.z-ct.z)<24;
   for(const ps of o.gfx){if(near&&!ps.isStarted())ps.start();else if(!near&&ps.isStarted())ps.stop();}
-  if(o.gcape&&near)for(const h of o.gcape)h.rotation.x=h._base+.05*Math.sin(now*.003+h._ph);
+  if(o.cloth&&near&&o.root){const dtt=now-(o._lt||now);if(dtt>=33){const lp=o._lp||o.root.position,dx=o.root.position.x-lp.x,dz=o.root.position.z-lp.z,vv=Math.min(1.6,Math.hypot(dx,dz)/(dtt/1000)/5.5);o._v=(o._v||0)+(vv-(o._v||0))*.25;o._lp={x:o.root.position.x,z:o.root.position.z};o._lt=now;for(const cl of o.cloth)clothShape(cl,now*.001,o._v);}else if(!o._lt){o._lt=now;o._lp={x:o.root.position.x,z:o.root.position.z};}}
   if(o.gring)o.gring.rotation.y=now*.002,o.gring.scaling.setAll(1+.06*Math.sin(now*.004));
   if(o.gring2)o.gring2.scaling.setAll(1+.1*Math.sin(now*.006));
   if(near&&now-gearT>90)for(const b of o.gbolts){const pts=[b.a.clone()];for(let i=1;i<b.n;i++){const t=i/b.n,p=b.a.add(b.b.subtract(b.a).scale(t));pts.push(p.add(new V3((Math.random()-.5)*b.spread,(Math.random()-.5)*b.spread,(Math.random()-.5)*b.spread)));}pts.push(b.b.add(new V3((Math.random()-.5)*b.spread,(Math.random()-.5)*b.spread*.6,0)));B.CreateLines(null,{points:pts,instance:b.line});b.line.visibility=Math.random()<.35?0:1;}
@@ -1356,7 +1380,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters}};
+if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
