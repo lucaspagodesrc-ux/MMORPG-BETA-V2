@@ -1,0 +1,11 @@
+ATUALIZAÇÃO 1.5 — Títulos e saída da dungeon
+
+Suba para a RAIZ do repositório no GitHub (substituindo): index.html, rules.js, schema.ts, WorldRoom.ts, dungeon.ts
+Aguarde o redeploy do Render e abra o jogo com Ctrl+F5.
+
+- Portal de saída no FIM da cripta: aparece ao derrotar o chefe final (o do começo continua existindo).
+- Janela de Títulos: tecla T (ou botão 🏅). Mostra conclusões de cada dungeon e o progresso.
+- Títulos da Cripta: 1x Desbravador da Cripta • 10x Saqueador de Tumbas • 50x Senhor das Areias Eternas • 100x Lenda da Cripta Esquecida.
+- "O mais brilhante": todas as peças equipadas (exceto a capa) em +10. O aprimoramento máximo agora é +10 (12% de chance de +9 para +10).
+- O título aparece acima do nome, em cor própria, para todos os jogadores.
+- Novas dungeons: basta definir "titles" e "exitZ" no cadastro dela em rules.js.

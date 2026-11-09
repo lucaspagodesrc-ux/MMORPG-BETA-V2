@@ -12,6 +12,9 @@
   .lbl{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:700;text-shadow:0 1px 3px #000,0 0 6px #000;display:none;will-change:transform}
   .lbl.npc{color:#ffe28a;font-size:13px}
   .lbl.plate{text-align:center;font-size:11px}
+  .lbl .tt{font-size:11px;font-weight:800;letter-spacing:.3px;margin-bottom:1px}.lbl .tt.br{text-shadow:0 0 6px #ffcf3a,0 0 12px #ff9a1a,0 1px 3px #000}
+  .tgrp{margin:10px 0 4px;font-weight:800;color:#ffe28a;display:flex;justify-content:space-between}
+  .trow .tn{font-weight:800}.trow.lock{opacity:.5}.trow .rb button.on{background:#2f6a3a}
   .lbl .pb{width:70px;height:6px;background:#3a2830;border:1px solid #000;border-radius:5px;margin:2px auto 0;overflow:hidden}
   .lbl .pb i{display:block;height:100%;background:#e45b65;width:100%}
   .lbl .pn span{color:#ffd27a;font-weight:600}
@@ -179,6 +182,7 @@
     <button data-win="skill" title="Habilidades (K)">📖</button>
     <button data-win="quest" title="Missões (Q)">📜</button>
     <button data-win="party" title="Grupo (G)">👥</button>
+    <button data-win="titles" title="Títulos (T)">🏅</button>
     <button data-win="help" title="Ajuda (H)">❔</button>
     <button id="btnAudio" title="Áudio: música e efeitos (M = mutar música)">🔊</button>
     <button id="btnMenu" title="Trocar personagem">🚪</button>
@@ -1289,6 +1293,8 @@ function buildDungeon(){
   obstacles.push({x:cx,z:st.z,r:1.3});o.root=r;o.pos=r.position;o.label=mkLabel(o.name,'npc');DG.objs.push(o);});
  // saída (no começo)
  const ex={id:'dg_exit',name:'🚪 Saída da Cripta',icon:'🚪',x:cx,z:-77,tabs:[],greet:'',dgexit:true};buildPortal(ex);ex.root.parent=root;DG.objs.push(ex);
+ // saída no fim (surge ao derrotar o chefe final)
+ const ez=def.exitZ!==undefined?def.exitZ:78,ex2={id:'dg_exit2',name:'🚪 Saída da Cripta',icon:'🚪',x:cx,z:ez,tabs:[],greet:'',dgexit:true,endExit:true};buildPortal(ex2);ex2.root.parent=root;ex2.root.setEnabled(false);DG.objs.push(ex2);DG.exit2=ex2;
 }
 function hideDungeon(){
  if(DG.root)DG.root.setEnabled(false);for(const o of DG.objs)o.label.style.display='none';
@@ -1316,7 +1322,8 @@ function enterDungeon(n){
 }
 document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" class="panel"><div class="dgt"><b id="dgName"></b><span id="dgTime"></span></div><div id="dgObj"></div><div id="dgBar"><i id="dgFill"></i></div></div>
 <div id="invBox" class="panel"><span id="invTxt"></span><div><button id="invOk">Aceitar</button><button id="invNo">Recusar</button></div></div>
-<div id="win-party" class="panel win"><h3><span>👥 Grupo</span><button class="x" data-close="party">✕</button></h3><div id="partyBody"></div></div>`);
+<div id="win-party" class="panel win"><h3><span>👥 Grupo</span><button class="x" data-close="party">✕</button></h3><div id="partyBody"></div></div>
+<div id="win-titles" class="panel win"><h3><span>🏅 Títulos</span><button class="x" data-close="titles">✕</button></h3><div id="titlesBody"></div></div>`);
 function updDgHud(){
  const h=$('dgHud'),m=DG.st;if(!NET.inst||!m){h.style.display='none';return;}h.style.display='block';
  const left=Math.max(0,Math.floor((m.endsAt-sharedNow())/1000)),mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
@@ -1324,7 +1331,7 @@ function updDgHud(){
  $('dgObj').innerHTML=m.done?'<span class="ok">✔ Dungeon concluída! Colete os tesouros e saia pela Saída.</span>':`<b>Etapa ${m.stage+1}/${m.total}</b> — ${m.text}${m.need?` <b style="color:${m.cur>=m.need?'#6fdc7f':'#ffd27a'}">${m.cur}/${m.need}</b>`:''}`;
  $('dgFill').style.width=(m.done?100:Math.min(100,(m.stage+(m.need?m.cur/m.need:0))/m.total*100))+'%';
 }
-function updateDungeon(){if(!NET.inst)return;for(const o of DG.objs){if(hyp(P.pos,o.pos)<16)place(o.label,o.pos,o.dgexit?5.2:5);else o.label.style.display='none';}}
+function updateDungeon(){if(!NET.inst)return;for(const o of DG.objs){if(o.endExit&&!(DG.st&&DG.st.done)){o.label.style.display='none';continue;}if(hyp(P.pos,o.pos)<16)place(o.label,o.pos,o.dgexit?5.2:5);else o.label.style.display='none';}}
 
 /* =================== GRUPO =================== */
 let PARTY=null;
@@ -1792,13 +1799,13 @@ window.addEventListener('keydown',e=>{
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){const off=AUD.toggleMusic();toast(off?'🔇 Música desligada':'🎵 Música ligada');return;}
  if(k==='b'){startRecall();return;}
- if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='h')toggleWin('help');
- else if(k==='escape'){AUDUI.panel(false);closeDialog();['inv','char','quest','skill','party','help'].forEach(w=>setWin(w,false));}
+ if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='h')toggleWin('help');
+ else if(k==='escape'){AUDUI.panel(false);closeDialog();['inv','char','quest','skill','party','titles','help'].forEach(w=>setWin(w,false));}
 });
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 /* =================== JANELAS =================== */
-const WINID={inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',help:'help'};
+const WINID={inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',titles:'win-titles',help:'help'};
 function setWin(n,show){$(WINID[n]).style.display=show?'block':'none';if(show)refreshUI();}
 function toggleWin(n){AUD.sfx('ui');setWin(n,$(WINID[n]).style.display!=='block');}
 document.addEventListener('click',e=>{
@@ -1902,8 +1909,8 @@ function renderDialog(){
    return `<div class="row2"><div class="ri">${r.icon}</div><div class="rt"><b>${r.n}</b><small>${r.d}</small><div class="ing">${ing}</div></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${r.gold}</div><button data-act="craft" data-id="${r.id}" ${okM&&okG?'':'disabled'}>Forjar</button></div></div>`;}).join('');
  }else if(dlg.tab==='aprimorar'){
   const list=[];for(const s in S.eq)if(S.eq[s]&&s!=='cape')list.push({ref:'eq:'+s,it:S.eq[s],tip:`data-eq="${s}"`,eq:true});S.inv.forEach((it,i)=>{if(it&&it.k==='eq'&&it.slot!=='cape')list.push({ref:'inv:'+i,it,tip:`data-inv="${i}"`});});
-  h+='<p class="muted">Chance de sucesso cai a cada nível. Falhar a partir de +5 reduz o item em 1 nível. Máximo +9.</p>';
-  h+=list.length?list.map(o=>{const it=o.it,p=it.plus||0;if(p>=9)return `<div class="row2"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${nm(it)}</b><small>Nível máximo de aprimoramento</small></div></div>`;
+  h+='<p class="muted">Chance de sucesso cai a cada nível. Falhar a partir de +5 reduz o item em 1 nível. Máximo +10.</p>';
+  h+=list.length?list.map(o=>{const it=o.it,p=it.plus||0;if(p>=RULES.MAXPLUS)return `<div class="row2"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${nm(it)}</b><small>Nível máximo de aprimoramento</small></div></div>`;
    const c=upCost(it),ok=have('ferro')>=c.ferro&&have('essencia')>=c.essencia&&S.gold>=c.gold;
    return `<div class="row2"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${nm(it)}${o.eq?' <small style="display:inline">(equipado)</small>':''}</b><small>Chance: <b>${Math.round(upRate(p)*100)}%</b> • +${p+1}</small><div class="ing"><span class="${have('ferro')>=c.ferro?'ok':'no'}">⛏️ ${have('ferro')}/${c.ferro}</span>${c.essencia?` · <span class="${have('essencia')>=c.essencia?'ok':'no'}">✨ ${have('essencia')}/${c.essencia}</span>`:''}</div></div><div class="rb"><div class="${S.gold>=c.gold?'ok':'no'}">💰 ${c.gold}</div><button data-act="up" data-id="${o.ref}" ${ok?'':'disabled'}>Aprimorar</button></div></div>`;}).join(''):'<p class="muted">Você não tem equipamentos.</p>';
  }else if(dlg.tab==='comprar'){
@@ -1971,6 +1978,15 @@ function updateHud(){
  $('goldText').textContent='💰 '+S.gold;$('killsText').textContent='☠ '+S.kills;
  $('ptsBtn').style.display=(S.pts>0||RULES.canSkillUp(S))?'block':'none';$('ptsBtn').textContent=S.pts>0?'⭐ Atributos disponíveis!':'⭐ Pontos de habilidade!';
 }
+function renderTitles(){
+ const L=RULES.titleList(S),cur=S.title||'',eq=cur?RULES.titleInfo(cur):null;let h=`<div class="muted" style="margin-bottom:6px">Título em uso: ${eq?`<b style="color:${eq.col}">${eq.t}</b> <button data-title="">Remover</button>`:'<b>nenhum</b>'}<br>O título aparece acima do seu nome, para todos os jogadores.</div>`,last='';
+ for(const t of L){
+  if(t.dg!==last){last=t.dg;const n=t.id==='bright'?'':` — concluída <b>${(S.dgc&&S.dgc[t.id.split(':')[0]])||0}×</b>`;h+=`<div class="tgrp"><span>${t.icon} ${t.dg}</span><span style="font-weight:600;color:#cfd8e3">${n}</span></div>`;}
+  const pct=Math.round(t.cur/t.need*100);
+  h+=`<div class="row2 trow ${t.have?'':'lock'}"><div class="ri">${t.have?'🏅':'🔒'}</div><div class="rt"><b class="tn" style="color:${t.col}">${t.t}</b><small>${t.desc} • ${t.cur}/${t.need}${t.have?' ✓':''}</small></div><div class="rb">${t.have?(cur===t.id?'<button class="on" data-title="">Em uso</button>':`<button data-title="${t.id}">Usar</button>`):`<span class="muted">${pct}%</span>`}</div></div>`;}
+ $('titlesBody').innerHTML=h;
+}
+$('titlesBody').addEventListener('click',e=>{const b=e.target.closest('[data-title]');if(b)ACT({t:'title',id:b.dataset.title});});
 function refreshUI(){
  if(!S)return;updateHud();renderTracker();
  if($('win-inv').style.display==='block')renderInv();
@@ -1978,6 +1994,7 @@ function refreshUI(){
  if($('win-quest').style.display==='block')renderQuest();
  if($('win-party').style.display==='block'&&document.activeElement.id!=='pInv')renderParty();
  if($('win-skill').style.display==='block')renderSkills();
+ if($('win-titles').style.display==='block')renderTitles();
  if(dlg)renderDialog();
  if(P.sel)updateTarget();
 }
@@ -1998,7 +2015,10 @@ function updateNpcMarkers(){
   for(const q of l){const st=S.quests[q.id];if(st&&!st.done&&st.n>=q.qty)mark='❓';}
   n.mark=mark;}
 }
+let LBL_ME=null,LBL_SIG='';
+const ttHtml=id=>{const i=id?RULES.titleInfo(id):null;return i?`<div class="tt${i.bright?' br':''}" style="color:${i.col}">${esc(i.t)}</div>`:'';};
 function updateLabels(now){
+ if(S&&P.root){if(!LBL_ME)LBL_ME=mkLabel('','plate');const sig=S.title+'|'+S.level+'|'+S.name;if(sig!==LBL_SIG){LBL_SIG=sig;LBL_ME.innerHTML=`${ttHtml(S.title)}${esc(S.name)} <span style="color:#ffd27a">Nv ${S.level}</span>`;}if(S.hp===0||P.dead)LBL_ME.style.display='none';else place(LBL_ME,P.pos,3.0);}
  for(const m of monsters){
   const show=m.alive&&(m===P.sel||m===hover||now-m.lastHit<4000||(m.T.boss&&hyp(m.pos,P.pos)<22));
   if(!show){m.plate.style.display='none';continue;}
@@ -2134,7 +2154,7 @@ async function netJoin(){
   room.onMessage('clones',m=>{const own=m.by===room.sessionId?P:remoteOf(m.by);if(!own)return;if(own!==P)own.id=m.by;spawnClones(own,own===P?S.cls:own.cls,m.n,m.dur);});
   room.onMessage('dgenter',m=>enterDungeonLocal(m));
   room.onMessage('dgleave',m=>leaveDungeonLocal(m));
-  room.onMessage('dg',m=>{DG.st=m;P.dgMaxZ=m.maxZ;DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));updDgHud();});
+  room.onMessage('dg',m=>{DG.st=m;P.dgMaxZ=m.maxZ;DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));if(DG.exit2){const was=DG.exit2.root.isEnabled(false);DG.exit2.root.setEnabled(!!m.done);if(m.done&&!was){ring(DG.exit2.pos.x,DG.exit2.pos.z,3.2,'#d4a62a',900);AUD.sfx('teleport');}}updDgHud();});
   room.onMessage('party',m=>{PARTY=m;renderParty();});
   room.onMessage('pinv',m=>showInvite(m.from));
   room.onMessage('matk',m=>remoteBasic(m));
@@ -2180,7 +2200,7 @@ function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(
   pos.y=d>.15?Math.abs(Math.sin(now*.012))*.07:0;
   if(o.hand){const sw=(now-o.swingAt)/260;if(sw<1){const melee=o.cls==='guerreiro'||o.cls==='cavaleiro'||o.cls==='assassino'||o.cls==='tanque'||o.cls==='pierrot';o.hand.rotation.x=melee?-Math.sin(sw*Math.PI)*2:-Math.sin(sw*Math.PI)*.6;}else o.hand.rotation.x=0;}
   o.root.rotation.z=p.dead?Math.PI/2:0;
-  if(o.lv!==p.level){o.lv=p.level;o.label.innerHTML=`${esc(p.name)} <span style="color:#ffd27a">Nv ${p.level}</span>`;}
+  if(o.lv!==p.level||o.tt!==p.tt){o.lv=p.level;o.tt=p.tt;o.label.innerHTML=`${ttHtml(p.tt)}${esc(p.name)} <span style="color:#ffd27a">Nv ${p.level}</span>`;}
   if(hyp(P.pos,pos)<30)place(o.label,pos,3.0);else o.label.style.display='none';});
  for(const [id,o] of NET.others)if(!seen.has(id)){killRemote(o);NET.others.delete(id);}
  if(now-NET.tm>100){NET.tm=now;room.send('move',{x:P.pos.x,z:P.pos.z});}

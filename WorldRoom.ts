@@ -51,7 +51,7 @@ export class WorldRoom extends Room<WorldState> {
     const now = Date.now(); s.tokens = Math.min(30, s.tokens + (now - s.tokT) / 1000 * 12); s.tokT = now;
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
-  private sync(s: Sess) { const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; } s.client.send("sync", { c: s.c, st: s.stash }); }
+  private sync(s: Sess) { const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
     const id = ++s.dropSeq;
@@ -323,7 +323,9 @@ export class WorldRoom extends Room<WorldState> {
     });
     this.onMessage("dgexit", (client) => {
       const s = this.S(client), p = this.state.players.get(client.sessionId); if (!s || !p || !p.inst) return;
-      const I = this.dg.insts.get(p.inst); if (I && p.z > I.def.start.z + 9) { this.res(s, [{ toast: "Vá até o portal de saída, no começo da cripta." }], false); return; }
+      const I = this.dg.insts.get(p.inst);
+      const atEnd = !!(I && I.done && I.def.exitZ !== undefined && Math.hypot(p.x - I.def.cx, p.z - I.def.exitZ) <= 14);
+      if (I && p.z > I.def.start.z + 9 && !atEnd) { this.res(s, [{ toast: I.done ? "Vá até o portal de saída, no fim da cripta." : "Vá até o portal de saída, no começo da cripta." }], false); return; }
       this.dg.leave(s, true); this.touch(s); this.sync(s);
       this.res(s, [{ log: '<span style="color:#9fe7b0">🚪 Você saiu da dungeon. Seu ingresso continua válido por <b>5 minutos</b> — volte pelo portal da cripta para continuar.</span>' }]);
       const pt = this.partyOf(s); if (pt) this.sendParty(pt);

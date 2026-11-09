@@ -57,7 +57,14 @@ export class Dungeons {
     inst.stage++; inst.cnt = 0; inst.talked = false;
     if (inst.stage >= inst.def.stages.length) {
       inst.done = true; inst.endsAt = Math.min(inst.endsAt, Date.now() + 10 * 60_000);
-      this.say(inst, `<span style="color:#ffd24a">🏆 Dungeon concluída! A cripta se fecha em 10 minutos — colete seus tesouros e saia pelo portal.</span>`);
+      this.say(inst, `<span style="color:#ffd24a">🏆 Dungeon concluída! Um portal de saída surgiu no fim da cripta. Ela se fecha em 10 minutos — colete seus tesouros e saia.</span>`);
+      for (const sid of inst.members) {                                  // contagem de conclusões e títulos
+        const s = this.h.sess.get(sid); if (!s) continue;
+        const nw = R.dgDone(s.c, inst.def), out: any[] = [{ sfx: "rare" }];
+        out.push({ log: `<span style="color:#9fe7b0">📜 Conclusões de ${inst.def.name}: <b>${s.c.dgc[inst.def.id]}</b></span>` });
+        for (const t of nw) out.push({ toast: "🏅 Novo título: " + t.t }, { log: `<span style="color:${t.col}">🏅 Título conquistado: <b>${t.t}</b> — abra a janela de títulos com <b>T</b>.</span>` });
+        this.h.touch(s); this.h.sync(s); this.h.res(s, out);
+      }
     } else this.say(inst, `<span style="color:#9fe7b0">🚪 O portão se abriu! Avance pela cripta.</span>`);
     this.sendState(inst);
   }

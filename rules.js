@@ -166,7 +166,8 @@ Object.assign(MT, {
 const DUNGEONS=[{
   id:'cripta', name:'Cripta das Areias Esquecidas', icon:'🏺', minLevel:50, price:50000, time:2400, ilvl:[52,58], cx:600, grace:300,
   desc:'Um corredor de tumbas habitado por guardiões amaldiçoados. 2 sub-chefes, 1 chefe final e 3 baús de tesouro. Itens com SLOTS caem aqui. Tempo limite: 40 min.',
-  start:{x:600,z:-72},
+  start:{x:600,z:-72}, exitZ:78,
+  titles:{1:'Desbravador da Cripta',10:'Saqueador de Tumbas',50:'Senhor das Areias Eternas',100:'Lenda da Cripta Esquecida'},
   gates:[-46,-22,-2,24,46,60,79],            // z máximo permitido em cada etapa (o portão abre ao concluir a etapa)
   stages:[
     {k:'kill',t:'dg_a',need:20,text:'Elimine os Guardiões da Cripta',spawn:{t:'dg_a',n:26,z:[-68,-50]}},
@@ -354,7 +355,8 @@ R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + '◇'.repeat(it.sl) : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
 const sellPrice = it => it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
-const upRate = p => [1, 1, 1, .85, .7, .55, .4, .3, .2][p] || 0;
+const MAXPLUS = 10;
+const upRate = p => [1, 1, 1, .85, .7, .55, .4, .3, .2, .12][p] || 0;
 const upCost = it => { const p = it.plus || 0; return { ferro: p + 1, essencia: p >= 4 ? Math.floor(p / 2) : 0, gold: Math.round(40 * Math.pow(p + 1, 1.7)) }; };
 const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon', 'shield', 'shield'] : ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon'];
 /** Origem sorteada para itens sem monstro (caixas, missões): um monstro com nível próximo do item. */
@@ -440,6 +442,34 @@ function stats(c) {
     crit: 5 + (as ? 8 : 0) + (pr ? 14 : 0) + 45 * st.agi / (st.agi + 200),
     dodge: 25 * st.agi / (st.agi + 250),
     atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) };
+}
+
+/* ---------- TÍTULOS ---------- */
+const TSTEPS = [1, 10, 50, 100], TCOL = { 1: '#9fe7b0', 10: '#7fd6ff', 50: '#c79bff', 100: '#ffb347', bright: '#ffe14a' };
+const BRIGHT_SLOTS = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'ring2', 'bracelet', 'bracelet2', 'earring', 'earring2'];
+/** Progresso do título "O mais brilhante": todas as peças equipadas (exceto capa) em +10. */
+function brightProg(c) {
+  const need = BRIGHT_SLOTS.concat(c.cls === 'cavaleiro' ? ['shield'] : []); let n = 0;
+  for (const s of need) if (c.eq && c.eq[s] && (c.eq[s].plus || 0) >= MAXPLUS) n++;
+  return { n, total: need.length, ok: n === need.length && (!c.eq.shield || (c.eq.shield.plus || 0) >= MAXPLUS) };
+}
+/** Todos os títulos do jogo (com o estado para o personagem c). */
+function titleList(c) {
+  const out = [];
+  for (const d of DUNGEONS) { const cur = (c.dgc && c.dgc[d.id]) || 0; for (const st of TSTEPS) if (d.titles && d.titles[st]) out.push({ id: d.id + ':' + st, t: d.titles[st], col: TCOL[st], dg: d.name, icon: d.icon, need: st, cur: Math.min(cur, st), have: cur >= st, desc: st === 1 ? 'Conclua ' + d.name + ' 1 vez' : 'Conclua ' + d.name + ' ' + st + ' vezes' }); }
+  const b = brightProg(c); out.push({ id: 'bright', t: 'O mais brilhante', col: TCOL.bright, dg: 'Aprimoramento', icon: '✨', need: b.total, cur: b.n, have: !!c.tb, desc: 'Todas as peças equipadas em +10 (a capa não conta)' });
+  return out;
+}
+const titleInfo = id => { if (id === 'bright') return { t: 'O mais brilhante', col: TCOL.bright, bright: 1 }; const [d, st] = String(id).split(':'), dg = DUNGEONS.find(x => x.id === d); return dg && dg.titles && dg.titles[st] ? { t: dg.titles[st], col: TCOL[st] || '#fff' } : null; };
+const titleHave = (c, id) => titleList(c).some(x => x.id === id && x.have);
+/** Servidor chama ao concluir uma dungeon. Devolve os títulos novos. */
+function dgDone(c, def) {
+  c.dgc = c.dgc || {}; const before = new Set(titleList(c).filter(x => x.have).map(x => x.id));
+  c.dgc[def.id] = Math.min(9999, (c.dgc[def.id] || 0) + 1);
+  return titleList(c).filter(x => x.have && !before.has(x.id));
+}
+function chkTitles(c, out) {
+  if (!c.tb && brightProg(c).ok) { c.tb = 1; out.push({ toast: '🏅 Novo título: O mais brilhante!' }, { sfx: 'rare' }, { log: '<span style="color:#ffe14a">🏅 Título conquistado: <b>O mais brilhante</b> — todas as suas peças estão em +10! Abra com <b>T</b>.</span>' }); }
 }
 
 /** Custo (em pontos) de subir da rank r para r+1. */
@@ -558,7 +588,7 @@ function cleanItem(it) {
   if (it.k === 'pot') return POTS[it.id] && Number.isFinite(it.n) ? { k: 'pot', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(80, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
-  it.plus = Math.max(0, Math.min(9, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
+  it.plus = Math.max(0, Math.min(MAXPLUS, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
   const mx = itemMax(it.slot, it.ilvl, it.rar);
   for (const k of ['atk', 'def', 'hp']) { const v = Number(it[k]) || 0; it[k] = Math.max(0, Math.min(Math.round(mx[k] + 1), Math.round(v))); }
   const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1), nb = {};
@@ -580,6 +610,7 @@ function migrate(c) {
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
+  { const dc = {}; if (c.dgc && typeof c.dgc === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.dgc[d.id]); if (n > 0) dc[d.id] = Math.min(9999, n); } c.dgc = dc; c.tb = c.tb ? 1 : 0; if (!c.tb && brightProg(c).ok) c.tb = 1; if (typeof c.title !== 'string' || (c.title && !titleHave(c, c.title))) c.title = ''; }
   { const tx = {}; if (c.tix && typeof c.tix === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.tix[d.id]); if (n > 0) tx[d.id] = Math.min(5, n); } c.tix = tx; }
   if (!(c.run && typeof c.run === 'object' && DUNGEONS.some(d => d.id === c.run.id))) delete c.run;
   if ((c.v || 0) < R.VERSION) {
@@ -606,7 +637,7 @@ function act(sess, m, ctx) {
   const c = sess.c, stash = sess.stash, out = [], spawn = [];
   const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), F = s => out.push({ sfx: s });
   const fail = s => { if (s) T(s); return { ok: false, out, spawn }; };
-  const done = () => ({ ok: true, out, spawn });
+  const done = () => { chkTitles(c, out); return { ok: true, out, spawn }; };
   const intIn = (v, a, b) => Number.isInteger(v) && v >= a && v < b;
   const colOf = it => it.k === 'eq' ? RAR[it.rar].c : '#fff';
   const npcFor = tab => { const n = npcById(m.npc); if (!n || !n.tabs.includes(tab)) return null; if (ctx && ctx.near && !ctx.near(n)) return null; return n; };
@@ -624,6 +655,7 @@ function act(sess, m, ctx) {
     const j = c.inv.indexOf(null); if (j < 0) return fail('Mochila cheia!'); c.inv[j] = it; c.eq[m.slot] = null; return done();
   }
   if (t === 'stat') { if (!STN[m.k] || c.pts <= 0) return fail(); c.alloc[m.k]++; c.pts--; F('ui'); return done(); }
+  if (t === 'title') { const id = String(m.id || ''); if (id && !titleHave(c, id)) return fail('Título bloqueado'); c.title = id; return done(); }
   if (t === 'bar') { if (!Array.isArray(m.bar) || m.bar.length !== 16) return fail(); c.bar = cleanBar(m.bar); return done(); }
   if (t === 'skup') {
     if (!intIn(m.i, 0, 8)) return fail(); const s = CLASSES[c.cls].skills[m.i], r = c.sk[m.i] || 0; if (r >= MAXRANK) return fail();
@@ -691,7 +723,7 @@ function act(sess, m, ctx) {
     if (!npcFor('aprimorar')) return fail('Chegue perto do Ferreiro.');
     const ref = String(m.ref || ''); let it = null;
     if (ref.startsWith('eq:')) it = validKey(ref.slice(3)) && c.eq[ref.slice(3)]; else if (ref.startsWith('inv:')) { const i = +ref.slice(4); it = intIn(i, 0, c.inv.length) ? c.inv[i] : null; }
-    if (!it || it.k !== 'eq') return fail(); if (it.slot === 'cape') return fail('Capas não podem ser aprimoradas — elas brilham junto com a armadura.'); if ((it.plus || 0) >= 9) return fail(); const k = upCost(it);
+    if (!it || it.k !== 'eq') return fail(); if (it.slot === 'cape') return fail('Capas não podem ser aprimoradas — elas brilham junto com a armadura.'); if ((it.plus || 0) >= MAXPLUS) return fail(); const k = upCost(it);
     if (have(c, 'ferro') < k.ferro || have(c, 'essencia') < k.essencia || c.gold < k.gold) return fail('Materiais ou ouro insuficientes');
     take(c, 'ferro', k.ferro); if (k.essencia) take(c, 'essencia', k.essencia); c.gold -= k.gold; const p = it.plus || 0;
     if (Math.random() < upRate(p)) { F('upOk'); it.plus = p + 1; T('✨ Sucesso! ' + nm(it)); L(`<span style="color:#6fdc7f">⬆️ ${it.name} aprimorado para +${it.plus}!</span>`); }
@@ -723,7 +755,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { genCape, isMag, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
