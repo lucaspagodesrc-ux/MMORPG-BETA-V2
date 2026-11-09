@@ -1,5 +1,4 @@
-DUNGEON + GRUPO (versão 1.0) — como atualizar
-1) No GitHub (repositório MMORPG-BETA-V2, raiz): envie estes 6 arquivos, substituindo os antigos
-   (dungeon.ts é NOVO): index.html, rules.js, monsters.ts, schema.ts, WorldRoom.ts, dungeon.ts
-2) Aguarde o deploy do Render e abra o jogo com Ctrl+F5.
-Personagens existentes são mantidos.
+APARÊNCIA DOS ITENS (1.1)
+Suba no GitHub (raiz), substituindo: index.html, rules.js, schema.ts, WorldRoom.ts
+Depois aguarde o deploy do Render e use Ctrl+F5.
+Personagens e itens antigos são mantidos (itens antigos não têm origem: aparecem com a cor da raridade).

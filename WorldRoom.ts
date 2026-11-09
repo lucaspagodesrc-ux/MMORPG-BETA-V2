@@ -51,7 +51,7 @@ export class WorldRoom extends Room<WorldState> {
     const now = Date.now(); s.tokens = Math.min(30, s.tokens + (now - s.tokT) / 1000 * 12); s.tokT = now;
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
-  private sync(s: Sess) { s.client.send("sync", { c: s.c, st: s.stash }); }
+  private sync(s: Sess) { const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
     const id = ++s.dropSeq;
