@@ -1,12 +1,5 @@
-FASE 3 — mundo realmente multiplayer (servidor autoritativo)
-
-SUBIR NO GITHUB (na raiz do repositório, substituindo/adicionando):
-  NOVOS:        rules.js, monsters.ts
-  SUBSTITUIR:   index.html, index.ts, schema.ts, WorldRoom.ts, auth.ts
-Depois disso o Render faz o deploy sozinho. Abra o jogo e use Ctrl+F5.
-
-IMPORTANTE: o rules.js precisa estar na pasta junto do index.ts (o servidor e o navegador usam o mesmo arquivo).
-
-Personagens existentes NÃO são apagados. No primeiro acesso cada um é ajustado:
-  - nível mantido; pontos de atributo devolvidos (3 por nível) para você redistribuir (tecla C);
-  - XP ajustado à nova curva; ouro limitado a nível x 3000; equipamentos editados são corrigidos.
+DUNGEON + GRUPO (versão 1.0) — como atualizar
+1) No GitHub (repositório MMORPG-BETA-V2, raiz): envie estes 6 arquivos, substituindo os antigos
+   (dungeon.ts é NOVO): index.html, rules.js, monsters.ts, schema.ts, WorldRoom.ts, dungeon.ts
+2) Aguarde o deploy do Render e abra o jogo com Ctrl+F5.
+Personagens existentes são mantidos.

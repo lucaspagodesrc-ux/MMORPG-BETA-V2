@@ -7,8 +7,8 @@ const MT: Record<string, any> = R.MT, ZONES: any[] = R.ZONES;
 const MAP = 80;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const ri = (a: number, b: number) => Math.floor(rnd(a, b + 1));
-const cxOf = (x: number) => (x > 150 ? 300 : 0);                       // centro da região (Vila Aurora ou Solara)
-const clampX = (x: number, ref: number) => Math.max(cxOf(ref) - MAP, Math.min(cxOf(ref) + MAP, x));
+const cxOf = (x: number) => (x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
+const clampX = (x: number, ref: number) => { const c = cxOf(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
 const clampZ = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 const safe = (x: number, z: number) => R.inTown(x, z);
 
@@ -17,11 +17,12 @@ export type Sim = {
   sx: number; sz: number; aggro: string | null; returning: boolean;
   atkAt: number; slowUntil: number; slamAt: number; wanderAt: number; wx: number; wz: number; deadAt: number;
   markUntil: number; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
+  inst: number; noResp: boolean; tier: number;   // instância de dungeon (0 = mundo), sem renascimento, nível do baú
 };
 export type Hooks = {
   hit: (sessionId: string, dmg: number, monsterId: number) => void;   // monstro acerta um jogador
   attack: (monsterId: number) => void;                                 // animação de ataque (todos veem)
-  slam: (x: number, z: number, r: number) => void;                     // aviso do ataque em área do chefe
+  slam: (x: number, z: number, r: number, inst: number) => void;                     // aviso do ataque em área do chefe
 };
 
 export class MonsterSim {
@@ -33,11 +34,28 @@ export class MonsterSim {
       const T = MT[zone.t];
       const m = new Monster();
       m.id = ++id; m.type = zone.t;
-      const s: Sim = { m, T, zone, atk: 0, def: 0, bs: T.boss ? 1.6 : 1, sx: 0, sz: 0, aggro: null, returning: false, atkAt: 0, slowUntil: 0, slamAt: 0, wanderAt: 0, wx: 0, wz: 0, deadAt: 0, markUntil: 0, contrib: new Map(), boss: !!T.boss, lastHitBy: '' };
+      const s: Sim = { m, T, zone, atk: 0, def: 0, bs: T.boss ? 1.6 : 1, sx: 0, sz: 0, aggro: null, returning: false, atkAt: 0, slowUntil: 0, slamAt: 0, wanderAt: 0, wx: 0, wz: 0, deadAt: 0, markUntil: 0, contrib: new Map(), boss: !!T.boss, lastHitBy: '', inst: 0, noResp: false, tier: 0 };
       this.respawn(s, Date.now());
       this.list.push(s); this.byId.set(m.id, s);
       state.monsters.set(String(m.id), m);
     }
+  }
+
+  /** Cria um monstro dentro de uma instância de dungeon. O id é inst*200+slot (único e previsível pelo cliente). */
+  addDynamic(type: string, x: number, z: number, inst: number, slot: number, hidden = false, tier = 0): Sim {
+    const T = MT[type], m = new Monster();
+    m.id = inst * 200 + slot; m.type = type; m.inst = inst;
+    const s: Sim = { m, T, zone: { x, z, r: 0 }, atk: 0, def: 0, bs: T.boss ? 1.6 : 1, sx: x, sz: z, aggro: null, returning: false, atkAt: 0, slowUntil: 0, slamAt: Date.now() + 6000, wanderAt: 0, wx: x, wz: z, deadAt: 0, markUntil: 0, contrib: new Map(), boss: !!T.boss, lastHitBy: '', inst, noResp: true, tier };
+    m.lvl = ri(T.lv[0], T.lv[1]); const k = m.lvl - T.lv[0];
+    m.maxHp = Math.max(5, Math.round(T.hp * (1 + k * 0.2) * (Number(process.env.DG_HPX) || 1))); m.hp = m.maxHp; s.atk = T.atk * (1 + k * 0.14); s.def = T.def * (1 + k * 0.1);
+    m.x = x; m.z = z; m.rot = 0; m.alive = !hidden;
+    this.list.push(s); this.byId.set(m.id, s); this.state.monsters.set(String(m.id), m);
+    return s;
+  }
+  /** Chamado quando o baú aparece (chefe morreu). */
+  reveal(s: Sim) { s.m.hp = s.m.maxHp; s.m.alive = true; s.contrib.clear(); }
+  removeInst(inst: number) {
+    this.list = this.list.filter((s) => { if (s.inst !== inst) return true; this.byId.delete(s.m.id); this.state.monsters.delete(String(s.m.id)); return false; });
   }
 
   respawn(s: Sim, now: number) {
@@ -68,15 +86,16 @@ export class MonsterSim {
     const now = Date.now(), players = this.state.players;
     for (const s of this.list) {
       const { m, T } = s;
-      if (!m.alive) { if (now - s.deadAt > T.resp * 1000) this.respawn(s, now); continue; }
+      if (!m.alive) { if (!s.noResp && now - s.deadAt > T.resp * 1000) this.respawn(s, now); continue; }
+      if (T.chest) continue;                    // baús não se movem nem atacam
       let tgt: { id: string; x: number; z: number } | null = null, best = Infinity;
       players.forEach((p, id) => {
-        if (p.dead || safe(p.x, p.z) || cxOf(p.x) !== cxOf(m.x)) return;
+        if (p.dead || p.inst !== s.inst || safe(p.x, p.z) || cxOf(p.x) !== cxOf(m.x)) return;
         const d = Math.hypot(p.x - m.x, p.z - m.z);
         if (d < best) { best = d; tgt = { id, x: p.x, z: p.z }; }
       });
       let cur: { id: string; x: number; z: number } | null = null;
-      if (s.aggro) { const p = players.get(s.aggro); if (p && !p.dead && !safe(p.x, p.z) && cxOf(p.x) === cxOf(m.x)) cur = { id: s.aggro, x: p.x, z: p.z }; }
+      if (s.aggro) { const p = players.get(s.aggro); if (p && !p.dead && p.inst === s.inst && !safe(p.x, p.z) && cxOf(p.x) === cxOf(m.x)) cur = { id: s.aggro, x: p.x, z: p.z }; }
       const dS = Math.hypot(m.x - s.sx, m.z - s.sz);
       if (!s.aggro && !s.returning && tgt && best < T.aggro) { s.aggro = (tgt as any).id; cur = tgt; }
       if (s.aggro && (!cur || dS > T.leash)) { s.aggro = null; s.returning = true; cur = null; }
@@ -89,10 +108,10 @@ export class MonsterSim {
         if (dP <= T.rng && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); this.hooks.hit(s.aggro, s.atk * rnd(0.85, 1.15), m.id); }
         if (s.boss && dP < 12 && now > s.slamAt) {
           s.slamAt = now + 9000; const cx = m.x, cz = m.z;
-          this.hooks.slam(cx, cz, 5);
+          this.hooks.slam(cx, cz, 5, s.inst);
           setTimeout(() => {
             if (!m.alive) return;
-            players.forEach((p, id) => { if (!p.dead && !safe(p.x, p.z) && Math.hypot(p.x - cx, p.z - cz) < 5) this.hooks.hit(id, s.atk * 1.8, m.id); });
+            players.forEach((p, id) => { if (!p.dead && p.inst === s.inst && !safe(p.x, p.z) && Math.hypot(p.x - cx, p.z - cz) < 5) this.hooks.hit(id, s.atk * 1.8, m.id); });
           }, 1000);
         }
       } else if (s.returning) {
@@ -117,6 +136,7 @@ export class MonsterSim {
     const L = this.list;
     for (let i = 0; i < L.length; i++) { const a = L[i].m; if (!a.alive) continue;
       for (let j = i + 1; j < L.length; j++) { const b = L[j].m; if (!b.alive) continue;
+        if (L[i].inst !== L[j].inst) continue;
         const dx = a.x - b.x, dz = a.z - b.z; if (Math.abs(dx) > 1.4 || Math.abs(dz) > 1.4) continue;
         const d = Math.hypot(dx, dz), min = 0.6 * (L[i].bs + L[j].bs);
         if (d < min && d > 1e-3) { const k = (min - d) / 2 / d; a.x += dx * k; a.z += dz * k; b.x -= dx * k; b.z -= dz * k; } } }

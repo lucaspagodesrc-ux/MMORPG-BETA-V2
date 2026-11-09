@@ -116,6 +116,39 @@ const MT={
  colosso:{n:'Colosso de Obsidiana',lv:[65,65],hp:48000,atk:700,def:150,spd:2.2,xp:124159,gold:[5400,8400],aggro:10,rng:3.6,atkInt:1800,resp:300,leash:22,h:6.4,boss:true,mats:{obsidiana:1,ankh:1,essencia:1},matMax:3,eq:1,pot:1,rb:3},
  farao:{n:'Faraó Imortal',lv:[75,75],hp:110000,atk:900,def:175,spd:2.4,xp:197202,gold:[12000,18000],aggro:11,rng:5.0,atkInt:1800,resp:500,leash:26,h:7.4,boss:true,mats:{selo:1,obsidiana:1,essencia:1},matMax:3,eq:1,pot:1,rb:3}
 };
+
+/* ====================== DUNGEONS ======================
+   Cada dungeon é um corredor reto (de z=-72 a z=+79). O servidor cria uma instância por grupo. */
+const dgMob=(base,o)=>Object.assign({}, MT[base], {model:base,dg:true,resp:0,eq:.02,pot:.02,mats:{}}, o);
+Object.assign(MT, {
+  dg_a: dgMob('mumia',    {n:'Guardião da Cripta',   lv:[52,54], hp:6100, atk:460, def:94,  xp:6200, gold:[430,740],  aggro:9, leash:30}),
+  dg_b: dgMob('escorpiao',{n:'Escorpião Sombrio',    lv:[53,55], hp:5200, atk:420, def:78,  xp:5900, gold:[400,700],  aggro:9, leash:30}),
+  dg_c: dgMob('chacal',   {n:'Sentinela Chacal',     lv:[55,57], hp:9000, atk:560, def:128, xp:7800, gold:[600,1000], aggro:9, leash:30}),
+  dg_d: dgMob('cobra',    {n:'Naja Amaldiçoada',     lv:[56,58], hp:6600, atk:520, def:90,  xp:7000, gold:[560,940],  aggro:10, leash:30}),
+  dg_s1:dgMob('colosso',  {n:'Sentinela de Obsidiana',lv:[56,56],hp:70000,atk:720, def:150, xp:34000,gold:[6000,9000],aggro:11,leash:40,boss:true,rng:3.6,atkInt:1800}),
+  dg_s2:dgMob('sacerdote',{n:'Escriba Sombrio',      lv:[57,57], hp:96000,atk:760, def:140, xp:42000,gold:[7000,10000],aggro:11,leash:40,boss:true,rng:5,atkInt:1700}),
+  dg_boss:dgMob('farao',  {n:'Faraó Devorador',      lv:[58,58], hp:190000,atk:980,def:175, xp:68000,gold:[12000,18000],aggro:12,leash:45,boss:true,rng:5,atkInt:1700}),
+  dg_chest:{n:'Baú da Cripta',lv:[1,1],hp:30,atk:0,def:0,spd:0,xp:0,gold:[0,0],aggro:0,rng:0,atkInt:999999,resp:0,leash:0,h:1.4,mats:{},eq:0,pot:0,chest:true,model:'chest',dg:true},
+});
+const DUNGEONS=[{
+  id:'cripta', name:'Cripta das Areias Esquecidas', icon:'🏺', minLevel:50, price:50000, time:2400, ilvl:[52,58], cx:600, grace:300,
+  desc:'Um corredor de tumbas habitado por guardiões amaldiçoados. 2 sub-chefes, 1 chefe final e 3 baús de tesouro. Itens com SLOTS caem aqui. Tempo limite: 40 min.',
+  start:{x:600,z:-72},
+  gates:[-46,-22,-2,24,46,60,79],            // z máximo permitido em cada etapa (o portão abre ao concluir a etapa)
+  stages:[
+    {k:'kill',t:'dg_a',need:20,text:'Elimine os Guardiões da Cripta',spawn:{t:'dg_a',n:26,z:[-68,-50]}},
+    {k:'statue',id:'st1',z:-43,t:'dg_b',need:14,text:'Fale com a Estátua da Oferenda',spawn:{t:'dg_b',n:18,z:[-40,-26]},
+      name:'Estátua da Oferenda',ask:'"Viajante... o deserto exige uma oferenda. Derrame o sangue de 14 escorpiões sombrios e o portão se abrirá."',
+      wait:'"A oferenda ainda não está completa..."',fin:'"A areia aceita sua oferenda. Siga em frente."'},
+    {k:'boss',t:'dg_s1',text:'Derrote a Sentinela de Obsidiana',spawn:{t:'dg_s1',n:1,z:[-11,-11]},chest:{slot:100,tier:1}},
+    {k:'kill',t:'dg_c',need:24,text:'Elimine as Sentinelas Chacal',spawn:{t:'dg_c',n:30,z:[3,20]}},
+    {k:'statue',id:'st2',z:26,t:'dg_d',need:14,text:'Fale com a Estátua do Juramento',spawn:{t:'dg_d',n:18,z:[30,42]},
+      name:'Estátua do Juramento',ask:'"Quem deseja o trono do Faraó deve provar seu valor. Silencie 14 najas amaldiçoadas."',
+      wait:'"Ainda ouço o sibilar das najas..."',fin:'"Seu juramento foi aceito. O Escriba aguarda."'},
+    {k:'boss',t:'dg_s2',text:'Derrote o Escriba Sombrio',spawn:{t:'dg_s2',n:1,z:[53,53]},chest:{slot:101,tier:2}},
+    {k:'boss',t:'dg_boss',final:true,text:'Derrote o Faraó Devorador',spawn:{t:'dg_boss',n:1,z:[70,70]},chest:{slot:102,tier:3}}
+  ]
+}];
 const ZONES=[
  {t:'slime',x:-18,z:-10,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
  {t:'lobo',x:18,z:-20,r:9,n:10,col:'#4b5a45',name:'Floresta dos Lobos'},
@@ -244,6 +277,8 @@ const NPCS=[
  {id:'zafira',name:'Encantadora Zafira',icon:'🐍',x:267,z:14,col:'#3f8a4a',tabs:SHOPT,greet:'As najas obedecem a quem sabe ouvir. Mas estas enlouqueceram.',hat:'#2f6a3a',camp:true,shop:'solara'},
  {id:'ibrahim',name:'Beduíno Ibrahim',icon:'🌪️',x:329,z:20,col:'#c9a45a',tabs:SHOPT,greet:'O vento tem fome. Eu vi uma tempestade andar!',hat:'#e8dcb0',camp:true,shop:'solara'},
  {id:'anuket',name:'Sacerdotisa Anuket',icon:'☥',x:322,z:-42,col:'#4a3a8a',tabs:SHOPT,greet:'Os guardiões de Anúbis já não descansam.',hat:'#d4a62a',camp:true,shop:'solara'},
+ {id:'guarda_cripta',name:'Guardião das Criptas',icon:'🗝️',x:309,z:6,col:'#5a4a7a',tabs:['dungeon'],greet:'Há criptas esquecidas nos cantos mais distantes do deserto. Compre o ingresso comigo e fale com o portal da cripta. Quem tem ingresso e está no seu grupo entra junto!',hat:'#d4a62a'},
+ {id:'dg_cripta',name:'🏺 Cripta das Areias (Nv 50+)',icon:'🏺',x:366,z:66,col:'#d4a62a',tabs:[],greet:'',dungeon:'cripta'},
  {id:'hamid',name:'Arqueólogo Hamid',icon:'🔭',x:300,z:44,col:'#8a6a4a',tabs:SHOPT,greet:'A grande pirâmide esconde o maior tesouro do mundo... e o maior perigo.',hat:'#a8833a',camp:true,shop:'solara'}];
 
 
@@ -253,15 +288,15 @@ R.TOWN_R = MON_TOWN_R;
 R.TOWNS = [{ x: 0, z: 0, r: 11 }, { x: 300, z: 0, r: 13 }];   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
-const nm = it => it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * .5) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
+const nm = it => it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + '◇'.repeat(it.sl) : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
+const sellPrice = it => it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
 const upRate = p => [1, 1, 1, .85, .7, .55, .4, .3, .2][p] || 0;
 const upCost = it => { const p = it.plus || 0; return { ferro: p + 1, essencia: p >= 4 ? Math.floor(p / 2) : 0, gold: Math.round(40 * Math.pow(p + 1, 1.7)) }; };
 const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boots', 'ring', 'weapon', 'shield', 'shield'] : ['weapon', 'armor', 'helmet', 'boots', 'ring', 'weapon'];
 
 function rarRoll(b) { b = b || 0; const r = Math.random(), k = 1 + b; if (r < .02 * k) return 3; if (r < .12 * k) return 2; if (r < .4 + .05 * b) return 1; return 0; }
 /** Gera um equipamento. `cls` fixa a classe da arma; sem ela, 70% de chance de ser da classe do dono (`owner`). */
-function genItem(slot, ilvl, rar, cls, owner) {
+function genItem(slot, ilvl, rar, cls, owner, sl) {
   const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), mult = RAR[rar].m, j = () => rnd(.92, 1.08);
   const it = { k: 'eq', slot, ilvl, rar, req: Math.max(1, ilvl - 1), plus: 0, bon: {}, hp: 0, atk: 0, def: 0 };
   if (slot === 'weapon') { cls = cls || (Math.random() < .7 && owner ? owner : pick(Object.keys(CLASSES))); it.cls = cls; it.name = tier > 6 ? XN.weapon[cls][tier - 7] : WN[cls][tier]; it.atk = Math.round((3 + ilvl * 1.7) * mult * j()); it.icon = CLASSES[cls].wi; }
@@ -272,6 +307,7 @@ function genItem(slot, ilvl, rar, cls, owner) {
   else { it.name = tier > 6 ? XN.ring[tier - 7] : RN[tier]; it.atk = Math.round((1 + ilvl * .6) * mult * j()); it.hp = Math.round(ilvl * 4 * mult); it.icon = '💍'; }
   if (rar >= 2) { it.name += ' ' + pick(SUF); const st = ['str', 'agi', 'int', 'vit']; for (let n = 0; n < rar - 1; n++) { const s = pick(st); it.bon[s] = (it.bon[s] || 0) + Math.max(1, Math.round(ilvl / 3)); } }
   if (rar === 3) it.name = '★ ' + it.name;
+  if (sl) it.sl = sl;            // encaixes (slots) para gemas — só caem em dungeons
   return it;
 }
 
@@ -345,8 +381,24 @@ function rollLoot(T, mlvl, cls) {
   const out = [];
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
   for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
-  if (Math.random() < T.eq) { const slot = pick(slotPool(cls)); let rar = rarRoll(T.rb || 0); if (T.boss) rar = Math.max(2, rar); out.push(genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls)); }
+  if (Math.random() < T.eq) { const slot = pick(slotPool(cls)); let rar = rarRoll(T.rb || 0); if (T.boss) rar = Math.max(2, rar); const sl = T.dg ? (Math.random() < .015 ? 2 : Math.random() < .08 ? 1 : 0) : 0; out.push(genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl)); }
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
+  return out;
+}
+
+/** Loot de um baú de dungeon (tier 1..3). Pode ser bom OU ruim: nível menor, raridade comum e sem slot. */
+function dgChestLoot(dg, tier, cls) {
+  const out = [], mk = (bad) => {
+    const ilvl = Math.max(1, ri(dg.ilvl[0], dg.ilvl[1]) + (tier - 1) - (bad ? ri(8, 16) : 0));
+    const rar = bad ? (Math.random() < .75 ? 0 : 1) : rarRoll([.7, 1.3, 2.4][tier - 1]);
+    const p2 = bad ? 0 : [.07, .12, .22][tier - 1], p1 = bad ? .04 : [.30, .38, .45][tier - 1], r = Math.random();
+    const sl = r < p2 ? 2 : r < p2 + p1 ? 1 : 0;
+    return genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl);
+  };
+  out.push(mk(Math.random() < [.30, .22, .12][tier - 1]));
+  if (tier === 3 && Math.random() < .4) out.push(mk(false));
+  out.push({ k: 'gold', n: ri(600, 1100) * tier });
+  if (Math.random() < .5) out.push({ k: 'mat', id: 'essencia', n: ri(1, 1 + tier) });
   return out;
 }
 function gainXp(c, n) { c.xp += n; let up = 0; while (c.xp >= xpNeed(c.level)) { c.xp -= xpNeed(c.level); c.level++; c.pts += PTS_PER_LEVEL; c.sp++; up++; } return up; }
@@ -389,6 +441,7 @@ function cleanItem(it) {
   const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1), nb = {};
   for (const s of ['str', 'agi', 'int', 'vit']) if (it.bon && it.bon[s] > 0) nb[s] = Math.min(bmax, Math.floor(it.bon[s]));
   it.bon = nb;
+  it.sl = Math.max(0, Math.min(2, Math.floor(it.sl || 0))); if (!it.sl) delete it.sl;
   if (typeof it.name !== 'string') it.name = SLOTS[it.slot];
   it.name = it.name.slice(0, 60);
   if (it.slot === 'weapon' && !CLASSES[it.cls]) return null;
@@ -401,6 +454,8 @@ function migrate(c) {
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
+  { const tx = {}; if (c.tix && typeof c.tix === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.tix[d.id]); if (n > 0) tx[d.id] = Math.min(5, n); } c.tix = tx; }
+  if (!(c.run && typeof c.run === 'object' && DUNGEONS.some(d => d.id === c.run.id))) delete c.run;
   if ((c.v || 0) < R.VERSION) {
     c.level = Math.max(1, Math.min(MAX_LEVEL, Math.floor(c.level) || 1));
     // novo equilíbrio: os pontos de atributo são devolvidos conforme a NOVA regra (você redistribui)
@@ -486,6 +541,15 @@ function act(sess, m, ctx) {
     const it = sh.mk(c); if (!canAdd(c.inv, it)) return fail('Mochila cheia!'); c.gold -= cost; addItem(c.inv, it); F('coin');
     if (sh.box) { T('Você abriu: ' + nm(it)); L(`🎁 A caixa continha <b style="color:${colOf(it)}">${nm(it)}</b>`); if (it.rar >= 2) F('rare'); } return done();
   }
+  if (t === 'buyticket') {
+    const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');
+    const dg = DUNGEONS.find(x => x.id === m.id); if (!dg) return fail();
+    if (c.level < dg.minLevel) return fail('Nível ' + dg.minLevel + ' necessário.');
+    c.tix = c.tix || {}; if ((c.tix[dg.id] || 0) >= 5) return fail('Você já tem 5 ingressos.');
+    if (c.gold < dg.price) return fail('Ouro insuficiente');
+    c.gold -= dg.price; c.tix[dg.id] = (c.tix[dg.id] || 0) + 1; F('coin'); T('🎟️ Ingresso comprado: ' + dg.name);
+    L(`🎟️ Você comprou um ingresso para <b style="color:#ffd27a">${dg.name}</b>. Vá até a entrada, no canto do deserto, e fale com o portal.`); return done();
+  }
   if (t === 'craft') {
     const sm = npcFor('forja'); if (!sm) return fail('Chegue perto do Ferreiro.');
     const r = RECIPES.find(x => x.id === m.id); if (!r || (r.cls && r.cls !== c.cls) || (r.at || 'ferreiro') !== sm.id) return fail();
@@ -530,7 +594,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

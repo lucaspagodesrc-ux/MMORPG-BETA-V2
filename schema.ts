@@ -7,8 +7,9 @@ export class Player extends Schema {
   x = 0;
   z = 0;
   dead = false;
+  inst = 0;        // 0 = mundo aberto; >0 = instância de dungeon
 }
-defineTypes(Player, { name: "string", cls: "string", level: "number", x: "number", z: "number", dead: "boolean" });
+defineTypes(Player, { name: "string", cls: "string", level: "number", x: "number", z: "number", dead: "boolean", inst: "uint16" });
 
 // Monstro simulado no servidor: todos os jogadores veem o mesmo monstro, na mesma posição e com a mesma vida.
 export class Monster extends Schema {
@@ -21,10 +22,11 @@ export class Monster extends Schema {
   z = 0;
   rot = 0;
   alive = true;
+  inst = 0;
 }
 defineTypes(Monster, {
-  id: "uint16", type: "string", lvl: "uint8", hp: "float32", maxHp: "float32",
-  x: "float32", z: "float32", rot: "float32", alive: "boolean",
+  id: "uint32", type: "string", lvl: "uint8", hp: "float32", maxHp: "float32",
+  x: "float32", z: "float32", rot: "float32", alive: "boolean", inst: "uint16",
 });
 
 export class WorldState extends Schema {

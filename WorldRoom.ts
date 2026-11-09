@@ -2,6 +2,7 @@ import { Room, Client, ServerError } from "colyseus";
 import { WorldState, Player } from "./schema";
 import { verifyToken, loadCharacter, loadStash, saveChar, saveStash, AuthUser } from "./auth";
 import { MonsterSim, Sim } from "./monsters";
+import { Dungeons } from "./dungeon";
 const R: any = require("./rules.js");
 
 const MAP = 80;          // mesmo limite do cliente
@@ -9,8 +10,8 @@ const RATE = 14;         // unidades/s sustentadas (jogador anda ~6-8)
 const BURST = 20;        // folga para habilidades de avanço (ex.: Investida)
 const clamp = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 // O mundo tem duas regiões de 160x160: a Vila Aurora (centro x=0) e Solara (centro x=300).
-const cx = (x: number) => (x > 150 ? 300 : 0);
-const clampX = (x: number, ref: number) => Math.max(cx(ref) - MAP, Math.min(cx(ref) + MAP, x));
+const cx = (x: number) => (x > 450 ? 600 : x > 150 ? 300 : 0);
+const clampX = (x: number, ref: number) => { const c = cx(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
 const SOLARA_MIN_LEVEL = 50;
 const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number }; minLevel: number }> = {
   portal_a: { x: 14, z: 56, to: { x: 300, z: -7 }, minLevel: SOLARA_MIN_LEVEL },
@@ -27,12 +28,18 @@ type Sess = {
   tokens: number; tokT: number;
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number;
   drops: Map<number, { item: any; x: number; z: number; exp: number }>; dropSeq: number;
+  partyId: number;
 };
+type Party = { id: number; leader: string; members: string[] };
 
 export class WorldRoom extends Room<WorldState> {
   maxClients = 100;
   private sess = new Map<string, Sess>();
   private sim!: MonsterSim;
+  private dg!: Dungeons;
+  private parties = new Map<number, Party>();
+  private partySeq = 0;
+  private invites = new Map<string, { from: string; until: number }>();
 
   /* ---------- utilidades ---------- */
   private S(client: Client) { return this.sess.get(client.sessionId); }
@@ -51,6 +58,30 @@ export class WorldRoom extends Room<WorldState> {
     s.drops.set(id, { item, x, z, exp: Date.now() + (life ? life : 600_000) + 3000 });
     s.client.send("drop", { id, item, x, z, life });
   }
+  /* ---------- grupos ---------- */
+  partyOf(s: Sess): Party | undefined { return s.partyId ? this.parties.get(s.partyId) : undefined; }
+  private sendParty(pt: Party) {
+    const members = pt.members.map((sid) => { const p = this.state.players.get(sid); return p ? { n: p.name, cls: p.cls, lv: p.level, dg: p.inst > 0 ? 1 : 0 } : null; }).filter(Boolean);
+    const leader = this.state.players.get(pt.leader)?.name || "";
+    for (const sid of pt.members) this.sess.get(sid)?.client.send("party", { leader, members });
+  }
+  private sysTo(s: Sess | undefined, text: string) { s?.client.send("chat", { kind: "sys", text }); }
+  private partyLeave(sid: string, note?: string) {
+    const s = this.sess.get(sid); if (!s) return; const pt = this.partyOf(s); s.partyId = 0;
+    s.client.send("party", null);
+    if (!pt) return;
+    pt.members = pt.members.filter((x) => x !== sid);
+    const nm = this.state.players.get(sid)?.name || "Jogador";
+    if (pt.members.length < 2) {
+      for (const m of pt.members) { const o = this.sess.get(m); if (o) { o.partyId = 0; o.client.send("party", null); this.sysTo(o, "O grupo foi desfeito."); } }
+      this.parties.delete(pt.id); return;
+    }
+    if (pt.leader === sid) { pt.leader = pt.members[0]; }
+    for (const m of pt.members) this.sysTo(this.sess.get(m), note || `${nm} saiu do grupo.`);
+    this.sendParty(pt);
+  }
+  private findByName(name: string) { for (const [sid, s] of this.sess) if (this.state.players.get(sid)?.name.toLowerCase() === String(name).toLowerCase()) return s; return undefined; }
+
   private playerOf(s: Sess) { return this.state.players.get(s.client.sessionId)!; }
 
   async save(s: Sess) {
@@ -75,12 +106,14 @@ export class WorldRoom extends Room<WorldState> {
     if (died) this.onKill(sim);
   }
   private hitArea(s: Sess, x: number, z: number, r: number, mult: number, o: any) {
-    for (const sim of this.sim.list) if (sim.m.alive && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, o);
+    const inst = this.playerOf(s)?.inst || 0;
+    for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, o);
   }
   private later(ms: number, fn: () => void) { setTimeout(() => { try { fn(); } catch (e) { console.error(e); } }, ms); }
 
   private onKill(sim: Sim) {
     const T = sim.T, mlvl = sim.m.lvl, mx = sim.m.x, mz = sim.m.z;
+    if (T.chest) { this.dg.onKill(sim); return; }          // baú de dungeon: o prêmio é entregue pela instância
     let total = 0; sim.contrib.forEach((v) => (total += v));
     sim.contrib.forEach((dmg, sid) => {
       const s = this.sess.get(sid); if (!s) return;
@@ -95,6 +128,7 @@ export class WorldRoom extends Room<WorldState> {
       this.touch(s); this.sync(s); this.res(s, out);
       for (const it of R.rollLoot(T, mlvl, c.cls)) this.addDrop(s, it, mx, mz, 0);
     });
+    if (sim.inst) this.dg.onKill(sim);
   }
 
   private cast(s: Sess, m: any) {
@@ -109,7 +143,7 @@ export class WorldRoom extends Room<WorldState> {
     let tgt: Sim | undefined;
     if (["single", "dash", "aoeTarget", "multi", "barrage"].includes(sk.type)) {
       tgt = this.sim.byId.get(Number(m?.tid));
-      if (!tgt || !tgt.m.alive || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
+      if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
     }
     s.cd[i] = now + sk.cd * 1000;
     let mult = sk.mult;
@@ -150,7 +184,7 @@ export class WorldRoom extends Room<WorldState> {
     const C = R.CLASSES[s.c.cls], now = Date.now(), d = this.stats(s);
     if (now - s.lastBasic < (900 / d.atkSpd) * 0.7) return;
     const tgt = this.sim.byId.get(Number(m?.tid));
-    if (!tgt || !tgt.m.alive || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > C.range + HIT_SLACK) return;
+    if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > C.range + HIT_SLACK) return;
     s.lastBasic = now;
     this.broadcast("matk", { by: s.client.sessionId, tid: tgt.m.id }, { except: s.client });
     const flight = Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000;
@@ -164,9 +198,10 @@ export class WorldRoom extends Room<WorldState> {
     this.sim = new MonsterSim(this.state, {
       hit: (sid, dmg, mid) => this.sess.get(sid)?.client.send("mhit", { raw: dmg, id: mid }),
       attack: (mid) => this.broadcast("mat", { id: mid }),
-      slam: (x, z, r) => this.broadcast("slam", { x, z, r }),
+      slam: (x, z, r, inst) => this.broadcast("slam", { x, z, r, inst }),
     });
-    let last = Date.now(), sweepAt = 0, saveAt = 0;
+    this.dg = new Dungeons(this);
+    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0;
     this.setSimulationInterval(() => {
       const now = Date.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (this.clients.length) this.sim.update(dt);
@@ -174,6 +209,7 @@ export class WorldRoom extends Room<WorldState> {
         sweepAt = now + 2000;
         for (const s of this.sess.values()) for (const [id, d] of s.drops) if (now > d.exp) s.drops.delete(id);
       }
+      if (now > dgAt) { dgAt = now + 1000; this.dg.tick(now); }
       if (now > saveAt) { saveAt = now + 12_000; for (const s of this.sess.values()) if (s.dirty) this.save(s); }
     }, 50);
 
@@ -184,6 +220,7 @@ export class WorldRoom extends Room<WorldState> {
       s.budget = Math.min(BURST, s.budget + ((now - s.t) / 1000) * RATE);
       s.t = now;
       let x = clampX(m.x, p.x), z = clamp(m.z);   // não dá para cruzar de região andando: só pelo portal
+      if (p.inst) { const I = this.dg.insts.get(p.inst); if (I) z = Math.min(z, this.dg.maxZ(I) - 0.5); }   // portões da dungeon
       const dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz);
       if (d > s.budget) {                          // rápido demais: limita e corrige o cliente
         const k = s.budget / d;
@@ -236,6 +273,7 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("recall", (client) => {       // teleporte para a cidade mais próxima (sem aceitar coordenadas do cliente)
       const p = this.state.players.get(client.sessionId), s = this.S(client);
       if (!p || !s || p.dead) return;
+      if (p.inst) { this.sysTo(s, "O retorno não funciona dentro da dungeon. Use o portal de saída."); return; }
       const now = Date.now();
       if (now - s.lastRecall < 10_000) return;
       s.lastRecall = now;
@@ -246,7 +284,7 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("portal", (client, m) => {
       const p = this.state.players.get(client.sessionId), s = this.S(client);
       const g = PORTALS[String(m?.id)];
-      if (!p || !s || !g || p.dead) return;
+      if (!p || !s || !g || p.dead || p.inst) return;
       const now = Date.now();
       if (now - s.lastPortal < 1500) return;
       if (Math.hypot(p.x - g.x, p.z - g.z) > 9) return;
@@ -261,8 +299,60 @@ export class WorldRoom extends Room<WorldState> {
       const now = Date.now();
       if (now - s.lastRevive < 3_000) return;
       s.lastRevive = now; p.dead = false;
+      if (p.inst) { const I = this.dg.insts.get(p.inst); if (I) { p.x = I.def.cx; p.z = I.def.start.z; s.budget = BURST; s.t = now; return; } }
       const t = TOWNS.reduce((a, b) => (Math.hypot(b.x - p.x, b.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? b : a));
       p.x = t.x; p.z = t.z; s.budget = BURST; s.t = now;
+    });
+
+    /* ---- dungeon ---- */
+    this.onMessage("dgenter", (client, m) => {
+      const s = this.S(client); if (!s || !this.okRate(s, 2)) return;
+      const p = this.playerOf(s); if (!p || p.dead) return;
+      const err = this.dg.enter(s, String(m?.id));
+      if (err) this.res(s, [{ toast: err }], false); else { this.touch(s); this.sync(s); const pt = this.partyOf(s); if (pt) this.sendParty(pt); }
+    });
+    this.onMessage("dgexit", (client) => {
+      const s = this.S(client), p = this.state.players.get(client.sessionId); if (!s || !p || !p.inst) return;
+      const I = this.dg.insts.get(p.inst); if (I && p.z > I.def.start.z + 9) { this.res(s, [{ toast: "Vá até o portal de saída, no começo da cripta." }], false); return; }
+      this.dg.leave(s, true); this.touch(s); this.sync(s);
+      this.res(s, [{ log: '<span style="color:#9fe7b0">🚪 Você saiu da dungeon. Seu ingresso continua válido por <b>5 minutos</b> — volte pelo portal da cripta para continuar.</span>' }]);
+      const pt = this.partyOf(s); if (pt) this.sendParty(pt);
+    });
+    this.onMessage("dgtalk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 1)) this.dg.talk(s, String(m?.id)); });
+
+    /* ---- grupos ---- */
+    this.onMessage("pinvite", (client, m) => {
+      const s = this.S(client); if (!s || !this.okRate(s, 2)) return;
+      const t = this.findByName(String(m?.name || ""));
+      if (!t) return this.sysTo(s, `Jogador "${String(m?.name || "").slice(0, 16)}" não está online.`);
+      if (t === s) return;
+      const pt = this.partyOf(s);
+      if (pt && pt.leader !== client.sessionId) return this.sysTo(s, "Só o líder do grupo pode convidar.");
+      if (pt && pt.members.length >= 6) return this.sysTo(s, "O grupo está cheio (6 jogadores).");
+      if (t.partyId) return this.sysTo(s, "Esse jogador já está em um grupo.");
+      this.invites.set(t.client.sessionId, { from: client.sessionId, until: Date.now() + 30_000 });
+      t.client.send("pinv", { from: this.state.players.get(client.sessionId)?.name });
+      this.sysTo(s, `Convite enviado para ${this.state.players.get(t.client.sessionId)?.name}.`);
+    });
+    this.onMessage("pans", (client, m) => {
+      const s = this.S(client), iv = this.invites.get(client.sessionId); this.invites.delete(client.sessionId);
+      if (!s || !iv || Date.now() > iv.until) return;
+      const f = this.sess.get(iv.from); if (!f) return this.sysTo(s, "Quem convidou saiu do jogo.");
+      if (!m?.ok) return this.sysTo(f, `${this.state.players.get(client.sessionId)?.name} recusou o convite.`);
+      if (s.partyId) return;
+      let pt = this.partyOf(f);
+      if (!pt) { pt = { id: ++this.partySeq, leader: iv.from, members: [iv.from] }; this.parties.set(pt.id, pt); f.partyId = pt.id; }
+      if (pt.members.length >= 6) return this.sysTo(s, "O grupo está cheio.");
+      pt.members.push(client.sessionId); s.partyId = pt.id;
+      const nm = this.state.players.get(client.sessionId)?.name;
+      for (const sid of pt.members) this.sysTo(this.sess.get(sid), `${nm} entrou no grupo.`);
+      this.sendParty(pt);
+    });
+    this.onMessage("pleave", (client) => this.partyLeave(client.sessionId));
+    this.onMessage("pkick", (client, m) => {
+      const s = this.S(client); const pt = s && this.partyOf(s); if (!s || !pt || pt.leader !== client.sessionId) return;
+      const t = this.findByName(String(m?.name || "")); if (!t || t === s || t.partyId !== pt.id) return;
+      this.sysTo(t, "Você foi removido do grupo."); this.partyLeave(t.client.sessionId, `${this.state.players.get(t.client.sessionId)?.name} foi removido do grupo.`);
     });
 
     this.onMessage("chat", (client, m) => {
@@ -273,6 +363,12 @@ export class WorldRoom extends Room<WorldState> {
       s.lastChat = now;
       const text = m.text.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 200);
       if (!text) return;
+      const g = /^\/p\s+([\s\S]+)$/i.exec(text);
+      if (g) {
+        const pt = this.partyOf(s); if (!pt) return client.send("chat", { kind: "sys", text: "Você não está em um grupo." });
+        for (const sid of pt.members) this.sess.get(sid)?.client.send("chat", { kind: "p", from: p.name, text: g[1] });
+        return;
+      }
       const w = /^\/w\s+(\S+)\s+([\s\S]+)$/i.exec(text);
       if (w) {
         const target = this.clients.find((c) => this.state.players.get(c.sessionId)?.name.toLowerCase() === w[1].toLowerCase());
@@ -303,12 +399,19 @@ export class WorldRoom extends Room<WorldState> {
     p.name = c.name; p.cls = c.cls; p.level = c.level;
     const pos = c.pos && Number.isFinite(c.pos.x) && Number.isFinite(c.pos.z) ? c.pos : { x: Number.isFinite(options?.x) ? options.x : 0, z: Number.isFinite(options?.z) ? options.z : 5 };
     p.x = clampX(pos.x, pos.x); p.z = clamp(pos.z);
-    if (p.x > 150 && c.level < SOLARA_MIN_LEVEL) { p.x = 0; p.z = 5; }
+    if (p.x > 150 && p.x < 450 && c.level < SOLARA_MIN_LEVEL) { p.x = 0; p.z = 5; }
     this.state.players.set(client.sessionId, p);
     const now = Date.now();
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,
-      dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(8).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, drops: new Map(), dropSeq: 0 };
+      dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(8).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, drops: new Map(), dropSeq: 0, partyId: 0 };
     this.sess.set(client.sessionId, s);
+    if (p.x > 450) {                                            // estava numa dungeon: volta para a instância se ainda estiver no prazo
+      const I = c.run ? this.dg.insts.get(c.run.inst) : undefined;
+      if (I && !I.closed && c.run.until && Date.now() < c.run.until) {
+        I.members.add(client.sessionId); I.emptySince = 0; delete c.run.until; p.inst = I.id; p.z = Math.min(p.z, this.dg.maxZ(I) - 0.5);
+        client.send("dgenter", { id: I.def.id, inst: I.id, cx: I.def.cx, x: p.x, z: p.z }); this.dg.sendState(I, client.sessionId);
+      } else { const e = this.dg.entryOf(R.DUNGEONS[0]); p.x = e.x; p.z = e.z; delete c.run; client.send("dgleave", { reason: "A dungeon se fechou enquanto você estava fora.", x: e.x, z: e.z }); }
+    } else if (c.run) delete c.run;
     this.sync(s);
     this.broadcast("chat", { kind: "sys", text: `${p.name} entrou no mundo.` }, { except: client });
   }
@@ -316,7 +419,7 @@ export class WorldRoom extends Room<WorldState> {
   async onLeave(client: Client) {
     const p = this.state.players.get(client.sessionId), s = this.sess.get(client.sessionId);
     if (p) this.broadcast("chat", { kind: "sys", text: `${p.name} saiu do mundo.` }, { except: client });
-    if (s) { s.saving = false; await this.save(s); }
+    if (s) { this.dg.leave(s, false); this.partyLeave(client.sessionId); this.invites.delete(client.sessionId); s.saving = false; await this.save(s); }
     this.state.players.delete(client.sessionId);
     this.sess.delete(client.sessionId);
     for (const sim of this.sim.list) sim.contrib.delete(client.sessionId);

@@ -67,6 +67,13 @@
   .tab{padding:6px 12px;border-radius:7px;border:1px solid var(--line);background:#16212d;color:#cbd6e2;cursor:pointer;font-weight:600;font-size:12px}
   .tab.on{background:#3b3014;border-color:var(--gold);color:#ffe28a}
   .dbody{overflow:auto;max-height:52vh;padding-right:4px}
+  #dgHud{display:none;top:34px;left:50%;transform:translateX(-50%);width:330px;padding:7px 12px;z-index:5;font-size:12px;text-align:center}
+  #dgHud .dgt{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
+  #dgBar{height:5px;background:#0b1522;border-radius:4px;margin-top:5px;overflow:hidden}#dgFill{display:block;height:100%;width:0;background:#d4a62a}
+  #invBox{display:none;top:90px;left:50%;transform:translateX(-50%);padding:10px 14px;z-index:8;gap:12px;align-items:center;font-size:13px}
+  #invBox button{margin-left:6px;cursor:pointer}
+  #win-party{left:340px;top:230px;width:310px}
+  .slot .sl{position:absolute;left:2px;bottom:0;font-size:8px;color:#7fe0ff;text-shadow:0 1px 2px #000}
   .row2{display:flex;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #202c3a}
   .row2.dim{opacity:.5}
   .ri{width:40px;height:40px;border-radius:8px;border:2px solid #3b4b5c;background:#16212d;display:grid;place-items:center;font-size:21px;flex:none}
@@ -161,6 +168,7 @@
     <button data-win="char" title="Personagem (C)">🧍</button>
     <button data-win="skill" title="Habilidades (K)">📖</button>
     <button data-win="quest" title="Missões (Q)">📜</button>
+    <button data-win="party" title="Grupo (G)">👥</button>
     <button data-win="help" title="Ajuda (H)">❔</button>
     <button id="btnAudio" title="Áudio: música e efeitos (M = mutar música)">🔊</button>
     <button id="btnMenu" title="Trocar personagem">🚪</button>
@@ -569,7 +577,7 @@ scene.skipPointerMovePicking=true;
 const SC={x:300,z:0}, TOWN2_R=13;   // Solara: segunda região do mundo (centro em x=300)
 const MAP=80, TOWN_R=11, SAVE_KEY='mmorpg_proto_v3', OLD_KEY='mmorpg_proto_v2';
 const RULES=window.RULES;   // regras e dados compartilhados com o servidor (rules.js)
-const {RAR,SLOTS,STN,WN,AN,HN,BN,RN,SHN,XN,SUF,MATS,POTS,MAXRANK,CLASSES,MT,ZONES,QUESTS,QNAME,RECIPES,NPCS,SHOPS,xpNeed,upRate,upCost,sellPrice,nm}=RULES;
+const {RAR,SLOTS,STN,WN,AN,HN,BN,RN,SHN,XN,SUF,MATS,POTS,MAXRANK,CLASSES,MT,ZONES,DUNGEONS,QUESTS,QNAME,RECIPES,NPCS,SHOPS,xpNeed,upRate,upCost,sellPrice,nm}=RULES;
 const SLOT_ICON={shield:'🛡️',weapon:'⚔️',helmet:'🪖',armor:'🥋',boots:'👢',ring:'💍'};
 const BUFFN={dmg:'⚔️ Dano',crit:'🎯 Crítico',shield:'🛡️ Escudo',haste:'💨 Rapidez',defdmg:'🛡️→⚔️ Bastião',evade:'🌑 Evasão',combo:'🔥 Combo'};
 const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',comprar:'🛒 Comprar',vender:'💰 Vender',missoes:'📜 Missões',bau:'📦 Baú'};
@@ -585,7 +593,7 @@ const eff=(it,k)=>(it[k]||0)*(1+.12*(it.plus||0));
 function D(){return dcache||(dcache=RULES.stats(S));}
 const TOWNZ=[{x:0,z:0,r:TOWN_R,name:'🏰 Vila Aurora (Zona Segura)'},{x:SC.x,z:SC.z,r:TOWN2_R,name:'🏜️ Oásis de Solara (Zona Segura)'}];
 const townAt=(p,pad)=>TOWNZ.find(t=>Math.hypot(p.x-t.x,p.z-t.z)<t.r+(pad||0));
-const inTown=p=>!!townAt(p);const regionOf=p=>p.x>150?1:0;
+const inTown=p=>!!townAt(p);const regionOf=p=>p.x>450?2:p.x>150?1:0;
 const getBuff=n=>{const b=P.buffs[n];return b&&b.until>performance.now()?b.val:0;};
 const addBuff=(n,val,dur)=>{P.buffs[n]={val,until:performance.now()+dur*1000};};
 
@@ -597,6 +605,7 @@ const col=it=>it.k==='eq'?RAR[it.rar].c:'#455568';
 function tipOf(it){
  if(it.k==='eq'){const r=RAR[it.rar];let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n} • ${SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
   h+=`<span class="${S.level>=it.req?'':'no'}">Nível necessário: ${it.req}</span><br>`;
+  if(it.sl)h+=`<span style="color:#7fe0ff">Slots: ${'◇ '.repeat(it.sl)}(vazios)</span><br>`;
   if(it.atk)h+=`Ataque: <b>${Math.round(eff(it,'atk'))}</b><br>`;if(it.def)h+=`Defesa: <b>${Math.round(eff(it,'def'))}</b><br>`;if(it.hp)h+=`Vida: +${it.hp}<br>`;
   for(const s in it.bon)h+=`<span class="ok">+${it.bon[s]} ${STN[s]}</span><br>`;
   if(it.cls&&it.cls!==S.cls)h+='<span class="no">Classe incompatível</span><br>';
@@ -765,13 +774,13 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
 }
 Math.random=__rand0; // volta ao aleatório normal depois de gerar o cenário
 function collide(p,rad){for(const o of obstacles){const dx=p.x-o.x,dz=p.z-o.z,min=o.r+rad;if(Math.abs(dx)>min||Math.abs(dz)>min)continue;const d=Math.hypot(dx,dz);if(d<min&&d>1e-4){p.x=o.x+dx/d*min;p.z=o.z+dz/d*min;}}}
-const clampMap=p=>{const cx=p.x>150?SC.x:0;p.x=Math.max(cx-MAP,Math.min(cx+MAP,p.x));p.z=Math.max(-MAP,Math.min(MAP,p.z));};
+const clampMap=p=>{if(p.x>450){p.x=Math.max(588,Math.min(612,p.x));p.z=Math.max(-78,Math.min(79,p.z));if(NET.inst&&p===P.pos&&P.dgMaxZ!==undefined&&p.z>P.dgMaxZ-.5)p.z=P.dgMaxZ-.5;return;}const cx=p.x>150?SC.x:0;p.x=Math.max(cx-MAP,Math.min(cx+MAP,p.x));p.z=Math.max(-MAP,Math.min(MAP,p.z));};
 
 /* =================== NPCs =================== */
 const labels=$('labels');
 function mkLabel(html,cls){const d=document.createElement('div');d.className='lbl '+(cls||'');d.innerHTML=html;labels.appendChild(d);return d;}
 function buildNpc(d){
- if(d.portal){buildPortal(d);return;}
+ if(d.portal||d.dungeon){buildPortal(d);return;}
  const r=new BABYLON.TransformNode('npc_'+d.id,scene);r.position.set(d.x,0,d.z);r.rotation.y=Math.atan2(-d.x,-d.z);
  const add=(m,x,y,z,mt,rx)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.metadata={t:'n',ref:d};if(rx)m.rotation.x=rx;return m;};
  if(!d.chest&&d.id!=='bau'){add(B.CreateCapsule('nb',{height:1.5,radius:.38},scene),0,.85,0,mat('nc'+d.id,d.col));
@@ -791,7 +800,7 @@ function buildNpc(d){
 }
 function buildPortal(d){
  const r=new BABYLON.TransformNode('npc_'+d.id,scene);r.position.set(d.x,0,d.z);
- const A=d.id==='portal_a',col=A?'#9b7bff':'#ffcf6b',sm=A?M.stone:mat('pst'+d.id,'#b3a075');
+ const A=d.id==='portal_a',col=(d.dungeon||d.dgexit)?'#d4a62a':A?'#9b7bff':'#ffcf6b',sm=A?M.stone:mat('pst'+d.id,(d.dungeon||d.dgexit)?'#8a6f3a':'#b3a075');
  const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.metadata={t:'n',ref:d};return m;};
  for(const sx of[-1.8,1.8]){add(B.CreateBox('pp',{width:.9,height:4.2,depth:.9},scene),sx,2.1,0,sm);add(B.CreateBox('pc',{width:1.2,height:.4,depth:1.2},scene),sx,4.3,0,sm);add(B.CreateSphere('pg',{diameter:.4,segments:6},scene),sx,4.75,0,fxMat(col));obstacles.push({x:d.x+sx,z:d.z,r:.7});}
  add(B.CreateBox('lt',{width:4.8,height:.7,depth:1},scene),0,4.3,0,sm);
@@ -929,6 +938,7 @@ function buildMonster(type,id){
   for(const sx of[-1,1])add(B.CreateCapsule('a',{height:1.5,radius:.2},scene),sx*.85,2.0,.35,mn_.gold).rotation.x=.9;
   add(B.CreateCylinder('sf',{height:3.2,diameter:.1,tessellation:6},scene),1.1,1.7,.7,mn_.gold);add(B.CreateSphere('or',{diameter:.5,segments:8},scene),1.1,3.4,.7,mn_.cyan);
   add(B.CreateTorus('ha',{diameter:2.4,thickness:.1,tessellation:20},scene),0,2.2,-.9,mn_.cyan).rotation.x=Math.PI/2;sr=2;}
+ else if(type==='chest'){add(B.CreateBox('b',{width:1.5,height:.8,depth:1},scene),0,.4,0,mat('dgcb','#7a5532'));add(B.CreateCylinder('l',{height:1.5,diameter:1,tessellation:16},scene),0,.85,0,mat('dgcl','#8a6038')).rotation.z=Math.PI/2;for(const sx of[-.5,.5])add(B.CreateBox('bd',{width:.12,height:1.05,depth:1.06},scene),sx,.55,0,M.gold);add(B.CreateSphere('lk',{diameter:.25,segments:6},scene),0,.75,.52,M.gold);add(B.CreateSphere('gl',{diameter:.5,segments:6},scene),0,1.5,0,fxMat('#ffd24a'));sr=1.1;}
  else{add(B.CreateBox('b',{width:1.8,height:1.9,depth:1.3},scene),0,1.7,0,mm_.golem);add(B.CreateBox('h',{width:.95,height:.8,depth:.9},scene),0,3.1,.1,mm_.golem);
   for(const sx of[-1.25,1.25])add(B.CreateBox('a',{width:.65,height:1.7,depth:.65},scene),sx,1.6,0,mm_.golem);
   for(const sx of[-.5,.5])add(B.CreateBox('l',{width:.7,height:1.0,depth:.7},scene),sx,.5,0,mm_.golem);
@@ -1051,6 +1061,100 @@ function applyRes(r){
  if(S)refreshUI();
 }
 
+
+/* =================== DUNGEON: CENÁRIO, HUD E ESTÁTUAS =================== */
+const DG={built:false,root:null,ground:null,gates:[],objs:[],st:null};
+const allNpcs=()=>NET.inst?NPCS.concat(DG.objs):NPCS;
+function buildDungeon(){
+ if(DG.built){DG.root.setEnabled(true);for(const o of DG.objs)o.label.style.display='';return;}
+ DG.built=true;const cx=600,def=DUNGEONS[0];
+ const root=new BABYLON.TransformNode('dgroot',scene);DG.root=root;
+ const stoneM=mat('dgst','#6b5a43'),floorM=mat('dgfl','#4a3f30'),darkM=mat('dgdk','#2a221b'),carpet=mat('dgcp','#5a1f24');
+ const ng=(m)=>{m.parent=root;m.isPickable=false;return m;};
+ const g=B.CreateGround('dgground',{width:30,height:170},scene);g.position.set(cx,0,0);g.material=floorM;g.parent=root;g.isPickable=true;DG.ground=g;
+ const car=ng(B.CreateBox('dgcarpet',{width:5,height:.04,depth:160},scene));car.position.set(cx,.03,0);car.material=carpet;
+ for(const sx of[-1,1]){const w=ng(B.CreateBox('dgw',{width:2,height:7,depth:166},scene));w.position.set(cx+sx*14,3.5,0);w.material=stoneM;}
+ for(const sz of[-1,1]){const w=ng(B.CreateBox('dgwe',{width:30,height:7,depth:2},scene));w.position.set(cx,3.5,sz*84);w.material=stoneM;}
+ for(let z=-72;z<=78;z+=12)for(const sx of[-1,1]){
+  const p=ng(B.CreateBox('dgp',{width:1,height:5,depth:1},scene));p.position.set(cx+sx*11.6,2.5,z);p.material=darkM;
+  const t=ng(B.CreateSphere('dgt',{diameter:.5,segments:6},scene));t.position.set(cx+sx*11.6,5.3,z);t.material=fxMat('#ff9a3a');}
+ for(let z=-66;z<=72;z+=22){const r=ng(B.CreateTorus('dgrun',{diameter:5,thickness:.12,tessellation:24},scene));r.position.set(cx,.06,z);r.rotation.x=0;r.material=fxMat('#7a5a2a');}
+ // portões: ficam fechados até concluir a etapa
+ def.gates.slice(0,-1).forEach((gz,i)=>{const b=ng(B.CreateBox('dggate',{width:26,height:5,depth:1.2},scene));b.position.set(cx,2.5,gz+.4);b.material=mat('dggm','#7a5a22','#3a2500');DG.gates.push(b);});
+ // estátuas com missão
+ def.stages.forEach(st=>{if(st.k!=='statue')return;
+  const o={id:st.id,name:'🗿 '+st.name,icon:'🗿',x:cx,z:st.z,tabs:[],greet:'',statue:true};
+  const r=new BABYLON.TransformNode('st_'+st.id,scene);r.parent=root;r.position.set(cx,0,st.z);
+  const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.metadata={t:'n',ref:o};return m;};
+  const gm=mat('dgstat','#9aa0a8','#1b1f26');
+  add(B.CreateBox('pd',{width:2,height:.8,depth:2},scene),0,.4,0,stoneM);add(B.CreateCapsule('sb',{height:2.6,radius:.62},scene),0,2.1,0,gm);add(B.CreateSphere('sh',{diameter:.95,segments:8},scene),0,3.8,0,gm);
+  add(B.CreateCylinder('sf',{height:3.4,diameter:.14,tessellation:6},scene),1.1,2.2,.2,stoneM);add(B.CreateSphere('so',{diameter:.4,segments:6},scene),1.1,4.0,.2,fxMat('#7ae0ff'));
+  for(const sx of[-.18,.18])add(B.CreateSphere('se',{diameter:.12},scene),sx,3.85,.42,fxMat('#7ae0ff'));
+  obstacles.push({x:cx,z:st.z,r:1.3});o.root=r;o.pos=r.position;o.label=mkLabel(o.name,'npc');DG.objs.push(o);});
+ // saída (no começo)
+ const ex={id:'dg_exit',name:'🚪 Saída da Cripta',icon:'🚪',x:cx,z:-77,tabs:[],greet:'',dgexit:true};buildPortal(ex);ex.root.parent=root;DG.objs.push(ex);
+}
+function hideDungeon(){
+ if(DG.root)DG.root.setEnabled(false);for(const o of DG.objs)o.label.style.display='none';
+ for(const m of DGV.values()){m.alive=false;m.dying=false;m.id=0;m.root.setEnabled(false);m.plate.style.display='none';}
+ scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
+}
+function leaveDungeonLocal(m){
+ NET.inst=0;P.inst=0;DG.st=null;P.dgMaxZ=undefined;hideDungeon();$('dgHud').style.display='none';
+ if(m&&Number.isFinite(m.x)){P.pos.set(m.x,0,m.z);camera.target.copyFromFloats(m.x,.6,m.z);}
+ P.moveTo=null;P.atkTarget=null;P.interact=null;selectMonster(null);closeDialog();
+ if(m&&m.reason){toast(m.reason);logMsg(`<span style="color:#ffb86b">${m.reason}</span>`);}
+ ring(P.pos.x,P.pos.z,2.6,'#d4a62a',700);AUD.sfx('teleport');
+}
+function enterDungeonLocal(m){
+ NET.inst=m.inst;P.inst=m.inst;buildDungeon();closeDialog();
+ P.pos.set(m.x,0,m.z);camera.target.copyFromFloats(m.x,.6,m.z);P.moveTo=null;P.atkTarget=null;P.interact=null;selectMonster(null);cancelRecall();
+ scene.clearColor=new BABYLON.Color4(.02,.015,.03,1);ring(P.pos.x,P.pos.z,2.8,'#d4a62a',800);AUD.sfx('teleport');
+ const d=DUNGEONS.find(x=>x.id===m.id);toast('🏺 '+d.name);logMsg(`<span style="color:#ffe28a">🏺 Você entrou em <b>${d.name}</b>. Tempo: ${Math.round(d.time/60)} min. Fale com as estátuas (E) e destrua os baús dos chefes!</span>`);
+}
+function enterDungeon(n){
+ if(!NET.room){toast('As dungeons só funcionam online.');return;}
+ const d=DUNGEONS.find(x=>x.id===n.dungeon);if(!d)return;
+ if(S.level<d.minLevel){toast('🔒 '+d.name+' exige nível '+d.minLevel+'.');return;}
+ NET.room.send('dgenter',{id:d.id});
+}
+document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" class="panel"><div class="dgt"><b id="dgName"></b><span id="dgTime"></span></div><div id="dgObj"></div><div id="dgBar"><i id="dgFill"></i></div></div>
+<div id="invBox" class="panel"><span id="invTxt"></span><div><button id="invOk">Aceitar</button><button id="invNo">Recusar</button></div></div>
+<div id="win-party" class="panel win"><h3><span>👥 Grupo</span><button class="x" data-close="party">✕</button></h3><div id="partyBody"></div></div>`);
+function updDgHud(){
+ const h=$('dgHud'),m=DG.st;if(!NET.inst||!m){h.style.display='none';return;}h.style.display='block';
+ const left=Math.max(0,Math.floor((m.endsAt-sharedNow())/1000)),mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
+ $('dgName').textContent='🏺 '+m.name;$('dgTime').textContent='⏱ '+mm+':'+ss;$('dgTime').style.color=left<300?'#ff6b6b':'#ffe28a';
+ $('dgObj').innerHTML=m.done?'<span class="ok">✔ Dungeon concluída! Colete os tesouros e saia pela Saída.</span>':`<b>Etapa ${m.stage+1}/${m.total}</b> — ${m.text}${m.need?` <b style="color:${m.cur>=m.need?'#6fdc7f':'#ffd27a'}">${m.cur}/${m.need}</b>`:''}`;
+ $('dgFill').style.width=(m.done?100:Math.min(100,(m.stage+(m.need?m.cur/m.need:0))/m.total*100))+'%';
+}
+function updateDungeon(){if(!NET.inst)return;for(const o of DG.objs){if(hyp(P.pos,o.pos)<16)place(o.label,o.pos,o.dgexit?5.2:5);else o.label.style.display='none';}}
+
+/* =================== GRUPO =================== */
+let PARTY=null;
+function renderParty(){
+ const b=$('partyBody');if(!b)return;
+ const me=S&&S.name,lead=PARTY&&PARTY.leader===me;
+ let h='';
+ if(PARTY){h+=`<div class="muted" style="margin-bottom:6px">Membros (${PARTY.members.length}/6)</div>`+PARTY.members.map(m=>`<div class="row2"><div class="ri">${(CLASSES[m.cls]||{}).i||'👤'}</div><div class="rt"><b>${m.n===PARTY.leader?'👑 ':''}${esc(m.n)}</b> <small style="display:inline">Nv ${m.lv}${m.dg?' • 🏺 na dungeon':''}</small></div>${lead&&m.n!==me?`<div class="rb"><button data-kick="${esc(m.n)}">Expulsar</button></div>`:''}</div>`).join('');}
+ else h+='<p class="muted">Você não está em um grupo. Convide alguém pelo nome — ao aceitar, vocês formam um grupo (até 6). Em grupo, quem tem ingresso entra na mesma dungeon.</p>';
+ if(!PARTY||lead)h+=`<div style="display:flex;gap:6px;margin-top:8px"><input id="pInv" maxlength="16" placeholder="Nome do jogador" style="flex:1;min-width:0;background:#0b1320;border:1px solid var(--line);color:#fff;border-radius:6px;padding:6px"><button data-pinv="1">Convidar</button></div>`;
+ if(PARTY)h+='<div style="margin-top:8px"><button data-pleave="1">Sair do grupo</button> <span class="muted">Chat do grupo: /p mensagem</span></div>';
+ b.innerHTML=h;
+}
+$('win-party').addEventListener('click',e=>{
+ if(!NET.room)return;
+ if(e.target.closest('[data-pinv]')){const v=$('pInv').value.trim();if(v){NET.room.send('pinvite',{name:v});$('pInv').value='';}return;}
+ const k=e.target.closest('[data-kick]');if(k){NET.room.send('pkick',{name:k.dataset.kick});return;}
+ if(e.target.closest('[data-pleave]'))NET.room.send('pleave');
+});
+$('win-party').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='pInv'){const v=e.target.value.trim();if(v&&NET.room){NET.room.send('pinvite',{name:v});e.target.value='';}}});
+let invT=null;
+function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
+$('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
+$('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
+if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters}};
+
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
  const x=pos.x+rnd(-1.2,1.2),z=pos.z+rnd(-1.2,1.2);const root=new BABYLON.TransformNode('drop',scene);root.position.set(x,0,z);
@@ -1115,7 +1219,7 @@ function die(){
  P.root.rotation.z=Math.PI/2;$('death').style.display='flex';ACT({t:'died'});save();
 }
 function revive(){
- P.dead=false;AUD.sfx('revive');P.root.rotation.z=0;{const t=nearestTown();P.pos.set(t.x,0,t.z);camera.target.copyFromFloats(t.x,.6,t.z);}P.hp=D().maxHp*.7;P.mp=D().maxMp*.5;$('death').style.display='none';if(NET.room)NET.room.send('revive');
+ P.dead=false;AUD.sfx('revive');P.root.rotation.z=0;{const t=NET.inst?{x:600,z:-72}:nearestTown();P.pos.set(t.x,0,t.z);camera.target.copyFromFloats(t.x,.6,t.z);}P.hp=D().maxHp*.7;P.mp=D().maxMp*.5;$('death').style.display='none';if(NET.room)NET.room.send('revive');
 }
 function basicAttack(m,now){
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');P.atkTarget=null;return;}
@@ -1214,26 +1318,43 @@ function usePot(kind){
 
 /* =================== IA DOS MONSTROS =================== */
 /* Monstros compartilhados: a posição, a vida e o estado vêm do servidor; aqui só se desenha. */
+const plateTxt=m=>m.T.chest?`${m.T.n}`:`${m.T.n} <span>Nv ${m.lvl}</span>`;
+function syncMon(m,sm,dt,now){
+ const p=m.pos,T=m.T;
+ if(sm.alive&&!m.alive){m.alive=true;m.dying=false;m.root.setEnabled(true);m.root.scaling.setAll(m.bs);p.set(sm.x,0,sm.z);m.lvl=sm.lvl;m.pn.innerHTML=plateTxt(m);m.hp=sm.hp;m.maxHp=sm.maxHp;}
+ if(!sm.alive){
+  if(m.alive){m.alive=false;m.dying=true;m.deadAt=now;AUD.mon(m.type,'death',spat(p,T.boss?45:28));if(P.sel===m)selectMonster(null);if(P.atkTarget===m)P.atkTarget=null;m.plate.style.display='none';}
+  if(m.dying){const t=(now-m.deadAt)/350;if(t>=1){m.root.setEnabled(false);m.dying=false;}else m.root.scaling.y=m.bs*(1-t)+.01;}
+  return;
+ }
+ if(m.lvl!==sm.lvl){m.lvl=sm.lvl;m.pn.innerHTML=plateTxt(m);}
+ m.hp=sm.hp;m.maxHp=sm.maxHp;m.pf.style.width=(m.hp/m.maxHp*100)+'%';
+ const dx=sm.x-p.x,dz=sm.z-p.z,d=Math.hypot(dx,dz);
+ if(d>10){p.x=sm.x;p.z=sm.z;}else{const k=Math.min(1,dt*12);p.x+=dx*k;p.z+=dz*k;}
+ m.moving=d>.04;if(m.moving)m.root.rotation.y=sm.rot;
+ const hs=now-(m.hitAt||0)<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
+ m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);
+ p.y=m.moving?(m.type==='slime'?Math.abs(Math.sin(now*.009+m.id))*.3:Math.abs(Math.sin(now*.012+m.id))*.07):0;
+ if(P.sel===m)updateTarget();
+}
+/* Monstros da dungeon: criados sob demanda (um por "posição" da instância) e reaproveitados. */
+const DGV=new Map();
+function spawnDg(type,slot){
+ const T=MT[type],model=T.model||type;
+ const root=buildMonster(model,'dg'+slot);
+ const m={id:0,type:model,T,zone:null,root,pos:root.position,bs:T.boss?1.6:1,alive:false,plate:null,dg:true,slot};
+ root.getChildMeshes().forEach(c=>{if(c.isPickable!==false)c.metadata={t:'m',ref:m};});
+ m.plate=mkLabel('<div class="pn"></div><div class="pb"><i></i></div>','plate');m.pn=m.plate.querySelector('.pn');m.pf=m.plate.querySelector('i');
+ root.setEnabled(false);m.plate.style.display='none';monsters.push(m);DGV.set(slot,m);return m;
+}
 function netMonsters(dt,now){
  const st=NET.room.state;if(!st||!st.monsters)return;
- for(const m of monsters){
-  const sm=st.monsters.get(String(m.id));if(!sm)continue;const p=m.pos,T=m.T;
-  if(sm.alive&&!m.alive){m.alive=true;m.dying=false;m.root.setEnabled(true);m.root.scaling.setAll(m.bs);p.set(sm.x,0,sm.z);m.lvl=sm.lvl;m.pn.innerHTML=`${T.n} <span>Nv ${m.lvl}</span>`;m.hp=sm.hp;m.maxHp=sm.maxHp;}
-  if(!sm.alive){
-   if(m.alive){m.alive=false;m.dying=true;m.deadAt=now;AUD.mon(m.type,'death',spat(p,T.boss?45:28));if(P.sel===m)selectMonster(null);if(P.atkTarget===m)P.atkTarget=null;m.plate.style.display='none';}
-   if(m.dying){const t=(now-m.deadAt)/350;if(t>=1){m.root.setEnabled(false);m.dying=false;}else m.root.scaling.y=m.bs*(1-t)+.01;}
-   continue;
-  }
-  if(m.lvl!==sm.lvl){m.lvl=sm.lvl;m.pn.innerHTML=`${T.n} <span>Nv ${m.lvl}</span>`;}
-  m.hp=sm.hp;m.maxHp=sm.maxHp;m.pf.style.width=(m.hp/m.maxHp*100)+'%';
-  const dx=sm.x-p.x,dz=sm.z-p.z,d=Math.hypot(dx,dz);
-  if(d>10){p.x=sm.x;p.z=sm.z;}else{const k=Math.min(1,dt*12);p.x+=dx*k;p.z+=dz*k;}
-  m.moving=d>.04;if(m.moving)m.root.rotation.y=sm.rot;
-  const hs=now-(m.hitAt||0)<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
-  m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);
-  p.y=m.moving?(m.type==='slime'?Math.abs(Math.sin(now*.009+m.id))*.3:Math.abs(Math.sin(now*.012+m.id))*.07):0;
-  if(P.sel===m)updateTarget();
- }
+ for(const m of monsters){if(m.dg)continue;const sm=st.monsters.get(String(m.id));if(sm)syncMon(m,sm,dt,now);}
+ if(NET.inst)st.monsters.forEach(sm=>{
+  if(sm.inst!==NET.inst)return;const slot=sm.id-NET.inst*200;let m=DGV.get(slot);
+  if(!m){if(!sm.alive)return;m=spawnDg(sm.type,slot);}
+  m.id=sm.id;syncMon(m,sm,dt,now);
+ });
 }
 
 
@@ -1328,7 +1449,7 @@ function regen(dt,now){
 
 /* =================== INPUT =================== */
 const mouse={x:0,y:0,on:false};let held=false,lastMoveSet=0;
-function pickAt(x,y){const p=scene.pick(x,y,mesh=>mesh===ground||mesh===ground2||!!mesh.metadata);if(!p||!p.hit)return null;const md=p.pickedMesh.metadata;return {md:md&&md.t?md:null,point:p.pickedPoint};}
+function pickAt(x,y){const p=scene.pick(x,y,mesh=>mesh===ground||mesh===ground2||mesh===DG.ground||!!mesh.metadata);if(!p||!p.hit)return null;const md=p.pickedMesh.metadata;return {md:md&&md.t?md:null,point:p.pickedPoint};}
 function selectMonster(m){P.sel=m&&m.alive?m:null;updateTarget();}
 function updateTarget(){const t=$('target'),m=P.sel;if(m&&m.alive){t.style.display='block';$('targetName').innerHTML=`${m.T.n} <span style="color:#ffd27a">Nv ${m.lvl}</span>`;$('targetFill').style.width=(m.hp/m.maxHp*100)+'%';m.pf.style.width=(m.hp/m.maxHp*100)+'%';}else t.style.display='none';}
 function clickMark(pt){ring(pt.x,pt.z,.7,'#ffffff',350,.12);}
@@ -1352,16 +1473,16 @@ window.addEventListener('keydown',e=>{
  if(e.code==='Space'){e.preventDefault();if(!P.dead){const n=nearestMonster(CLASSES[S.cls].range+3);if(n){selectMonster(n);P.atkTarget=n;}else toast('Nenhum inimigo por perto');}return;}
  if(k>='1'&&k<='8'){castSkill(+k-1);return;}
  if(k==='9'){usePot('hp');return;}if(k==='0'){usePot('mp');return;}
- if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=NPCS.find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
+ if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){const off=AUD.toggleMusic();toast(off?'🔇 Música desligada':'🎵 Música ligada');return;}
  if(k==='b'){startRecall();return;}
- if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='h')toggleWin('help');
- else if(k==='escape'){AUDUI.panel(false);closeDialog();['inv','char','quest','skill','help'].forEach(w=>setWin(w,false));}
+ if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='h')toggleWin('help');
+ else if(k==='escape'){AUDUI.panel(false);closeDialog();['inv','char','quest','skill','party','help'].forEach(w=>setWin(w,false));}
 });
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 /* =================== JANELAS =================== */
-const WINID={inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',help:'help'};
+const WINID={inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',help:'help'};
 function setWin(n,show){$(WINID[n]).style.display=show?'block':'none';if(show)refreshUI();}
 function toggleWin(n){AUD.sfx('ui');setWin(n,$(WINID[n]).style.display!=='block');}
 document.addEventListener('click',e=>{
@@ -1398,7 +1519,7 @@ $('invSell').addEventListener('click',e=>{const b=e.target.closest('[data-sellac
 
 function renderInv(){
  for(const i of [...SELL])if(!S.inv[i])SELL.delete(i);
- $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`).join('');
+ $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${'◆'.repeat(it.sl)}</span>`:''):''}</div>`).join('');
  $('invGold').textContent='💰 '+S.gold;updInvSell();
 }
 $('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
@@ -1444,7 +1565,7 @@ function renderTracker(){
 
 /* =================== DIÁLOGO NPC =================== */
 let dlg=null;
-function openDialog(npc){if(npc.portal){usePortal(npc);return;}if(npc.id==='mestre'){setWin('skill',true);return;}dlg={npc,tab:npc.tabs[0]};$('dialog').style.display='flex';renderDialog();}
+function openDialog(npc){if(npc.dgexit){if(NET.room)NET.room.send('dgexit');return;}if(npc.statue){if(NET.room)NET.room.send('dgtalk',{id:npc.id});return;}if(npc.dungeon){enterDungeon(npc);return;}if(npc.portal){usePortal(npc);return;}if(npc.id==='mestre'){setWin('skill',true);return;}dlg={npc,tab:npc.tabs[0]};$('dialog').style.display='flex';renderDialog();}
 function closeDialog(){const was=!!dlg;dlg=null;SELL.clear();$('dialog').style.display='none';if(was&&S)refreshUI();}
 let portalAt=0;
 function usePortal(n){
@@ -1474,6 +1595,8 @@ function renderDialog(){
  }else if(dlg.tab==='bau'){
   const slotH=(it,act,i,at)=>`<div class="slot" data-act="${act}" data-id="${i}" ${at}="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`;
   h+=`<div class="dsec">📦 Baú compartilhado (${ACC.stash.filter(Boolean).length}/${ACC.stash.length}) — clique para retirar</div><div class="stgrid">`+ACC.stash.map((it,i)=>slotH(it,'wd',i,'data-st')).join('')+`</div><div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid">`+S.inv.map((it,i)=>slotH(it,'dep',i,'data-inv')).join('')+'</div>';
+ }else if(dlg.tab==='dungeon'){
+  h+=DUNGEONS.map(d=>{const hv=(S.tix&&S.tix[d.id])||0,okL=S.level>=d.minLevel,okG=S.gold>=d.price;return `<div class="row2"><div class="ri">${d.icon}</div><div class="rt"><b>${d.name}</b> <small style="display:inline">(Nv ${d.minLevel}+ • ⏱ ${Math.round(d.time/60)} min • até 6 jogadores)</small><small>${d.desc}</small><small>🎟️ Você tem: <b>${hv}</b> ingresso(s)</small></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${d.price}</div><button data-act="buyticket" data-id="${d.id}" ${okL&&okG?'':'disabled'}>Comprar</button></div></div>`;}).join('')+'<p class="muted">O ingresso é gasto ao entrar. Se você sair (ou a conexão cair), tem <b>5 minutos</b> para voltar sem pagar de novo. Em grupo, o líder entra primeiro e os outros entram em seguida, cada um com seu ingresso. Vá até a entrada, no canto mais afastado do deserto, e fale com o portal.</p>';
  }else if(dlg.tab==='vender'){
   const rows=S.inv.map((it,i)=>it?`<div class="row2${SELL.has(i)?' sel':''}" data-act="selsell" data-id="${i}"><div class="ri" data-inv="${i}" style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}${it.n>1?' ×'+it.n:''}</b></div><div class="rb"><div class="ok">💰 ${sellPrice(it)}</div><button data-act="sell" data-id="${i}">Vender</button>${it.n>1?`<button data-act="sellall" data-id="${i}">Tudo</button>`:''}</div></div>`:'').join('');
   h+='<p class="muted">Clique nas linhas (ou nos itens da mochila) para selecionar vários e vender de uma vez.</p>'+(rows||'<p class="muted">Mochila vazia.</p>')+sellBarHtml();
@@ -1496,6 +1619,7 @@ $('dialog').addEventListener('click',e=>{
  if(a==='craft'){ACT({t:'craft',npc,id});return;}
  if(a==='up'){ACT({t:'up',npc,ref:id});return;}
  if(a==='buy'){ACT({t:'buy',npc,id});return;}
+ if(a==='buyticket'){ACT({t:'buyticket',npc,id});return;}
  if(a==='selsell'){toggleSel(+id);return;}if(a==='sellsel'){sellSelected();return;}if(a==='selclear'){SELL.clear();refreshUI();return;}
  if(a==='selcommon'){selectWhere(it=>it.k==='eq'&&it.rar===0&&!(it.plus>0));return;}if(a==='selmats'){selectWhere(it=>it.k==='mat');return;}
  if(a==='sell'||a==='sellall'){ACT({t:'sell',npc,i:+id,all:a==='sellall'});return;}
@@ -1516,7 +1640,7 @@ function updateSkillbar(now){
  for(let j=0;j<2;j++){const k=j?'mp':'hp',pc=have(k)+have(k+'2');els[8+j].querySelector('.cnt').textContent=pc;els[8+j].style.opacity=pc?1:.45;}
  let bh='';for(const k in P.buffs){const b=P.buffs[k];if(b.until>now)bh+=`<span>${k==='combo'?'🔥 Combo ×'+P.cst:BUFFN[k]} ${Math.ceil((b.until-now)/1000)}s</span>`;}$('buffs').innerHTML=bh;
 }
-function zoneName(){{const t=townAt(P.pos);if(t)return t.name;}for(const z of ZONES)if(Math.hypot(P.pos.x-z.x,P.pos.z-z.z)<z.r+5)return z.name;return regionOf(P.pos)?'🏜️ Deserto de Solara':'Terras Selvagens';}
+function zoneName(){if(P.pos.x>450)return '🏺 Cripta das Areias';{const t=townAt(P.pos);if(t)return t.name;}for(const z of ZONES)if(Math.hypot(P.pos.x-z.x,P.pos.z-z.z)<z.r+5)return z.name;return regionOf(P.pos)?'🏜️ Deserto de Solara':'Terras Selvagens';}
 function updateHud(){
  if(!S)return;const d=D(),need=xpNeed(S.level);
  $('levelText').textContent='Nv '+S.level;$('zoneText').textContent=zoneName();
@@ -1531,14 +1655,15 @@ function refreshUI(){
  if($('win-inv').style.display==='block')renderInv();
  if($('win-char').style.display==='block')renderChar();
  if($('win-quest').style.display==='block')renderQuest();
+ if($('win-party').style.display==='block'&&document.activeElement.id!=='pInv')renderParty();
  if($('win-skill').style.display==='block')renderSkills();
  if(dlg)renderDialog();
  if(P.sel)updateTarget();
 }
 const mmC=$('mm'),mmx=mmC.getContext('2d');const mmS=mmC.width/(MAP*2);
-const mmP=(x,z)=>[(x-(regionOf(P.pos)?SC.x:0)+MAP)*mmS,(MAP-z)*mmS];
+const mmP=(x,z)=>[(x-[0,SC.x,600][regionOf(P.pos)]+MAP)*mmS,(MAP-z)*mmS];
 function drawMini(){
- const W=mmC.width;mmx.clearRect(0,0,W,W);mmx.fillStyle=regionOf(P.pos)?'#5a4a2a':'#223a2b';mmx.fillRect(0,0,W,W);
+ const W=mmC.width;mmx.clearRect(0,0,W,W);mmx.fillStyle=['#223a2b','#5a4a2a','#2a2238'][regionOf(P.pos)];mmx.fillRect(0,0,W,W);
  for(const z of ZONES){const[a,b]=mmP(z.x,z.z);mmx.fillStyle=z.col;mmx.globalAlpha=.8;mmx.beginPath();mmx.arc(a,b,(z.r+2)*mmS,0,6.283);mmx.fill();}
  mmx.globalAlpha=1;for(const t of TOWNZ){const[a,b]=mmP(t.x,t.z);mmx.fillStyle=t.x?'#c9a96a':'#7d8a96';mmx.beginPath();mmx.arc(a,b,t.r*mmS,0,6.283);mmx.fill();mmx.strokeStyle='#4be0a0';mmx.lineWidth=1.5;mmx.stroke();}
  for(const n of NPCS){const[a,b]=mmP(n.pos.x,n.pos.z);mmx.fillStyle=n.portal?'#b58cff':'#ffe28a';mmx.fillRect(a-2,b-2,4,4);}
@@ -1631,7 +1756,7 @@ $('select').addEventListener('click',e=>{
 });
 window.addEventListener('beforeunload',()=>{save();});
 setInterval(save,10000);
-setInterval(()=>{if(!S)return;hoverTick();updateHud();drawMini();updateNpcMarkers();},120);
+setInterval(()=>{if(!S)return;hoverTick();updateHud();drawMini();updateNpcMarkers();updDgHud();updateDungeon();},120);
 
 /* =================== REDE: LOGIN, SAVE NO SERVIDOR, MULTIPLAYER =================== */
 const ONLINE=location.protocol.startsWith('http');let TOKEN=null;
@@ -1655,7 +1780,7 @@ async function startFlow(){
  if(TOKEN){try{await enterWithAccount();return;}catch(e){if(e.status===401){TOKEN=null;try{localStorage.removeItem('mmo_token');}catch(_){}}else{$('login').style.display='flex';$('lgErr').textContent='Servidor indisponível: '+e.message;return;}}}
  $('login').style.display='flex';}
 
-const NET={room:null,others:new Map(),lv:0,tm:0,stop:false,off:0,ack:false};
+const NET={room:null,others:new Map(),lv:0,tm:0,stop:false,off:0,ack:false,inst:0};
 const sharedNow=()=>Date.now()+NET.off;   // relógio do servidor: todos veem os NPCs no mesmo ponto
 const PCOL={guerreiro:'#b5543a',arqueiro:'#4a9a5a',mago:'#6a4ab5',assassino:'#3a3a4a',cavaleiro:'#8a95a5'};
 function killRemote(o){o.root.dispose();o.label.remove();}
@@ -1667,7 +1792,7 @@ async function netJoin(){
   const cl=new Colyseus.Client(location.origin.replace(/^http/,'ws'));
   const room=await cl.joinOrCreate('world',{token:TOKEN,charId:S.id,x:P.pos.x,z:P.pos.z});
   NET.room=room;NET.lv=S.level;
-  room.onMessage('chat',m=>{const c=m.kind==='w'?'#e08cff':m.kind==='sys'?'#9fb0c2':'#cbd6e2';logMsg(`<span style="color:${c}">${m.kind==='w'?'[Sussurro] ':''}${m.from?'<b>'+esc(m.from)+'</b>: ':''}${esc(m.text)}</span>`);});
+  room.onMessage('chat',m=>{const c=m.kind==='w'?'#e08cff':m.kind==='p'?'#7fe0ff':m.kind==='sys'?'#9fb0c2':'#cbd6e2';logMsg(`<span style="color:${c}">${m.kind==='w'?'[Sussurro] ':m.kind==='p'?'[Grupo] ':''}${m.from?'<b>'+esc(m.from)+'</b>: ':''}${esc(m.text)}</span>`);});
   room.onMessage('correct',m=>{if(hyp(P.pos,m)>3){P.pos.x=m.x;P.pos.z=m.z;P.moveTo=null;}});
   room.onMessage('sync',m=>{
    if(!m||!m.c)return;S=m.c;if(ACC){const i=ACC.chars.findIndex(c=>c.id===S.id);if(i>=0)ACC.chars[i]=S;ACC.stash=m.st||ACC.stash;}
@@ -1683,10 +1808,15 @@ async function netJoin(){
    if(mine||hyp(P.pos,mo.pos)<30)floatText((m.c?'💥 ':'')+m.d,mo.pos,mine?(m.c?'#ffd84a':'#ffffff'):(m.c?'#e8c870':'#b8c4d0'),mine&&!!m.c);});
   room.onMessage('mhit',m=>{const mo=monsters.find(x=>x.id===m.id);damagePlayer(m.raw,mo);});
   room.onMessage('mat',m=>{const mo=monsters.find(x=>x.id===m.id);if(!mo||!mo.alive)return;mo.lungeAt=performance.now();AUD.mon(mo.type,'attack',spat(mo.pos,mo.T.boss?45:28));});
-  room.onMessage('slam',m=>{ring(m.x,m.z,m.r,'#ff3b3b',1000);const mo=monsters.find(x=>x.T.boss&&hyp(x.pos,m)<3);if(mo)AUD.mon(mo.type,'slam',spat(mo.pos,45));});
+  room.onMessage('slam',m=>{if((m.inst||0)!==(NET.inst||0))return;ring(m.x,m.z,m.r,'#ff3b3b',1000);const mo=monsters.find(x=>x.T.boss&&hyp(x.pos,m)<3);if(mo)AUD.mon(mo.type,'slam',spat(mo.pos,45));});
   room.onMessage('fx',m=>remoteSkill(m));
+  room.onMessage('dgenter',m=>enterDungeonLocal(m));
+  room.onMessage('dgleave',m=>leaveDungeonLocal(m));
+  room.onMessage('dg',m=>{DG.st=m;P.dgMaxZ=m.maxZ;DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));updDgHud();});
+  room.onMessage('party',m=>{PARTY=m;renderParty();});
+  room.onMessage('pinv',m=>showInvite(m.from));
   room.onMessage('matk',m=>remoteBasic(m));
-  room.onLeave(code=>{NET.room=null;clearOthers();if(code===4001){toast('Sua conta entrou em outro lugar.');return;}if(!NET.stop){toast('Conexão perdida. Reconectando...');setTimeout(netJoin,3000);}});
+  room.onLeave(code=>{NET.room=null;PARTY=null;clearOthers();if(code===4001){toast('Sua conta entrou em outro lugar.');return;}if(!NET.stop){toast('Conexão perdida. Reconectando...');setTimeout(netJoin,3000);}});
   logMsg('<span style="color:#6fdc7f">🌐 Conectado ao mundo online. Monstros, XP e drops são calculados pelo servidor. Enter = chat.</span>');
  }catch(e){console.warn('Multiplayer indisponível:',e.message||e);logMsg('<span style="color:#ff9a6a">⚠️ Multiplayer indisponível: '+esc(String(e.message||e))+'</span>');if(!NET.stop)setTimeout(netJoin,8000);}}
 function mkRemote(p){const o={cls:PCOL[p.cls]?p.cls:'mago',swingAt:0,lv:-1};const r=buildModel(o.cls,o);r.position.set(p.x,0,p.z);o.root=r;o.label=mkLabel('','plate');return o;}
@@ -1719,7 +1849,7 @@ function remoteBasic(m){
 }
 function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(ni&&S)ni.textContent=ONLINE?'🌐 sem conexão com o mundo online':'🌐 modo offline';return;}
  const st=room.state;if(!st||!st.players)return;const seen=new Set();if(ni)ni.textContent='🌐 '+st.players.size+' online • '+Math.max(0,st.players.size-1)+' outro(s) visível(is)';
- st.players.forEach((p,id)=>{if(id===room.sessionId)return;seen.add(id);let o=NET.others.get(id);if(!o){o=mkRemote(p);NET.others.set(id,o);}
+ st.players.forEach((p,id)=>{if(id===room.sessionId)return;if((p.inst||0)!==(NET.inst||0))return;seen.add(id);let o=NET.others.get(id);if(!o){o=mkRemote(p);NET.others.set(id,o);}
   const pos=o.root.position,dx=p.x-pos.x,dz=p.z-pos.z,d=Math.hypot(dx,dz);
   if(d>25){pos.x=p.x;pos.z=p.z;}else{const k=Math.min(1,dt*10);pos.x+=dx*k;pos.z+=dz*k;}
   if(d>.05)o.root.rotation.y=Math.atan2(dx,dz);
@@ -1740,6 +1870,7 @@ document.body.insertAdjacentHTML('beforeend','<div id="recallBar" style="display
 function nearestTown(){let b=TOWNS[0],bd=1e9;for(const t of TOWNS){const d=hyp(P.pos,t);if(d<bd){bd=d;b=t;}}return b;}
 function startRecall(){
  if(!S||P.dead)return;const now=performance.now();
+ if(NET.inst){toast('O retorno não funciona dentro da dungeon. Use a Saída.');return;}
  if(P.recall){toast('Você já está retornando...');return;}
  const t=nearestTown();
  if(townAt(P.pos,-1)){toast('Você já está na zona segura.');return;}
