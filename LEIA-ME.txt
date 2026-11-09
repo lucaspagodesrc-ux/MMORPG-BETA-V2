@@ -1,4 +1,3 @@
-APARÊNCIA DOS ITENS (1.1)
-Suba no GitHub (raiz), substituindo: index.html, rules.js, schema.ts, WorldRoom.ts
-Depois aguarde o deploy do Render e use Ctrl+F5.
-Personagens e itens antigos são mantidos (itens antigos não têm origem: aparecem com a cor da raridade).
+NOVAS CLASSES: TANQUE e PIERROT + habilidades até o rank 20 (1.2)
+Suba no GitHub (raiz), substituindo: index.html, rules.js, schema.ts, monsters.ts, WorldRoom.ts, dungeon.ts, auth.ts
+Depois aguarde o deploy do Render e use Ctrl+F5. Personagens existentes são mantidos.

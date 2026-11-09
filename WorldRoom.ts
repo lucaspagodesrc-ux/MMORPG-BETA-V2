@@ -28,7 +28,7 @@ type Sess = {
   tokens: number; tokT: number;
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number;
   drops: Map<number, { item: any; x: number; z: number; exp: number }>; dropSeq: number;
-  partyId: number;
+  partyId: number; clone?: { n: number; mult: number; until: number };
 };
 type Party = { id: number; leader: string; members: string[] };
 
@@ -100,10 +100,13 @@ export class WorldRoom extends Room<WorldState> {
     const sid = s.client.sessionId, p = this.state.players.get(sid);
     if (!p || p.dead) return;
     const buffs = { dmg: this.buff(s, "dmg"), defdmg: this.buff(s, "defdmg"), crit: this.buff(s, "crit"), combo: this.buff(s, "combo") };
-    const r = R.hitDamage(this.stats(s), { mult, defMult: o.defMult, exec: o.exec, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def, hp: sim.m.hp, maxHp: sim.m.maxHp });
+    const r = R.hitDamage(this.stats(s), { mult, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def, hp: sim.m.hp, maxHp: sim.m.maxHp });
     const died = this.sim.damage(sid, sim, r.dmg, o.slow || 0);
     this.broadcast("dmg", { id: sim.m.id, d: r.dmg, c: r.crit ? 1 : 0, by: sid });
-    if (died) this.onKill(sim);
+    if (died) { this.onKill(sim); return; }
+    if (o.stun || o.root || o.lift || o.pull) this.sim.cc(sim, o, p.x, p.z);
+    const cl = s.clone;                                         // Pierrot: os clones atacam junto
+    if (!o.noClone && cl && cl.until > Date.now()) for (let n = 0; n < cl.n; n++) this.later(110 + n * 80, () => this.hit(s, sim, mult * cl.mult, { noClone: true }));
   }
   private hitArea(s: Sess, x: number, z: number, r: number, mult: number, o: any) {
     const inst = this.playerOf(s)?.inst || 0;
@@ -126,7 +129,7 @@ export class WorldRoom extends Room<WorldState> {
       if (R.gainXp(c, xp)) { out.push({ lvl: c.level }); const p = this.state.players.get(sid); if (p) p.level = c.level; }
       out.push(...R.questKill(c, sim.m.type));
       this.touch(s); this.sync(s); this.res(s, out);
-      for (const it of R.rollLoot(T, mlvl, c.cls)) this.addDrop(s, it, mx, mz, 0);
+      for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck")))) this.addDrop(s, it, mx, mz, 0);
     });
     if (sim.inst) this.dg.onKill(sim);
   }
@@ -138,7 +141,7 @@ export class WorldRoom extends Room<WorldState> {
     const rank = c.sk[i] || 0; if (!rank || c.level < C.skills[i].lv) return;
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
     if (now < s.cd[i] - 300) return;                                   // recarga (com folga de latência)
-    const off = !["buff", "dashBack", "heal"].includes(sk.type);
+    const off = !["buff", "dashBack", "heal", "clone"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
     let tgt: Sim | undefined;
     if (["single", "dash", "aoeTarget", "multi", "barrage"].includes(sk.type)) {
@@ -157,13 +160,20 @@ export class WorldRoom extends Room<WorldState> {
     }
     s.lastSkill = i; s.lastSkillAt = now;
     this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt ? tgt.m.id : 0, x: p.x, z: p.z }, { except: s.client });
-    const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec };
+    const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec, stun: sk.stun, root: sk.root, lift: sk.lift, pull: sk.pull, forceCrit: sk.forceCrit };
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
     switch (sk.type) {
       case "single": this.later(pr ? flight : 150, () => tgt && this.hit(s, tgt, mult, so)); break;
       case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * 190 + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); break;
       case "aoeSelf": this.later(200, () => this.hitArea(s, px, pz, sk.radius, mult, so)); break;
+      case "aoeMulti": for (let h = 0; h < sk.hits; h++) this.later(200 + h * 200, () => this.hitArea(s, p.x, p.z, sk.radius, mult, so)); break;
+      case "taunt": {
+        for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);
+        for (const sim of this.sim.list) if (sim.m.alive && sim.inst === p.inst && cx(sim.m.x) === cx(p.x) && Math.hypot(sim.m.x - px, sim.m.z - pz) <= sk.radius) this.sim.taunt(sim, s.client.sessionId, sk.dur * 1000);
+        break;
+      }
+      case "clone": s.clone = { n: sk.clones, mult: sk.cloneMult, until: now + sk.dur * 1000 }; this.broadcast("clones", { by: s.client.sessionId, n: sk.clones, dur: sk.dur }); break;
       case "aoeTarget": { const tx = tgt!.m.x, tz = tgt!.m.z; this.later(sk.meteor ? 600 : 650, () => this.hitArea(s, tx, tz, sk.radius, mult, so)); break; }
       case "barrage": case "dash": {
         const dx = tgt!.m.x - p.x, dz = tgt!.m.z - p.z, d = Math.hypot(dx, dz) || 1, mv = Math.max(0, d - (sk.type === "dash" ? 1.7 : 1.6));

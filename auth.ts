@@ -13,7 +13,7 @@ const SECRET =
     return crypto.randomBytes(32).toString("hex");
   })();
 
-export const CLASSES = ["guerreiro", "arqueiro", "mago", "assassino", "cavaleiro"];
+export const CLASSES = ["guerreiro", "arqueiro", "mago", "assassino", "cavaleiro", "tanque", "pierrot"];
 export type AuthUser = { id: number; username: string };
 
 export const signToken = (u: AuthUser) => jwt.sign({ id: u.id, username: u.username }, SECRET, { expiresIn: "30d" });

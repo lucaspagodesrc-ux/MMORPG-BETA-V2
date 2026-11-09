@@ -24,10 +24,11 @@ export class Monster extends Schema {
   rot = 0;
   alive = true;
   inst = 0;
+  st = 0;          // estados: 1 atordoado • 2 imobilizado • 4 levantado
 }
 defineTypes(Monster, {
   id: "uint32", type: "string", lvl: "uint8", hp: "float32", maxHp: "float32",
-  x: "float32", z: "float32", rot: "float32", alive: "boolean", inst: "uint16",
+  x: "float32", z: "float32", rot: "float32", alive: "boolean", inst: "uint16", st: "uint8"
 });
 
 export class WorldState extends Schema {

@@ -27,8 +27,10 @@ const BN=['Sandálias','Botas de Couro','Botas de Ferro','Botas de Aço','Botas 
 const RN=['Anel de Cobre','Anel de Prata','Anel de Ouro','Anel de Rubi','Anel Rúnico','Anel Abissal','Anel Dracônico'];
 const BRN=['Pulseira de Couro','Bracelete de Cobre','Bracelete de Prata','Bracelete de Ouro','Bracelete Rúnico','Bracelete Abissal','Bracelete Dracônico'];
 const ERN=['Brinco de Osso','Brinco de Cobre','Brinco de Prata','Brinco de Ouro','Brinco Rúnico','Brinco Abissal','Brinco Dracônico'];
+WN.tanque=['Gancho Enferrujado','Gancho de Ferro','Gancho de Aço','Corrente Rúnica','Gancho do Guardião','Gancho Abissal','Gancho Dracônico'];
+WN.pierrot=['Florete de Brinquedo','Florete de Ferro','Florete de Aço','Florete Rúnico','Florete do Arlequim','Florete Abissal','Florete Dracônico'];
 const SHN=['Escudo de Madeira','Escudo de Ferro','Escudo de Aço','Escudo Rúnico','Escudo do Guardião','Escudo Abissal','Escudo Dracônico'];
-const XN={weapon:{assassino:['Adaga Solar','Adaga Faraônica','Adaga Imortal'],cavaleiro:['Espada Solar','Espada Faraônica','Espada Imortal'],guerreiro:['Lâmina Solar','Lâmina Faraônica','Lâmina Imortal'],arqueiro:['Arco Solar','Arco Faraônico','Arco Imortal'],mago:['Cajado Solar','Cajado Faraônico','Cajado Imortal']},
+const XN={weapon:{tanque:['Gancho Solar','Gancho Faraônico','Gancho Imortal'],pierrot:['Florete Solar','Florete Faraônico','Florete Imortal'],assassino:['Adaga Solar','Adaga Faraônica','Adaga Imortal'],cavaleiro:['Espada Solar','Espada Faraônica','Espada Imortal'],guerreiro:['Lâmina Solar','Lâmina Faraônica','Lâmina Imortal'],arqueiro:['Arco Solar','Arco Faraônico','Arco Imortal'],mago:['Cajado Solar','Cajado Faraônico','Cajado Imortal']},
  armor:['Armadura Solar','Armadura Faraônica','Armadura Imortal'],helmet:['Elmo Solar','Elmo Faraônico','Elmo Imortal'],boots:['Botas Solares','Botas Faraônicas','Botas Imortais'],ring:['Anel Solar','Anel Faraônico','Anel Imortal'],bracelet:['Bracelete Solar','Bracelete Faraônico','Bracelete Imortal'],earring:['Brinco Solar','Brinco Faraônico','Brinco Imortal'],shield:['Escudo Solar','Escudo Faraônico','Escudo Imortal']};
 const SUF=['do Dragão','da Tempestade','da Sombra','do Titã','da Aurora','do Lobo'];
 const MATS={gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
@@ -36,9 +38,9 @@ const MATS={gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'�
  ferrao:{n:'Ferrão de Escorpião',i:'🦂',v:60},linho:{n:'Linho Amaldiçoado',i:'🧻',v:90},veneno:{n:'Glândula de Naja',i:'🐍',v:120},cristalsol:{n:'Cristal do Deserto',i:'🔶',v:160},garra:{n:'Garra de Chacal',i:'🐾',v:200},ankh:{n:'Ankh Sagrado',i:'☥',v:260},obsidiana:{n:'Obsidiana Negra',i:'⬛',v:700},selo:{n:'Selo do Faraó',i:'🔱',v:1200}};
 const POTS={hp:{n:'Poção de Vida',i:'🧪',v:12,pct:.4,d:'Recupera 40% da vida'},mp:{n:'Poção de Mana',i:'🔷',v:12,pct:.4,d:'Recupera 40% da mana'},
  hp2:{n:'Poção de Vida Superior',i:'🍷',v:45,pct:.7,d:'Recupera 70% da vida'},mp2:{n:'Poção de Mana Superior',i:'💧',v:45,pct:.7,d:'Recupera 70% da mana'}};
-const MAXRANK=5;
+const MAXRANK=20;
 
-/* Habilidades: lv = nível para aprender; cada rank aumenta dano/efeito (+20%), mana (+6%), reduz recarga (-4%) */
+/* Habilidades: lv = nível para aprender; ranks 1–20. Até o rank 5 o ganho é maior (+20% dano, +6% mana, -4% recarga por rank); depois cresce mais devagar. */
 const CLASSES={
  guerreiro:{n:'Guerreiro',i:'⚔️',wi:'⚔️',main:'str',base:{str:10,agi:5,int:2,vit:9},range:2.8,ranged:false,
   d:'Combate corpo a corpo. Muita vida e dano em área.',
@@ -94,9 +96,30 @@ const CLASSES={
    {n:'Impacto Sísmico',i:'💢',lv:12,cd:12,mp:28,type:'aoeSelf',mult:.8,defMult:1.5,radius:4.5,slow:3000,color:'#c9a56b',d:'Pancada no chão: dano em área baseado na DEFESA.'},
    {n:'Vontade de Ferro',i:'🩹',lv:15,cd:30,mp:25,type:'heal',pct:.3,color:'#6fdc7f',d:'Recupera 30% da vida máxima.'},
    {n:'Fortaleza Inabalável',i:'🧱',lv:20,cd:45,mp:40,type:'buff',buffs:{defdmg:1.2,shield:.4},dur:12,color:'#ffe28a',d:'120% da DEFESA vira dano e -40% de dano recebido.'},
-   {n:'Juízo do Guardião',i:'⚖️',lv:25,cd:22,mp:40,type:'single',mult:2.2,defMult:3.5,range:3.4,color:'#fff2a8',d:'Converte sua DEFESA em um golpe devastador.'}]}
+   {n:'Juízo do Guardião',i:'⚖️',lv:25,cd:22,mp:40,type:'single',mult:2.2,defMult:3.5,range:3.4,color:'#fff2a8',d:'Converte sua DEFESA em um golpe devastador.'}]},
+ tanque:{n:'Tanque',i:'⛓️',wi:'🔨',main:'vit',base:{str:6,agi:2,int:2,vit:14},range:2.8,ranged:false,
+  d:'O mais resistente: DEFESA +75%, vida +30%. Puxa, atordoa, imobiliza, levanta e PROVOCA os monstros para levar o dano.',
+  skills:[
+   {n:'Gancho de Corrente',i:'⛓️',lv:1,cd:7,mp:10,type:'single',mult:.9,defMult:.7,range:10,proj:'hook',pull:true,stun:1200,color:'#9fb4c8',d:'Arremessa o gancho, PUXA o alvo até você e o atordoa.'},
+   {n:'Pisão Sísmico',i:'🦶',lv:3,cd:9,mp:14,type:'aoeSelf',mult:.5,defMult:1,radius:4,stun:1000,color:'#c9a56b',d:'Pisa com força: dano em área baseado na DEFESA e ATORDOA os inimigos.'},
+   {n:'Provocar',i:'📢',lv:5,cd:16,mp:16,type:'taunt',radius:9,buffs:{shield:.35},dur:8,color:'#ff7a5a',d:'Provoca todos ao redor: eles passam a te focar. -35% de dano recebido.'},
+   {n:'Correntes de Aço',i:'🔗',lv:8,cd:13,mp:22,type:'aoeTarget',mult:.6,defMult:.8,radius:4,range:10,root:3500,color:'#8fb0d0',d:'Prende os inimigos da área no chão: IMOBILIZADOS.'},
+   {n:'Golpe Ascendente',i:'⏫',lv:12,cd:15,mp:28,type:'aoeSelf',mult:.8,defMult:1.3,radius:4.5,lift:1600,color:'#ffd27a',d:'Lança os inimigos para o alto: LEVANTADOS e atordoados.'},
+   {n:'Muralha de Ferro',i:'🧱',lv:15,cd:40,mp:30,type:'buff',buffs:{shield:.5,defdmg:.3},dur:12,color:'#7fa6d9',d:'-50% de dano recebido e 30% da DEFESA vira dano.'},
+   {n:'Campo de Atração',i:'🌀',lv:20,cd:24,mp:35,type:'aoeSelf',mult:.6,defMult:1,radius:9,pull:true,root:2500,color:'#a78bfa',d:'PUXA todos os inimigos próximos para perto de você e os imobiliza.'},
+   {n:'Sentença do Colosso',i:'🗿',lv:25,cd:40,mp:55,type:'aoeSelf',mult:1.4,defMult:3,radius:5.5,stun:2500,lift:2000,color:'#fff2a8',d:'Pancada colossal: dano enorme baseado na DEFESA, atordoa e levanta tudo ao redor.'}]},
+ pierrot:{n:'Pierrot',i:'🤡',wi:'🤺',main:'agi',base:{str:3,agi:12,int:4,vit:4},range:2.6,ranged:false,
+  d:'Palhaço acrobata: frágil, mas com CRÍTICO alto e muita SORTE (mais raros, slots e épicos +0~+4). Giros, estocadas e CLONES.',
+  skills:[
+   {n:'Estocada',i:'🤺',lv:1,cd:2.5,mp:6,type:'single',mult:2.1,range:3.4,color:'#ff6b9a',d:'Estocada veloz de florete.'},
+   {n:'Pirueta Giratória',i:'🌀',lv:3,cd:6,mp:14,type:'aoeSelf',mult:1.5,radius:3.6,color:'#ff9ad0',d:'Gira golpeando todos ao redor.'},
+   {n:'Passo de Bailarino',i:'💃',lv:5,cd:8,mp:12,type:'dash',mult:1.6,range:10,color:'#ffd27a',d:'Desliza até o alvo e o atravessa com uma estocada.'},
+   {n:'Truque da Sorte',i:'🍀',lv:8,cd:30,mp:20,type:'buff',buffs:{crit:.3,luck:.6},dur:15,color:'#6fdc7f',d:'+30% crítico e +60% de SORTE nos drops por 15s.'},
+   {n:'Estocada Tripla',i:'⚔️',lv:12,cd:8,mp:22,type:'multi',hits:3,mult:1.15,range:3.6,color:'#ff6b9a',d:'Três estocadas seguidas no alvo.'},
+   {n:'Clones Ilusórios',i:'👥',lv:15,cd:30,mp:30,type:'clone',cloneMult:.25,dur:15,color:'#c79bff',d:'Cria clones que atacam junto com você. +1 clone a cada 4 ranks (rank 1, 5, 9, 13, 17).'},
+   {n:'Redemoinho Circense',i:'🎪',lv:20,cd:16,mp:38,type:'aoeMulti',hits:4,mult:.95,radius:4.4,color:'#ff4a8a',d:'Um furacão de lâminas: vários giros em sequência.'},
+   {n:'Grand Finale',i:'🎭',lv:25,cd:24,mp:45,type:'single',mult:6.5,range:3.6,forceCrit:true,color:'#ffe28a',d:'Golpe final teatral: CRÍTICO garantido.'}]}
 };
-
 const MT={
  slime:{n:'Gosma da Floresta',lv:[1,3],hp:45,atk:6,def:0,spd:1.5,xp:10,gold:[1,4],aggro:6,rng:1.7,atkInt:1700,resp:10,leash:15,h:1.7,mats:{gosma:0.510,erva:0.212,essencia:0.025},eq:0.042,pot:0.048},
  lobo:{n:'Lobo Cinzento',lv:[4,6],hp:110,atk:11,def:4,spd:3.2,xp:60,gold:[4,8],aggro:8,rng:1.9,atkInt:1300,resp:12,leash:18,h:1.8,mats:{couro:0.468,erva:0.170,essencia:0.043},eq:0.060,pot:0.048},
@@ -382,31 +405,42 @@ function stats(c) {
   const st = { str: C.base.str + c.alloc.str, agi: C.base.agi + c.alloc.agi, int: C.base.int + c.alloc.int, vit: C.base.vit + c.alloc.vit };
   let atk = 0, def = 0, hp = 0;
   for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; atk += eff(it, 'atk'); def += eff(it, 'def'); hp += it.hp || 0; for (const s in it.bon) st[s] += it.bon[s]; }
-  const kn = c.cls === 'cavaleiro', as = c.cls === 'assassino';
-  return { ...st, atk, def: (def + st.vit * .4) * (kn ? 1.4 : 1), hpBonus: hp,
-    maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (kn ? 1.15 : as ? .9 : 1)),
-    maxMp: Math.round(30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : 0)),
-    dmg: st[C.main] * 1.0 + atk + c.level * 1.2,
+  const kn = c.cls === 'cavaleiro', as = c.cls === 'assassino', tk = c.cls === 'tanque', pr = c.cls === 'pierrot';
+  return { ...st, atk, def: (def + st.vit * .4) * (tk ? 1.75 : kn ? 1.4 : pr ? .8 : 1), hpBonus: hp,
+    maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1)),
+    maxMp: Math.round(30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : tk ? 15 : pr ? 10 : 0)),
+    dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1),
+    luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: pr ? 2.1 : 1.7,
     // Retornos decrescentes: crítico/esquiva/velocidade nunca disparam, por mais pontos que se invista.
-    crit: 5 + (as ? 8 : 0) + 45 * st.agi / (st.agi + 200),
+    crit: 5 + (as ? 8 : 0) + (pr ? 14 : 0) + 45 * st.agi / (st.agi + 200),
     dodge: 25 * st.agi / (st.agi + 250),
     atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) };
 }
 
+/** Custo (em pontos) de subir da rank r para r+1. */
+const skCost = r => r < 3 ? 1 : r < 10 ? 2 : 3;
+/** Sorte nos drops (só o Pierrot tem). `boost` = buff temporário (+60% = .6). */
+const luckOf = (c, boost) => c.cls === 'pierrot' ? Math.round(stats(c).luck * (1 + (boost || 0)) * 10) / 10 : 0;
+/** Há alguma habilidade que o jogador pode melhorar agora? (usado para mostrar o aviso de pontos) */
+const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && (c.sk[i] || 0) < MAXRANK && c.sp >= skCost(c.sk[i] || 0));
+
 /** Valores de uma habilidade conforme o rank. */
+const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
+const BCAP = { shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
-  const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = s.buffs[a] * (1 + .15 * k);
-  return { ...s, mult: s.mult ? s.mult * (1 + .2 * k) : 0, mp: Math.round(s.mp * (1 + .06 * k)), cd: s.cd * (1 - .04 * k), radius: s.radius ? s.radius + .25 * k : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + .15 * k)) : 0, dur: s.dur ? s.dur * (1 + .1 * k) : 0, buffs: s.buffs ? bf : null, slow: s.slow ? s.slow * (1 + .1 * k) : 0, defMult: s.defMult ? s.defMult * (1 + .2 * k) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) : 0 };
+  const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (1 + ph(k, .15, .05)));
+  const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? s.dur * (1 + ph(k, .1, .03)) : 0, buffs: s.buffs ? bf : null, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
 function hitDamage(d, o, mon) {
   const b = o.buffs || {};
-  const crit = Math.random() < Math.min(.75, (d.crit + (b.crit || 0) * 100) / 100);
+  const crit = o.forceCrit || Math.random() < Math.min(.75, (d.crit + (b.crit || 0) * 100) / 100);
   const base = d.dmg + (o.defMult ? d.def * o.defMult : 0) + (b.defdmg || 0) * d.def;
   let dmg = base * (1 + (b.dmg || 0)) * o.mult * rnd(.9, 1.1);
-  if (crit) dmg *= 1.7; if (o.marked) dmg *= 1.35; if (o.exec && mon.hp < mon.maxHp * .4) dmg *= 2; dmg *= (1 + (b.combo || 0));
+  if (crit) dmg *= (d.critMul || 1.7); if (o.marked) dmg *= 1.35; if (o.exec && mon.hp < mon.maxHp * .4) dmg *= 2; dmg *= (1 + (b.combo || 0));
   return { dmg: Math.max(1, Math.round(dmg * 100 / (100 + mon.def * 2))), crit };
 }
 
@@ -425,26 +459,28 @@ function eqKey(c, it, want) {
 }
 /** Aparência compacta (vai para os outros jogadores): chave|origem|+n|raridade;... */
 function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar); } return o.join(';'); }
-function rollLoot(T, mlvl, cls) {
+function rollLoot(T, mlvl, cls, luck) {
+  luck = luck || 0;
   const out = [];
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
   for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
-  if (Math.random() < T.eq) { const slot = pick(slotPool(cls)); let rar = rarRoll(T.rb || 0); if (T.boss) rar = Math.max(2, rar); const sl = T.dg ? (Math.random() < .015 ? 2 : Math.random() < .08 ? 1 : 0) : 0; out.push(genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id)); }
+  if (Math.random() < T.eq * (1 + luck / 100)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .015 * lk ? 2 : Math.random() < .08 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); out.push(it); } }
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
   return out;
 }
 
 /** Loot de um baú de dungeon (tier 1..3). Pode ser bom OU ruim: nível menor, raridade comum e sem slot. */
-function dgChestLoot(dg, tier, cls) {
+function dgChestLoot(dg, tier, cls, luck) {
+  luck = luck || 0; const lk = 1 + luck / 50;
   const out = [], mk = (bad) => {
     const ilvl = Math.max(1, ri(dg.ilvl[0], dg.ilvl[1]) + (tier - 1) - (bad ? ri(8, 16) : 0));
-    const rar = bad ? (Math.random() < .75 ? 0 : 1) : rarRoll([.7, 1.3, 2.4][tier - 1]);
-    const p2 = bad ? 0 : [.07, .12, .22][tier - 1], p1 = bad ? .04 : [.30, .38, .45][tier - 1], r = Math.random();
+    const rar = bad ? (Math.random() < .75 ? 0 : 1) : rarRoll([.7, 1.3, 2.4][tier - 1] + luck / 50);
+    const p2 = bad ? 0 : [.07, .12, .22][tier - 1] * lk, p1 = bad ? .04 : [.30, .38, .45][tier - 1] * lk, r = Math.random();
     const sl = r < p2 ? 2 : r < p2 + p1 ? 1 : 0;
     const mo = Math.random() < .7 ? ['dg_s1', 'dg_s2', 'dg_boss'][tier - 1] : pick(['dg_a', 'dg_b', 'dg_c', 'dg_d']);
-    return genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, mo);
+    const it = genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, mo); if (luck > 0 && rar === 3) it.plus = ri(0, 4); return it;
   };
-  out.push(mk(Math.random() < [.30, .22, .12][tier - 1]));
+  out.push(mk(Math.random() < [.30, .22, .12][tier - 1] / (1 + luck / 100)));
   if (tier === 3 && Math.random() < .4) out.push(mk(false));
   out.push({ k: 'gold', n: ri(600, 1100) * tier });
   if (Math.random() < .5) out.push({ k: 'mat', id: 'essencia', n: ri(1, 1 + tier) });
@@ -552,7 +588,7 @@ function act(sess, m, ctx) {
   if (t === 'skup') {
     if (!intIn(m.i, 0, 8)) return fail(); const s = CLASSES[c.cls].skills[m.i], r = c.sk[m.i] || 0; if (r >= MAXRANK) return fail();
     if (c.level < s.lv) return fail('Nível ' + s.lv + ' necessário');
-    const cost = r < 3 ? 1 : 2; if (c.sp < cost) return fail('Pontos de habilidade insuficientes');
+    const cost = skCost(r); if (c.sp < cost) return fail('Pontos de habilidade insuficientes');
     c.sp -= cost; c.sk[m.i] = r + 1; F('learn'); T((r ? '⬆️ ' : '📖 ') + s.n + ' — Rank ' + (r + 1));
     L(`<span style="color:#ffe28a">${s.i} ${s.n} ${r ? 'melhorada para' : 'aprendida —'} rank ${r + 1}</span>`); return done();
   }
@@ -646,7 +682,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

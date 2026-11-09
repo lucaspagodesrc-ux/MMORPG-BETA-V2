@@ -80,7 +80,7 @@ export class Dungeons {
     for (const sid of inst.members) {
       const s = this.h.sess.get(sid), p = this.h.state.players.get(sid); if (!s || !p || p.dead) continue;
       if (Math.hypot(p.x - sim.m.x, p.z - sim.m.z) > 45) continue;
-      const items = R.dgChestLoot(inst.def, sim.tier, s.c.cls);
+      const items = R.dgChestLoot(inst.def, sim.tier, s.c.cls, R.luckOf(s.c, (s.buffs.luck && s.buffs.luck.until > Date.now()) ? s.buffs.luck.val : 0));
       for (const it of items) this.h.addDrop(s, it, sim.m.x, sim.m.z, 0);
       s.client.send("res", { ok: true, out: [{ toast: "🎁 O baú se abriu!" }, { sfx: "rare" }] });
     }
