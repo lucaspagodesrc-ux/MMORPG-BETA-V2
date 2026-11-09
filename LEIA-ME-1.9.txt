@@ -1,0 +1,7 @@
+ATUALIZAÇÃO 1.9 — Guerreiro com montante, sem escudo
+
+Suba index.html e rules.js para a RAIZ do GitHub (substituindo), aguarde o redeploy e use Ctrl+F5.
+
+- O Guerreiro não tem mais escudo no modelo: usa um MONTANTE (espada grande de duas mãos), com brilho/efeitos acompanhando o tamanho da lâmina.
+- Armas novas do Guerreiro agora se chamam "Montante ..." (itens antigos mantêm o nome que já tinham).
+- Só o Cavaleiro Pesado usa espada e escudo.
