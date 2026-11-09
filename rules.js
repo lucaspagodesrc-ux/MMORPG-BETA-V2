@@ -617,6 +617,7 @@ function migrate(c) {
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
   { const dc = {}; if (c.dgc && typeof c.dgc === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.dgc[d.id]); if (n > 0) dc[d.id] = Math.min(9999, n); } c.dgc = dc; c.tb = c.tb ? 1 : 0; if (!c.tb && brightProg(c).ok) c.tb = 1; if (typeof c.title !== 'string' || (c.title && !titleHave(c, c.title))) c.title = ''; }
+  { const fr = []; if (Array.isArray(c.fr)) for (const n of c.fr) { if (typeof n === 'string') { const t = n.trim().slice(0, 16); if (t && !fr.some(x => x.toLowerCase() === t.toLowerCase())) fr.push(t); } if (fr.length >= 50) break; } c.fr = fr; }
   { const tx = {}; if (c.tix && typeof c.tix === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.tix[d.id]); if (n > 0) tx[d.id] = Math.min(5, n); } c.tix = tx; }
   if (!(c.run && typeof c.run === 'object' && DUNGEONS.some(d => d.id === c.run.id))) delete c.run;
   if ((c.v || 0) < R.VERSION) {
@@ -691,6 +692,15 @@ function act(sess, m, ctx) {
     if (!intIn(m.i, 0, c.inv.length) || !c.inv[m.i]) return fail(); const it = c.inv[m.i]; c.inv[m.i] = null; spawn.push({ item: it, life: 30000 });
     L(`Você largou <b style="color:${colOf(it)}">${nm(it)}${it.n > 1 ? ' ×' + it.n : ''}</b> no chão — some em 30 s (E para pegar de volta).`); return done();
   }
+  if (t === 'fadd') {
+    const nm = String(m.name || '').trim().slice(0, 16); if (!nm) return fail();
+    c.fr = Array.isArray(c.fr) ? c.fr : []; const k = nm.toLowerCase();
+    if (k === String(c.name || '').toLowerCase()) return fail('Você não pode adicionar a si mesmo');
+    if (c.fr.some(x => String(x).toLowerCase() === k)) return fail(nm + ' já está na sua lista');
+    if (c.fr.length >= 50) return fail('Lista de amigos cheia (50)');
+    c.fr.push(nm); T('🤝 ' + nm + ' adicionado aos amigos'); F('ui'); return done();
+  }
+  if (t === 'fdel') { const k = String(m.name || '').toLowerCase(); c.fr = (Array.isArray(c.fr) ? c.fr : []).filter(x => String(x).toLowerCase() !== k); T('Amigo removido'); return done(); }
   if (t === 'org') { organizeList(c.inv, c.cls); T('🧹 Mochila organizada'); return done(); }
   if (t === 'orgs') { if (!npcFor('bau')) return fail('Chegue perto do Baú.'); organizeList(stash, c.cls); T('🧹 Baú organizado'); return done(); }
   if (t === 'sell' || t === 'sellmany') {

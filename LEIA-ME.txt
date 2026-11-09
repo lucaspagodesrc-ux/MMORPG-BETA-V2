@@ -1,6 +1,6 @@
-MMORPG v1.12 - Braços, pernas e armas novas
-- Todos os personagens, NPCs, cidadãos, guardas e monstros humanoides agora têm braços e pernas.
-- Animação: pernas e braços balançam ao andar; ao atacar/usar habilidade o braço da arma faz o golpe e o outro braço acompanha.
-- Armas redesenhadas: espada do cavaleiro (lâmina afilada, guarda, pomo), escudo em formato de brasão com borda e botão, arco curvo com corda, cajado do mago com argola e cristal, tridente do demônio, etc.
-- Botas, anéis e braceletes agora ficam nos pés/mãos/pulsos.
-Instalação: envie index.html para a raiz do GitHub, aguarde o redeploy no Render e use Ctrl+F5. (Só o index.html mudou.)
+MMORPG v1.13 - Lista de amigos
+- Tecla F (ou botão 🤝 no menu lateral) abre a lista de amigos.
+- Adicione pelo nome (digite e Enter) ou clique em outro jogador no mapa e escolha "Adicionar amigo".
+- A lista mostra quem está online (🟢, classe e nível) e offline (⚫); botão 👥 convida o amigo para o grupo; ✕ remove.
+- Aviso no chat quando um amigo fica online. Até 50 amigos, salvos no personagem.
+Instalação: envie index.html e rules.js para a raiz do GitHub, aguarde o redeploy no Render e use Ctrl+F5.
