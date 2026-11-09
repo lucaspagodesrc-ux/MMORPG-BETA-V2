@@ -1091,23 +1091,31 @@ function apLocal(){return S?parseAp(RULES.apOf(S)):{};}
 const gcols=w=>{const g=w.mo&&OG[w.mo];if(g)return [g.col,g.col2,g.el,g.ft];const c=w.rar>0?RAR[w.rar].c:'#b9c2cc';return [c,c,'gold',''];};
 function cmat(hex,plus){const k='cc|'+hex+'|'+plus;let g=GMATS.get(k);if(!g){const m=new BABYLON.StandardMaterial('cm'+k,scene),c=C3.FromHexString(hex);m.diffuseColor=c;m.specularColor=new C3(.2,.2,.2);m.backFaceCulling=false;m.twoSidedLighting=true;const base=c.scale(Math.max(.16,GLOW(plus)));m.emissiveColor=base;g={m,base,plus,pulse:plus>=7};GMATS.set(k,g);}return g.m;}
 /* tecido: malha de vértices animada (ondula parado e abre para trás quando o personagem corre) */
+const CAPS=(R,cy,h)=>y=>{const d=Math.abs(y-cy),hh=h/2-R;return d<=hh?R:(d-hh>=R?0:Math.sqrt(R*R-(d-hh)*(d-hh)));};
+/** raio do corpo (nas costas/frente) a cada altura: o tecido nunca entra nele */
+function bodyR(cls,armor){const mx=(...f)=>y=>Math.max(...f.map(g=>g(y))),band=(a,b,r)=>y=>(y>=a&&y<=b)?r:0;
+ const belt=armor?band(.72,.92,.44):()=>0;
+ const B_={guerreiro:CAPS(.38,.9,1.55),arqueiro:mx(CAPS(.36,.9,1.5),band(.7,1.5,.52)),assassino:mx(CAPS(.34,.9,1.5),band(.9,1.7,.42)),cavaleiro:CAPS(.46,.95,1.7),tanque:mx(CAPS(.56,1.0,1.85),band(1.0,1.4,.58)),
+  pierrot:mx(CAPS(.34,1.0,1.45),y=>(y>=.025&&y<=.775)?.5-.19*(y-.025)/.75:0,band(1.5,1.75,.45)),mago:y=>(y>=0&&y<=1.6)?.55-.275*y/1.6:0}[cls]||CAPS(.38,.9,1.55);
+ return mx(B_,belt);}
+let CLOTH_R=null;
 function mkCloth(o,parent,x,y,z,w,Hh,nx,ny,mt,y0,y1,opt){
  opt=opt||{};const pos=new Float32Array((nx+1)*(ny+1)*3),idx=[],uv=[];
  for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)uv.push(i/nx,1-j/ny);
  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;idx.push(a,c,b,b,c,d);}
  const m=new BABYLON.Mesh('cloth',scene),vd=new BABYLON.VertexData(),nrm=new Float32Array(pos.length);vd.positions=pos;vd.indices=idx;vd.uvs=uv;vd.normals=nrm;vd.applyToMesh(m,true);
  m.parent=parent;m.position.set(x,y,z);m.material=mt;m.isPickable=false;m.alwaysSelectAsActiveMesh=true;
- const cl={m,pos,idx,nrm,w,H:Hh,nx,ny,y0:y0||0,y1:y1===undefined?1:y1,fl:opt.fl===undefined?.2:opt.fl,amp:opt.amp||.28,ph:opt.ph===undefined?Math.PI*.7:opt.ph,sp:opt.sp||1,cv:opt.cv===undefined?.08:opt.cv};
+ const cl={m,pos,idx,nrm,x,y,z,R:opt.noR?null:CLOTH_R,side:opt.side||-1,w,H:Hh,nx,ny,y0:y0||0,y1:y1===undefined?1:y1,fl:opt.fl===undefined?.2:opt.fl,amp:opt.amp||.28,ph:opt.ph===undefined?Math.PI*.7:opt.ph,sp:opt.sp||1,cv:opt.cv===undefined?.08:opt.cv};
  (o.cloth=o.cloth||[]).push(cl);clothShape(cl,0,0);return cl;}
 function clothShape(cl,t,v){
  const {pos,nx,ny}=cl;let k=0;
  for(let j=0;j<=ny;j++){const f=cl.y0+(cl.y1-cl.y0)*j/ny;
   for(let i=0;i<=nx;i++){const u=nx?i/nx*2-1:0,w1=Math.sin(t*2.3*cl.sp-f*3.2+u*1.3+cl.ph),w2=Math.sin(t*3.9*cl.sp-f*5.2+u*2.1+cl.ph*1.7);
-   pos[k++]=u*cl.w/2*(1+cl.fl*f)+f*f*.05*w2*(.4+v);
-   pos[k++]=-f*cl.H;
-   pos[k++]=-f*(.05+Math.min(.5,v*.22))+f*f*cl.amp*(.55*w1+.25*w2)*(.3+v)+u*u*cl.cv*(1-f);}}
+   const px=u*cl.w/2*(1+cl.fl*f)+f*f*.05*w2*(.4+v),py=-f*cl.H;let pz=-f*(.05+Math.min(.5,v*.22))+f*f*cl.amp*(.55*w1+.25*w2)*(.3+v)+u*u*cl.cv*(1-f);
+   if(cl.R){const r=cl.R(cl.y+py)+.045;if(r>.06){const xw=cl.x+px,lim=Math.sqrt(Math.max(0,r*r-xw*xw));let zw=cl.z+pz;if(cl.side<0){if(zw>-lim)zw=-lim;}else if(zw<lim)zw=lim;pz=zw-cl.z;}}
+   pos[k++]=px;pos[k++]=py;pos[k++]=pz;}}
  BABYLON.VertexData.ComputeNormals(pos,cl.idx,cl.nrm);cl.m.updateVerticesData(BABYLON.VertexBuffer.PositionKind,pos,false,false);cl.m.updateVerticesData(BABYLON.VertexBuffer.NormalKind,cl.nrm,false,false);}
-function clearGear(o){o.cloth=null;for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
+function clearGear(o){o.cloth=null;for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
 function mkPs(o,anchor,el,rate,sc){
  const E=EL[el]||EL.gold,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.isPickable=false;em.parent=anchor;
  const ps=new BABYLON.ParticleSystem('gfx',Math.ceil(rate*1.4)+6,scene);ps.particleTexture=ptex();ps.emitter=em;sc=sc||1;
@@ -1120,7 +1128,7 @@ function mkPs(o,anchor,el,rate,sc){
 function mkBolt(o,anchor,a,b,spread){const pts=[a.clone(),b.clone()];const line=B.CreateLines('bolt',{points:pts,updatable:true},scene);line.color=new C3(.75,.9,1);line.isPickable=false;line.parent=anchor;o.gbolts.push({line,a,b,spread:spread||.5,n:7});}
 function applyGear(o,ap){
  if(!o.root)return;if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
- if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose();}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
+ if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
  const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;o.gfx=[];o.gbolts=[];
  const put=(m,x,y,z,mt,par)=>{m.parent=par||g;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
  const RATE=p=>p>=9?20:p>=8?14:p>=7?9:0;
@@ -1186,7 +1194,7 @@ function applyGear(o,ap){
   put(B.CreateBox('sd',{width:kn?.2:.17,height:kn?1.18:.86,depth:kn?.86:.66},scene),kn?-.62:-.5,1.0,kn?.15:.1,gmat(c1,sh.plus));
   put(B.CreateSphere('sb',{diameter:.22,segments:6},scene),kn?-.74:-.6,1.05,kn?.15:.1,gmat(c2,sh.plus));}
  // ---- capa: tecido que ondula + dragonas nos ombros (p = capa vermelha, m = estola azul, a = manto com capuz)
- const cp=ap.cape;
+ const cp=ap.cape;CLOTH_R=bodyR(o.cls,!!ap.armor);
  if(cp){const kind=RULES.capeKind(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
   const pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind],c1=pal[0],c2=pal[1];
   const m1=cmat(c1,pl),m2=cmat(c2,pl),s1=gmat(c1,pl),s2=gmat(c2,pl),bz=-(.3+(A.sx>.5?.1:0)),pw=A.pad*(kind==='m'?1.0:1.25);
@@ -1196,15 +1204,15 @@ function applyGear(o,ap){
    for(let i=0;i<4;i++)put(B.CreateCylinder('dgf',{height:.15,diameter:.035,tessellation:5},scene),px+sx*pw*.42,py-.03,(i-1.5)*.09,s2);}
   if(kind==='m'){
    put(B.CreateTorus('sc',{diameter:A.sx*1.5,thickness:.1,tessellation:18},scene),0,A.sy+.05,0,s1);
-   const strip=(x,z,len,w,amp,ph)=>{mkCloth(o,g,x,A.sy+.04,z,w,len,1,8,m1,0,1,{fl:.06,amp,ph,cv:0});mkCloth(o,g,x,A.sy+.04,z,w,len,1,1,m2,.93,1,{fl:.06,amp,ph,cv:0});};
-   strip(-.1,-.24,1.05,.14,.3,0);strip(.13,-.26,.8,.13,.3,1.7);strip(.2,.42,.62,.12,.14,3.1);
+   const strip=(x,z,len,w,amp,ph,side)=>{mkCloth(o,g,x,A.sy+.04,z,w,len,1,8,m1,0,1,{fl:.06,amp,ph,cv:0,side});mkCloth(o,g,x,A.sy+.04,z,w,len,1,1,m2,.93,1,{fl:.06,amp,ph,cv:0,side});};
+   strip(-.1,-.24,1.05,.14,.3,0);strip(.13,-.26,.8,.13,.3,1.7);strip(.2,.42,.62,.12,.14,3.1,1);
    if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=g;n.position.set(0,A.sy-1,-.3);mkPs(o,n,ael,RATE(pl)*.5,1.1);}
   }else{
    const Hh=A.sy-(kind==='a'?.45:.22),w=A.sx*2+(kind==='a'?-.05:.12);
    mkCloth(o,g,0,A.sy-.02,bz,w,Hh,6,9,m1,0,1,{fl:.22,amp:.3});mkCloth(o,g,0,A.sy-.02,bz,w,Hh,6,1,m2,.93,1,{fl:.22,amp:.3});mkCloth(o,g,0,A.sy-.02,bz,w,Hh,6,1,m2,0,.045,{fl:.22,amp:.3});
    if(kind==='a'){const hr=A.hr,hd=put(B.CreateSphere('hood',{diameter:hr*2.55,segments:12},scene),0,A.hy-.02,-hr*.33,s1);hd.scaling.set(1,.95,1.05);
     const rim=put(B.CreateTorus('hrim',{diameter:hr*1.85,thickness:.07,tessellation:20},scene),0,A.hy-.02,hr*.6,s2);rim.rotation.x=Math.PI/2;
-    mkCloth(o,g,0,A.hy-hr*.6,-hr*1.1,hr*1.9,.5,4,4,m1,0,1,{fl:.1,amp:.12,cv:.04});}
+    mkCloth(o,g,0,A.hy-hr*.6,-hr*1.1,hr*1.9,.5,4,4,m1,0,1,{fl:.1,amp:.12,cv:.04,noR:1});}
    if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=g;n.position.set(0,A.sy-Hh,bz-.1);mkPs(o,n,ael,RATE(pl)*.6,1.5);}
   }
  }
@@ -1390,7 +1398,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera}};
+if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -1472,7 +1480,7 @@ function groundFx(x,z,r,el,dur){
  if(el==='lightning')for(let i=0;i<3;i++){const l=B.CreateLines('bl',{points:[new V3(0,0,0),new V3(0,1,0)],updatable:true},scene);l.color=new C3(.8,.92,1);l.parent=root;l.isPickable=false;bolts.push(l);}
  const E2=el==='fire'?40:el==='steel'?30:24,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.parent=root;em.position.y=.1;
  const ps=skPs(em,E,E2,Math.max(.4,r*.7),Math.ceil(E2*2.2)+10);ps.start();
- const o={root,kill(){try{ps.dispose();}catch(e){}try{root.dispose();}catch(e){}const k=GFX.indexOf(o);if(k>=0)GFX.splice(k,1);}};GFX.push(o);
+ const o={root,kill(){try{ps.dispose(false);}catch(e){}try{root.dispose();}catch(e){}const k=GFX.indexOf(o);if(k>=0)GFX.splice(k,1);}};GFX.push(o);
  let lastB=0;
  fx.push({t0:performance.now(),dur,upd:p=>{
   const t=p*dur,fade=p<.78?1:Math.max(0,1-(p-.78)/.22);
@@ -1487,7 +1495,7 @@ function groundFx(x,z,r,el,dur){
 function burst(x,z,el){
  const E=SKEL[el]||SKEL.steel,em=B.CreateBox('bm',{size:.02},scene);em.isVisible=false;em.position.set(x,.15,z);
  const ps=skPs(em,E,260,.4,80);ps.minLifeTime=.3;ps.maxLifeTime=.7;ps.direction1=new V3(-1.6,E.up*2,-1.6);ps.direction2=new V3(1.6,E.up*3,1.6);ps.start();
- setTimeout(()=>{try{ps.stop();}catch(e){}},130);setTimeout(()=>{try{ps.dispose();em.dispose();}catch(e){}},1800);
+ setTimeout(()=>{try{ps.stop();}catch(e){}},130);setTimeout(()=>{try{ps.dispose(false);em.dispose();}catch(e){}},1800);
 }
 /* cp = posição de quem lançou; tp = posição do alvo (ou null) */
 function skillFx(s,cp,tp){

@@ -1,0 +1,6 @@
+ATUALIZAÇÃO 1.8 — Brilho da prévia e capas que não atravessam o corpo
+
+Suba apenas index.html para a RAIZ do GitHub (substituindo), aguarde o redeploy e use Ctrl+F5.
+
+- Corrigido: o brilho/partículas só apareciam no primeiro personagem visto. Agora aparecem em qualquer classe, na seleção e no jogo (inclusive para outros jogadores).
+- Capas/estolas agora colidem com o corpo: o tecido ondula, mas fica por fora das costas (e da frente, no caso da ponta frontal da estola).
