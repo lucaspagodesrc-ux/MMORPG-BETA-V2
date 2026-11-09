@@ -1,4 +1,18 @@
-MMORPG v1.18 - Menu na lista do grupo
-- Clique no nome de outro integrante na lista do grupo: aparece "Adicionar amigo" (ou "Remover amigo"; GMs também veem "Buff do GM").
-- Clique no seu próprio nome: aparece "Sair do grupo".
-Instalação: envie index.html para a raiz do GitHub (requer a v1.17), aguarde o redeploy no Render e use Ctrl+F5.
+Versão 1.19 - Cavaleiro Pesado: novas habilidades
+Requer os arquivos das versões anteriores (até 1.18) já instalados.
+
+COMO INSTALAR
+1. Envie index.html, rules.js e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
+   (WorldRoom.ts fica no mesmo lugar onde já está no seu repositório.)
+2. Aguarde o Render terminar o redeploy.
+3. No navegador, Ctrl+F5.
+
+O QUE MUDOU
+- Golpe de Escudo: anima o braço do escudo batendo.
+- Investida do Escudo: igual.
+- Postura Defensiva: auto-buff (só em você), 1 min. Recarga 60s (nv.1) até 35s (nv. máx.).
+- Bastião: auto-buff de 1 min. Converte 60% da defesa em força. Recarga 120s até 90s.
+- Impacto Sísmico: o personagem pula alto e bate o escudo no chão.
+- Vontade de Ferro: recarga fixa de 60s.
+- NOVA "Escudo Voador" (substitui Fortaleza Inabalável): arremessa o escudo (dano perfurante), gira 2s no alcance máximo causando dano em área e retorna. Deixa rastro; o jogador fica sem escudo enquanto ele voa.
+- NOVA "Raio do Escudo" (substitui Juízo do Guardião): bate a espada no escudo e solta um raio por 3s, com dano perfurante ao longo da linha.

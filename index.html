@@ -874,18 +874,25 @@ function animLimbs(o,px,pz,now,sa,melee){
  L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
  const a=Math.min(1,L.spd/3.5);L.ph+=L.spd*dt*2.4;
  const s=Math.sin(L.ph),cs=Math.cos(L.ph);
- const sw=(now-(sa||0))/260,at=(sw>0&&sw<1)?Math.sin(sw*Math.PI):0;
+ const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,DUR={shield:300,jump:800,beam:750,throw:450}[kind]||260;
+ const sw=(now-(sa||0))/DUR,act=sw>0&&sw<1,at=act?Math.sin(sw*Math.PI):0;
  const idl=Math.sin(now/700+L.ph0)*.035*(1-a);
  const Lg=L.leg;
  Lg[0].h.rotation.x=-s*.8*a+at*.3;Lg[1].h.rotation.x=s*.8*a-at*.25;
  Lg[0].k.rotation.x=Math.max(0,cs)*.95*a+at*.15;Lg[1].k.rotation.x=Math.max(0,-cs)*.95*a;
  const AL=L.arm[0],AR=L.arm[1],mel=melee!==false;
- AL.s.rotation.x=L.restL[0]+s*.65*a+idl-at*(mel?.9:1.3);AL.e.rotation.x=L.restL[1]-at*.3;
- const sr=L.rest[0]-s*.3*a-idl-at*(mel?1.9:.9),er=L.rest[1]-at*(mel?.3:.15);
+ let atR=at,atL=at,wy=0,extraL=0,wr=at;
+ if(kind==='shield'||kind==='throw'){atR=0;wr=0;extraL=at*(kind==='throw'?1.7:1.2);wy=Math.PI/2*Math.min(1,at*3);}
+ else if(kind==='beam'){const p=act?Math.sin(Math.min(1,sw/.55)*Math.PI):0,rz=act?Math.min(1,sw*6,(1-sw)*6):0;atR=p;wr=p;atL=0;extraL=1.3*rz;wy=Math.PI/2*rz;}
+ else if(kind==='jump'){const rz=act?(sw<.8?Math.min(1,sw/.25):Math.max(0,1-(sw-.8)/.12)):0;atR=0;wr=0;atL=0;extraL=2.4*rz;wy=Math.PI/2*Math.min(1,rz*1.5);
+  if(act){const y=sw<.8?3*Math.sin(Math.PI*sw/.8):0;o.root.position.y=y;o._jy=1;Lg[0].h.rotation.x=-.6*rz;Lg[1].h.rotation.x=-.4*rz;Lg[0].k.rotation.x=.9*rz;Lg[1].k.rotation.x=.9*rz;AR.s.rotation.x=0;}}
+ if(kind!=='jump'&&o._jy){o.root.position.y=0;o._jy=0;}
+ if(kind==='jump'&&!act&&o._jy){o.root.position.y=0;o._jy=0;}
+ AL.s.rotation.x=L.restL[0]+s*.65*a+idl-atL*(mel?.9:1.3)-extraL;AL.e.rotation.x=L.restL[1]-atL*.3;
+ const sr=L.rest[0]-s*.3*a-idl-atR*(mel?1.9:.9)-(kind==='jump'?2.2*Math.min(1,act?(sw<.8?Math.min(1,sw/.25):Math.max(0,1-(sw-.8)/.12)):0):0),er=L.rest[1]-atR*(mel?.3:.15);
  AR.s.rotation.x=sr;AR.e.rotation.x=er;
- // a mão mantém a arma "em pé" no repouso; no golpe a arma gira à frente
- AR.w.rotation.x=-(sr+er)-at*(mel?1.1:.2);
- AL.w.rotation.x=-(AL.s.rotation.x+AL.e.rotation.x);
+ AR.w.rotation.x=-(sr+er)-wr*(mel?1.1:.2);
+ AL.w.rotation.x=-(AL.s.rotation.x+AL.e.rotation.x);AL.w.rotation.y=wy;
  if(L.restZ){AL.s.rotation.z=L.restZ[0];AR.s.rotation.z=L.restZ[1];}
 }
 
@@ -1120,13 +1127,13 @@ function buildModel(cls,o){
   add(B.CreateBox('vz',{width:.4,height:.08,depth:.1},scene),0,1.97,.3,M.dark);add(B.CreateCylinder('pl',{height:.5,diameterTop:.04,diameterBottom:.2,tessellation:6},scene),0,2.4,-.05,mat('plm','#b52a45')).rotation.x=-.3;
   for(const sx of[-1,1])add(B.CreateSphere('sp',{diameter:.5,segments:8},scene),sx*.52,1.6,0,steel2);
   // escudo de cavaleiro: tipo "kite" (cinco lados), borda de metal e botão central
-  {const shm=mat('shd2','#2f5fa0'),rim=mat('shr','#c9a227');
-   attL(B.CreateBox('sh',{width:.1,height:.8,depth:.72},scene),-.12,.1,.05,shm);
-   const tip=attL(B.CreateCylinder('shp2',{height:.1,diameterTop:.72,diameterBottom:0,tessellation:4},scene),-.12,-.52,.05,shm);tip.rotation.z=Math.PI/2;tip.rotation.y=Math.PI/4;tip.scaling.set(1,1,1);
-   for(const sz of[-1,1])attL(B.CreateBox('shr',{width:.14,height:.84,depth:.05},scene),-.12,.1,.05+sz*.36,rim);
-   attL(B.CreateBox('shr2',{width:.14,height:.05,depth:.76},scene),-.12,.5,.05,rim);
-   attL(B.CreateSphere('bs',{diameter:.26,segments:8},scene),-.2,.14,.05,M.gold);
-   attL(B.CreateBox('shc',{width:.12,height:.7,depth:.07},scene),-.18,.1,.05,rim);}
+  {const sn=new BABYLON.TransformNode('shieldN',scene);sn.parent=o.handL;o.shieldN=sn;const attS=(m,x,y,z,mt)=>{m.parent=sn;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};const shm=mat('shd2','#2f5fa0'),rim=mat('shr','#c9a227');
+   attS(B.CreateBox('sh',{width:.1,height:.8,depth:.72},scene),-.12,.1,.05,shm);
+   const tip=attS(B.CreateCylinder('shp2',{height:.1,diameterTop:.72,diameterBottom:0,tessellation:4},scene),-.12,-.52,.05,shm);tip.rotation.z=Math.PI/2;tip.rotation.y=Math.PI/4;tip.scaling.set(1,1,1);
+   for(const sz of[-1,1])attS(B.CreateBox('shr',{width:.14,height:.84,depth:.05},scene),-.12,.1,.05+sz*.36,rim);
+   attS(B.CreateBox('shr2',{width:.14,height:.05,depth:.76},scene),-.12,.5,.05,rim);
+   attS(B.CreateSphere('bs',{diameter:.26,segments:8},scene),-.2,.14,.05,M.gold);
+   attS(B.CreateBox('shc',{width:.12,height:.7,depth:.07},scene),-.18,.1,.05,rim);}
   // espada longa: lâmina afilada com canal central, guarda, empunhadura e pomo
   att(B.CreateBox('bl',{width:.15,height:1.0,depth:.045},scene),0,.62,0,o.wMat);att(B.CreateCylinder('bt',{height:.3,diameterTop:0,diameterBottom:.15,tessellation:4},scene),0,1.27,0,o.wMat).scaling.z=.3;
   att(B.CreateBox('bf',{width:.04,height:.85,depth:.06},scene),0,.6,0,mat('fuller2','#8d98a5'));
@@ -1229,7 +1236,7 @@ function applyGear(o,ap){
  if(!o.root)return;if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
  if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
  const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;
- const hgR=new BABYLON.TransformNode('hgR',scene),hgL=new BABYLON.TransformNode('hgL',scene);hgR.parent=o.hand||g;hgL.parent=o.handL||g;o.hg=[hgR,hgL];o.gfx=[];o.gbolts=[];
+ const hgR=new BABYLON.TransformNode('hgR',scene),hgL=new BABYLON.TransformNode('hgL',scene);hgR.parent=o.hand||g;hgL.parent=o.handL||g;o.hg=[hgR,hgL];const hgS=new BABYLON.TransformNode('hgS',scene);hgS.parent=o.shieldN||o.handL||g;o.hg.push(hgS);o.gfx=[];o.gbolts=[];
  const put=(m,x,y,z,mt,par)=>{m.parent=par||g;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
  const RATE=p=>p>=9?20:p>=8?14:p>=7?9:0;
  // ---- arma
@@ -1291,8 +1298,8 @@ function applyGear(o,ap){
  // ---- escudo
  const sh=ap.shield;
  if(sh){const [c1,c2]=gcols(sh),kn=o.cls==='cavaleiro';
-  put(B.CreateBox('sd',{width:.16,height:kn?.9:.8,depth:kn?.8:.7},scene),-.12,.1,.05,gmat(c1,sh.plus),hgL);
-  put(B.CreateSphere('sb',{diameter:.2,segments:6},scene),-.22,.14,.05,gmat(c2,sh.plus),hgL);}
+  put(B.CreateBox('sd',{width:.16,height:kn?.9:.8,depth:kn?.8:.7},scene),-.12,.1,.05,gmat(c1,sh.plus),hgS);
+  put(B.CreateSphere('sb',{diameter:.2,segments:6},scene),-.22,.14,.05,gmat(c2,sh.plus),hgS);}
  // ---- capa: tecido que ondula + dragonas nos ombros (p = capa vermelha, m = estola azul, a = manto com capuz)
  const cp=ap.cape;CLOTH_R=bodyR(o.cls,!!ap.armor);
  if(cp){const kind=RULES.capeKind(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
@@ -1501,6 +1508,38 @@ $('win-party').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='En
 
 
 
+
+
+/* =================== ESCUDO VOADOR e RAIO DO ESCUDO (Cavaleiro) =================== */
+function shieldFlyFx(o,dx,dz,range,col){
+ const rp=o.root.position,start=new V3(rp.x,1.15,rp.z),dir=new V3(dx,0,dz).normalize(),E=start.add(dir.scale(range)),tOut=range/16*1000,SP=2000,TT=tOut*2+SP;
+ const root=new BABYLON.TransformNode('fsh',scene),body=new BABYLON.TransformNode('fsb',scene);body.parent=root;body.rotation.z=Math.PI/2;
+ const mt=mat('fsb1','#2f5fa0'),rim=mat('fsr1','#c9a227'),mk=(m,x,y,z,mm)=>{m.parent=body;m.position.set(x,y,z);m.material=mm;m.isPickable=false;return m;};
+ mk(B.CreateBox('a',{width:.1,height:.8,depth:.72},scene),0,.1,0,mt);mk(B.CreateBox('b',{width:.12,height:.84,depth:.05},scene),0,.1,.36,rim);mk(B.CreateBox('c',{width:.12,height:.84,depth:.05},scene),0,.1,-.36,rim);mk(B.CreateBox('d',{width:.12,height:.05,depth:.76},scene),0,.5,0,rim);mk(B.CreateSphere('e',{diameter:.28,segments:8},scene),-.1,.14,0,M.gold);
+ const tip=B.CreateSphere('ft',{diameter:.05},scene);tip.parent=root;tip.position.set(.55,0,0);tip.isVisible=false;
+ const tm=new BABYLON.StandardMaterial('fst',scene);tm.disableLighting=true;tm.emissiveColor=C3.FromHexString(col||'#9fd0ff');tm.alpha=.5;tm.backFaceCulling=false;
+ const tr=new BABYLON.TrailMesh('fstr',tip,scene,.28,26,true);tr.material=tm;tr.isPickable=false;
+ root.position.copyFrom(start);let last=-1;
+ fx.push({t0:performance.now(),dur:TT,upd:t=>{const el=t*TT;let p;
+  if(el<tOut)p=V3.Lerp(start,E,el/tOut);
+  else if(el<tOut+SP){p=E;const k=Math.floor((el-tOut)/400);if(k!==last){last=k;ring(E.x,E.z,3.4,col,300);}}
+  else p=V3.Lerp(E,new V3(rp.x,1.15,rp.z),Math.min(1,(el-tOut-SP)/tOut));
+  root.position.copyFrom(p);root.rotation.y+=(el>=tOut&&el<tOut+SP)?.7:.4;},
+  done:()=>{try{tr.dispose();root.dispose();if(o.shieldN)o.shieldN.setEnabled(true);}catch(e){}}});
+}
+function shieldBeamFx(o,dx,dz,range,col){
+ const dir=new V3(dx,0,dz).normalize(),yaw=Math.atan2(dx,dz),rp=o.root.position;
+ const mk=(w,h,c,al)=>{const m=B.CreateBox('bm',{width:w,height:h,depth:1},scene),mt=new BABYLON.StandardMaterial('bmm',scene);mt.disableLighting=true;mt.emissiveColor=C3.FromHexString(c);mt.alpha=al;mt.backFaceCulling=false;m.material=mt;m.isPickable=false;m.rotation.y=yaw;return m;};
+ later(250,()=>{
+  burst(rp.x+dir.x*.9,rp.z+dir.z*.9,'holy');ring(rp.x+dir.x*.9,rp.z+dir.z*.9,1.6,col,300);
+  const core=mk(.32,.22,'#ffffff',.95),glow=mk(1.5,.5,col||'#fff2a8',.35);let last=-1;
+  fx.push({t0:performance.now(),dur:3000,upd:t=>{const el=t*3000,Ln=range*Math.min(1,el/90),fade=t>.88?(1-t)/.12:1,fl=.8+.2*Math.sin(el*.05);
+   for(const m of[core,glow]){m.scaling.z=Ln;m.position.set(rp.x+dir.x*(.9+Ln/2),1.15,rp.z+dir.z*(.9+Ln/2));m.material.alpha=(m===core?.95:.35*fl)*fade;}
+   core.scaling.x=glow.scaling.x=1;glow.scaling.y=fl;
+   const k=Math.floor(el/300);if(k!==last){last=k;ring(rp.x+dir.x*(.9+Ln),rp.z+dir.z*(.9+Ln),1.4,col,260);}},
+   done:()=>{core.dispose();glow.dispose();}});
+ });
+}
 
 /* =================== BARRAS DE VIDA DO GRUPO =================== */
 const PBEL=new Map();
@@ -1780,7 +1819,7 @@ function killMonster(m){
 function damagePlayer(raw,src){
  if(P.dead)return;const now=performance.now();
  if(Math.random()<(D().dodge+getBuff('evade')*100)/100){floatText('Esquivou!',P.pos,'#9fe7ff');AUD.sfx('dodge');return;}
- const def=D().def;let dmg=raw*(1-def/(def+80));dmg*=(1-Math.min(.85,getBuff('shield')));dmg=Math.max(1,Math.round(dmg));
+ const def=D().def*(1-getBuff('defloss'));let dmg=raw*(1-def/(def+80));dmg*=(1-Math.min(.85,getBuff('shield')));dmg=Math.max(1,Math.round(dmg));
  P.hp-=dmg;P.lastCombat=now;floatText('-'+dmg,P.pos,'#ff6b6b');AUD.sfx('playerHurt');if(P.recall)cancelRecall('Retorno interrompido: você sofreu dano.');
  if(P.hp<=0){P.hp=0;die();}
 }
@@ -1817,8 +1856,10 @@ function castSkill(i){
   if(hyp(P.pos,tgt.pos)>s.range){toast('Alvo fora de alcance');return;}
   selectMonster(tgt);P.root.rotation.y=Math.atan2(tgt.pos.x-P.pos.x,tgt.pos.z-P.pos.z);
  }
- P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.swingAt=now;P.lastCombat=now;
- if(NET.room)NET.room.send('cast',{i,tid:tgt?tgt.id:0});
+ let dirx=0,dirz=1;
+ if(s.type==='shieldThrow'||s.type==='shieldBeam'){const t0=(P.sel&&P.sel.alive)?P.sel:nearestMonster(s.range);if(t0){dirx=t0.pos.x-P.pos.x;dirz=t0.pos.z-P.pos.z;}else{dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}const dl=Math.hypot(dirx,dirz)||1;dirx/=dl;dirz/=dl;P.root.rotation.y=Math.atan2(dirx,dirz);}
+ P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
+ if(NET.room)NET.room.send('cast',{i,tid:tgt?tgt.id:0,dx:dirx,dz:dirz});
  if(C.combo){
   const prevOk=P.lastSkill>=0&&now-P.lastSkillAt<3500;
   if(!(now-P.cstAt<4500))P.cst=0;
@@ -1827,7 +1868,7 @@ function castSkill(i){
   if(cb){s.mult*=1+(s.cbonus||.5);P.mp=Math.min(D().maxMp,P.mp+s.mp*.4);if(s.reset)for(const j of s.reset)P.cd[j]=0;floatText('⚡ COMBO ×'+P.cst+'!',P.pos,'#ffd24a',true);AUD.sfx('combo',null,{n:P.cst});logMsg(`<span style="color:#ffd24a">⚡ COMBO ×${P.cst}: ${CLASSES[S.cls].skills[P.lastSkill].n} → ${s.n}</span>`);}
   if(s.mark&&tgt){tgt.markUntil=now+s.mark*1000;floatText('🎯 Marcado',tgt.pos,'#ff7ad9');}
  }
- P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});skillFx(s,P.pos,tgt?tgt.pos:null);
+ P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});if(!(s.type==='aoeSelf'&&s.delay))skillFx(s,P.pos,tgt?tgt.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null),so={slow:s.slow,defMult:s.defMult,exec:s.exec,forceCrit:s.forceCrit};
  switch(s.type){
   case 'single':
@@ -1837,7 +1878,10 @@ function castSkill(i){
   case 'heal':{
    const mx=D().maxHp,v=Math.round(mx*s.pct);P.hp=Math.min(mx,P.hp+v);floatText('+'+v,P.pos,'#6fdc7f',true);ring(P.pos.x,P.pos.z,2.2,s.color,600);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: +${v} vida</span>`);break;}
   case 'aoeSelf':
-   ring(P.pos.x,P.pos.z,s.radius,s.color,550);later(200,()=>hitArea(P.pos,s.radius,s.mult,so));break;
+   if(s.delay)later(s.delay,()=>{ring(P.pos.x,P.pos.z,s.radius,s.color,550);skillFx(s,P.pos,null);hitArea(P.pos,s.radius,s.mult,so);});
+   else{ring(P.pos.x,P.pos.z,s.radius,s.color,550);later(200,()=>hitArea(P.pos,s.radius,s.mult,so));}break;
+  case 'shieldThrow':later(250,()=>{if(P.shieldN)P.shieldN.setEnabled(false);});later(300,()=>shieldFlyFx(P,dirx,dirz,s.range,s.color));break;
+  case 'shieldBeam':shieldBeamFx(P,dirx,dirz,s.range,s.color);break;
   case 'aoeMulti':
    for(let h=0;h<s.hits;h++)later(200+h*200,()=>{if(P.dead)return;ring(P.pos.x,P.pos.z,s.radius,s.color,420);P.swingAt=performance.now();hitArea(P.pos,s.radius,s.mult,so);});break;
   case 'taunt':
@@ -2483,15 +2527,17 @@ const remoteOf=id=>NET.others.get(id);
 function remoteSkill(m){
  const o=remoteOf(m.by);if(!o||!S)return;const C=CLASSES[o.cls],s=C.skills[m.i];if(!s)return;
  const far=hyp(P.pos,o.root.position)>34;if(far)return;
- const mo=m.tid?monsters.find(x=>x.id===m.tid):null,now=performance.now(),from=o.root.position;o.swingAt=now;
+ const mo=m.tid?monsters.find(x=>x.id===m.tid):null,now=performance.now(),from=o.root.position;o.swingAt=now;o.swKind=s.anim||null;o.swKA=now;if(m.dx||m.dz)o.root.rotation.y=Math.atan2(m.dx,m.dz);
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
- AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));skillFx(s,from,mo?mo.pos:null);
+ AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));if(!(s.type==='aoeSelf'&&s.delay))skillFx(s,from,mo?mo.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null);
  switch(s.type){
   case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
   case 'multi':if(mo)for(let h=0;h<s.hits;h++)later(h*190,()=>{if(mo.alive){if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1,s.color,200);}});break;
   case 'heal':ring(from.x,from.z,2.2,s.color,600);break;
-  case 'aoeSelf':ring(from.x,from.z,s.radius,s.color,550);break;
+  case 'aoeSelf':if(s.delay)later(s.delay,()=>{ring(from.x,from.z,s.radius,s.color,550);skillFx(s,from,null);});else ring(from.x,from.z,s.radius,s.color,550);break;
+  case 'shieldThrow':later(250,()=>{if(o.shieldN)o.shieldN.setEnabled(false);});later(300,()=>shieldFlyFx(o,m.dx||0,m.dz||1,s.range,s.color));break;
+  case 'shieldBeam':shieldBeamFx(o,m.dx||0,m.dz||1,s.range,s.color);break;
   case 'aoeMulti':for(let h=0;h<s.hits;h++)later(200+h*200,()=>ring(from.x,from.z,s.radius,s.color,420));break;
   case 'taunt':ring(from.x,from.z,s.radius,s.color,700);break;
   case 'aoeTarget':if(mo){const c={x:mo.pos.x,z:mo.pos.z};

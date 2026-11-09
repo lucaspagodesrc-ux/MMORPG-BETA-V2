@@ -100,13 +100,25 @@ export class WorldRoom extends Room<WorldState> {
     const sid = s.client.sessionId, p = this.state.players.get(sid);
     if (!p || p.dead) return;
     const buffs = { dmg: this.buff(s, "dmg"), defdmg: this.buff(s, "defdmg"), crit: this.buff(s, "crit"), combo: this.buff(s, "combo") };
-    const r = R.hitDamage(this.stats(s), { mult, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def, hp: sim.m.hp, maxHp: sim.m.maxHp });
+    const r = R.hitDamage(this.stats(s), { mult, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def * (1 - (o.pierce || 0)), hp: sim.m.hp, maxHp: sim.m.maxHp });
     const died = this.sim.damage(sid, sim, r.dmg, o.slow || 0);
     this.broadcast("dmg", { id: sim.m.id, d: r.dmg, c: r.crit ? 1 : 0, by: sid });
     if (died) { this.onKill(sim); return; }
     if (o.stun || o.root || o.lift || o.pull) this.sim.cc(sim, o, p.x, p.z);
     const cl = s.clone;                                         // Pierrot: os clones atacam junto
     if (!o.noClone && cl && cl.until > Date.now()) for (let n = 0; n < cl.n; n++) this.later(110 + n * 80, () => this.hit(s, sim, mult * cl.mult, { noClone: true }));
+  }
+  private hitNear(s: Sess, x: number, z: number, r: number, mult: number, o: any, seen: Set<Sim>) {
+    const inst = this.playerOf(s)?.inst || 0;
+    for (const sim of this.sim.list) if (!seen.has(sim) && sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) { seen.add(sim); this.hit(s, sim, mult, o); }
+  }
+  private hitLine(s: Sess, x: number, z: number, ux: number, uz: number, len: number, w: number, mult: number, o: any) {
+    const inst = this.playerOf(s)?.inst || 0;
+    for (const sim of this.sim.list) {
+      if (!sim.m.alive || sim.inst !== inst || cx(sim.m.x) !== cx(x)) continue;
+      const rx = sim.m.x - x, rz = sim.m.z - z, t = rx * ux + rz * uz, pd = Math.abs(rx * uz - rz * ux);
+      if (t >= -0.5 && t <= len && pd <= w / 2 + 0.5 * sim.bs) this.hit(s, sim, mult, o);
+    }
   }
   private hitArea(s: Sess, x: number, z: number, r: number, mult: number, o: any) {
     const inst = this.playerOf(s)?.inst || 0;
@@ -159,14 +171,28 @@ export class WorldRoom extends Room<WorldState> {
       if (sk.mark && tgt) tgt.markUntil = now + sk.mark * 1000;
     }
     s.lastSkill = i; s.lastSkillAt = now;
-    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt ? tgt.m.id : 0, x: p.x, z: p.z }, { except: s.client });
-    const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec, stun: sk.stun, root: sk.root, lift: sk.lift, pull: sk.pull, forceCrit: sk.forceCrit };
+    let ux = 0, uz = 1;                    // direção da habilidade (Escudo Voador / Raio do Escudo)
+    if (Number.isFinite(m?.dx) && Number.isFinite(m?.dz)) { const dl = Math.hypot(m.dx, m.dz); if (dl > 0.01) { ux = m.dx / dl; uz = m.dz / dl; } }
+    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt ? tgt.m.id : 0, x: p.x, z: p.z, dx: ux, dz: uz }, { except: s.client });
+    const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec, stun: sk.stun, root: sk.root, lift: sk.lift, pull: sk.pull, forceCrit: sk.forceCrit, pierce: sk.pierce };
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
     switch (sk.type) {
       case "single": this.later(pr ? flight : 150, () => tgt && this.hit(s, tgt, mult, so)); break;
       case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * 190 + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); break;
-      case "aoeSelf": this.later(200, () => this.hitArea(s, px, pz, sk.radius, mult, so)); break;
+      case "aoeSelf": this.later(sk.delay || 200, () => { const q = this.playerOf(s); this.hitArea(s, sk.delay && q ? q.x : px, sk.delay && q ? q.z : pz, sk.radius, mult, so); }); break;
+      case "shieldThrow": {                 // escudo voa (perfura), gira 2s no alcance máximo (área) e volta
+        const SPD = 16, tOut = (sk.range / SPD) * 1000, sx = p.x, sz = p.z, ex = sx + ux * sk.range, ez = sz + uz * sk.range;
+        const seen1 = new Set<Sim>(), seen2 = new Set<Sim>();
+        for (let t = 0; t <= tOut; t += 100) this.later(300 + t, () => { const f = t / tOut; this.hitNear(s, sx + (ex - sx) * f, sz + (ez - sz) * f, 1.8, mult, so, seen1); });
+        for (let k = 1; k <= 5; k++) this.later(300 + tOut + k * 400, () => this.hitArea(s, ex, ez, 3.4, mult * 0.45, so));
+        for (let t = 0; t <= tOut; t += 100) this.later(300 + tOut + 2000 + t, () => { const q = this.playerOf(s); if (!q) return; const f = t / tOut; this.hitNear(s, ex + (q.x - ex) * f, ez + (q.z - ez) * f, 1.8, mult, so, seen2); });
+        break;
+      }
+      case "shieldBeam": {                  // raio fixo na direção do golpe por 3s (perfurante)
+        for (let k = 0; k < 10; k++) this.later(350 + k * 300, () => { const q = this.playerOf(s); if (q && !q.dead) this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.5, mult, so); });
+        break;
+      }
       case "aoeMulti": for (let h = 0; h < sk.hits; h++) this.later(200 + h * 200, () => this.hitArea(s, p.x, p.z, sk.radius, mult, so)); break;
       case "taunt": {
         for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);

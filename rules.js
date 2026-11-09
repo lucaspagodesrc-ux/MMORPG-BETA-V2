@@ -92,14 +92,14 @@ const CLASSES={
  cavaleiro:{n:'Cavaleiro Pesado',i:'🛡️',wi:'🗡️',main:'str',base:{str:8,agi:3,int:3,vit:13},range:2.6,ranged:false,
   d:'Espada e escudo. Defesa +40% e vida +15%. Converte defesa em dano.',
   skills:[
-   {n:'Golpe de Escudo',i:'🛡️',lv:1,cd:3,mp:8,type:'single',mult:1.2,defMult:1.0,range:3.2,color:'#9fc4ff',d:'Golpe com o escudo: dano + parte da sua DEFESA.'},
+   {n:'Golpe de Escudo',i:'🛡️',lv:1,cd:3,mp:8,type:'single',mult:1.2,defMult:1.0,range:3.2,anim:'shield',color:'#9fc4ff',d:'Golpe com o escudo: o braço do escudo bate no alvo. Dano + parte da sua DEFESA.'},
    {n:'Investida do Escudo',i:'🐂',lv:3,cd:8,mp:12,type:'dash',mult:1.2,defMult:.8,range:10,color:'#8fd3ff',d:'Avança com o escudo e converte defesa em dano.'},
-   {n:'Postura Defensiva',i:'🏰',lv:5,cd:25,mp:18,type:'buff',buffs:{shield:.35},dur:12,color:'#7fa6d9',d:'-35% de dano recebido.'},
-   {n:'Bastião',i:'⚙️',lv:8,cd:30,mp:25,type:'buff',buffs:{defdmg:.6,shield:.15},dur:12,color:'#ffd27a',d:'Todo ataque ganha 60% da DEFESA como dano.'},
-   {n:'Impacto Sísmico',i:'💢',lv:12,cd:12,mp:28,type:'aoeSelf',mult:.8,defMult:1.5,radius:4.5,slow:3000,color:'#c9a56b',d:'Pancada no chão: dano em área baseado na DEFESA.'},
-   {n:'Vontade de Ferro',i:'🩹',lv:15,cd:30,mp:25,type:'heal',pct:.3,color:'#6fdc7f',d:'Recupera 30% da vida máxima.'},
-   {n:'Fortaleza Inabalável',i:'🧱',lv:20,cd:45,mp:40,type:'buff',buffs:{defdmg:1.2,shield:.4},dur:12,color:'#ffe28a',d:'120% da DEFESA vira dano e -40% de dano recebido.'},
-   {n:'Juízo do Guardião',i:'⚖️',lv:25,cd:22,mp:40,type:'single',mult:2.2,defMult:3.5,range:3.4,color:'#fff2a8',d:'Converte sua DEFESA em um golpe devastador.'}]},
+   {n:'Postura Defensiva',i:'🏰',lv:5,cd:60,cdMin:35,mp:18,type:'buff',buffs:{shield:.35},dur:60,fixDur:1,color:'#7fa6d9',d:'Auto-buff (só em você) por 1 minuto: -35% de dano recebido. Recarga: 60s no rank 1 até 35s no rank máximo.'},
+   {n:'Bastião',i:'⚙️',lv:8,cd:120,cdMin:90,mp:25,type:'buff',buffs:{defdmg:.6,defloss:.6},fixBuff:1,dur:60,fixDur:1,color:'#ffd27a',d:'Auto-buff por 1 minuto: converte 60% da sua DEFESA em força (a defesa cai 60% e todo ataque ganha esse valor como dano). Recarga: 120s no rank 1 até 90s no máximo.'},
+   {n:'Impacto Sísmico',i:'💢',lv:12,cd:12,mp:28,type:'aoeSelf',mult:.8,defMult:1.5,radius:4.5,slow:3000,anim:'jump',delay:650,color:'#c9a56b',d:'Salta bem alto e bate com o escudo no chão: dano em área baseado na DEFESA.'},
+   {n:'Vontade de Ferro',i:'🩹',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.3,color:'#6fdc7f',d:'Recupera 30% da vida máxima.'},
+   {n:'Escudo Voador',i:'🥏',lv:20,cd:24,mp:40,type:'shieldThrow',mult:1.3,defMult:1.0,range:12,pierce:.5,anim:'throw',color:'#9fd0ff',d:'Arremessa o escudo para frente, ferindo (perfurante) todos que acertar. No alcance máximo ele gira por 2s causando dano em área e depois volta para você. Sem escudo enquanto ele voa.'},
+   {n:'Raio do Escudo',i:'🔆',lv:25,cd:22,mp:45,type:'shieldBeam',mult:.9,defMult:1.6,range:15,pierce:.5,dur:3,anim:'beam',color:'#fff2a8',d:'Bate a espada no escudo e solta um raio por 3s à frente, causando dano perfurante em tudo que ele atravessa.'}]},
  tanque:{n:'Tanque',i:'⛓️',wi:'🔨',main:'vit',base:{str:6,agi:2,int:2,vit:14},range:2.8,ranged:false,
   d:'O mais resistente: DEFESA +75%, vida +30%. Puxa, atordoa, imobiliza, levanta e PROVOCA os monstros para levar o dano.',
   skills:[
@@ -490,12 +490,12 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 
 /** Valores de uma habilidade conforme o rank. */
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
-const BCAP = { shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
+const BCAP = { defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
-  const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (1 + ph(k, .15, .05)));
+  const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
-  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? s.dur * (1 + ph(k, .1, .03)) : 0, buffs: s.buffs ? bf : null, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
