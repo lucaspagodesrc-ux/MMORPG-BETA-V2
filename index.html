@@ -824,6 +824,55 @@ Math.random=__rand0; // volta ao aleatório normal depois de gerar o cenário
 function collide(p,rad){for(const o of obstacles){const dx=p.x-o.x,dz=p.z-o.z,min=o.r+rad;if(Math.abs(dx)>min||Math.abs(dz)>min)continue;const d=Math.hypot(dx,dz);if(d<min&&d>1e-4){p.x=o.x+dx/d*min;p.z=o.z+dz/d*min;}}}
 const clampMap=p=>{if(p.x>450){p.x=Math.max(588,Math.min(612,p.x));p.z=Math.max(-78,Math.min(79,p.z));if(NET.inst&&p===P.pos&&P.dgMaxZ!==undefined&&p.z>P.dgMaxZ-.5)p.z=P.dgMaxZ-.5;return;}const cx=p.x>150?SC.x:0;p.x=Math.max(cx-MAP,Math.min(cx+MAP,p.x));p.z=Math.max(-MAP,Math.min(MAP,p.z));};
 
+/* =================== MEMBROS: braços e pernas articulados (ombro/cotovelo, quadril/joelho) =================== */
+const MELEE=new Set(['guerreiro','cavaleiro','assassino','tanque','pierrot']);
+function mkLimbs(par,c){
+ const L={ph:0,t:0,spd:0,x:0,z:0,meshes:[],leg:[],arm:[],ank:[],rest:c.rest||[-.3,-.5],restL:c.restL||c.rest||[-.15,-.3],ph0:Math.random()*6};
+ const nd=(p,x,y,z)=>{const n=new BABYLON.TransformNode('lb',scene);n.parent=p;n.position.set(x,y,z);return n;};
+ const reg=m=>{m.isPickable=!!c.pick;L.meshes.push(m);return m;};
+ const seg=(p,len,r0,r1,mt)=>{const m=reg(B.CreateCylinder('ls',{height:len,diameterTop:r0*2,diameterBottom:r1*2,tessellation:c.tess||8},scene));m.parent=p;m.position.y=-len/2;m.material=mt;return m;};
+ const ball=(p,d,x,y,z,mt)=>{const m=reg(B.CreateSphere('lj',{diameter:d,segments:6},scene));m.parent=p;m.position.set(x,y,z);m.material=mt;return m;};
+ const T=c.T,S=c.S,ay=c.ay==null?.12:c.ay,hy=ay+T+S,lr=c.lr,mL=c.mL,mB=c.mB||mL;
+ for(const s of[-1,1]){
+  const hip=nd(par,s*c.hx,hy,0);seg(hip,T,lr*1.05,lr*.9,mL);
+  const kn=nd(hip,0,-T,0);ball(kn,lr*1.9,0,0,0,mL);seg(kn,S,lr*.9,lr*.7,mL);
+  const an=nd(kn,0,-S,0);const ft=reg(B.CreateBox('lf',{width:lr*2.1,height:ay*.9,depth:lr*3.6},scene));ft.parent=an;ft.position.set(0,-ay*.42,lr*.9);ft.material=mB;
+  L.leg.push({h:hip,k:kn});L.ank.push(an);
+ }
+ const ar=c.ar,mA=c.mA,mH=c.mH||mA,mS=c.mS||c.mH||c.mA;
+ for(const s of[-1,1]){
+  const sh=nd(par,s*c.sx,c.sy,0);ball(sh,ar*2.3,0,0,0,mA);seg(sh,c.U,ar*1.05,ar*.9,mA);
+  const el=nd(sh,0,-c.U,0);ball(el,ar*1.8,0,0,0,mH);seg(el,c.F,ar*.9,ar*.72,mH);
+  const wr=nd(el,0,-c.F,0);ball(wr,ar*1.7,0,-.02,0,mS);
+  L.arm.push({s:sh,e:el,w:wr});
+ }
+ L.hL=L.arm[0].w;L.hR=L.arm[1].w;   // [0]=esquerda (x negativo) [1]=direita (arma)
+ L.lr=lr;animLimbs({limbs:L},0,0,0,0,true);L.t=0;
+ return L;
+}
+/* anima: andar (a partir da velocidade real do modelo) + golpe/habilidade (sa = instante do golpe) */
+function animLimbs(o,px,pz,now,sa,melee){
+ const L=o.limbs;if(!L)return;
+ const first=!L.t;let dt=first?.016:Math.min(.1,(now-L.t)/1000);if(dt<=0)return;
+ const sp=first?0:Math.hypot(px-L.x,pz-L.z)/dt;L.t=now;L.x=px;L.z=pz;
+ L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
+ const a=Math.min(1,L.spd/3.5);L.ph+=L.spd*dt*2.4;
+ const s=Math.sin(L.ph),cs=Math.cos(L.ph);
+ const sw=(now-(sa||0))/260,at=(sw>0&&sw<1)?Math.sin(sw*Math.PI):0;
+ const idl=Math.sin(now/700+L.ph0)*.035*(1-a);
+ const Lg=L.leg;
+ Lg[0].h.rotation.x=-s*.8*a+at*.3;Lg[1].h.rotation.x=s*.8*a-at*.25;
+ Lg[0].k.rotation.x=Math.max(0,cs)*.95*a+at*.15;Lg[1].k.rotation.x=Math.max(0,-cs)*.95*a;
+ const AL=L.arm[0],AR=L.arm[1],mel=melee!==false;
+ AL.s.rotation.x=L.restL[0]+s*.65*a+idl-at*(mel?.9:1.3);AL.e.rotation.x=L.restL[1]-at*.3;
+ const sr=L.rest[0]-s*.3*a-idl-at*(mel?1.9:.9),er=L.rest[1]-at*(mel?.3:.15);
+ AR.s.rotation.x=sr;AR.e.rotation.x=er;
+ // a mão mantém a arma "em pé" no repouso; no golpe a arma gira à frente
+ AR.w.rotation.x=-(sr+er)-at*(mel?1.1:.2);
+ AL.w.rotation.x=-(AL.s.rotation.x+AL.e.rotation.x);
+ if(L.restZ){AL.s.rotation.z=L.restZ[0];AR.s.rotation.z=L.restZ[1];}
+}
+
 /* =================== NPCs =================== */
 const labels=$('labels');
 function mkLabel(html,cls){const d=document.createElement('div');d.className='lbl '+(cls||'');d.innerHTML=html;labels.appendChild(d);return d;}
@@ -831,7 +880,8 @@ function buildNpc(d){
  if(d.portal||d.dungeon){buildPortal(d);return;}
  const r=new BABYLON.TransformNode('npc_'+d.id,scene);r.position.set(d.x,0,d.z);r.rotation.y=Math.atan2(-d.x,-d.z);
  const add=(m,x,y,z,mt,rx)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.metadata={t:'n',ref:d};if(rx)m.rotation.x=rx;return m;};
- if(!d.chest&&d.id!=='bau'){add(B.CreateCapsule('nb',{height:1.5,radius:.38},scene),0,.85,0,mat('nc'+d.id,d.col));
+ if(!d.chest&&d.id!=='bau'){const nm=mat('nc'+d.id,d.col);add(B.CreateCapsule('nb',{height:.9,radius:.36},scene),0,1.2,0,nm);
+ const NL=mkLimbs(r,{pick:1,hx:.17,T:.33,S:.33,lr:.1,mL:mat('nlg'+d.id,'#3a2f26'),mB:mat('nbo','#2a2018'),sx:.46,sy:1.5,U:.36,F:.34,ar:.09,mA:nm,mH:nm,mS:M.skin,rest:[-.1,-.25],restL:[-.1,-.25]});d.limbs=NL;NL.meshes.forEach(m=>{m.metadata={t:'n',ref:d};});
  add(B.CreateSphere('nh',{diameter:.6,segments:8},scene),0,1.8,0,M.skin);
  if(d.hat)add(B.CreateCylinder('nhat',{height:.55,diameterTop:0,diameterBottom:.85,tessellation:10},scene),0,2.3,0,mat('hat'+d.id,d.hat));}
  if(d.chest||d.id==='bau'){add(B.CreateBox('cb',{width:1.5,height:.8,depth:1},scene),0,.4,0,mat('chb','#7a5532'));add(B.CreateCylinder('cl',{height:1.5,diameter:1,tessellation:16},scene),0,.85,0,mat('chl','#8a6038')).rotation.z=Math.PI/2;
@@ -864,8 +914,8 @@ for(const s of SIGNS)s.el=mkLabel(s.t,'npc');
 const walkers=[];
 const __rW=Math.random;{let a=777001;Math.random=function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}   // plano de caminhada igual para todos
 function mkWalker(o){const r=new BABYLON.TransformNode('w',scene);r.position.set(o.x,0,o.z);
- const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
- o.build(add);const sh=B.CreateDisc('sh',{radius:o.sr||.6,tessellation:14},scene);sh.parent=r;sh.rotation.x=Math.PI/2;sh.position.y=.04;sh.material=M.shadow;sh.isPickable=false;
+ const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};add.r=r;
+ o.build(add);o.limbs=add.limbs||null;const sh=B.CreateDisc('sh',{radius:o.sr||.6,tessellation:14},scene);sh.parent=r;sh.rotation.x=Math.PI/2;sh.position.y=.04;sh.material=M.shadow;sh.isPickable=false;
  Object.assign(o,{root:r,pos:r.position,ph:Math.random()*6});if(o.name)o.label=mkLabel(o.name,'npc');
  // Rota fixa (sorteada com semente) que se repete: a posição depende só do relógio do servidor => todos veem o mesmo.
  const pts=[[o.x,o.z]],wt=[];
@@ -874,8 +924,8 @@ function mkWalker(o){const r=new BABYLON.TransformNode('w',scene);r.position.set
  if(o.path&&(pts[pts.length-1][0]!==o.x||pts[pts.length-1][1]!==o.z)){pts.push([o.x,o.z]);wt.push(.3);}
  o.segs=[];let T=0;for(let k=0;k<pts.length-1;k++){const a=pts[k],b=pts[k+1],d=Math.hypot(b[0]-a[0],b[1]-a[1]),tm=d/o.spd;o.segs.push({a,b,t0:T,tm:T+tm,t1:T+tm+(wt[k]||0),rot:Math.atan2(b[0]-a[0],b[1]-a[1])});T+=tm+(wt[k]||0);}
  o.cycle=Math.max(1,T);walkers.push(o);}
-const person=(col,hat,guard)=>add=>{add(B.CreateCapsule('b',{height:1.4,radius:.34},scene),0,.8,0,mat('pc'+col,col));add(B.CreateSphere('h',{diameter:.55,segments:6},scene),0,1.7,0,M.skin);
- if(guard){add(B.CreateSphere('hm',{diameter:.62,segments:6},scene),0,1.78,0,mat('gh','#8f9aa6'));add(B.CreateCylinder('sp',{height:2.4,diameter:.07},scene),.5,1.2,.1,M.wood);add(B.CreateCylinder('st',{height:.3,diameterTop:0,diameterBottom:.14},scene),.5,2.5,.1,mat('gt','#cfd6dc'));}
+const person=(col,hat,guard)=>add=>{const pm=mat('pc'+col,col);add(B.CreateCapsule('b',{height:.85,radius:.32},scene),0,1.15,0,pm);const PL=mkLimbs(add.r,{hx:.15,T:.31,S:.31,lr:.09,mL:mat('plg'+col,'#3a2f26'),mB:mat('pbo','#2a2018'),sx:.4,sy:1.4,U:.34,F:.32,ar:.08,mA:pm,mH:pm,mS:M.skin,rest:[-.1,-.2],restL:[-.1,-.2]});add.limbs=PL;add(B.CreateSphere('h',{diameter:.55,segments:6},scene),0,1.7,0,M.skin);
+ if(guard){add(B.CreateSphere('hm',{diameter:.62,segments:6},scene),0,1.78,0,mat('gh','#8f9aa6'));{const sp_=add(B.CreateCylinder('sp',{height:2.4,diameter:.07},scene),.5,1.2,.1,M.wood);sp_.parent=PL.hR;sp_.position.set(0,.8,0);}{const st_=add(B.CreateCylinder('st',{height:.3,diameterTop:0,diameterBottom:.14},scene),.5,2.5,.1,mat('gt','#cfd6dc'));st_.parent=PL.hR;st_.position.set(0,2.1,0);}}
  else if(hat)add(B.CreateCylinder('ht',{height:.3,diameterTop:.2,diameterBottom:.7,tessellation:8},scene),0,2.02,0,mat('ph'+hat,hat));};
 const animal=c=>add=>{const [w,h,d]=c.b,hm=c.hm||c.m;add(B.CreateBox('ab',{width:w,height:h,depth:d},scene),0,c.lg+h/2,0,c.m);add(B.CreateBox('ah',{width:w*.7,height:h*.7,depth:d*.4},scene),0,c.lg+h*.9,d*.55,hm);
  for(const sx of[-1,1])for(const sz of[-1,1])add(B.CreateBox('al',{width:.12,height:c.lg,depth:.12},scene),sx*w*.35,c.lg/2,sz*d*.33,hm);
@@ -904,6 +954,7 @@ function updateLife(dt,now){
   if(t<g.tm){const k=(t-g.t0)/(g.tm-g.t0);p.x=g.a[0]+(g.b[0]-g.a[0])*k;p.z=g.a[1]+(g.b[1]-g.a[1])*k;o.root.rotation.y=g.rot;mv=true;}else{p.x=g.b[0];p.z=g.b[1];}
   collide(p,o.cr||.4);clampMap(p);p.y=mv?Math.abs(Math.sin(now*.018+o.ph))*(o.hop||.07):0;
   if(o.label){if(dP<14)place(o.label,p,2.7);else o.label.style.display='none';}}
+ for(const d of NPCS)if(d.limbs&&d.pos&&hyp(P.pos,d.pos)<30)animLimbs(d,d.pos.x,d.pos.z,now,0,true);
  for(const s of SIGNS){if(hyp(P.pos,s)<16)place(s.el,{x:s.x,y:0,z:s.z},1.9);else s.el.style.display='none';}}
 
 
@@ -915,32 +966,33 @@ let mid=0;
 function buildMonster(type,id){
  const r=new BABYLON.TransformNode('m'+id,scene);
  const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;return m;};
- let sr=.8;
+ let sr=.8,LM=null;
+ const LB=c=>{LM=mkLimbs(r,Object.assign({pick:1},c));r.limbs=LM;return LM;};
+ const att=(m,x,y,z,mt)=>{m.parent=LM.hR;m.position.set(x,y,z);m.material=mt;return m;};
  if(type==='slime'){add(B.CreateSphere('b',{diameter:1.3,segments:10},scene),0,.6,0,mm_.slime).scaling.y=.8;add(B.CreateSphere('e',{diameter:.14},scene),-.24,.78,.52,mm_.black);add(B.CreateSphere('e',{diameter:.14},scene),.24,.78,.52,mm_.black);}
  else if(type==='lobo'){add(B.CreateBox('b',{width:.7,height:.6,depth:1.3},scene),0,.65,0,mm_.wolf);add(B.CreateBox('h',{width:.5,height:.45,depth:.5},scene),0,.85,.8,mm_.wolf);add(B.CreateBox('s',{width:.24,height:.2,depth:.3},scene),0,.76,1.12,mm_.black);
   for(const sx of[-.17,.17])add(B.CreateCylinder('ear',{height:.28,diameterTop:0,diameterBottom:.18,tessellation:4},scene),sx,1.18,.72,mm_.wolf);
   const tl=add(B.CreateBox('t',{width:.12,height:.12,depth:.6},scene),0,.85,-.85,mm_.wolf);tl.rotation.x=-.5;
   for(const sx of[-.25,.25])for(const sz of[-.45,.45])add(B.CreateBox('l',{width:.14,height:.45,depth:.14},scene),sx,.22,sz,mm_.wolf);
   for(const sx of[-.13,.13])add(B.CreateSphere('e',{diameter:.09},scene),sx,.93,1.04,mm_.eyeR);sr=.9;}
- else if(type==='goblin'){add(B.CreateCapsule('b',{height:1.2,radius:.33},scene),0,.75,0,mm_.goblin);add(B.CreateSphere('h',{diameter:.62,segments:8},scene),0,1.55,0,mm_.goblin);
+ else if(type==='goblin'){add(B.CreateCapsule('b',{height:.8,radius:.31},scene),0,1.0,0,mm_.goblin);LB({hx:.14,T:.22,S:.22,ay:.1,lr:.07,mL:mm_.goblin,mB:mm_.club,sx:.36,sy:1.3,U:.26,F:.25,ar:.07,mA:mm_.goblin,rest:[-.3,-.6],restL:[-.3,-.5]});add(B.CreateSphere('h',{diameter:.62,segments:8},scene),0,1.55,0,mm_.goblin);
   for(const sx of[-1,1]){const e=add(B.CreateCylinder('ear',{height:.5,diameterTop:0,diameterBottom:.18,tessellation:4},scene),sx*.42,1.6,0,mm_.goblin);e.rotation.z=-sx*1.2;add(B.CreateSphere('e',{diameter:.1},scene),sx*.14,1.6,.28,mm_.eyeY);}
-  const c=add(B.CreateCylinder('club',{height:.9,diameterTop:.2,diameterBottom:.08,tessellation:6},scene),.5,1,.25,mm_.club);c.rotation.x=.6;add(B.CreateBox('lc',{width:.6,height:.3,depth:.4},scene),0,.45,0,mm_.club);}
- else if(type==='esqueleto'){add(B.CreateCapsule('b',{height:1.3,radius:.2},scene),0,1.0,0,mm_.bone);for(let i=0;i<3;i++)add(B.CreateBox('rib',{width:.55,height:.06,depth:.3},scene),0,.95+i*.17,0,mm_.bone);
+  att(B.CreateCylinder('club',{height:.9,diameterTop:.2,diameterBottom:.08,tessellation:6},scene),0,.4,0,mm_.club);add(B.CreateBox('lc',{width:.6,height:.3,depth:.4},scene),0,.62,0,mm_.club);}
+ else if(type==='esqueleto'){add(B.CreateCapsule('b',{height:.9,radius:.2},scene),0,1.2,0,mm_.bone);LB({hx:.14,T:.4,S:.4,ay:.1,lr:.05,mL:mm_.bone,sx:.3,sy:1.58,U:.3,F:.3,ar:.045,mA:mm_.bone,rest:[-.3,-.6],restL:[-.2,-.4]});for(let i=0;i<3;i++)add(B.CreateBox('rib',{width:.55,height:.06,depth:.3},scene),0,1.1+i*.17,0,mm_.bone);
   add(B.CreateSphere('h',{diameter:.5,segments:8},scene),0,1.85,0,mm_.bone);for(const sx of[-.1,.1])add(B.CreateSphere('e',{diameter:.12},scene),sx,1.88,.2,mm_.black);
-  for(const sx of[-.14,.14])add(B.CreateCylinder('l',{height:.9,diameter:.1,tessellation:6},scene),sx,.45,0,mm_.bone);
-  const sw=add(B.CreateBox('sw',{width:.07,height:1,depth:.07},scene),.5,1.1,.2,mm_.metal);sw.rotation.x=.4;sr=.9;}
+    att(B.CreateBox('sw',{width:.07,height:1,depth:.05},scene),0,.55,0,mm_.metal);att(B.CreateBox('swg',{width:.3,height:.06,depth:.08},scene),0,.04,0,mm_.club);sr=.9;}
  else if(type==='aranha'){add(B.CreateSphere('b',{diameter:1.1,segments:8},scene),0,.7,-.25,mm_.spider).scaling.set(1,.8,1.3);add(B.CreateSphere('h',{diameter:.7,segments:8},scene),0,.75,.55,mm_.spider2);
   for(const sx of[-.15,.15])add(B.CreateSphere('e',{diameter:.12},scene),sx,.92,.86,mm_.eyeR);
   for(let i=0;i<4;i++)for(const sx of[-1,1]){const l=add(B.CreateCylinder('l',{height:1.3,diameter:.09,tessellation:5},scene),sx*.75,.5,.5-i*.35,mm_.spider);l.rotation.z=sx*.95;}sr=1.1;}
- else if(type==='orc'){add(B.CreateCapsule('b',{height:1.6,radius:.46},scene),0,.95,0,mm_.orc);add(B.CreateSphere('h',{diameter:.72,segments:8},scene),0,1.95,0,mm_.orc);
+ else if(type==='orc'){add(B.CreateCapsule('b',{height:1.0,radius:.46},scene),0,1.3,0,mm_.orc);LB({hx:.22,T:.35,S:.35,ay:.1,lr:.13,mL:mm_.orc,mB:mm_.club,sx:.62,sy:1.72,U:.4,F:.38,ar:.13,mA:mm_.orc,rest:[-.3,-.5],restL:[-.2,-.4]});add(B.CreateSphere('h',{diameter:.72,segments:8},scene),0,1.95,0,mm_.orc);
   for(const sx of[-.16,.16]){add(B.CreateCylinder('tk',{height:.3,diameterTop:0,diameterBottom:.1,tessellation:4},scene),sx,1.78,.34,mm_.bone).rotation.x=-.6;add(B.CreateSphere('e',{diameter:.1},scene),sx*1.1,2.0,.32,mm_.eyeR);}
-  add(B.CreateBox('belt',{width:.95,height:.25,depth:.6},scene),0,.7,0,mm_.club);add(B.CreateCylinder('ax',{height:1.4,diameter:.09,tessellation:6},scene),.7,1.15,.3,mm_.club).rotation.x=.5;add(B.CreateBox('bl',{width:.1,height:.5,depth:.45},scene),.7,1.75,.55,mm_.metal);sr=1;}
- else if(type==='yeti'){add(B.CreateCapsule('b',{height:2.3,radius:.62},scene),0,1.3,0,mm_.yeti);add(B.CreateSphere('h',{diameter:.85,segments:8},scene),0,2.55,0,mm_.yeti);add(B.CreateSphere('f',{diameter:.55,segments:8},scene),0,2.5,.28,mm_.yetiF);
+  add(B.CreateBox('belt',{width:.95,height:.25,depth:.6},scene),0,.85,0,mm_.club);att(B.CreateCylinder('ax',{height:1.4,diameter:.09,tessellation:6},scene),0,.4,0,mm_.club);att(B.CreateBox('bl',{width:.1,height:.5,depth:.45},scene),0,1.0,.15,mm_.metal);sr=1;}
+ else if(type==='yeti'){add(B.CreateCapsule('b',{height:1.6,radius:.62},scene),0,1.75,0,mm_.yeti);LB({hx:.34,T:.45,S:.4,ay:.1,lr:.22,mL:mm_.yeti,mB:mm_.yetiF,sx:.88,sy:2.3,U:.7,F:.62,ar:.27,mA:mm_.yeti,rest:[0,-.2],restL:[0,-.2]});add(B.CreateSphere('h',{diameter:.85,segments:8},scene),0,2.55,0,mm_.yeti);add(B.CreateSphere('f',{diameter:.55,segments:8},scene),0,2.5,.28,mm_.yetiF);
   for(const sx of[-.12,.12])add(B.CreateSphere('e',{diameter:.1},scene),sx,2.6,.52,mm_.black);
-  for(const sx of[-.9,.9])add(B.CreateCapsule('a',{height:1.7,radius:.27},scene),sx,1.4,.1,mm_.yeti);for(const sx of[-.3,.3])add(B.CreateBox('l',{width:.5,height:.7,depth:.5},scene),sx,.35,0,mm_.yeti);sr=1.4;}
- else if(type==='demonio'){add(B.CreateCapsule('b',{height:1.7,radius:.42},scene),0,1.0,0,mm_.demon);add(B.CreateSphere('h',{diameter:.68,segments:8},scene),0,2.1,0,mm_.demon);
+  sr=1.4;}
+ else if(type==='demonio'){add(B.CreateCapsule('b',{height:1.1,radius:.42},scene),0,1.35,0,mm_.demon);LB({hx:.18,T:.35,S:.35,ay:.1,lr:.1,mL:mm_.demonD,mB:mm_.black,sx:.52,sy:1.78,U:.38,F:.36,ar:.1,mA:mm_.demon,rest:[-.3,-.5],restL:[-.2,-.4]});add(B.CreateSphere('h',{diameter:.68,segments:8},scene),0,2.1,0,mm_.demon);
   for(const sx of[-1,1]){add(B.CreateCylinder('hn',{height:.55,diameterTop:0,diameterBottom:.17,tessellation:5},scene),sx*.22,2.55,0,mm_.black).rotation.z=-sx*.35;add(B.CreateSphere('e',{diameter:.11},scene),sx*.15,2.15,.3,mm_.eyeO);add(B.CreateBox('w',{width:1.1,height:1.0,depth:.05},scene),sx*.85,1.6,-.35,mm_.demonD).rotation.z=sx*-.5;}
-  add(B.CreateCylinder('tr',{height:1.6,diameter:.07,tessellation:6},scene),.7,1.1,.4,mm_.metal);sr=1;}
+  att(B.CreateCylinder('tr',{height:1.6,diameter:.07,tessellation:6},scene),0,.5,0,mm_.metal);for(const px of[-.13,0,.13])att(B.CreateCylinder('tp',{height:.36,diameterTop:0,diameterBottom:.08,tessellation:5},scene),px,1.5+(px?0:.1),0,mm_.metal);att(B.CreateBox('tpb',{width:.3,height:.04,depth:.04},scene),0,1.32,0,mm_.metal);sr=1;}
  else if(type==='dragao'){add(B.CreateSphere('b',{diameter:3,segments:10},scene),0,2,0,mm_.dragon).scaling.set(1,.9,1.6);add(B.CreateCylinder('nk',{height:2.2,diameterTop:.6,diameterBottom:1,tessellation:8},scene),0,3.3,1.7,mm_.dragon).rotation.x=.55;add(B.CreateBox('h',{width:1,height:.8,depth:1.5},scene),0,4.3,2.5,mm_.dragon);
   for(const sx of[-1,1]){add(B.CreateSphere('e',{diameter:.2},scene),sx*.35,4.5,3.1,mm_.eyeO);add(B.CreateCylinder('hn',{height:.9,diameterTop:0,diameterBottom:.22,tessellation:5},scene),sx*.35,4.95,2.1,mm_.black).rotation.x=-.5;add(B.CreateBox('w',{width:3,height:.1,depth:2.2},scene),sx*2.4,3.3,-.2,mm_.dragonD).rotation.z=sx*-.35;
    for(const sz of[-.8,.9])add(B.CreateBox('lg',{width:.5,height:1.2,depth:.5},scene),sx*.8,.6,sz,mm_.dragon);}
@@ -951,11 +1003,9 @@ function buildMonster(type,id){
   for(let i=0;i<3;i++)for(const sx of[-1,1])add(B.CreateCylinder('l',{height:.9,diameter:.07,tessellation:5},scene),sx*.65,.3,.25-i*.35,mn_.scorD).rotation.z=sx*.9;
   [[0,.8,-.9],[0,1.25,-1.25],[0,1.7,-1.2],[0,2.0,-.8]].forEach((q,i)=>add(B.CreateSphere('t',{diameter:.5-i*.06,segments:6},scene),q[0],q[1],q[2],mn_.scor));
   add(B.CreateCylinder('st',{height:.5,diameterTop:0,diameterBottom:.18,tessellation:5},scene),0,2.05,-.4,mm_.eyeO).rotation.x=2.2;sr=1.3;}
- else if(type==='mumia'){add(B.CreateCapsule('b',{height:1.7,radius:.38},scene),0,1.0,0,mn_.mum);for(let i=0;i<4;i++)add(B.CreateTorus('w',{diameter:.82,thickness:.07,tessellation:12},scene),0,.55+i*.35,0,mn_.mumD);
+ else if(type==='mumia'){add(B.CreateCapsule('b',{height:1.1,radius:.36},scene),0,1.35,0,mn_.mum);LB({hx:.15,T:.32,S:.31,ay:.12,lr:.11,mL:mn_.mumD,sx:.46,sy:1.75,U:.36,F:.34,ar:.1,mA:mn_.mum,rest:[-1.3,-.15],restL:[-1.2,-.2]});for(let i=0;i<4;i++)add(B.CreateTorus('w',{diameter:.74,thickness:.07,tessellation:12},scene),0,.95+i*.25,0,mn_.mumD);
   add(B.CreateSphere('h',{diameter:.6,segments:8},scene),0,2.0,0,mn_.mum);for(const sx of[-.12,.12])add(B.CreateSphere('e',{diameter:.1},scene),sx,2.05,.25,mn_.green);
-  for(const sx of[-1,1])add(B.CreateCapsule('a',{height:1.2,radius:.14},scene),sx*.5,1.5,.45,mn_.mum).rotation.x=1.2;
-  for(const sx of[-.15,.15])add(B.CreateCylinder('l',{height:.7,diameter:.22,tessellation:6},scene),sx,.35,0,mn_.mumD);
-  add(B.CreateBox('tr',{width:.1,height:.9,depth:.04},scene),.35,1.2,.3,mn_.mumD).rotation.z=.4;sr=.9;}
+    add(B.CreateBox('tr',{width:.1,height:.9,depth:.04},scene),.35,1.2,.3,mn_.mumD).rotation.z=.4;sr=.9;}
  else if(type==='cobra'){for(let i=0;i<3;i++)add(B.CreateTorus('c',{diameter:1.5-i*.25,thickness:.45,tessellation:16},scene),0,.25+i*.38,0,i%2?mn_.cobraB:mn_.cobra);
   add(B.CreateCapsule('n',{height:1.6,radius:.2},scene),0,1.5,.15,mn_.cobra);add(B.CreateSphere('hd',{diameter:.55,segments:8},scene),0,2.35,.3,mn_.cobra).scaling.set(1.2,.9,1.4);
   add(B.CreateSphere('hd2',{diameter:.9,segments:8},scene),0,2.0,.15,mn_.cobraB).scaling.set(1.1,1,.25);
@@ -964,32 +1014,30 @@ function buildMonster(type,id){
  else if(type==='elemental'){add(B.CreateCylinder('tw',{height:2.4,diameterTop:2.0,diameterBottom:.35,tessellation:12},scene),0,1.2,0,mn_.sandE);
   add(B.CreateSphere('co',{diameter:1.3,segments:6},scene),0,2.2,0,mn_.sandR).convertToFlatShadedMesh();add(B.CreateSphere('ey',{diameter:.4,segments:6},scene),0,2.25,.55,mm_.eyeO);
   for(let i=0;i<6;i++){const a=i/6*6.283;add(B.CreateSphere('o',{diameter:.35+(i%2)*.15,segments:4},scene),Math.cos(a)*1.1,1.4+(i%3)*.5,Math.sin(a)*1.1,mn_.sandR);}sr=1.3;}
- else if(type==='chacal'){add(B.CreateCapsule('b',{height:1.7,radius:.4},scene),0,1.05,0,mn_.jack);add(B.CreateTorus('cr',{diameter:.8,thickness:.1,tessellation:14},scene),0,1.75,0,mn_.gold);
+ else if(type==='chacal'){add(B.CreateCapsule('b',{height:1.1,radius:.4},scene),0,1.45,0,mn_.jack);LB({hx:.18,T:.45,S:.38,ay:.12,lr:.11,mL:mn_.jack,mB:mn_.gold,sx:.5,sy:1.85,U:.4,F:.38,ar:.1,mA:mn_.jack,mH:mn_.jack,rest:[-.3,-.5],restL:[-.2,-.4]});add(B.CreateTorus('cr',{diameter:.8,thickness:.1,tessellation:14},scene),0,1.75,0,mn_.gold);
   add(B.CreateBox('h',{width:.5,height:.5,depth:.55},scene),0,2.2,.05,mn_.jack);add(B.CreateBox('sn',{width:.22,height:.2,depth:.55},scene),0,2.12,.55,mn_.jack);
   for(const sx of[-.16,.16]){add(B.CreateCylinder('ear',{height:.55,diameterTop:0,diameterBottom:.2,tessellation:4},scene),sx,2.7,0,mn_.jack);add(B.CreateSphere('e',{diameter:.09},scene),sx*.8,2.28,.3,mm_.eyeY);}
-  add(B.CreateCylinder('sp',{height:2.6,diameter:.07,tessellation:6},scene),.65,1.4,.2,mm_.club);add(B.CreateCylinder('tip',{height:.5,diameterTop:0,diameterBottom:.16,tessellation:6},scene),.65,2.9,.2,mn_.gold);
-  for(const sx of[-.18,.18])add(B.CreateCylinder('l',{height:.8,diameter:.2,tessellation:6},scene),sx,.4,0,mn_.jack);sr=1;}
- else if(type==='sacerdote'){add(B.CreateCylinder('rb',{height:2,diameterTop:.55,diameterBottom:1.5,tessellation:10},scene),0,1,0,mn_.robe);add(B.CreateTorus('bt',{diameter:.7,thickness:.1,tessellation:12},scene),0,1.35,0,mn_.gold);
+  att(B.CreateCylinder('sp',{height:2.6,diameter:.07,tessellation:6},scene),0,.9,0,mm_.club);att(B.CreateCylinder('tip',{height:.5,diameterTop:0,diameterBottom:.16,tessellation:6},scene),0,2.45,0,mn_.gold);
+  sr=1;}
+ else if(type==='sacerdote'){add(B.CreateCylinder('rb',{height:1.25,diameterTop:.55,diameterBottom:1.15,tessellation:10},scene),0,1.45,0,mn_.robe);LB({hx:.16,T:.35,S:.35,ay:.12,lr:.09,mL:mn_.robe,mB:mm_.black,sx:.38,sy:1.95,U:.36,F:.34,ar:.1,mA:mn_.robe,mH:mn_.robe,mS:M.skin,rest:[-.3,-.5],restL:[-.3,-.5]});add(B.CreateTorus('bt',{diameter:.7,thickness:.1,tessellation:12},scene),0,1.35,0,mn_.gold);
   add(B.CreateSphere('h',{diameter:.55,segments:8},scene),0,2.3,0,M.skin);add(B.CreateCylinder('hd',{height:.7,diameterTop:.3,diameterBottom:.6,tessellation:6},scene),0,2.75,0,mn_.gold);
   for(const sx of[-.12,.12])add(B.CreateSphere('e',{diameter:.08},scene),sx,2.32,.25,mn_.cyan);
-  add(B.CreateCylinder('sf',{height:2.8,diameter:.08,tessellation:6},scene),.75,1.4,.3,mn_.gold);add(B.CreateSphere('or',{diameter:.4,segments:8},scene),.75,2.95,.3,mn_.cyan);
+  att(B.CreateCylinder('sf',{height:2.8,diameter:.08,tessellation:6},scene),0,.9,0,mn_.gold);att(B.CreateSphere('or',{diameter:.4,segments:8},scene),0,2.4,0,mn_.cyan);
   add(B.CreateTorus('ank',{diameter:.9,thickness:.08,tessellation:16},scene),-.8,1.8,-.3,mn_.cyan).rotation.x=Math.PI/2;sr=1.1;}
  else if(type==='colosso'){add(B.CreateBox('b',{width:2.0,height:2.1,depth:1.4},scene),0,1.9,0,mn_.obs);add(B.CreateBox('h',{width:1.05,height:.9,depth:1},scene),0,3.45,.1,mn_.obs);
-  for(const sx of[-1.4,1.4]){add(B.CreateBox('a',{width:.75,height:1.9,depth:.75},scene),sx,1.8,0,mn_.obs);add(B.CreateCylinder('sp',{height:1,diameterTop:0,diameterBottom:.5,tessellation:5},scene),sx*1.05,3.2,0,mn_.obs);}
-  for(const sx of[-.55,.55])add(B.CreateBox('l',{width:.8,height:1.2,depth:.8},scene),sx,.6,0,mn_.obs);
+  for(const sx of[-1.4,1.4]){add(B.CreateCylinder('sp',{height:1,diameterTop:0,diameterBottom:.5,tessellation:5},scene),sx*1.05,3.2,0,mn_.obs);}
+  LB({hx:.55,T:.45,S:.33,ay:.12,lr:.38,mL:mn_.obs,sx:1.4,sy:2.7,U:.9,F:.85,ar:.38,mA:mn_.obs,rest:[0,-.15],restL:[0,-.15]});
   for(const sx of[-.28,.28])add(B.CreateBox('e',{width:.25,height:.1,depth:.05},scene),sx,3.5,.62,mn_.lav);add(B.CreateSphere('core',{diameter:.6,segments:8},scene),0,2.1,.72,mn_.lav);
   for(let i=0;i<4;i++)add(B.CreateBox('cr',{width:.08,height:1.3,depth:.04},scene),-.7+i*.47,1.9,.72,mn_.lav).rotation.z=(i-1.5)*.25;sr=1.8;}
- else if(type==='farao'){add(B.CreateCapsule('b',{height:2.4,radius:.6},scene),0,1.5,0,mn_.gold);add(B.CreateBox('bd',{width:.9,height:1.0,depth:.4},scene),0,1.9,.4,mn_.stripe);
-  for(let i=0;i<3;i++)add(B.CreateTorus('w',{diameter:1.25,thickness:.09,tessellation:14},scene),0,.7+i*.45,0,mn_.mumD);
+ else if(type==='farao'){add(B.CreateCapsule('b',{height:1.7,radius:.6},scene),0,1.85,0,mn_.gold);LB({hx:.3,T:.45,S:.43,ay:.12,lr:.17,mL:mn_.mumD,mB:mn_.gold,sx:.85,sy:2.5,U:.62,F:.58,ar:.17,mA:mn_.gold,mH:mn_.gold,rest:[-.3,-.5],restL:[-.8,-.6]});add(B.CreateBox('bd',{width:.9,height:1.0,depth:.4},scene),0,1.9,.4,mn_.stripe);
+  for(let i=0;i<3;i++)add(B.CreateTorus('w',{diameter:1.25,thickness:.09,tessellation:14},scene),0,1.25+i*.4,0,mn_.mumD);
   add(B.CreateSphere('h',{diameter:.85,segments:8},scene),0,3.1,0,mn_.gold);add(B.CreateBox('ne',{width:1.25,height:1.1,depth:.45},scene),0,3.0,-.15,mn_.stripe);add(B.CreateCylinder('cn',{height:.7,diameterTop:0,diameterBottom:.5,tessellation:6},scene),0,3.85,0,mn_.gold);
   for(const sx of[-.18,.18])add(B.CreateSphere('e',{diameter:.13},scene),sx,3.15,.4,mn_.cyan);add(B.CreateBox('br',{width:.14,height:.5,depth:.12},scene),0,2.65,.42,mn_.stripe);
-  for(const sx of[-1,1])add(B.CreateCapsule('a',{height:1.5,radius:.2},scene),sx*.85,2.0,.35,mn_.gold).rotation.x=.9;
-  add(B.CreateCylinder('sf',{height:3.2,diameter:.1,tessellation:6},scene),1.1,1.7,.7,mn_.gold);add(B.CreateSphere('or',{diameter:.5,segments:8},scene),1.1,3.4,.7,mn_.cyan);
+    att(B.CreateCylinder('sf',{height:3.2,diameter:.1,tessellation:6},scene),0,1.0,0,mn_.gold);att(B.CreateSphere('or',{diameter:.5,segments:8},scene),0,2.7,0,mn_.cyan);
   add(B.CreateTorus('ha',{diameter:2.4,thickness:.1,tessellation:20},scene),0,2.2,-.9,mn_.cyan).rotation.x=Math.PI/2;sr=2;}
  else if(type==='chest'){add(B.CreateBox('b',{width:1.5,height:.8,depth:1},scene),0,.4,0,mat('dgcb','#7a5532'));add(B.CreateCylinder('l',{height:1.5,diameter:1,tessellation:16},scene),0,.85,0,mat('dgcl','#8a6038')).rotation.z=Math.PI/2;for(const sx of[-.5,.5])add(B.CreateBox('bd',{width:.12,height:1.05,depth:1.06},scene),sx,.55,0,M.gold);add(B.CreateSphere('lk',{diameter:.25,segments:6},scene),0,.75,.52,M.gold);add(B.CreateSphere('gl',{diameter:.5,segments:6},scene),0,1.5,0,fxMat('#ffd24a'));sr=1.1;}
  else{add(B.CreateBox('b',{width:1.8,height:1.9,depth:1.3},scene),0,1.7,0,mm_.golem);add(B.CreateBox('h',{width:.95,height:.8,depth:.9},scene),0,3.1,.1,mm_.golem);
-  for(const sx of[-1.25,1.25])add(B.CreateBox('a',{width:.65,height:1.7,depth:.65},scene),sx,1.6,0,mm_.golem);
-  for(const sx of[-.5,.5])add(B.CreateBox('l',{width:.7,height:1.0,depth:.7},scene),sx,.5,0,mm_.golem);
+  LB({hx:.5,T:.4,S:.28,ay:.12,lr:.33,mL:mm_.golem,sx:1.25,sy:2.4,U:.8,F:.75,ar:.33,mA:mm_.golem,rest:[0,-.15],restL:[0,-.15]});
   for(const sx of[-.25,.25])add(B.CreateBox('e',{width:.2,height:.1,depth:.05},scene),sx,3.15,.58,mm_.eyeO);add(B.CreateSphere('core',{diameter:.5,segments:8},scene),0,1.9,.68,mm_.eyeO);sr=1.5;}
  const sh=B.CreateDisc('sh',{radius:sr,tessellation:20},scene);sh.parent=r;sh.rotation.x=Math.PI/2;sh.position.y=.04;sh.material=M.shadow;sh.isPickable=false;
  return r;
@@ -1017,55 +1065,80 @@ function buildModel(cls,o){
  const r=new BABYLON.TransformNode('player',scene);
  const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
  o.wMat=mat('wm','#cfd6dd');
- const hand=new BABYLON.TransformNode('hand',scene);hand.parent=r;hand.position.set(.5,1.0,.15);o.hand=hand;
+ let hand=null;
  const att=(m,x,y,z,mt)=>{m.parent=hand;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
+ const attL=(m,x,y,z,mt)=>{m.parent=o.handL;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
+ const LB=c=>{const L=mkLimbs(r,c);o.limbs=L;hand=L.hR;o.hand=hand;o.handL=L.hL;return L;};
  if(cls==='guerreiro'){
-  add(B.CreateCapsule('b',{height:1.55,radius:.38},scene),0,.9,0,mat('ar','#3979a8'));add(B.CreateSphere('h',{diameter:.62,segments:10},scene),0,1.85,0,M.skin);
+  const ab=mat('ar','#3979a8');add(B.CreateCapsule('b',{height:.95,radius:.38},scene),0,1.25,0,ab);add(B.CreateSphere('h',{diameter:.62,segments:10},scene),0,1.85,0,M.skin);
+  add(B.CreateCylinder('bt',{height:.14,diameter:.8,tessellation:12},scene),0,.84,0,mat('gbt','#5a4a2a'));
+  LB({hx:.2,T:.33,S:.33,lr:.12,mL:mat('gleg','#2b3a52'),mB:mat('gbo','#3a2a1a'),sx:.5,sy:1.5,U:.38,F:.36,ar:.1,mA:ab,mH:mat('ggl','#8f9aa6'),mS:mat('gsk','#e8b894'),rest:[-.35,-.55],restL:[-.5,-.8]});
   add(B.CreateSphere('hl',{diameter:.7,segments:8},scene),0,2.02,0,M.gold).scaling.y=.55;
   // montante: espada grande de duas mãos (o guerreiro NÃO usa escudo)
   att(B.CreateBox('bl',{width:.2,height:1.75,depth:.07},scene),0,1.0,0,o.wMat);att(B.CreateBox('bf',{width:.06,height:1.4,depth:.085},scene),0,.9,0,mat('fuller','#8d98a5'));att(B.CreateCylinder('bt',{height:.2,diameterTop:0,diameterBottom:.2,tessellation:4},scene),0,1.97,0,o.wMat);
   att(B.CreateBox('gd',{width:.62,height:.09,depth:.15},scene),0,.1,0,mat('hilt','#5a4a2a'));att(B.CreateCylinder('gr',{height:.4,diameter:.075,tessellation:8},scene),0,-.15,0,mat('grip','#3a2a1a'));att(B.CreateSphere('pm',{diameter:.15,segments:6},scene),0,-.38,0,M.gold);
  }else if(cls==='arqueiro'){
-  add(B.CreateCapsule('b',{height:1.5,radius:.36},scene),0,.9,0,mat('ga','#4f7a3a'));add(B.CreateSphere('h',{diameter:.6,segments:10},scene),0,1.82,0,M.skin);
+  const ab=mat('ga','#4f7a3a');add(B.CreateCapsule('b',{height:.9,radius:.36},scene),0,1.22,0,ab);add(B.CreateSphere('h',{diameter:.6,segments:10},scene),0,1.82,0,M.skin);
+  LB({hx:.17,T:.33,S:.33,lr:.1,mL:mat('aleg','#4a3a24'),mB:mat('abo','#3a2a1a'),sx:.44,sy:1.48,U:.37,F:.35,ar:.085,mA:ab,mH:mat('agl','#6b4a2a'),mS:mat('asn','#e8b894'),rest:[-.5,-.9],restL:[-.9,-.4]});
   add(B.CreateSphere('hd',{diameter:.7,segments:8},scene),0,1.95,-.05,mat('hood','#2f5a2c')).scaling.y=.7;add(B.CreateBox('qv',{width:.25,height:.8,depth:.2},scene),0,1.1,-.42,mat('qvm','#6b4a2a'));
-  const bw=att(B.CreateTorus('bow',{diameter:1.2,thickness:.06,tessellation:18},scene),-.1,.3,.1,o.wMat);bw.rotation.z=Math.PI/2;bw.scaling.z=.45;
+  // arco: haste curva (duas pontas finas), empunhadura central e corda
+  const bwm=o.wMat;const bpts=[];for(let i=0;i<=14;i++){const t=i/7-1;bpts.push(new V3(0,.35+t*.62,.16*(1-t*t)));}
+  att(B.CreateTube('bow',{path:bpts,radius:.028,tessellation:6},scene),0,0,0,bwm);
+  att(B.CreateCylinder('bgr',{height:.22,diameter:.08,tessellation:6},scene),0,.35,.16,mat('bgp','#3a2a1a'));
+  att(B.CreateCylinder('bstr',{height:1.24,diameter:.012,tessellation:3},scene),0,.35,0,mat('bst','#e8e4d8'));
+  for(const sy of[-1,1])att(B.CreateSphere('btp',{diameter:.07,segments:5},scene),0,.35+sy*.62,0,bwm);
  }else if(cls==='assassino'){
   const dk=mat('ass1','#2b2340'),dk2=mat('ass2','#1d1830'),red=mat('ass3','#c0334d');
-  add(B.CreateCapsule('b',{height:1.5,radius:.34},scene),0,.9,0,dk);add(B.CreateSphere('h',{diameter:.56,segments:10},scene),0,1.82,0,M.skin);
+  add(B.CreateCapsule('b',{height:.9,radius:.34},scene),0,1.22,0,dk);add(B.CreateSphere('h',{diameter:.56,segments:10},scene),0,1.82,0,M.skin);
+  LB({hx:.15,T:.33,S:.33,lr:.095,mL:dk2,mB:mat('assb','#15101f'),sx:.42,sy:1.48,U:.36,F:.34,ar:.08,mA:dk,mH:mat('assg','#3a2d55'),mS:dk2,rest:[-.45,-.8],restL:[-.45,-.8]});
   add(B.CreateSphere('hd',{diameter:.7,segments:8},scene),0,1.95,-.05,dk2).scaling.y=.8;add(B.CreateCylinder('sc',{height:.16,diameter:.58,tessellation:10},scene),0,1.6,0,red);
   add(B.CreateBox('st',{width:.14,height:.75,depth:.05},scene),.12,1.3,-.35,red).rotation.x=.4;
   for(const sx of[-.12,.12])add(B.CreateSphere('e',{diameter:.09},scene),sx,1.86,.26,fxMat('#c79bff'));
-  add(B.CreateBox('d2',{width:.08,height:.6,depth:.06},scene),-.5,.9,.2,o.wMat).rotation.x=-.3;
+  attL(B.CreateBox('d2',{width:.07,height:.5,depth:.05},scene),0,.28,0,o.wMat);attL(B.CreateBox('d2g',{width:.2,height:.05,depth:.08},scene),0,.02,0,mat('d2gm','#4a3a5a'));
   att(B.CreateBox('bl',{width:.08,height:.7,depth:.06},scene),0,.4,0,o.wMat);att(B.CreateBox('gd',{width:.3,height:.07,depth:.1},scene),0,0,0,mat('hilt3','#4a3a5a'));
  }else if(cls==='cavaleiro'){
   const steel=mat('stl1','#8f9cab'),steel2=mat('stl2','#6c7886');
-  add(B.CreateCapsule('b',{height:1.7,radius:.46},scene),0,.95,0,steel);add(B.CreateSphere('h',{diameter:.7,segments:10},scene),0,1.95,0,steel2);
+  add(B.CreateCapsule('b',{height:1.0,radius:.46},scene),0,1.3,0,steel);add(B.CreateSphere('h',{diameter:.7,segments:10},scene),0,1.95,0,steel2);
+  add(B.CreateCylinder('fl',{height:.34,diameterTop:.92,diameterBottom:1.1,tessellation:12},scene),0,.86,0,steel2);
+  LB({hx:.24,T:.35,S:.35,lr:.15,mL:steel2,mB:mat('stl3','#55616e'),sx:.64,sy:1.62,U:.4,F:.38,ar:.14,mA:steel,mH:steel2,mS:mat('stl4','#aab5c1'),rest:[-.3,-.5],restL:[-.2,-.6]});
   add(B.CreateBox('vz',{width:.4,height:.08,depth:.1},scene),0,1.97,.3,M.dark);add(B.CreateCylinder('pl',{height:.5,diameterTop:.04,diameterBottom:.2,tessellation:6},scene),0,2.4,-.05,mat('plm','#b52a45')).rotation.x=-.3;
   for(const sx of[-1,1])add(B.CreateSphere('sp',{diameter:.5,segments:8},scene),sx*.52,1.6,0,steel2);
-  add(B.CreateBox('sh',{width:.14,height:1.1,depth:.8},scene),-.62,1.0,.15,mat('shd2','#2f5fa0'));add(B.CreateSphere('bs',{diameter:.28,segments:8},scene),-.7,1.05,.15,M.gold);
-  att(B.CreateBox('bl',{width:.12,height:1.2,depth:.1},scene),0,.6,0,o.wMat);att(B.CreateBox('gd',{width:.45,height:.1,depth:.14},scene),0,0,0,mat('hilt2','#5a4a2a'));
+  // escudo de cavaleiro: tipo "kite" (cinco lados), borda de metal e botão central
+  {const shm=mat('shd2','#2f5fa0'),rim=mat('shr','#c9a227');
+   attL(B.CreateBox('sh',{width:.1,height:.8,depth:.72},scene),-.12,.1,.05,shm);
+   const tip=attL(B.CreateCylinder('shp2',{height:.1,diameterTop:.72,diameterBottom:0,tessellation:4},scene),-.12,-.52,.05,shm);tip.rotation.z=Math.PI/2;tip.rotation.y=Math.PI/4;tip.scaling.set(1,1,1);
+   for(const sz of[-1,1])attL(B.CreateBox('shr',{width:.14,height:.84,depth:.05},scene),-.12,.1,.05+sz*.36,rim);
+   attL(B.CreateBox('shr2',{width:.14,height:.05,depth:.76},scene),-.12,.5,.05,rim);
+   attL(B.CreateSphere('bs',{diameter:.26,segments:8},scene),-.2,.14,.05,M.gold);
+   attL(B.CreateBox('shc',{width:.12,height:.7,depth:.07},scene),-.18,.1,.05,rim);}
+  // espada longa: lâmina afilada com canal central, guarda, empunhadura e pomo
+  att(B.CreateBox('bl',{width:.15,height:1.0,depth:.045},scene),0,.62,0,o.wMat);att(B.CreateCylinder('bt',{height:.3,diameterTop:0,diameterBottom:.15,tessellation:4},scene),0,1.27,0,o.wMat).scaling.z=.3;
+  att(B.CreateBox('bf',{width:.04,height:.85,depth:.06},scene),0,.6,0,mat('fuller2','#8d98a5'));
+  att(B.CreateBox('gd',{width:.55,height:.08,depth:.12},scene),0,.08,0,mat('hilt2','#c9a227'));att(B.CreateCylinder('gr',{height:.3,diameter:.07,tessellation:8},scene),0,-.1,0,mat('grip2','#3a2a1a'));att(B.CreateSphere('pm',{diameter:.13,segments:6},scene),0,-.28,0,M.gold);
  }else if(cls==='tanque'){
-  const st1=mat('tk1','#4b5a6b'),st2=mat('tk2','#2e3a48'),ac=mat('tk3','#c9a227');hand.position.set(.78,1.0,.2);
-  add(B.CreateCapsule('b',{height:1.85,radius:.56},scene),0,1.0,0,st1);add(B.CreateSphere('h',{diameter:.62,segments:10},scene),0,2.05,0,M.skin);
+  const st1=mat('tk1','#4b5a6b'),st2=mat('tk2','#2e3a48'),ac=mat('tk3','#c9a227');
+  add(B.CreateCapsule('b',{height:1.05,radius:.56},scene),0,1.4,0,st1);LB({hx:.32,T:.38,S:.38,lr:.17,mL:st2,mB:mat('tkb','#222a33'),sx:.76,sy:1.7,U:.45,F:.42,ar:.16,mA:st1,mH:st2,mS:mat('tkg','#3a4756'),rest:[-.25,-.45],restL:[-.2,-.5]});add(B.CreateSphere('h',{diameter:.62,segments:10},scene),0,2.05,0,M.skin);
   add(B.CreateSphere('hl',{diameter:.8,segments:10},scene),0,2.12,0,st2).scaling.y=.8;add(B.CreateBox('vz',{width:.5,height:.1,depth:.1},scene),0,2.08,.34,M.dark);
   add(B.CreateCylinder('cr',{height:.3,diameterTop:0,diameterBottom:.16,tessellation:6},scene),0,2.5,0,ac);
-  for(const sx of[-1,1]){add(B.CreateSphere('sp',{diameter:.78,segments:8},scene),sx*.72,1.65,0,st2);add(B.CreateCylinder('ss',{height:.26,diameterTop:0,diameterBottom:.16,tessellation:6},scene),sx*.84,2.0,0,ac);add(B.CreateSphere('gl',{diameter:.42,segments:8},scene),sx*.78,.78,.1,st2);}
-  add(B.CreateTorus('bt',{diameter:1.15,thickness:.14,tessellation:18},scene),0,.7,0,ac);add(B.CreateTorus('ch',{diameter:.8,thickness:.07,tessellation:14},scene),0,1.2,-.5,M.dark).rotation.x=Math.PI/2;
+  for(const sx of[-1,1]){add(B.CreateSphere('sp',{diameter:.78,segments:8},scene),sx*.72,1.65,0,st2);add(B.CreateCylinder('ss',{height:.26,diameterTop:0,diameterBottom:.16,tessellation:6},scene),sx*.84,2.0,0,ac);}
+  add(B.CreateTorus('bt',{diameter:1.15,thickness:.14,tessellation:18},scene),0,.92,0,ac);add(B.CreateTorus('ch',{diameter:.8,thickness:.07,tessellation:14},scene),0,1.2,-.5,M.dark).rotation.x=Math.PI/2;
   att(B.CreateCylinder('sh',{height:1.3,diameter:.09,tessellation:6},scene),0,.45,0,o.wMat);att(B.CreateTorus('hk',{diameter:.55,thickness:.08,tessellation:14},scene),.2,1.15,0,o.wMat);
   att(B.CreateCylinder('hp',{height:.3,diameterTop:0,diameterBottom:.12,tessellation:6},scene),.43,.95,0,o.wMat).rotation.z=-.4;att(B.CreateBox('gd',{width:.3,height:.08,depth:.12},scene),0,-.2,0,mat('hilt4','#4a3a2a'));
  }else if(cls==='pierrot'){
   const wh=mat('pw','#f4f3fa'),rd=mat('pr','#d6336c'),pu=mat('pp','#5a2d82'),face=mat('pf','#fff3f0');
-  add(B.CreateCapsule('b',{height:1.45,radius:.34},scene),0,1.0,0,wh);add(B.CreateCylinder('sk',{height:.75,diameterTop:.62,diameterBottom:1.0,tessellation:14},scene),0,.4,0,rd);
+  add(B.CreateCapsule('b',{height:.85,radius:.34},scene),0,1.2,0,wh);add(B.CreateCylinder('sk',{height:.45,diameterTop:.62,diameterBottom:1.0,tessellation:14},scene),0,.6,0,rd);
+  LB({hx:.15,T:.33,S:.33,lr:.09,mL:mat('pleg','#2a2a3a'),mB:mat('pbo','#d6336c'),sx:.42,sy:1.5,U:.36,F:.34,ar:.08,mA:wh,mH:wh,mS:face,rest:[-.4,-.7],restL:[-.3,-.6]});
   for(let i=0;i<3;i++)add(B.CreateSphere('pm',{diameter:.14,segments:6},scene),0,1.28-i*.26,.33,mat('pmc'+i,i%2?'#2a2a3a':'#d6336c'));
   add(B.CreateTorus('rf',{diameter:.72,thickness:.17,tessellation:16},scene),0,1.62,0,rd);add(B.CreateSphere('h',{diameter:.58,segments:10},scene),0,1.88,0,face);
   add(B.CreateSphere('ns',{diameter:.13,segments:6},scene),0,1.86,.29,fxMat('#ff3b3b'));
-  for(const sx of[-1,1]){add(B.CreateSphere('ey',{diameter:.07},scene),sx*.1,1.93,.26,M.dark);add(B.CreateSphere('tr',{diameter:.05},scene),sx*.13,1.84,.26,fxMat('#6bb0ff'));add(B.CreateSphere('hr',{diameter:.24,segments:6},scene),sx*.3,1.9,0,mat('phr','#ff7a1a'));add(B.CreateSphere('cf',{diameter:.2,segments:6},scene),sx*.46,.95,.1,rd);}
+  for(const sx of[-1,1]){add(B.CreateSphere('ey',{diameter:.07},scene),sx*.1,1.93,.26,M.dark);add(B.CreateSphere('tr',{diameter:.05},scene),sx*.13,1.84,.26,fxMat('#6bb0ff'));add(B.CreateSphere('hr',{diameter:.24,segments:6},scene),sx*.3,1.9,0,mat('phr','#ff7a1a'));}
   add(B.CreateCylinder('ht',{height:.75,diameterTop:0,diameterBottom:.56,tessellation:10},scene),0,2.3,0,pu);add(B.CreateSphere('hp',{diameter:.18,segments:6},scene),0,2.7,0,rd);
   att(B.CreateBox('bl',{width:.045,height:1.15,depth:.045},scene),0,.55,0,o.wMat);att(B.CreateTorus('gd',{diameter:.28,thickness:.04,tessellation:12},scene),0,.02,0,mat('hilt5','#d6a62a')).rotation.x=Math.PI/2;
  }else{
-  add(B.CreateCylinder('rb',{height:1.6,diameterTop:.55,diameterBottom:1.1,tessellation:14},scene),0,.8,0,mat('rob','#6b46b5'));add(B.CreateSphere('h',{diameter:.58,segments:10},scene),0,1.88,0,M.skin);
+  const rob=mat('rob','#6b46b5');add(B.CreateCylinder('rb',{height:1.35,diameterTop:.55,diameterBottom:1.05,tessellation:14},scene),0,.925,0,rob);
+  LB({hx:.14,T:.33,S:.33,lr:.085,mL:mat('mleg','#2a1f45'),mB:mat('mbo','#2a1f45'),sx:.4,sy:1.5,U:.37,F:.35,ar:.085,mA:rob,mH:mat('msl','#4b2f85'),mS:M.skin,rest:[-.4,-.7],restL:[-.35,-.6]});add(B.CreateSphere('h',{diameter:.58,segments:10},scene),0,1.88,0,M.skin);
   add(B.CreateCylinder('ht',{height:.9,diameterTop:0,diameterBottom:.75,tessellation:10},scene),0,2.4,0,mat('hat2','#4b2f85'));add(B.CreateCylinder('br',{height:.05,diameter:1.1,tessellation:14},scene),0,2.0,0,mat('hat3','#4b2f85'));
-  att(B.CreateCylinder('st',{height:1.9,diameter:.07,tessellation:6},scene),0,.45,0,mat('stm','#6b4a2a'));att(B.CreateSphere('or',{diameter:.28,segments:8},scene),0,1.45,0,o.wMat);
+  att(B.CreateCylinder('st',{height:1.9,diameter:.07,tessellation:6},scene),0,.45,0,mat('stm','#6b4a2a'));att(B.CreateTorus('sc',{diameter:.34,thickness:.05,tessellation:12},scene),0,1.5,0,mat('stg','#c9a227')).rotation.x=Math.PI/2;att(B.CreateSphere('or',{diameter:.26,segments:8},scene),0,1.5,0,o.wMat);
  }
  const sh=B.CreateDisc('sh',{radius:.7,tessellation:20},scene);sh.parent=r;sh.rotation.x=Math.PI/2;sh.position.y=.04;sh.material=M.shadow;sh.isPickable=false;
  return r;
@@ -1082,7 +1155,7 @@ const EL={
  shadow:{n:'Sombras',c1:'#e0b8ff',c2:'#8a4fc0',c3:'#1a0830',up:.7,sz:[.16,.34],life:[.7,1.2],add:0}
 };
 const ANCH={guerreiro:{hy:1.85,hr:.31,sy:1.55,sx:.46,pad:.36},arqueiro:{hy:1.82,hr:.30,sy:1.5,sx:.40,pad:.32},assassino:{hy:1.82,hr:.28,sy:1.5,sx:.38,pad:.3},cavaleiro:{hy:1.95,hr:.35,sy:1.62,sx:.56,pad:.6},mago:{hy:1.9,hr:.42,sy:1.55,sx:.38,pad:.32,nocap:1,brim:2.02},tanque:{hy:2.05,hr:.4,sy:1.7,sx:.75,pad:.8,lx:-.8},pierrot:{hy:1.88,hr:.36,sy:1.5,sx:.4,pad:.3}};
-const WTIP={tanque:1.35,pierrot:1.15,guerreiro:2.0,cavaleiro:1.25,assassino:.75,arqueiro:.6,mago:1.5}, WMID={tanque:.65,pierrot:.6,guerreiro:1.0,cavaleiro:.6,assassino:.4,arqueiro:.3,mago:1.45}, WLEN={tanque:1.3,pierrot:1.15,guerreiro:2.0,cavaleiro:1.3,assassino:.8,arqueiro:1.3,mago:.55};
+const WTIP={tanque:1.35,pierrot:1.15,guerreiro:2.0,cavaleiro:1.25,assassino:.75,arqueiro:.95,mago:1.5}, WMID={tanque:.65,pierrot:.6,guerreiro:1.0,cavaleiro:.6,assassino:.4,arqueiro:.35,mago:1.45}, WLEN={tanque:1.3,pierrot:1.15,guerreiro:2.0,cavaleiro:1.3,assassino:.8,arqueiro:1.25,mago:.55};
 const GLOW=p=>Math.min(1,.04+.1*p);
 let _pt=null;function ptex(){if(_pt)return _pt;const t=new BABYLON.DynamicTexture('ptx',64,scene,false);const c=t.getContext();const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.4,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,64,64);t.update();t.hasAlpha=true;return _pt=t;}
 const GMATS=new Map();
@@ -1097,8 +1170,8 @@ const CAPS=(R,cy,h)=>y=>{const d=Math.abs(y-cy),hh=h/2-R;return d<=hh?R:(d-hh>=R
 /** raio do corpo (nas costas/frente) a cada altura: o tecido nunca entra nele */
 function bodyR(cls,armor){const mx=(...f)=>y=>Math.max(...f.map(g=>g(y))),band=(a,b,r)=>y=>(y>=a&&y<=b)?r:0;
  const belt=armor?band(.72,.92,.44):()=>0;
- const B_={guerreiro:CAPS(.38,.9,1.55),arqueiro:mx(CAPS(.36,.9,1.5),band(.7,1.5,.52)),assassino:mx(CAPS(.34,.9,1.5),band(.9,1.7,.42)),cavaleiro:CAPS(.46,.95,1.7),tanque:mx(CAPS(.56,1.0,1.85),band(1.0,1.4,.58)),
-  pierrot:mx(CAPS(.34,1.0,1.45),y=>(y>=.025&&y<=.775)?.5-.19*(y-.025)/.75:0,band(1.5,1.75,.45)),mago:y=>(y>=0&&y<=1.6)?.55-.275*y/1.6:0}[cls]||CAPS(.38,.9,1.55);
+ const B_={guerreiro:mx(CAPS(.38,1.25,.95),band(0,.82,.22)),arqueiro:mx(CAPS(.36,1.22,.9),band(.7,1.5,.52),band(0,.8,.2)),assassino:mx(CAPS(.34,1.22,.9),band(.9,1.7,.42),band(0,.8,.19)),cavaleiro:mx(CAPS(.46,1.3,1.0),band(0,.85,.3)),tanque:mx(CAPS(.56,1.4,1.05),band(1.0,1.4,.58),band(0,.9,.36)),
+  pierrot:mx(CAPS(.34,1.2,.85),y=>(y>=.375&&y<=.825)?.5-.19*(y-.375)/.45:0,band(1.5,1.75,.45),band(0,.4,.2)),mago:mx(y=>(y>=.25&&y<=1.6)?.525-.25*(y-.25)/1.35:0,band(0,.25,.2))}[cls]||CAPS(.38,.9,1.55);
  return mx(B_,belt);}
 let CLOTH_R=null;
 function mkCloth(o,parent,x,y,z,w,Hh,nx,ny,mt,y0,y1,opt){
@@ -1117,7 +1190,7 @@ function clothShape(cl,t,v){
    if(cl.R){const r=cl.R(cl.y+py)+.045;if(r>.06){const xw=cl.x+px,lim=Math.sqrt(Math.max(0,r*r-xw*xw));let zw=cl.z+pz;if(cl.side<0){if(zw>-lim)zw=-lim;}else if(zw<lim)zw=lim;pz=zw-cl.z;}}
    pos[k++]=px;pos[k++]=py;pos[k++]=pz;}}
  BABYLON.VertexData.ComputeNormals(pos,cl.idx,cl.nrm);cl.m.updateVerticesData(BABYLON.VertexBuffer.PositionKind,pos,false,false);cl.m.updateVerticesData(BABYLON.VertexBuffer.NormalKind,cl.nrm,false,false);}
-function clearGear(o){o.cloth=null;for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}GEARS.delete(o);}
+function clearGear(o){o.cloth=null;for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}for(const b of o.gbolts||[])try{b.line.dispose();}catch(e){}o.gfx=[];o.gbolts=[];if(o.gear){try{o.gear.dispose();}catch(e){}o.gear=null;}for(const n of o.hg||[])try{n.dispose();}catch(e){}o.hg=null;GEARS.delete(o);}
 function mkPs(o,anchor,el,rate,sc){
  const E=EL[el]||EL.gold,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.isPickable=false;em.parent=anchor;
  const ps=new BABYLON.ParticleSystem('gfx',Math.ceil(rate*1.4)+6,scene);ps.particleTexture=ptex();ps.emitter=em;sc=sc||1;
@@ -1131,17 +1204,18 @@ function mkBolt(o,anchor,a,b,spread){const pts=[a.clone(),b.clone()];const line=
 function applyGear(o,ap){
  if(!o.root)return;if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
  if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
- const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;o.gfx=[];o.gbolts=[];
+ const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;
+ const hgR=new BABYLON.TransformNode('hgR',scene),hgL=new BABYLON.TransformNode('hgL',scene);hgR.parent=o.hand||g;hgL.parent=o.handL||g;o.hg=[hgR,hgL];o.gfx=[];o.gbolts=[];
  const put=(m,x,y,z,mt,par)=>{m.parent=par||g;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
  const RATE=p=>p>=9?20:p>=8?14:p>=7?9:0;
  // ---- arma
  const w=ap.weapon;
  if(o.wMat){if(w){const [c1,c2]=gcols(w);o.wMat.diffuseColor=C3.FromHexString(c1);o.wMat.emissiveColor=C3.FromHexString(c1).scale(w.mo||w.rar>0||w.plus?GLOW(w.plus)+(w.rar>0&&!w.plus?.12:0):0);}else{o.wMat.diffuseColor=new C3(.3,.3,.3);o.wMat.emissiveColor=new C3(0,0,0);}}
- if(w&&o.hand){const [c1,c2,el]=gcols(w),len=WLEN[o.cls]||1;
-  if(w.plus>=4){const a=put(B.CreateSphere('wa',{diameter:.5,segments:8},scene),0,WMID[o.cls]||.5,0,gmat(c1,0,Math.min(.4,.06+.04*w.plus)),o.hand);a.scaling.set(.5+w.plus*.03,len*.9,.5+w.plus*.03);}
-  if(w.plus>=7){const tip=new BABYLON.TransformNode('wt',scene);tip.parent=o.hand;tip.position.set(0,WTIP[o.cls]||1,0);mkPs(o,tip,el,RATE(w.plus),1);
-   const mid=new BABYLON.TransformNode('wm2',scene);mid.parent=o.hand;mid.position.set(0,(WMID[o.cls]||.5),0);mkPs(o,mid,el,RATE(w.plus)*.6,1.6);
-   if(EL[el].bolt){for(let i=0;i<(w.plus>=9?3:2);i++)mkBolt(o,o.hand,new V3(0,WTIP[o.cls]||1,0),new V3(0,0,0),.9);}}
+ if(w&&hgR){const [c1,c2,el]=gcols(w),len=WLEN[o.cls]||1;
+  if(w.plus>=4){const a=put(B.CreateSphere('wa',{diameter:.5,segments:8},scene),0,WMID[o.cls]||.5,0,gmat(c1,0,Math.min(.4,.06+.04*w.plus)),hgR);a.scaling.set(.5+w.plus*.03,len*.9,.5+w.plus*.03);}
+  if(w.plus>=7){const tip=new BABYLON.TransformNode('wt',scene);tip.parent=hgR;tip.position.set(0,WTIP[o.cls]||1,0);mkPs(o,tip,el,RATE(w.plus),1);
+   const mid=new BABYLON.TransformNode('wm2',scene);mid.parent=hgR;mid.position.set(0,(WMID[o.cls]||.5),0);mkPs(o,mid,el,RATE(w.plus)*.6,1.6);
+   if(EL[el].bolt){for(let i=0;i<(w.plus>=9?3:2);i++)mkBolt(o,hgR,new V3(0,WTIP[o.cls]||1,0),new V3(0,0,0),.9);}}
  }
  // ---- armadura: peitoral, cinto, ombreiras com traço do monstro
  const ar=ap.armor;
@@ -1187,14 +1261,14 @@ function applyGear(o,ap){
  // ---- botas
  const bo=ap.boots;
  if(bo){const [c1,c2,el]=gcols(bo),m1=gmat(c1,bo.plus);
-  for(const s of[-1,1])put(B.CreateBox('bt',{width:.24,height:.24,depth:.42},scene),s*.17,.12,.07,m1);
+  [-1,1].forEach((s,i)=>{const an=o.limbs&&o.limbs.ank[i],bw=Math.max(.24,(o.limbs?o.limbs.lr:.1)*2.5);if(an)put(B.CreateBox('bt',{width:bw,height:.24,depth:.44},scene),0,0,.07,m1,an);else put(B.CreateBox('bt',{width:.24,height:.24,depth:.42},scene),s*.17,.12,.07,m1);});
   if(bo.plus>=7){const r=put(B.CreateTorus('br',{diameter:1.1,thickness:.04,tessellation:24},scene),0,.04,0,gmat(c1,0,.75));o.gring2=r;const fn=new BABYLON.TransformNode('bf',scene);fn.parent=g;fn.position.set(0,.05,0);mkPs(o,fn,el,RATE(bo.plus)*.5,1.4);}
  }
  // ---- escudo
  const sh=ap.shield;
  if(sh){const [c1,c2]=gcols(sh),kn=o.cls==='cavaleiro';
-  put(B.CreateBox('sd',{width:kn?.2:.17,height:kn?1.18:.86,depth:kn?.86:.66},scene),kn?-.62:-.5,1.0,kn?.15:.1,gmat(c1,sh.plus));
-  put(B.CreateSphere('sb',{diameter:.22,segments:6},scene),kn?-.74:-.6,1.05,kn?.15:.1,gmat(c2,sh.plus));}
+  put(B.CreateBox('sd',{width:.16,height:kn?.9:.8,depth:kn?.8:.7},scene),-.12,.1,.05,gmat(c1,sh.plus),hgL);
+  put(B.CreateSphere('sb',{diameter:.2,segments:6},scene),-.22,.14,.05,gmat(c2,sh.plus),hgL);}
  // ---- capa: tecido que ondula + dragonas nos ombros (p = capa vermelha, m = estola azul, a = manto com capuz)
  const cp=ap.cape;CLOTH_R=bodyR(o.cls,!!ap.armor);
  if(cp){const kind=RULES.capeKind(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
@@ -1222,11 +1296,11 @@ function applyGear(o,ap){
  const acc=(it,kind,idx)=>{if(!it)return;const [c1,c2,el]=gcols(it);const metal=!it.mo&&it.rar===0;const hex=it.mo?c1:(it.rar>0?c1:(kind==='bracelet'?'#cfd6dd':'#ffd24a'));const mt=gmat(hex,it.plus);
   if(kind==='earring'){const s=idx?-1:1;put(B.CreateSphere('er',{diameter:.09,segments:6},scene),s*(A.hr+.01),A.hy-.07,.02,mt);put(B.CreateSphere('ed',{diameter:.07,segments:6},scene),s*(A.hr+.01),A.hy-.16,.02,gmat(c2,it.plus));
    if(it.plus>=7){const n=new BABYLON.TransformNode('ef',scene);n.parent=g;n.position.set(s*A.hr,A.hy-.1,0);mkPs(o,n,el,5,.5);}return;}
-  const right=!idx;const par=right?o.hand:null;
-  if(kind==='ring'){const t=B.CreateTorus('rg',{diameter:.13,thickness:.035,tessellation:12},scene);if(right){put(t,0,.08,0,mt,o.hand);}else{put(t,A.lx||-.5,.95,.2,mt);t.rotation.x=Math.PI/2;}
-   const gem=B.CreateSphere('gm',{diameter:.06,segments:5},scene);if(right)put(gem,0,.08,.07,fxMat(c2),o.hand);else put(gem,A.lx||-.5,.95,.27,fxMat(c2));}
-  else{const t=B.CreateTorus('bc',{diameter:.26,thickness:.06,tessellation:14},scene);if(right)put(t,0,-.12,0,mt,o.hand);else{put(t,A.lx||-.5,.88,.2,mt);}
-   if(it.plus>=7){const n=new BABYLON.TransformNode('bf2',scene);n.parent=right?o.hand:g;n.position.set(right?0:(A.lx||-.5),right?-.12:.9,right?0:.2);mkPs(o,n,el,6,.6);}}
+  const right=!idx;const par=right?hgR:null;
+  if(kind==='ring'){const t=B.CreateTorus('rg',{diameter:.13,thickness:.035,tessellation:12},scene);put(t,0,.08,0,mt,right?hgR:hgL);
+   const gem=B.CreateSphere('gm',{diameter:.06,segments:5},scene);put(gem,0,.08,.07,fxMat(c2),right?hgR:hgL);}
+  else{const t=B.CreateTorus('bc',{diameter:.26,thickness:.06,tessellation:14},scene);put(t,0,-.12,0,mt,right?hgR:hgL);
+   if(it.plus>=7){const n=new BABYLON.TransformNode('bf2',scene);n.parent=right?hgR:hgL;n.position.set(0,-.12,0);mkPs(o,n,el,6,.6);}}
  };
  acc(ap.ring,'ring',0);acc(ap.ring2,'ring',1);acc(ap.bracelet,'bracelet',0);acc(ap.bracelet2,'bracelet',1);acc(ap.earring,'earring',0);acc(ap.earring2,'earring',1);
  if(o.gfx.length||o.gbolts.length||o.gring||o.gring2||o.cloth)GEARS.add(o);
@@ -1526,7 +1600,7 @@ function updateClones(now){
  for(let i=CLONES.length-1;i>=0;i--){const c=CLONES[i],ow=c.owner,ok=ow===P?!!S:NET.others.has(ow.id);
   if(!ok||now>c.until||!ow.root||ow.root.isDisposed()){c.root.dispose();CLONES.splice(i,1);continue;}
   const op=ow.root.position,a=now*.0016+c.j*Math.PI*2/c.n;c.root.position.set(op.x+Math.cos(a)*1.9,0,op.z+Math.sin(a)*1.9);c.root.rotation.y=ow.root.rotation.y;
-  if(c.o.hand){const sw=(now-(ow.swingAt||0)-c.j*90)/260;c.o.hand.rotation.x=(sw>0&&sw<1)?-Math.sin(sw*Math.PI)*2:0;}}
+  if(c.o.limbs){c.o.limbs.t=0;animLimbs(c.o,0,0,now,(ow.swingAt||0)+c.j*90,MELEE.has(ow.cls||(ow===P&&S?S.cls:'')));}}
 }
 function playerHit(m,mult,opts){
  if(TOKEN)return;   // online: quem calcula o dano é o servidor
@@ -1699,7 +1773,7 @@ function syncMon(m,sm,dt,now){
  if(d>10){p.x=sm.x;p.z=sm.z;}else{const k=Math.min(1,dt*12);p.x+=dx*k;p.z+=dz*k;}
  m.moving=d>.04;if(m.moving)m.root.rotation.y=sm.rot;
  const hs=now-(m.hitAt||0)<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
- m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);
+ m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs)animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);
  m.ly=(m.ly||0)+(((sm.st&4)?1.7+Math.sin(now*.012)*.12:0)-(m.ly||0))*Math.min(1,dt*10);
  p.y=m.ly+(m.moving?(m.type==='slime'?Math.abs(Math.sin(now*.009+m.id))*.3:Math.abs(Math.sin(now*.012+m.id))*.07):0);
  if(P.sel===m)updateTarget();
@@ -1758,7 +1832,7 @@ function updateMonsters(dt,now){
   for(const tw of TOWNZ){const tx_=p.x-tw.x,tz_=p.z-tw.z,dc=Math.hypot(tx_,tz_);if(dc<tw.r+.6&&dc>1e-3){p.x=tw.x+tx_/dc*(tw.r+.6);p.z=tw.z+tz_/dc*(tw.r+.6);}}
   collide(p,.55*m.bs);clampMap(p);
   const hs=now-m.hitAt<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
-  m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);
+  m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs)animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);
   p.y=m.moving?(m.type==='slime'?Math.abs(Math.sin(now*.009+m.id))*.3:Math.abs(Math.sin(now*.012+m.id))*.07):0;
  }
  for(let i=0;i<monsters.length;i++){const a=monsters[i];if(!a.alive)continue;for(let j=i+1;j<monsters.length;j++){const b=monsters[j];if(!b.alive)continue;const dx=a.pos.x-b.pos.x,dz=a.pos.z-b.pos.z;if(Math.abs(dx)>1.4||Math.abs(dz)>1.4)continue;const d=Math.hypot(dx,dz),min=.6*(a.bs+b.bs);if(d<min&&d>1e-3){const k=(min-d)/2/d;a.pos.x+=dx*k;a.pos.z+=dz*k;b.pos.x-=dx*k;b.pos.z-=dz*k;}}}
@@ -1799,7 +1873,7 @@ function updatePlayer(dt,now){
  // animação
  const sw=(now-P.swingAt)/260;
  P.pos.y=P.moving?Math.abs(Math.sin(now*.013))*.09:0;
- if(P.hand){if(sw<1){P.hand.rotation.x=(S.cls==='guerreiro'||S.cls==='cavaleiro'||S.cls==='assassino'||S.cls==='tanque'||S.cls==='pierrot')?-Math.sin(sw*Math.PI)*2:-Math.sin(sw*Math.PI)*.6;}else P.hand.rotation.x=0;}
+ animLimbs(P,P.pos.x,P.pos.z,now,P.swingAt,MELEE.has(S.cls));
  // auto coleta
  for(const d of drops.slice())if(!d.life&&hyp(P.pos,{x:d.x,z:d.z})<1.5)tryPickup(d,false);
  // fecha diálogo se afastar
@@ -2277,7 +2351,7 @@ function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(
   if(d>25){pos.x=p.x;pos.z=p.z;}else{const k=Math.min(1,dt*10);pos.x+=dx*k;pos.z+=dz*k;}
   if(d>.05)o.root.rotation.y=Math.atan2(dx,dz);
   pos.y=d>.15?Math.abs(Math.sin(now*.012))*.07:0;
-  if(o.hand){const sw=(now-o.swingAt)/260;if(sw<1){const melee=o.cls==='guerreiro'||o.cls==='cavaleiro'||o.cls==='assassino'||o.cls==='tanque'||o.cls==='pierrot';o.hand.rotation.x=melee?-Math.sin(sw*Math.PI)*2:-Math.sin(sw*Math.PI)*.6;}else o.hand.rotation.x=0;}
+  animLimbs(o,pos.x,pos.z,now,o.swingAt,MELEE.has(o.cls));
   o.root.rotation.z=p.dead?Math.PI/2:0;
   if(o.lv!==p.level||o.tt!==p.tt){o.lv=p.level;o.tt=p.tt;o.label.innerHTML=`${ttHtml(p.tt)}${esc(p.name)} <span style="color:#ffd27a">Nv ${p.level}</span>`;}
   if(hyp(P.pos,pos)<30)place(o.label,pos,3.0);else o.label.style.display='none';});

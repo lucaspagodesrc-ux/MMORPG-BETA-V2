@@ -1,3 +1,6 @@
-NOVAS CLASSES: TANQUE e PIERROT + habilidades até o rank 20 (1.2)
-Suba no GitHub (raiz), substituindo: index.html, rules.js, schema.ts, monsters.ts, WorldRoom.ts, dungeon.ts, auth.ts
-Depois aguarde o deploy do Render e use Ctrl+F5. Personagens existentes são mantidos.
+MMORPG v1.12 - Braços, pernas e armas novas
+- Todos os personagens, NPCs, cidadãos, guardas e monstros humanoides agora têm braços e pernas.
+- Animação: pernas e braços balançam ao andar; ao atacar/usar habilidade o braço da arma faz o golpe e o outro braço acompanha.
+- Armas redesenhadas: espada do cavaleiro (lâmina afilada, guarda, pomo), escudo em formato de brasão com borda e botão, arco curvo com corda, cajado do mago com argola e cristal, tridente do demônio, etc.
+- Botas, anéis e braceletes agora ficam nos pés/mãos/pulsos.
+Instalação: envie index.html para a raiz do GitHub, aguarde o redeploy no Render e use Ctrl+F5. (Só o index.html mudou.)
