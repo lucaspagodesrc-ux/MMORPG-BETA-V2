@@ -1126,8 +1126,16 @@ function buildModel(cls,o){
   add(B.CreateCylinder('cr',{height:.3,diameterTop:0,diameterBottom:.16,tessellation:6},scene),0,2.5,0,ac);
   for(const sx of[-1,1]){add(B.CreateSphere('sp',{diameter:.78,segments:8},scene),sx*.72,1.65,0,st2);add(B.CreateCylinder('ss',{height:.26,diameterTop:0,diameterBottom:.16,tessellation:6},scene),sx*.84,2.0,0,ac);}
   add(B.CreateTorus('bt',{diameter:1.15,thickness:.14,tessellation:18},scene),0,.92,0,ac);add(B.CreateTorus('ch',{diameter:.8,thickness:.07,tessellation:14},scene),0,1.2,-.5,M.dark).rotation.x=Math.PI/2;
-  att(B.CreateCylinder('sh',{height:1.3,diameter:.09,tessellation:6},scene),0,.45,0,o.wMat);att(B.CreateTorus('hk',{diameter:.55,thickness:.08,tessellation:14},scene),.2,1.15,0,o.wMat);
-  att(B.CreateCylinder('hp',{height:.3,diameterTop:0,diameterBottom:.12,tessellation:6},scene),.43,.95,0,o.wMat).rotation.z=-.4;att(B.CreateBox('gd',{width:.3,height:.08,depth:.12},scene),0,-.2,0,mat('hilt4','#4a3a2a'));
+  att(B.CreateCylinder('sh',{height:1.3,diameter:.09,tessellation:6},scene),0,.45,0,o.wMat);att(B.CreateBox('gd',{width:.3,height:.08,depth:.12},scene),0,-.2,0,mat('hilt4','#4a3a2a'));
+  for(let k=0;k<3;k++)att(B.CreateTorus('hw',{diameter:.17,thickness:.035,tessellation:8},scene),0,.1+k*.1,0,mat('tkc','#8d98a5'));
+  // gancho de corrente: garra de 3 pontas no topo + corrente pendurada ao lado
+  {const hn=new BABYLON.TransformNode('hookN',scene);hn.parent=hand;hn.position.set(0,1.1,0);o.hookN=hn;
+   const hp=(m,x,y,z,mt)=>{m.parent=hn;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
+   hp(B.CreateSphere('hb',{diameter:.17,segments:6},scene),0,0,0,o.wMat);
+   for(let k=0;k<3;k++){const an=k*Math.PI*2/3,cx=Math.cos(an),cz=Math.sin(an);const pr=hp(B.CreateCylinder('hpr',{height:.42,diameterTop:0,diameterBottom:.09,tessellation:5},scene),cx*.13,.17,cz*.13,o.wMat);pr.rotation.z=-cx*.55;pr.rotation.x=cz*.55;}
+   const lk=mat('tkl','#aeb9c4');
+   for(let i=0;i<8;i++){const u=i/7,l=hp(B.CreateTorus('hl',{diameter:.13,thickness:.036,tessellation:8},scene),.1+.26*Math.sin(u*Math.PI*.9),-.08-u*.8,0,lk);l.rotation.x=Math.PI/2;l.rotation.z=(i%2)*Math.PI/2;}
+   hp(B.CreateCylinder('hpe',{height:.3,diameterTop:0,diameterBottom:.09,tessellation:5},scene),.14,-.98,0,o.wMat).rotation.z=Math.PI;}
  }else if(cls==='pierrot'){
   const wh=mat('pw','#f4f3fa'),rd=mat('pr','#d6336c'),pu=mat('pp','#5a2d82'),face=mat('pf','#fff3f0');
   add(B.CreateCapsule('b',{height:.85,radius:.34},scene),0,1.2,0,wh);add(B.CreateCylinder('sk',{height:.45,diameterTop:.62,diameterBottom:1.0,tessellation:14},scene),0,.6,0,rd);
@@ -1516,7 +1524,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV}};
+if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -1631,6 +1639,24 @@ function chainFx(from,m,color,cb){
  const a0=new V3(from.x,1.2,from.z),line=B.CreateLines('chain',{points:[a0,a0.clone()],updatable:true},scene);line.color=C3.FromHexString(color);line.isPickable=false;
  fx.push({t0:performance.now(),dur:430,upd:t=>{const e=new V3(m.pos.x,1.0,m.pos.z),a=new V3(from.x,1.2,from.z),end=V3.Lerp(a,e,t<.5?t*2:1),pts=[];for(let i=0;i<=8;i++){const u=i/8,p=V3.Lerp(a,end,u);p.y+=Math.sin(u*Math.PI)*.18;pts.push(p);}B.CreateLines(null,{points:pts,instance:line});},done:()=>{line.dispose();if(cb)cb();}});
 }
+/* Gancho do Tanque: o gancho voa pela corrente até o alvo e o puxa */
+function hookFx(owner,m,color,cb){
+ const N=13,links=[],hm=mat('hkfx','#cfd6dd'),lm=mat('hklk',color||'#9fb4c8'),parts=[];
+ const head=B.CreateCylinder('hkh',{height:.65,diameterTop:0,diameterBottom:.32,tessellation:5},scene);head.material=hm;head.isPickable=false;parts.push(head);
+ for(const sx of[-1,1]){const p=B.CreateCylinder('hkp',{height:.5,diameterTop:0,diameterBottom:.13,tessellation:5},scene);p.parent=head;p.position.set(sx*.16,-.2,0);p.rotation.z=-sx*.7;p.material=hm;p.isPickable=false;}
+ for(let i=0;i<N;i++){const l=B.CreateTorus('hkl',{diameter:.3,thickness:.085,tessellation:8},scene);l.material=lm;l.isPickable=false;links.push(l);parts.push(l);}
+ try{if(owner.hookN)owner.hookN.setEnabled(false);}catch(e){}
+ const hit0=performance.now();let hit=false;
+ const src=()=>{try{if(owner.hand)return owner.hand.getAbsolutePosition().add(new V3(0,.35,0));}catch(e){}const q=owner.pos||owner.root.position;return new V3(q.x,1.5,q.z);};
+ fx.push({t0:hit0,dur:950*(window.__hkSlow||1),upd:t=>{
+  const a=src(),mp=new V3(m.pos.x,1.1,m.pos.z);let h,sag;
+  if(t<.34){const u=t/.34,e=1-(1-u)*(1-u);h=V3.Lerp(a,mp,e);sag=.35*(1-u)+.08;}
+  else{if(!hit){hit=true;if(cb)cb();}h=mp;sag=.06;}
+  const d=h.subtract(a),L=Math.max(.01,d.length()),yaw=Math.atan2(d.x,d.z),pitch=Math.acos(Math.max(-1,Math.min(1,d.y/L)));
+  head.position.copyFrom(h);head.rotation.set(pitch,yaw,0);
+  links.forEach((l,i)=>{const u=(i+.5)/N,p=V3.Lerp(a,h,u);p.y+=Math.sin(u*Math.PI)*sag;l.position.copyFrom(p);l.rotation.set(Math.PI/2,yaw,(i%2)*Math.PI/2);});
+ },done:()=>{parts.forEach(p=>{try{p.dispose();}catch(e){}});try{if(owner.hookN)owner.hookN.setEnabled(true);}catch(e){}}});
+}
 /* Clones do Pierrot: sombras que giram ao redor do dono e repetem seus golpes */
 const CLONES=[];
 function spawnClones(owner,cls,n,dur){
@@ -1720,7 +1746,7 @@ function castSkill(i){
  const pr=s.proj||(C.ranged?C.proj:null),so={slow:s.slow,defMult:s.defMult,exec:s.exec,forceCrit:s.forceCrit};
  switch(s.type){
   case 'single':
-   if(pr==='hook')chainFx(P.pos,tgt,s.color,()=>playerHit(tgt,s.mult,so));else if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult,so));else{ring(tgt.pos.x,tgt.pos.z,1.5,s.color,300);later(150,()=>playerHit(tgt,s.mult,so));}break;
+   if(pr==='hook')hookFx(P,tgt,s.color,()=>playerHit(tgt,s.mult,so));else if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult,so));else{ring(tgt.pos.x,tgt.pos.z,1.5,s.color,300);later(150,()=>playerHit(tgt,s.mult,so));}break;
   case 'multi':
    for(let h=0;h<s.hits;h++)later(h*190,()=>{if(!tgt.alive||P.dead)return;if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult));else playerHit(tgt,s.mult);});break;
   case 'heal':{
@@ -2369,7 +2395,7 @@ function remoteSkill(m){
  AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));skillFx(s,from,mo?mo.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null);
  switch(s.type){
-  case 'single':if(mo){if(pr==='hook')chainFx(from,mo,s.color);else if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
+  case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
   case 'multi':if(mo)for(let h=0;h<s.hits;h++)later(h*190,()=>{if(mo.alive){if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1,s.color,200);}});break;
   case 'heal':ring(from.x,from.z,2.2,s.color,600);break;
   case 'aoeSelf':ring(from.x,from.z,s.radius,s.color,550);break;
