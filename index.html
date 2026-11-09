@@ -235,7 +235,7 @@
    Efeitos: sintetizados em tempo real com Web Audio (não precisam de arquivos). */
 const AUD=(function(){
 'use strict';
-const MUSIC_SRC=(location.protocol.indexOf('http')===0?'/audio/':'')+'tema.mp3';
+const MUSIC_SRC=(location.protocol.indexOf('http')===0?'/audio/':'')+'tema.mp3'+(location.protocol.indexOf('http')===0?'?v=13':'');
 const cfg={mv:.4,sv:.7,mm:false,sm:false};
 try{const j=JSON.parse(localStorage.getItem('mmo_audio')||'null');if(j){
  if(typeof j.mv==='number')cfg.mv=Math.min(1,Math.max(0,j.mv));if(typeof j.sv==='number')cfg.sv=Math.min(1,Math.max(0,j.sv));
@@ -522,7 +522,7 @@ function musicStart(){
  if(!M.el){
   const a=new Audio();a.loop=true;a.preload='auto';a.volume=sq(cfg.mv);
   a.addEventListener('playing',()=>{M.mode='mp3';fire();});
-  a.addEventListener('error',()=>{if(M.mode==='mp3')return;M.mode='gen';M.el=null;fire();if(!cfg.mm)genStart();});
+  a.addEventListener('error',()=>{if(M.mode==='mp3')return;if(!a._retry&&location.protocol.indexOf('http')===0){a._retry=1;a.src=MUSIC_SRC+'&t='+Date.now();a.load();const p=a.play();if(p&&p.catch)p.catch(()=>{});return;}M.mode='gen';M.el=null;fire();if(!cfg.mm)genStart();});
   a.src=MUSIC_SRC;M.el=a;M.mode='loading';fire();}
  const p=M.el.play();if(p&&p.catch)p.catch(()=>{});
 }
