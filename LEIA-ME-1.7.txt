@@ -1,0 +1,8 @@
+ATUALIZAÇÃO 1.7 — Nova tela de seleção de personagens
+
+Suba apenas index.html para a RAIZ do GitHub (substituindo), aguarde o redeploy e use Ctrl+F5.
+
+- Esquerda: classes com símbolo. Ao clicar, aparece a descrição e a prévia 3D com o equipamento mais forte (+10, brilho e efeitos) — só visual.
+- Direita: seus personagens. Ao clicar, aparece no centro, de corpo inteiro, com os itens equipados.
+- Centro: prévia 3D (arraste com o mouse para girar). O botão de entrar/criar só aparece depois de escolher.
+- O nome do novo personagem agora é digitado no campo do centro.

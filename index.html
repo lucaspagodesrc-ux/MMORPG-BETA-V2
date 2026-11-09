@@ -102,7 +102,20 @@
   #help{display:none;left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 20px;line-height:1.8;z-index:9;font-size:13px;width:430px;max-width:94vw}
   #loading{position:absolute;inset:0;display:grid;place-items:center;background:#0d1420;z-index:30}
   #loading div{font-weight:700;color:#dbe8f5;text-align:center}
-  #select{display:none;position:absolute;inset:0;z-index:25;background:radial-gradient(circle at 50% 30%,#1b2b3d,#0a0f17);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;overflow:auto}
+  #select{display:none;position:absolute;inset:0;z-index:25;grid-template-columns:minmax(250px,310px) 1fr minmax(250px,310px);gap:14px;padding:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,transparent 30%,rgba(4,7,12,.55) 100%)}
+  .selp{background:rgba(13,20,31,.9);border:1px solid var(--line);border-radius:14px;padding:12px;overflow:auto;max-height:calc(100vh - 28px);display:flex;flex-direction:column;gap:8px}
+  #selMid{display:flex;flex-direction:column;justify-content:flex-start;gap:4px;align-items:center;min-width:0;cursor:grab;user-select:none;touch-action:none}
+  #selMid h1{margin:2px 0 0;font-size:26px;letter-spacing:.06em;color:var(--gold);text-shadow:0 2px 8px #000}
+  #selCap{margin-top:6px;text-align:center;text-shadow:0 2px 6px #000;pointer-events:none}#selCap b{font-size:22px;color:#fff}#selCap small{display:block;color:#cbd6e2;margin-top:2px}
+  #selAct{margin-top:auto;width:min(460px,100%);background:rgba(13,20,31,.92);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;cursor:default}
+  #selAct input{padding:9px;border-radius:8px;border:1px solid var(--line);background:#0e1722;color:#fff;font-size:15px;text-align:center}
+  #selAct button.go{padding:12px;border-radius:10px;border:1px solid var(--gold);background:#3b3014;color:#ffe28a;font-weight:800;font-size:16px;cursor:pointer}#selAct button.go:hover{background:#4d3f1a}#selAct button.go:disabled{opacity:.4;cursor:not-allowed}
+  .opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(18,28,41,.95);cursor:pointer;position:relative;transition:.12s}
+  .opt:hover{border-color:var(--gold);transform:translateX(2px)}.opt.sel{border-color:#ffd24a;background:#2a2412;box-shadow:0 0 14px #ffd24a55}
+  .opt .oi{font-size:26px;width:34px;text-align:center}.opt b{display:block;font-size:15px}.opt small{color:var(--mut);font-size:11px}
+  .opt .del{position:absolute;right:8px;top:6px;background:none;border:none;color:#9fb0c2;font-size:14px;cursor:pointer}.opt .del:hover{color:var(--no)}
+  #clsInfo{font-size:12px;line-height:1.5;color:#cbd6e2}#clsInfo .sg{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin:4px 0}
+  @media(max-width:860px){#select{grid-template-columns:1fr;grid-template-rows:46vh auto auto;overflow:auto}#selMid{grid-row:1}.selp{max-height:none}#selL{grid-row:2}#selR{grid-row:3}}
   #select h1{margin:0;font-size:30px;letter-spacing:.06em;color:var(--gold)}
   .cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
   .card{width:230px;padding:16px;border-radius:14px;border:1px solid var(--line);background:rgba(18,28,41,.95);cursor:pointer;transition:.15s}
@@ -153,12 +166,9 @@
 <div id="loading"><div>Carregando mundo 3D...</div></div>
 
 <div id="select">
-  <h1>⚔ PROJETO MMORPG</h1>
-  <div class="sec" id="secChars">Seus personagens</div>
-  <div class="cards" id="chars"></div>
-  <div class="sec" id="secNew">➕ Criar novo personagem</div>
-  <div class="cards" id="cards"></div>
-  <div class="muted" id="selNote"></div>
+  <div class="selp" id="selL" style="padding-top:56px"><div class="sec">➕ Criar novo personagem</div><div id="clsList"></div><div id="clsInfo"></div></div>
+  <div id="selMid"><div><h1>⚔ PROJETO MMORPG</h1></div><div id="selCap"></div><div id="selAct"></div></div>
+  <div class="selp" id="selR"><div style="display:flex;justify-content:space-between;align-items:center"><div class="sec" id="secChars">Seus personagens</div><button id="lgOut" style="padding:5px 9px;font-size:12px;flex:none">Sair da conta</button></div><div id="chars"></div><div class="muted" id="selNote"></div></div>
 </div>
 
 <div id="ui">
@@ -2093,7 +2103,7 @@ function loadAcc(){
 }
 const newChar=(cls,name)=>RULES.newChar(cls,name);
 function play(c){
- S=c;dirty();buildPlayer(S.cls);
+ pvHide();S=c;dirty();buildPlayer(S.cls);
  const p=S.pos||{x:0,z:5};P.pos.set(p.x,0,p.z);if(Math.hypot(p.x,p.z)<2)P.pos.set(0,0,5);
  P.hp=D().maxHp;P.mp=D().maxMp;P.dead=false;P.cd=Array(8).fill(0);P.cdMax=Array(8).fill(1);P.lastSkill=-1;P.cst=0;P.buffs={};P.moveTo=null;P.atkTarget=null;P.interact=null;P.sel=null;
  updWeaponVisual();buildSkillbar();camera.target.copyFromFloats(P.pos.x,.6,P.pos.z);
@@ -2103,22 +2113,57 @@ function play(c){
  logMsg('Bem-vindo, <b>'+esc(S.name)+'</b>! Fale com o <b>Capitão Aldric</b> para começar. Guarde itens no <b>Baú</b> da cidade.','#ffe28a');
  toast('Clique no chão para andar • H para ajuda');netJoin();
 }
-function showSelect(){
- if(!ACC)ACC=loadAcc();
- $('chars').innerHTML=ACC.chars.map(c=>`<div class="card char" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><div class="big">${CLASSES[c.cls].i}</div><b>${esc(c.name)}</b><div class="lv">${CLASSES[c.cls].n} • Nv ${c.level}</div><p style="text-align:center">💰 ${c.gold} • ☠ ${c.kills}<br>▶ Jogar</p></div>`).join('');
- $('secChars').style.display=ACC.chars.length?'block':'none';
- $('cards').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="card" data-cls="${k}"><div class="big">${c.i}</div><b>${c.n}</b><p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sks">${c.skills.slice(0,4).map(s=>s.i).join('')}</div></div>`;}).join('');
- const full=ACC.chars.length>=6;$('cards').style.display=full?'none':'flex';$('secNew').style.display=full?'none':'block';
+/* ---- prévia 3D da seleção: um palco longe do mundo, com o mesmo modelo/equipamento do jogo ---- */
+const PV={x:1000,z:1000,o:null,stage:null,rot:0,drag:false,on:false};
+function pvStage(){if(PV.stage)return;const r=new BABYLON.TransformNode('pvstage',scene);r.position.set(PV.x,0,PV.z);PV.stage=r;
+ const put=(m,y,mt)=>{m.parent=r;m.position.y=y;m.material=mt;m.isPickable=false;return m;};
+ put(B.CreateCylinder('pvd',{height:.3,diameter:5.2,tessellation:48},scene),-.17,mat('pvs','#1d2837'));
+ put(B.CreateTorus('pvr',{diameter:5,thickness:.1,tessellation:48},scene),-.01,fxMat('#d4a62a'));
+ put(B.CreateTorus('pvr2',{diameter:3.4,thickness:.04,tessellation:40},scene),-.01,fxMat('#7a5a2a'));
+ put(B.CreateDisc('pvg',{radius:2.4,tessellation:40},scene),-.02,fxMat('#2a3d57')).rotation.x=Math.PI/2;}
+function maxAp(cls){const a=(m,p,r)=>({mo:m,plus:p,rar:r}),F='farao',ap={weapon:a(F,10,3),armor:a(F,10,3),helmet:a(F,10,3),boots:a(F,10,3),ring:a(F,10,3),ring2:a('dragao',10,3),bracelet:a(F,10,3),bracelet2:a('dragao',10,3),earring:a(F,10,3),earring2:a('dragao',10,3),cape:a('',0,0)};if(cls==='cavaleiro')ap.shield=a('dragao',10,3);return ap;}
+function pvShow(cls,ap){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}
+ const o={cls,swingAt:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);r.rotation.y=PV.rot;o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();}
+function pvCam(){const nar=window.innerWidth<860;zoom=nar?3.4:2.8;setOrtho();camera.target.copyFromFloats(PV.x,nar?.5:.7,PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
+function pvHide(){PV.on=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
+const SEL={t:null,id:null};
+function renderSelect(){
+ if(!ACC)ACC=loadAcc();const full=ACC.chars.length>=6;
+ $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
+ $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${esc(c.name)}</b><small>${CLASSES[c.cls].n} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
+ $('secChars').textContent='Seus personagens ('+ACC.chars.length+'/6)';
  $('selNote').textContent=full?'Limite de 6 personagens. Exclua um para criar outro.':'O baú da cidade é compartilhado entre todos os seus personagens.';
- $('select').style.display='flex';
+ const info=$('clsInfo'),cap=$('selCap'),act=$('selAct');
+ if(SEL.t==='cls'){const c=CLASSES[SEL.id];
+  info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo (+10, brilho e efeitos). É só visual: o personagem novo começa sem esses itens.</p>`;
+  cap.innerHTML=`<b>${c.i} ${c.n}</b><small>Prévia: equipamento máximo (apenas visual)</small>`;
+  const def=c.n+' '+(ACC.chars.length+1);act.innerHTML=`<input id="newName" maxlength="16" value="${esc(def)}" placeholder="Nome do personagem"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${c.n} e entrar no jogo</button>`;}
+ else if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c){SEL.t=null;return renderSelect();}
+  info.innerHTML='<p class="muted">Selecione uma classe aqui para criar outro personagem e ver a prévia dela.</p>';
+  cap.innerHTML=`<b>${esc(c.name)}</b><small>${CLASSES[c.cls].n} • Nível ${c.level} • com os itens equipados</small>`;
+  act.innerHTML=`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>`;}
+ else{info.innerHTML='<p class="muted">Clique em uma classe para ver a descrição e a prévia.</p>';cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em uma classe (esquerda) ou em um personagem seu (direita)</small>';act.style.display='none';return;}
+ act.style.display='flex';
+}
+function selPick(t,id){SEL.t=t;SEL.id=id;if(!ACC)ACC=loadAcc();
+ if(t==='cls')pvShow(id,maxAp(id));else{const c=ACC.chars.find(x=>x.id===id);if(c)pvShow(c.cls,parseAp(RULES.apOf(c)));}
+ renderSelect();}
+function showSelect(){
+ if(!ACC)ACC=loadAcc();SEL.t=null;SEL.id=null;
+ $('lgOut').style.display=TOKEN?'':'none';
+ $('select').style.display='grid';renderSelect();pvStage();PV.on=true;pvCam();
 }
 $('select').addEventListener('click',e=>{
  const del=e.target.closest('[data-del]');
- if(del){e.stopPropagation();if(confirm('Excluir este personagem permanentemente? (O baú compartilhado não é afetado.)')){const id=del.dataset.del;(async()=>{try{if(TOKEN)await api('chars/'+encodeURIComponent(id),'DELETE');ACC.chars=ACC.chars.filter(c=>c.id!==id);save();showSelect();}catch(er){alert(er.message);}})();}return;}
- const pl=e.target.closest('[data-play]');if(pl){const c=ACC.chars.find(x=>x.id===pl.dataset.play);if(c)play(c);return;}
- const cl=e.target.closest('[data-cls]');
- if(cl&&ACC.chars.length<6){const k=cl.dataset.cls,def=CLASSES[k].n+' '+(ACC.chars.length+1);let name=prompt('Nome do personagem:',def);if(name===null)return;name=name.trim().slice(0,16)||def;(async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name})).char;}else c=newChar(k,name);ACC.chars.push(c);play(c);}catch(er){alert(er.message);}})();}
+ if(del){e.stopPropagation();if(confirm('Excluir este personagem permanentemente? (O baú compartilhado não é afetado.)')){const id=del.dataset.del;(async()=>{try{if(TOKEN)await api('chars/'+encodeURIComponent(id),'DELETE');ACC.chars=ACC.chars.filter(c=>c.id!==id);save();if(SEL.id===id){SEL.t=null;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}}renderSelect();}catch(er){alert(er.message);}})();}return;}
+ const pl=e.target.closest('[data-play]');if(pl){selPick('chr',pl.dataset.play);return;}
+ const cl=e.target.closest('[data-cls]');if(cl){selPick('cls',cl.dataset.cls);return;}
+ if(e.target.closest('#selGo')){
+  if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(c)play(c);return;}
+  if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,def=CLASSES[k].n+' '+(ACC.chars.length+1);let name=($('newName').value||'').trim().slice(0,16)||def;$('selGo').disabled=true;
+   (async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name})).char;}else c=newChar(k,name);ACC.chars.push(c);play(c);}catch(er){alert(er.message);$('selGo').disabled=false;}})();}}
 });
+{const m=$('selMid');m.addEventListener('pointerdown',e=>{if(e.target.closest('#selAct'))return;PV.drag=e.clientX;});window.addEventListener('pointermove',e=>{if(PV.drag!==false&&PV.drag!==undefined&&PV.drag!==null){PV.rot+=(e.clientX-PV.drag)*.012;PV.drag=e.clientX;}});window.addEventListener('pointerup',()=>{PV.drag=false;});}
 window.addEventListener('beforeunload',()=>{save();});
 setInterval(save,10000);
 setInterval(()=>{if(!S)return;hoverTick();updateHud();drawMini();updateNpcMarkers();updDgHud();updateDungeon();},120);
@@ -2132,7 +2177,6 @@ async function enterWithAccount(){
  const d=await api('account');
  ACC={chars:d.chars||[],stash:Array.isArray(d.stash)&&d.stash.length?d.stash:NEWSTASH()};while(ACC.stash.length<40)ACC.stash.push(null);
  $('login').style.display='none';
- if(!$('lgOut'))$('select').insertAdjacentHTML('afterbegin','<button id="lgOut" style="position:absolute;top:12px;right:12px;flex:none;padding:8px 12px">Sair da conta</button>');
  $('lgOut').onclick=()=>{NET.stop=true;try{localStorage.removeItem('mmo_token');}catch(e){}location.reload();};
  showSelect();}
 async function doAuth(kind){const u=$('lgU').value.trim(),p=$('lgP').value;$('lgErr').textContent='';
@@ -2267,6 +2311,7 @@ engine.runRenderLoop(()=>{
   updatePlayer(dt,now);updateMonsters(dt,now);updateLife(dt,now);updateNet(dt,now);updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);
   const t=camera.target;t.x+=(P.pos.x-t.x)*.15;t.y=.6;t.z+=(P.pos.z-t.z)*.15;
  }
+ if(!S&&PV.on&&PV.o){if(!PV.drag)PV.rot+=dt*.55;PV.o.root.rotation.y=PV.rot;}
  updateFx(now);updateGear(now);updateClones(now);
  scene.render();
  if(S){updateLabels(now);updateSkillbar(now);}
