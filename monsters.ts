@@ -26,6 +26,7 @@ export type Hooks = {
 };
 
 export class MonsterSim {
+  hidden = new Map<string, number>();                    // jogadores invisíveis (Manto Fumaça): sessionId → até quando
   list: Sim[] = [];
   byId = new Map<number, Sim>();
   constructor(private state: WorldState, private hooks: Hooks) {
@@ -109,11 +110,12 @@ export class MonsterSim {
       let tgt: { id: string; x: number; z: number } | null = null, best = Infinity;
       players.forEach((p, id) => {
         if (p.dead || p.inst !== s.inst || safe(p.x, p.z) || cxOf(p.x) !== cxOf(m.x)) return;
+        if ((this.hidden.get(id) || 0) > now) return;
         const d = Math.hypot(p.x - m.x, p.z - m.z);
         if (d < best) { best = d; tgt = { id, x: p.x, z: p.z }; }
       });
       let cur: { id: string; x: number; z: number } | null = null;
-      if (s.aggro) { const p = players.get(s.aggro); if (p && !p.dead && p.inst === s.inst && !safe(p.x, p.z) && cxOf(p.x) === cxOf(m.x)) cur = { id: s.aggro, x: p.x, z: p.z }; }
+      if (s.aggro) { const p = players.get(s.aggro); if (p && !p.dead && p.inst === s.inst && !safe(p.x, p.z) && cxOf(p.x) === cxOf(m.x) && !((this.hidden.get(s.aggro) || 0) > now)) cur = { id: s.aggro, x: p.x, z: p.z }; }
       const dS = Math.hypot(m.x - s.sx, m.z - s.sz);
       if (!s.aggro && !s.returning && tgt && best < T.aggro) { s.aggro = (tgt as any).id; cur = tgt; }
       if (s.aggro && (!cur || dS > T.leash)) { s.aggro = null; s.returning = true; cur = null; }

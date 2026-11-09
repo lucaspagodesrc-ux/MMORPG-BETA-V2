@@ -26,7 +26,7 @@ type Sess = {
   t: number; budget: number; lastChat: number; lastRecall: number; lastPortal: number; lastRevive: number;
   dirty: boolean; saving: boolean; d: any;
   tokens: number; tokT: number;
-  cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number;
+  cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; dag?: { id: number; st: string; ret?: () => void };
   drops: Map<number, { item: any; x: number; z: number; exp: number }>; dropSeq: number;
   partyId: number; clone?: { n: number; mult: number; until: number };
 };
@@ -152,11 +152,16 @@ export class WorldRoom extends Room<WorldState> {
     if (!Number.isInteger(i) || i < 0 || i >= C.skills.length) return;
     const rank = c.sk[i] || 0; if (!rank || c.level < C.skills[i].lv) return;
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
+    if (C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck" && s.dag.ret) {      // chamar as adagas de volta
+      s.dag.ret();
+      this.broadcast("fx", { by: s.client.sessionId, i, rc: 1, x: p.x, z: p.z }, { except: s.client });
+      return;
+    }
     if (now < s.cd[i] - 300) return;                                   // recarga (com folga de latência)
     const off = !["buff", "dashBack", "heal", "clone"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
     let tgt: Sim | undefined;
-    if (["single", "dash", "aoeTarget", "multi", "barrage"].includes(sk.type)) {
+    if (["single", "dash", "aoeTarget", "multi", "barrage", "mark"].includes(sk.type)) {
       tgt = this.sim.byId.get(Number(m?.tid));
       if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
     }
@@ -171,9 +176,15 @@ export class WorldRoom extends Room<WorldState> {
       if (sk.mark && tgt) tgt.markUntil = now + sk.mark * 1000;
     }
     s.lastSkill = i; s.lastSkillAt = now;
+    let star: Sim[] = [];
+    if (sk.type === "starJump") {
+      const ids: any[] = Array.isArray(m?.tids) ? m.tids.slice(0, sk.jumps) : [];
+      for (const id of ids) { const q = this.sim.byId.get(Number(id)); if (q && q.m.alive && !star.includes(q) && q.inst === p.inst && cx(q.m.x) === cx(p.x) && Math.hypot(q.m.x - p.x, q.m.z - p.z) <= sk.range + 6) star.push(q); }
+      if (!star.length) { s.cd[i] = 0; return; }
+    }
     let ux = 0, uz = 1;                    // direção da habilidade (Escudo Voador / Raio do Escudo)
     if (Number.isFinite(m?.dx) && Number.isFinite(m?.dz)) { const dl = Math.hypot(m.dx, m.dz); if (dl > 0.01) { ux = m.dx / dl; uz = m.dz / dl; } }
-    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt ? tgt.m.id : 0, x: p.x, z: p.z, dx: ux, dz: uz }, { except: s.client });
+    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt ? tgt.m.id : 0, x: p.x, z: p.z, dx: ux, dz: uz, n: sk.dag || 0, tids: star.map((q) => q.m.id) }, { except: s.client });
     const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec, stun: sk.stun, root: sk.root, lift: sk.lift, pull: sk.pull, forceCrit: sk.forceCrit, pierce: sk.pierce };
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
@@ -209,6 +220,39 @@ export class WorldRoom extends Room<WorldState> {
           for (let h = 0; h < sk.hits; h++) this.later(150 + h * 130, () => this.hit(s, tgt!, mult));
           this.later(200 + sk.hits * 130, () => { for (let j = 0; j < 8; j++) if (j !== i) s.cd[j] = 0; });
         }
+        break;
+      }
+      case "mark": break;                                                        // só marca (já feito acima), sem dano
+      case "cloak": {
+        for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);
+        this.sim.hidden.set(s.client.sessionId, now + sk.dur * 1000);
+        break;
+      }
+      case "starJump": {                    // pula em até 5 monstros, um após o outro
+        star.forEach((q, n) => this.later(520 + n * 520, () => {
+          const pp = this.playerOf(s); if (!pp || pp.dead || !q.m.alive) return;
+          const dx = q.m.x - pp.x, dz = q.m.z - pp.z, d = Math.hypot(dx, dz) || 1, mv = Math.max(0, d - 1.2);
+          pp.x = clampX(pp.x + (dx / d) * mv, pp.x); pp.z = clamp(pp.z + (dz / d) * mv); s.t = Date.now();
+          s.budget = BURST; this.later(40, () => this.hit(s, q, mult, so));
+        }));
+        break;
+      }
+      case "daggerFan": {                   // leque de adagas: voam, ficam presas 2s e voltam (recall ao reutilizar)
+        const n = Math.max(1, sk.dag || 1), STEP = 0.42, SPD = 24, tFly = (sk.range / SPD) * 1000, id = (s.dag?.id || 0) + 1;
+        const dg = { id, st: "fly" as string, ret: undefined as undefined | (() => void) }; s.dag = dg;
+        const sx = p.x, sz = p.z, base = Math.atan2(ux, uz), ends: { x: number; z: number }[] = [], seen = new Set<Sim>();
+        for (let j = 0; j < n; j++) { const a = base + (j - (n - 1) / 2) * STEP; ends.push({ x: sx + Math.sin(a) * sk.range, z: sz + Math.cos(a) * sk.range }); }
+        ends.forEach((e) => { for (let t = 0; t <= tFly; t += 100) this.later(t, () => { const f = t / tFly; this.hitNear(s, sx + (e.x - sx) * f, sz + (e.z - sz) * f, 1.0, mult * 0.5, so, seen); }); });
+        this.later(tFly, () => { if (s.dag === dg) { dg.st = "stuck"; ends.forEach((e) => this.hitArea(s, e.x, e.z, 1.9, mult, so)); } });
+        let back = false;
+        const ret = () => {
+          if (back || s.dag !== dg) return; back = true; dg.st = "ret";
+          const seen2: Set<Sim>[] = ends.map(() => new Set<Sim>());
+          ends.forEach((e, j) => { for (let t = 0; t <= tFly; t += 100) this.later(t, () => { const q = this.playerOf(s); if (!q) return; const f = t / tFly; this.hitNear(s, e.x + (q.x - e.x) * f, e.z + (q.z - e.z) * f, 1.2, mult, so, seen2[j]); }); });
+          this.later(tFly + 50, () => { if (s.dag === dg) s.dag = undefined; });
+        };
+        dg.ret = ret;
+        this.later(tFly + 2000, ret);
         break;
       }
       case "dashBack": case "buff": for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur); break;

@@ -1,18 +1,15 @@
-Versão 1.19 - Cavaleiro Pesado: novas habilidades
-Requer os arquivos das versões anteriores (até 1.18) já instalados.
+Versão 1.20 - Assassino: novas habilidades
+Requer as versões anteriores (até 1.19) já instaladas.
 
 COMO INSTALAR
-1. Envie index.html, rules.js e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
-   (WorldRoom.ts fica no mesmo lugar onde já está no seu repositório.)
+1. Envie index.html, rules.js, WorldRoom.ts e monsters.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
 2. Aguarde o Render terminar o redeploy.
 3. No navegador, Ctrl+F5.
 
 O QUE MUDOU
-- Golpe de Escudo: anima o braço do escudo batendo.
-- Investida do Escudo: igual.
-- Postura Defensiva: auto-buff (só em você), 1 min. Recarga 60s (nv.1) até 35s (nv. máx.).
-- Bastião: auto-buff de 1 min. Converte 60% da defesa em força. Recarga 120s até 90s.
-- Impacto Sísmico: o personagem pula alto e bate o escudo no chão.
-- Vontade de Ferro: recarga fixa de 60s.
-- NOVA "Escudo Voador" (substitui Fortaleza Inabalável): arremessa o escudo (dano perfurante), gira 2s no alcance máximo causando dano em área e retorna. Deixa rastro; o jogador fica sem escudo enquanto ele voa.
-- NOVA "Raio do Escudo" (substitui Juízo do Guardião): bate a espada no escudo e solta um raio por 3s, com dano perfurante ao longo da linha.
+- Corte Rápido: mantém o efeito; agora os dois braços golpeiam.
+- Chuva de Adagas: leque (semi arco) de 1 adaga (nv.1) até 5 (nv. máx.), dano em área. Ficam presas no chão por 2s e voltam ao personagem (dano na volta também). Usar a habilidade de novo com elas presas chama-as de volta na hora.
+- Dança das Lâminas: o personagem gira durante a habilidade.
+- Marca da Morte: não causa mais dano, só marca o monstro (+35% de dano recebido por 6s).
+- Manto Fumaça (substitui Execução Rápida): personagem semi transparente, manto branco + fumaça, +40% de velocidade e invisível para os monstros por 10s. Sem dano.
+- Estrela Sombria (substitui Tempestade Sombria): pula em até 5 monstros em sequência causando dano e desenhando uma estrela negra no chão. Recarga 20s.

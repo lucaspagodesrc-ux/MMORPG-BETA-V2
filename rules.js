@@ -81,14 +81,14 @@ const CLASSES={
  assassino:{n:'Assassino',i:'🥷',wi:'🔪',main:'agi',base:{str:4,agi:12,int:4,vit:5},range:2.4,ranged:false,combo:true,
   d:'Lâminas e sombras. +30% vel. de ataque, +12% crítico, -10% vida. Encadeie habilidades em COMBOS: bônus de dano, mana de volta e recargas reiniciadas.',
   skills:[
-   {n:'Corte Rápido',i:'🔪',lv:1,cd:2.5,mp:6,type:'single',mult:2.0,range:3.4,color:'#c79bff',after:[1,3],cbonus:.4,d:'Corte veloz. COMBO após Passo Sombrio ou Dança das Lâminas.'},
+   {n:'Corte Rápido',i:'🔪',lv:1,cd:2.5,mp:6,type:'single',mult:2.0,range:3.4,color:'#c79bff',anim:'both',after:[1,3],cbonus:.4,d:'Corte veloz com as duas lâminas (os dois braços golpeiam). COMBO após Passo Sombrio ou Dança das Lâminas.'},
    {n:'Passo Sombrio',i:'💨',lv:3,cd:7,mp:12,type:'dash',mult:1.2,range:10,color:'#8f7aff',d:'Teleporta até o alvo e ataca. Abertura de combo.'},
-   {n:'Chuva de Adagas',i:'🗡️',lv:5,cd:8,mp:16,type:'multi',hits:4,mult:.7,range:8,proj:'arrow',color:'#e0c4ff',after:[1,0],cbonus:.5,d:'Arremessa adagas em sequência. COMBO após Passo Sombrio ou Corte Rápido.'},
-   {n:'Dança das Lâminas',i:'🌪️',lv:8,cd:9,mp:18,type:'aoeSelf',mult:1.6,radius:3.8,color:'#ff7ad9',after:[0,1,2],cbonus:.6,reset:[1],d:'Giro de lâminas em área. COMBO reinicia o Passo Sombrio.'},
-   {n:'Marca da Morte',i:'🎯',lv:12,cd:14,mp:20,type:'single',mult:1.0,range:9,proj:'arrow',mark:6,color:'#ff4a6a',after:[3],cbonus:.3,d:'Marca o alvo: +35% de dano recebido por 6s.'},
+   {n:'Chuva de Adagas',i:'🗡️',lv:5,cd:8,mp:16,type:'daggerFan',mult:.7,range:8,dagMin:1,dagMax:5,color:'#e0c4ff',after:[1,0],cbonus:.5,d:'Lança adagas em leque (1 no nível 1, até 5 no nível máximo), com dano em área. Elas ficam presas no chão por 2s e voltam ao personagem causando dano de novo. Use a habilidade de novo enquanto estiverem presas para chamá-las de volta na hora. COMBO após Passo Sombrio ou Corte Rápido.'},
+   {n:'Dança das Lâminas',i:'🌪️',lv:8,cd:9,mp:18,type:'aoeSelf',mult:1.6,radius:3.8,color:'#ff7ad9',anim:'spin',after:[0,1,2],cbonus:.6,reset:[1],d:'O personagem gira com as lâminas, ferindo todos em volta. COMBO reinicia o Passo Sombrio.'},
+   {n:'Marca da Morte',i:'🎯',lv:12,cd:14,mp:20,type:'mark',mult:0,range:9,mark:6,color:'#ff4a6a',after:[3],cbonus:.3,d:'Não causa dano: apenas marca o monstro. Alvo marcado recebe +35% de dano por 6s.'},
    {n:'Véu Sombrio',i:'🌑',lv:15,cd:30,mp:25,type:'buff',buffs:{evade:.35,crit:.3,haste:.3},dur:8,color:'#7a6aff',d:'+35% esquiva, +30% crítico e +30% velocidade.'},
-   {n:'Execução Rápida',i:'⚡',lv:20,cd:12,mp:30,type:'single',mult:3.0,range:3.4,exec:true,color:'#ffd24a',after:[4,3],cbonus:.8,reset:[1,4],d:'Dano dobrado em alvos com menos de 40% de vida. COMBO reinicia Passo Sombrio e Marca.'},
-   {n:'Tempestade Sombria',i:'☠️',lv:25,cd:40,mp:60,type:'barrage',hits:6,mult:1.1,range:11,color:'#c79bff',d:'Teleporta e desfere uma rajada de golpes. Ao final, ZERA as recargas de todas as outras habilidades.'}]},
+   {n:'Manto Fumaça',i:'🌫️',lv:20,cd:30,mp:30,type:'cloak',buffs:{haste:.4},fixBuff:1,dur:10,fixDur:1,color:'#e8eef5',d:'Um manto branco e fumaça envolvem o personagem: fica semi transparente, +40% de velocidade e invisível para os monstros por 10s. Não causa dano.'},
+   {n:'Estrela Sombria',i:'⭐',lv:25,cd:20,cdMin:20,mp:60,type:'starJump',jumps:5,mult:1.6,range:12,color:'#9a7bff',d:'Pula em até 5 monstros, um após o outro, causando dano em cada um e desenhando uma estrela negra no chão.'}]},
  cavaleiro:{n:'Cavaleiro Pesado',i:'🛡️',wi:'🗡️',main:'str',base:{str:8,agi:3,int:3,vit:13},range:2.6,ranged:false,
   d:'Espada e escudo. Defesa +40% e vida +15%. Converte defesa em dano.',
   skills:[
@@ -495,7 +495,7 @@ function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
-  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
