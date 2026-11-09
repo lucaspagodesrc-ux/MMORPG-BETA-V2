@@ -52,7 +52,11 @@
   .sk .cdm{position:absolute;left:0;bottom:0;width:100%;height:0;background:rgba(0,0,0,.65)}
   .sk .cdt{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;font-weight:800;text-shadow:0 1px 3px #000}
   .sk.nomp{filter:grayscale(.8) brightness(.7)}
-  #buffbar{position:absolute;left:12px;top:150px;width:262px;display:flex;flex-wrap:wrap;gap:5px;z-index:3}
+  #buffwrap{position:absolute;left:12px;top:150px;display:flex;align-items:flex-start;gap:10px;z-index:3}
+  #buffbar{display:flex;flex-wrap:wrap;gap:5px;max-width:262px}
+  #partybar{display:none;min-width:150px;background:rgba(13,20,31,.85);border:1px solid var(--line);border-radius:10px;padding:5px 8px}
+  #partybar .pm{margin:3px 0}#partybar .pn{font-size:11px;font-weight:700;display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
+  #partybar .pl{height:5px;border-radius:3px;background:#2a3240;overflow:hidden;margin-top:2px}#partybar .pl i{display:block;height:100%;width:0;transition:width .25s,background .25s}
   .bf{position:relative;width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:rgba(13,20,31,.9);display:flex;align-items:center;justify-content:center;font-size:21px;overflow:hidden;cursor:help}
   .bf .bm{position:absolute;left:0;right:0;top:0;background:rgba(0,0,0,.55);pointer-events:none}
   .bf .bt{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:700;text-shadow:0 0 3px #000,0 0 3px #000}
@@ -193,7 +197,7 @@
   <div id="tr"><canvas id="mm" width="150" height="150" class="panel"></canvas><div id="tracker" class="panel"></div></div>
   <div id="target" class="panel"><b id="targetName">Criatura</b><div id="targetBar"><div id="targetFill"></div></div></div>
   <div id="buffs"></div>
-  <div id="buffbar"></div>
+  <div id="buffwrap"><div id="buffbar"></div><div id="partybar"></div></div>
   <div id="skillbar"></div>
   <div id="log" class="panel"></div>
   <div id="menu">
@@ -1497,11 +1501,33 @@ $('win-party').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='En
 
 
 
+
+/* =================== BARRAS DE VIDA DO GRUPO =================== */
+const PBEL=new Map();
+function renderPartyBar(){
+ const pb=$('partybar');if(!pb)return;
+ if(!PARTY||!PARTY.members||!PARTY.members.length||!S){if(pb.style.display!=='none'){pb.style.display='none';pb.innerHTML='';PBEL.clear();}return;}
+ pb.style.display='block';
+ const st=NET.room&&NET.room.state,byName=new Map();if(st&&st.players)st.players.forEach(p=>byName.set(p.name,p));
+ const names=new Set(PARTY.members.map(m=>m.n));
+ for(const [k,el] of PBEL)if(!names.has(k)){el.remove();PBEL.delete(k);}
+ for(const m of PARTY.members){let el=PBEL.get(m.n);
+  if(!el){el=document.createElement('div');el.className='pm';el.innerHTML='<div class="pn"><span></span><small></small></div><div class="pl"><i></i></div>';pb.appendChild(el);PBEL.set(m.n,el);}
+  let hp,mx;const me=m.n===S.name;
+  if(me){hp=P.hp;mx=D().maxHp;}else{const p=byName.get(m.n);hp=p?p.hp:0;mx=p&&p.mhp?p.mhp:0;if(p&&!mx){hp=1;mx=1;}}
+  const f=mx>0?Math.max(0,Math.min(1,hp/mx)):0,nm=el.querySelector('span'),sm=el.querySelector('small'),bar=el.querySelector('i');
+  const t=((CLASSES[m.cls]||{}).i||'👤')+' '+(m.n===PARTY.leader?'👑':'')+m.n;if(nm.textContent!==t)nm.textContent=t;
+  const tx=mx>0?Math.round(f*100)+'%':'';if(sm.textContent!==tx)sm.textContent=tx;
+  bar.style.width=(f*100).toFixed(1)+'%';bar.style.background=f>.6?'#4cd16f':f>.3?'#f0c23a':'#ee4b4b';
+  el.style.opacity=(me?P.dead:(byName.get(m.n)||{}).dead)?.5:1;}
+}
+
 /* =================== BARRA DE BUFFS (abaixo do HP/MANA) =================== */
 const BFEL=new Map();
 function renderBuffs(now){
- const bb=$('buffbar'),hud=$('hud');if(!bb||!hud)return;
- const top=hud.offsetTop+hud.offsetHeight+8;if(bb.style.top!==top+'px')bb.style.top=top+'px';
+ const bb=$('buffbar'),hud=$('hud'),bw=$('buffwrap');if(!bb||!hud)return;
+ const top=hud.offsetTop+hud.offsetHeight+8;if(bw.style.top!==top+'px')bw.style.top=top+'px';
+ renderPartyBar();
  const items=new Map();
  for(const k in P.buffs){const b=P.buffs[k];if(b.until<=now)continue;const key=b.nm||k,left=b.until-now,ex=items.get(key);
   if(!ex||left>ex.left)items.set(key,{key,i:b.i||(BUFFN[k]||'✨').split(' ')[0],nm:k==='combo'?'Combo ×'+P.cst:(b.nm||BUFFN[k]||k),col:b.col||'#7fb0ff',left,dur:(b.dur||left/1000)*1000,d:b.d||''});}
@@ -2437,7 +2463,7 @@ async function netJoin(){
   room.onMessage('dgenter',m=>enterDungeonLocal(m));
   room.onMessage('dgleave',m=>leaveDungeonLocal(m));
   room.onMessage('dg',m=>{DG.st=m;P.dgMaxZ=m.maxZ;DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));if(DG.exit2){const was=DG.exit2.root.isEnabled(false);DG.exit2.root.setEnabled(!!m.done);if(m.done&&!was){ring(DG.exit2.pos.x,DG.exit2.pos.z,3.2,'#d4a62a',900);AUD.sfx('teleport');}}updDgHud();});
-  room.onMessage('party',m=>{PARTY=m;renderParty();});
+  room.onMessage('party',m=>{PARTY=m;NET.hpL=null;renderParty();});
   room.onMessage('pinv',m=>showInvite(m.from));
   room.onMessage('matk',m=>remoteBasic(m));
   room.onLeave(code=>{NET.room=null;PARTY=null;clearOthers();if(code===4001){toast('Sua conta entrou em outro lugar.');return;}if(!NET.stop){toast('Conexão perdida. Reconectando...');setTimeout(netJoin,3000);}});
@@ -2485,7 +2511,7 @@ function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(
   if(o.lv!==p.level||o.tt!==p.tt){o.lv=p.level;o.tt=p.tt;o.label.innerHTML=`${ttHtml(p.tt)}${esc(p.name)} <span style="color:#ffd27a">Nv ${p.level}</span>`;}
   if(hyp(P.pos,pos)<30)place(o.label,pos,3.0);else o.label.style.display='none';});
  for(const [id,o] of NET.others)if(!seen.has(id)){killRemote(o);NET.others.delete(id);}
- if(now-NET.tm>100){NET.tm=now;room.send('move',{x:P.pos.x,z:P.pos.z});}
+ if(now-NET.tm>100){NET.tm=now;room.send('move',{x:P.pos.x,z:P.pos.z});if(PARTY&&now-(NET.hpT||0)>400){NET.hpT=now;const mh=Math.round(D().maxHp),h=Math.round(P.hp);if(NET.hpL!==h+'/'+mh){NET.hpL=h+'/'+mh;room.send('hp',{hp:h,max:mh});}}}
 }
 const chatIn=$('chatIn');
 chatIn.addEventListener('keydown',e=>{if(e.key==='Enter'){const t=chatIn.value.trim();if(t&&NET.room)NET.room.send('chat',{text:t});chatIn.value='';chatIn.style.display='none';chatIn.blur();}else if(e.key==='Escape'){chatIn.value='';chatIn.style.display='none';chatIn.blur();}e.stopPropagation();});

@@ -1,5 +1,3 @@
-MMORPG v1.16 - Barra de buffs e poderes de GM
-- BUFFS: todos os buffs (habilidades e o do GM) aparecem em quadradinhos abaixo da barra de HP/MANA, com o ícone da habilidade, tempo restante e uma sombra que desce conforme o tempo acaba. Passe o mouse para ver nome e efeito.
-- Buff do GM também aparece na janela de habilidades (K), só para GMs, com botões "Em mim / Por perto / Todos online".
-- GM: atributos x20 (FOR, AGI, INT, VIT), dinheiro infinito (∞) e teletransporte clicando no minimapa (mundo aberto, dentro da região atual).
-Instalação: envie index.html, rules.js e WorldRoom.ts para a raiz do GitHub (requer a v1.15 já instalada: auth.ts e schema.ts), aguarde o redeploy no Render e use Ctrl+F5.
+MMORPG v1.17 - Vida do grupo ao lado dos buffs
+- Com grupo formado, aparece uma lista ao lado dos buffs ativos (abaixo do HP/MANA) com o nome de cada integrante e uma barra horizontal de vida (verde > amarela > vermelha) que acompanha o HP real, com a porcentagem.
+Instalação: envie index.html, schema.ts e WorldRoom.ts para a raiz do GitHub (requer a v1.16 instalada), aguarde o redeploy no Render e use Ctrl+F5.

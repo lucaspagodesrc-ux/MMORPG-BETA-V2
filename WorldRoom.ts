@@ -357,6 +357,12 @@ export class WorldRoom extends Room<WorldState> {
       p.x = x; p.z = z; s.budget = BURST; s.t = Date.now();
       client.send("correct", { x, z });
     });
+    this.onMessage("hp", (client, m) => {      // vida informada pelo cliente: usada só nas barras do grupo
+      const p = this.state.players.get(client.sessionId);
+      if (!p || !Number.isFinite(m?.hp) || !Number.isFinite(m?.max)) return;
+      const mx = Math.max(1, Math.min(4_000_000, Math.round(m.max))), hp = Math.max(0, Math.min(mx, Math.round(m.hp)));
+      if (p.hp !== hp) p.hp = hp; if (p.mhp !== mx) p.mhp = mx;
+    });
     this.onMessage("pinvite", (client, m) => {
       const s = this.S(client); if (!s || !this.okRate(s, 2)) return;
       const t = this.findByName(String(m?.name || ""));
