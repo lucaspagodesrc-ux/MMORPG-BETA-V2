@@ -1,10 +1,5 @@
-MMORPG v1.15 - Conta GM e Buff do GM
-CONTA GM: usuário GM123 / senha GMSRC
-- Ao entrar, a conta é criada/atualizada sozinha com os 7 personagens (um de cada classe), nível 100, equipamento mais forte (épico, +10 em tudo, capa nível 80), habilidades no máximo e título "O mais brilhante".
-- Opcional (Render > Environment): GM_USER e GM_PASS trocam o login/senha do GM sem mexer no código. Atenção: como o repositório guarda a senha padrão, troque se ele for público.
-BUFF DO GM (só personagens da conta GM):
-- Clique em outro jogador no mapa > "✨ Buff do GM".
-- Painel do GM: botão ✨ no menu lateral ou tecla Y > buffar a si, todos por perto (raio 30) ou todos online.
-- Dura 5 minutos por jogador: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base, +200 defesa.
-- Quem recebe fica com estrelas pequenas girando ao redor, com rastro, e vê um contador no topo da tela.
-Instalação: envie TODOS os arquivos (index.html, rules.js, auth.ts, schema.ts, WorldRoom.ts) para a raiz do GitHub, aguarde o redeploy no Render e use Ctrl+F5.
+MMORPG v1.16 - Barra de buffs e poderes de GM
+- BUFFS: todos os buffs (habilidades e o do GM) aparecem em quadradinhos abaixo da barra de HP/MANA, com o ícone da habilidade, tempo restante e uma sombra que desce conforme o tempo acaba. Passe o mouse para ver nome e efeito.
+- Buff do GM também aparece na janela de habilidades (K), só para GMs, com botões "Em mim / Por perto / Todos online".
+- GM: atributos x20 (FOR, AGI, INT, VIT), dinheiro infinito (∞) e teletransporte clicando no minimapa (mundo aberto, dentro da região atual).
+Instalação: envie index.html, rules.js e WorldRoom.ts para a raiz do GitHub (requer a v1.15 já instalada: auth.ts e schema.ts), aguarde o redeploy no Render e use Ctrl+F5.

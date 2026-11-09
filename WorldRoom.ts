@@ -51,7 +51,7 @@ export class WorldRoom extends Room<WorldState> {
     const now = Date.now(); s.tokens = Math.min(30, s.tokens + (now - s.tokT) / 1000 * 12); s.tokT = now;
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
-  private sync(s: Sess) { const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; } s.client.send("sync", { c: s.c, st: s.stash }); }
+  private sync(s: Sess) { if (s.c.gm) s.c.gold = R.GM_GOLD; const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
     const id = ++s.dropSeq;
@@ -348,6 +348,14 @@ export class WorldRoom extends Room<WorldState> {
       const until = Date.now() + 5 * 60_000;
       for (const t of targets) { t.c.gmu = until; this.touch(t); this.sync(t); t.client.send("gmb", { on: 1, until, by: s.c.name }); }
       s.client.send("res", { ok: true, out: [{ toast: targets.length ? "✨ Buff do GM aplicado em " + targets.length + " jogador(es) por 5 min" : "Nenhum jogador encontrado" }] });
+    });
+    // GM: teletransporte pelo minimapa (só no mundo aberto e dentro da região atual)
+    this.onMessage("gmtp", (client, m) => {
+      const p = this.state.players.get(client.sessionId), s = this.S(client);
+      if (!p || !s || !s.c.gm || p.inst || !Number.isFinite(m?.x) || !Number.isFinite(m?.z)) return;
+      const x = clampX(m.x, p.x), z = clamp(m.z);
+      p.x = x; p.z = z; s.budget = BURST; s.t = Date.now();
+      client.send("correct", { x, z });
     });
     this.onMessage("pinvite", (client, m) => {
       const s = this.S(client); if (!s || !this.okRate(s, 2)) return;

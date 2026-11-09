@@ -437,9 +437,10 @@ function stats(c) {
   const C = CLASSES[c.cls];
   const st = { str: C.base.str + c.alloc.str, agi: C.base.agi + c.alloc.agi, int: C.base.int + c.alloc.int, vit: C.base.vit + c.alloc.vit };
   const gm = (c.gmu || 0) > Date.now();   // Buff do GM: +100 atributos, +1000 vida/mana, +200 dano/defesa
-  if (gm) { st.str += 100; st.agi += 100; st.int += 100; st.vit += 100; }
   let atk = 0, def = 0, hp = 0;
   for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; atk += eff(it, 'atk'); def += eff(it, 'def'); hp += it.hp || 0; for (const s in it.bon) st[s] += it.bon[s]; }
+  if (c.gm) for (const k of ['str', 'agi', 'int', 'vit']) st[k] *= 20;   // GM: atributos ×20
+  if (gm) { st.str += 100; st.agi += 100; st.int += 100; st.vit += 100; }
   const kn = c.cls === 'cavaleiro', as = c.cls === 'assassino', tk = c.cls === 'tanque', pr = c.cls === 'pierrot';
   return { ...st, gm, atk, def: (def + st.vit * .4) * (tk ? 1.75 : kn ? 1.4 : pr ? .8 : 1) + (gm ? 200 : 0), hpBonus: hp,
     maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1)) + (gm ? 1000 : 0),
@@ -576,12 +577,13 @@ function newChar(cls, name) {
   return c;
 }
 
+const GM_GOLD = 999999999;
 /** Personagem do GM: nível máximo, melhor equipamento +10, habilidades no máximo. */
 function gmChar(cls, old) {
   const C = CLASSES[cls], c = old || newChar(cls, 'GM ' + C.n);
   c.gm = 1; c.gmu = 0; c.level = MAX_LEVEL; c.xp = 0; c.sp = 0; c.sk = Array(8).fill(MAXRANK);
   const tot = PTS_PER_LEVEL * (MAX_LEVEL - 1), main = Math.round(tot * .6); c.alloc = { str: 0, agi: 0, int: 0, vit: tot - main }; c.alloc[C.main] += main; c.pts = 0;
-  c.gold = MAX_LEVEL * GOLD_CAP_PER_LEVEL;
+  c.gold = GM_GOLD;
   const mk = (slot, w) => { const it = genItem(slot, 80, 3, cls, cls, 0, true); if (slot === 'weapon') it.cls = cls; it.plus = MAXPLUS; return it; };
   c.eq = { weapon: mk('weapon'), helmet: mk('helmet'), armor: mk('armor'), boots: mk('boots'), ring: mk('ring'), ring2: mk('ring'), bracelet: mk('bracelet'), bracelet2: mk('bracelet'), earring: mk('earring'), earring2: mk('earring'), cape: genCape(80, cls) };
   if (cls === 'cavaleiro') c.eq.shield = mk('shield');
@@ -673,8 +675,9 @@ function organizeList(list, cls) {
 function act(sess, m, ctx) {
   const c = sess.c, stash = sess.stash, out = [], spawn = [];
   const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), F = s => out.push({ sfx: s });
-  const fail = s => { if (s) T(s); return { ok: false, out, spawn }; };
-  const done = () => { chkTitles(c, out); return { ok: true, out, spawn }; };
+  if (c.gm) c.gold = GM_GOLD;   // GM: dinheiro infinito
+  const fail = s => { if (s) T(s); if (c.gm) c.gold = GM_GOLD; return { ok: false, out, spawn }; };
+  const done = () => { if (c.gm) c.gold = GM_GOLD; chkTitles(c, out); return { ok: true, out, spawn }; };
   const intIn = (v, a, b) => Number.isInteger(v) && v >= a && v < b;
   const colOf = it => it.k === 'eq' ? RAR[it.rar].c : '#fff';
   const npcFor = tab => { const n = npcById(m.npc); if (!n || !n.tabs.includes(tab)) return null; if (ctx && ctx.near && !ctx.near(n)) return null; return n; };
@@ -793,7 +796,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

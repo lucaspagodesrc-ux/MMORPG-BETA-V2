@@ -52,7 +52,11 @@
   .sk .cdm{position:absolute;left:0;bottom:0;width:100%;height:0;background:rgba(0,0,0,.65)}
   .sk .cdt{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;font-weight:800;text-shadow:0 1px 3px #000}
   .sk.nomp{filter:grayscale(.8) brightness(.7)}
-  #buffs{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);display:flex;gap:6px;font-size:11px;z-index:3}
+  #buffbar{position:absolute;left:12px;top:150px;width:262px;display:flex;flex-wrap:wrap;gap:5px;z-index:3}
+  .bf{position:relative;width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:rgba(13,20,31,.9);display:flex;align-items:center;justify-content:center;font-size:21px;overflow:hidden;cursor:help}
+  .bf .bm{position:absolute;left:0;right:0;top:0;background:rgba(0,0,0,.55);pointer-events:none}
+  .bf .bt{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:700;text-shadow:0 0 3px #000,0 0 3px #000}
+  #buffs{display:none!important;position:absolute;left:50%;bottom:80px;transform:translateX(-50%);display:flex;gap:6px;font-size:11px;z-index:3}
   #buffs span{background:rgba(13,20,31,.85);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
   #log{left:12px;bottom:12px;width:310px;height:128px;padding:8px 10px;font-size:11.5px;line-height:1.45;overflow:hidden;z-index:3;pointer-events:none}
   #menu{position:absolute;right:12px;top:174px;display:flex;flex-direction:column;gap:5px;z-index:3}
@@ -189,6 +193,7 @@
   <div id="tr"><canvas id="mm" width="150" height="150" class="panel"></canvas><div id="tracker" class="panel"></div></div>
   <div id="target" class="panel"><b id="targetName">Criatura</b><div id="targetBar"><div id="targetFill"></div></div></div>
   <div id="buffs"></div>
+  <div id="buffbar"></div>
   <div id="skillbar"></div>
   <div id="log" class="panel"></div>
   <div id="menu">
@@ -648,7 +653,7 @@ const TOWNZ=[{x:0,z:0,r:TOWN_R,name:'🏰 Vila Aurora (Zona Segura)'},{x:SC.x,z:
 const townAt=(p,pad)=>TOWNZ.find(t=>Math.hypot(p.x-t.x,p.z-t.z)<t.r+(pad||0));
 const inTown=p=>!!townAt(p);const regionOf=p=>p.x>450?2:p.x>150?1:0;
 const getBuff=n=>{const b=P.buffs[n];return b&&b.until>performance.now()?b.val:0;};
-const addBuff=(n,val,dur)=>{P.buffs[n]={val,until:performance.now()+dur*1000};};
+const addBuff=(n,val,dur,sk)=>{P.buffs[n]={val,until:performance.now()+dur*1000,dur,i:sk&&sk.i,nm:sk&&sk.n,col:sk&&sk.color,d:sk&&sk.d};};
 
 /* =================== ITENS =================== */
 const rarRoll=RULES.rarRoll;
@@ -1491,6 +1496,23 @@ $('win-party').addEventListener('click',e=>{
 $('win-party').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='pInv'){const v=e.target.value.trim();if(v&&NET.room){NET.room.send('pinvite',{name:v});e.target.value='';}}});
 
 
+
+/* =================== BARRA DE BUFFS (abaixo do HP/MANA) =================== */
+const BFEL=new Map();
+function renderBuffs(now){
+ const bb=$('buffbar'),hud=$('hud');if(!bb||!hud)return;
+ const top=hud.offsetTop+hud.offsetHeight+8;if(bb.style.top!==top+'px')bb.style.top=top+'px';
+ const items=new Map();
+ for(const k in P.buffs){const b=P.buffs[k];if(b.until<=now)continue;const key=b.nm||k,left=b.until-now,ex=items.get(key);
+  if(!ex||left>ex.left)items.set(key,{key,i:b.i||(BUFFN[k]||'✨').split(' ')[0],nm:k==='combo'?'Combo ×'+P.cst:(b.nm||BUFFN[k]||k),col:b.col||'#7fb0ff',left,dur:(b.dur||left/1000)*1000,d:b.d||''});}
+ if(S&&(S.gmu||0)>Date.now())items.set('gm',{key:'gm',i:'✨',nm:'Buff do GM',col:'#ffd54a',left:S.gmu-Date.now(),dur:300000,d:'+100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa.'});
+ for(const [k,el] of BFEL)if(!items.has(k)){el.remove();BFEL.delete(k);}
+ for(const [k,it] of items){let el=BFEL.get(k);
+  if(!el){el=document.createElement('div');el.className='bf';el.innerHTML='<span class="bi"></span><div class="bm"></div><span class="bt"></span>';el.title=it.nm+(it.d?' — '+it.d:'');el.querySelector('.bi').textContent=it.i;el.style.borderColor=it.col;bb.appendChild(el);BFEL.set(k,el);}
+  const tx=it.left>=60000?Math.ceil(it.left/60000)+'m':Math.ceil(it.left/1000)+'s',bt=el.querySelector('.bt');if(bt.textContent!==tx)bt.textContent=tx;
+  el.querySelector('.bm').style.height=Math.max(0,Math.min(100,(1-it.left/it.dur)*100)).toFixed(1)+'%';}
+}
+
 /* =================== BUFF DO GM: estrelas girando com rastro =================== */
 let GMTEX=null;
 function gmTex(){if(GMTEX)return GMTEX;const t=new BABYLON.DynamicTexture('gmstar',128,scene,true),c=t.getContext();c.clearRect(0,0,128,128);const g=c.createRadialGradient(64,64,0,64,64,60);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(255,225,110,.85)');g.addColorStop(1,'rgba(255,200,60,0)');c.fillStyle=g;c.fillRect(0,0,128,128);
@@ -1766,7 +1788,7 @@ function castSkill(i){
   const prevOk=P.lastSkill>=0&&now-P.lastSkillAt<3500;
   if(!(now-P.cstAt<4500))P.cst=0;
   const cb=!!(s.after&&prevOk&&s.after.includes(P.lastSkill));
-  P.cst=Math.min(5,P.cst+1);P.cstAt=now;addBuff('combo',P.cst*.08,4.5);
+  P.cst=Math.min(5,P.cst+1);P.cstAt=now;addBuff('combo',P.cst*.08,4.5,{i:'🔥',n:'Combo',d:'Golpes em sequência aumentam o dano.'});
   if(cb){s.mult*=1+(s.cbonus||.5);P.mp=Math.min(D().maxMp,P.mp+s.mp*.4);if(s.reset)for(const j of s.reset)P.cd[j]=0;floatText('⚡ COMBO ×'+P.cst+'!',P.pos,'#ffd24a',true);AUD.sfx('combo',null,{n:P.cst});logMsg(`<span style="color:#ffd24a">⚡ COMBO ×${P.cst}: ${CLASSES[S.cls].skills[P.lastSkill].n} → ${s.n}</span>`);}
   if(s.mark&&tgt){tgt.markUntil=now+s.mark*1000;floatText('🎯 Marcado',tgt.pos,'#ff7ad9');}
  }
@@ -1784,9 +1806,9 @@ function castSkill(i){
   case 'aoeMulti':
    for(let h=0;h<s.hits;h++)later(200+h*200,()=>{if(P.dead)return;ring(P.pos.x,P.pos.z,s.radius,s.color,420);P.swingAt=performance.now();hitArea(P.pos,s.radius,s.mult,so);});break;
   case 'taunt':
-   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur);ring(P.pos.x,P.pos.z,s.radius,s.color,700);ring(P.pos.x,P.pos.z,s.radius*.6,s.color,500);floatText('📢 Provocar!',P.pos,s.color,true);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: inimigos próximos agora focam você!</span>`);break;
+   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,s.radius,s.color,700);ring(P.pos.x,P.pos.z,s.radius*.6,s.color,500);floatText('📢 Provocar!',P.pos,s.color,true);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: inimigos próximos agora focam você!</span>`);break;
   case 'clone':
-   addBuff('clone',s.clones,s.dur);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: ${s.clones} clone(s) por ${Math.round(s.dur)}s!</span>`);break;
+   addBuff('clone',s.clones,s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: ${s.clones} clone(s) por ${Math.round(s.dur)}s!</span>`);break;
   case 'aoeTarget':{
    const c={x:tgt.pos.x,z:tgt.pos.z};
    if(s.meteor){fall(c.x,c.z,s.color,1.7,600,16,()=>{ring(c.x,c.z,s.radius,s.color,600);hitArea(c,s.radius,s.mult,so);});}
@@ -1805,9 +1827,9 @@ function castSkill(i){
    const n=nearestMonster(12);let dx,dz;
    if(n){dx=P.pos.x-n.pos.x;dz=P.pos.z-n.pos.z;}else{dx=-Math.sin(P.root.rotation.y);dz=-Math.cos(P.root.rotation.y);}
    const d=Math.hypot(dx,dz)||1;ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*s.dist;P.pos.z+=dz/d*s.dist;collide(P.pos,.4);clampMap(P.pos);ring(P.pos.x,P.pos.z,1.6,s.color,350);
-   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur);P.moveTo=null;break;}
+   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}
   case 'buff':
-   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
+   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
  }
 }
 function learnSkill(i){
@@ -1825,6 +1847,7 @@ function renderSkills(){
   const bp=bar.indexOf(i),keyTxt=bp<0?'sem atalho':(bp>=8?'Shift+'+(bp-7):'tecla '+(bp+1));
   h+=`<div class="row2 ${locked&&!r?'dim':''}${SELSK===i?' picked':''}"${r?` draggable="true" data-dragsk="${i}"`:''}><div class="ri"${r?` data-pick="${i}" title="Clique para escolher e depois clique em um número"`:''}>${s.i}</div><div class="rt"><b>${s.n}</b> <small style="display:inline">• Rank ${r}/${MAXRANK}${locked?' • Nv '+s.lv:''} • ${keyTxt}</small><small>${s.d}</small><small>Mana ${st.mp} • Recarga ${st.cd.toFixed(1)}s${st.mult?' • Dano ×'+st.mult.toFixed(1):''}${st.pct?' • Cura '+Math.round(st.pct*100)+'%':''}${st.radius?' • Área '+st.radius.toFixed(1):''}${st.hits?' • '+st.hits+' golpes':''}${st.stun?' • Atordoa '+(st.stun/1000).toFixed(1)+'s':''}${st.root?' • Imobiliza '+(st.root/1000).toFixed(1)+'s':''}${st.lift?' • Levanta '+(st.lift/1000).toFixed(1)+'s':''}${st.pull?' • Puxa':''}${st.clones?' • '+st.clones+' clone(s) • '+Math.round(st.cloneMult*100)+'% do dano cada':''}${s.after?' • Combo após: '+s.after.map(j=>C.skills[j].n).join(' / '):''}${st.defMult?' • +'+Math.round(st.defMult*100)+'% DEF em dano':''}${st.buffs&&st.buffs.defdmg?' • DEF→dano '+Math.round(st.buffs.defdmg*100)+'%':''}</small></div><div class="rb">${r>=MAXRANK?'<span class="ok">Máx</span>':`<button data-act="skup" data-id="${i}" ${locked||S.sp<cost?'disabled':''}>${r?'Melhorar':'Aprender'} (${cost})</button>`}</div></div>`;
  });
+ if(S.gm)h+=`<div class="row2" style="border-color:#ffd54a"><div class="ri">✨</div><div class="rt"><b>Buff do GM</b> <small style="display:inline">• habilidade exclusiva de GM</small><small>Buffa jogadores por 5 min: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa. Quem recebe ganha estrelas girando ao redor. Também pelo clique em um jogador no mapa.</small><small>Usar: <button data-gmk="self">Em mim</button> <button data-gmk="near">Por perto (raio 30)</button> <button data-gmk="all">Todos online</button></small></div></div>`;
  $('skillBody').innerHTML=h;
 }
 let SELSK=-1;
@@ -1834,6 +1857,7 @@ function placeSkill(slot,si){
  const nb=(S.bar||RULES.defBar()).slice(),old=nb[slot],from=nb.indexOf(si);nb[slot]=si;if(from>=0&&from!==slot)nb[from]=old;SELSK=-1;setBar(nb);
 }
 $('skillBody').addEventListener('click',e=>{
+ const gk=e.target.closest('[data-gmk]');if(gk){if(NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:gk.dataset.gmk,r:30});return;}
  const es=e.target.closest('[data-eslot]');if(es){const n=+es.dataset.eslot;if(SELSK>=0)placeSkill(n,SELSK);else{const si=(S.bar||[])[n];if(si>=0){SELSK=si;renderSkills();}}return;}
  const pk=e.target.closest('[data-pick]');if(pk){const i=+pk.dataset.pick;SELSK=SELSK===i?-1:i;renderSkills();return;}
  const b=e.target.closest('[data-act="skup"]');if(b&&!b.disabled)learnSkill(+b.dataset.id);});
@@ -1970,7 +1994,7 @@ function updatePlayer(dt,now){
  const sw=(now-P.swingAt)/260;
  P.pos.y=P.moving?Math.abs(Math.sin(now*.013))*.09:0;
  animLimbs(P,P.pos.x,P.pos.z,now,P.swingAt,MELEE.has(S.cls));
- {const gon=(S.gmu||0)>Date.now();gmFx(P,gon,now);const te=$('gmTimer');if(gon){const sc=Math.ceil((S.gmu-Date.now())/1000),tx='✨ Buff do GM '+Math.floor(sc/60)+':'+String(sc%60).padStart(2,'0');if(te.textContent!==tx)te.textContent=tx;te.style.display='block';}else if(te.style.display!=='none')te.style.display='none';}
+ gmFx(P,(S.gmu||0)>Date.now(),now);
  // auto coleta
  for(const d of drops.slice())if(!d.life&&hyp(P.pos,{x:d.x,z:d.z})<1.5)tryPickup(d,false);
  // fecha diálogo se afastar
@@ -2060,7 +2084,7 @@ $('invSell').addEventListener('click',e=>{const b=e.target.closest('[data-sellac
 function renderInv(){
  for(const i of [...SELL])if(!S.inv[i])SELL.delete(i);
  $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${'◆'.repeat(it.sl)}</span>`:''):''}</div>`).join('');
- $('invGold').textContent='💰 '+S.gold;updInvSell();
+ $('invGold').textContent='💰 '+(S.gm?'∞':S.gold);updInvSell();
 }
 $('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
 $('invGrid').addEventListener('contextmenu',e=>{e.preventDefault();const s=e.target.closest('[data-inv]');if(s)dropItem(+s.dataset.inv);});
@@ -2184,7 +2208,7 @@ function updateSkillbar(now){
  for(const el of SBEL){const si=S.bar[+el.dataset.slot];if(si<0)continue;const r=rk(si),left=P.cd[si]-now;el.classList.toggle('locked',!r);el.querySelector('.rk').textContent=r?'R'+r:'';
   el.querySelector('.cdm').style.height=left>0?(left/P.cdMax[si]*100)+'%':'0';el.querySelector('.cdt').textContent=left>0?Math.ceil(left/1000):'';el.classList.toggle('nomp',r>0&&P.mp<skStat(si).mp);const sa=C.skills[si].after;el.classList.toggle('combo',!!(r>0&&C.combo&&sa&&P.lastSkill>=0&&now-P.lastSkillAt<3500&&sa.includes(P.lastSkill)));}
  for(const el of POTEL){const k=el.dataset.pot,pc=have(k)+have(k+'2');el.querySelector('.cnt').textContent=pc;el.style.opacity=pc?1:.45;}
- let bh='';for(const k in P.buffs){const b=P.buffs[k];if(b.until>now)bh+=`<span>${k==='combo'?'🔥 Combo ×'+P.cst:BUFFN[k]} ${Math.ceil((b.until-now)/1000)}s</span>`;}$('buffs').innerHTML=bh;
+ renderBuffs(now);
 }
 function zoneName(){if(P.pos.x>450)return '🏺 Cripta das Areias';{const t=townAt(P.pos);if(t)return t.name;}for(const z of ZONES)if(Math.hypot(P.pos.x-z.x,P.pos.z-z.z)<z.r+5)return z.name;return regionOf(P.pos)?'🏜️ Deserto de Solara':'Terras Selvagens';}
 function updateHud(){
@@ -2193,7 +2217,7 @@ function updateHud(){
  $('hpFill').style.width=Math.max(0,P.hp/d.maxHp*100)+'%';$('hpText').textContent=Math.ceil(P.hp)+' / '+d.maxHp;
  $('mpFill').style.width=Math.max(0,P.mp/d.maxMp*100)+'%';$('mpText').textContent=Math.floor(P.mp)+' / '+d.maxMp;
  $('xpFill').style.width=(S.xp/need*100)+'%';$('xpText').textContent=S.xp+' / '+need+' XP';
- $('goldText').textContent='💰 '+S.gold;$('killsText').textContent='☠ '+S.kills;
+ $('goldText').textContent='💰 '+(S.gm?'∞':S.gold);$('killsText').textContent='☠ '+S.kills;
  $('ptsBtn').style.display=(S.pts>0||RULES.canSkillUp(S))?'block':'none';$('ptsBtn').textContent=S.pts>0?'⭐ Atributos disponíveis!':'⭐ Pontos de habilidade!';
 }
 function renderTitles(){
@@ -2220,6 +2244,9 @@ function refreshUI(){
 }
 const mmC=$('mm'),mmx=mmC.getContext('2d');const mmS=mmC.width/(MAP*2);
 const mmP=(x,z)=>[(x-[0,SC.x,600][regionOf(P.pos)]+MAP)*mmS,(MAP-z)*mmS];
+mmC.addEventListener('click',e=>{if(!S||!S.gm||!NET.room||P.dead||NET.inst)return;const r=mmC.getBoundingClientRect(),px=(e.clientX-r.left)*(mmC.width/r.width),py=(e.clientY-r.top)*(mmC.height/r.height);
+ const x=px/mmS-MAP+[0,SC.x,600][regionOf(P.pos)],z=MAP-py/mmS;NET.room.send('gmtp',{x,z});P.pos.x=x;P.pos.z=z;P.moveTo=null;P.atkTarget=null;P.interact=null;ring(x,z,3,'#ffe28a',700);toast('✨ Teleportado (GM)');e.stopPropagation();});
+mmC.addEventListener('pointerdown',e=>e.stopPropagation());
 function drawMini(){
  const W=mmC.width;mmx.clearRect(0,0,W,W);mmx.fillStyle=['#223a2b','#5a4a2a','#2a2238'][regionOf(P.pos)];mmx.fillRect(0,0,W,W);
  for(const z of ZONES){const[a,b]=mmP(z.x,z.z);mmx.fillStyle=z.col;mmx.globalAlpha=.8;mmx.beginPath();mmx.arc(a,b,(z.r+2)*mmS,0,6.283);mmx.fill();}
