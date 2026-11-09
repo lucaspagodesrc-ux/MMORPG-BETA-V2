@@ -1,3 +1,4 @@
-MMORPG v1.17 - Vida do grupo ao lado dos buffs
-- Com grupo formado, aparece uma lista ao lado dos buffs ativos (abaixo do HP/MANA) com o nome de cada integrante e uma barra horizontal de vida (verde > amarela > vermelha) que acompanha o HP real, com a porcentagem.
-Instalação: envie index.html, schema.ts e WorldRoom.ts para a raiz do GitHub (requer a v1.16 instalada), aguarde o redeploy no Render e use Ctrl+F5.
+MMORPG v1.18 - Menu na lista do grupo
+- Clique no nome de outro integrante na lista do grupo: aparece "Adicionar amigo" (ou "Remover amigo"; GMs também veem "Buff do GM").
+- Clique no seu próprio nome: aparece "Sair do grupo".
+Instalação: envie index.html para a raiz do GitHub (requer a v1.17), aguarde o redeploy no Render e use Ctrl+F5.

@@ -55,7 +55,7 @@
   #buffwrap{position:absolute;left:12px;top:150px;display:flex;align-items:flex-start;gap:10px;z-index:3}
   #buffbar{display:flex;flex-wrap:wrap;gap:5px;max-width:262px}
   #partybar{display:none;min-width:150px;background:rgba(13,20,31,.85);border:1px solid var(--line);border-radius:10px;padding:5px 8px}
-  #partybar .pm{margin:3px 0}#partybar .pn{font-size:11px;font-weight:700;display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
+  #partybar .pm{margin:3px 0;cursor:pointer;border-radius:5px;padding:1px 2px}#partybar .pm:hover{background:#1c2a40}#partybar .pn{font-size:11px;font-weight:700;display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
   #partybar .pl{height:5px;border-radius:3px;background:#2a3240;overflow:hidden;margin-top:2px}#partybar .pl i{display:block;height:100%;width:0;transition:width .25s,background .25s}
   .bf{position:relative;width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:rgba(13,20,31,.9);display:flex;align-items:center;justify-content:center;font-size:21px;overflow:hidden;cursor:help}
   .bf .bm{position:absolute;left:0;right:0;top:0;background:rgba(0,0,0,.55);pointer-events:none}
@@ -1512,7 +1512,7 @@ function renderPartyBar(){
  const names=new Set(PARTY.members.map(m=>m.n));
  for(const [k,el] of PBEL)if(!names.has(k)){el.remove();PBEL.delete(k);}
  for(const m of PARTY.members){let el=PBEL.get(m.n);
-  if(!el){el=document.createElement('div');el.className='pm';el.innerHTML='<div class="pn"><span></span><small></small></div><div class="pl"><i></i></div>';pb.appendChild(el);PBEL.set(m.n,el);}
+  if(!el){el=document.createElement('div');el.className='pm';el.dataset.n=m.n;el.innerHTML='<div class="pn"><span></span><small></small></div><div class="pl"><i></i></div>';pb.appendChild(el);PBEL.set(m.n,el);}
   let hp,mx;const me=m.n===S.name;
   if(me){hp=P.hp;mx=D().maxHp;}else{const p=byName.get(m.n);hp=p?p.hp:0;mx=p&&p.mhp?p.mhp:0;if(p&&!mx){hp=1;mx=1;}}
   const f=mx>0?Math.max(0,Math.min(1,hp/mx)):0,nm=el.querySelector('span'),sm=el.querySelector('small'),bar=el.querySelector('i');
@@ -1583,6 +1583,14 @@ $('win-friends').addEventListener('click',e=>{
 });
 $('win-friends').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='fInp'){const v=e.target.value.trim();if(v)addFriend(v);e.target.value='';}});
 $('win-gm').addEventListener('click',e=>{const b=e.target.closest('[data-gmb]');if(b&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:b.dataset.gmb,r:30});});
+$('partybar').addEventListener('click',e=>{
+ const r=e.target.closest('.pm');if(!r||!S)return;const n=r.dataset.n,m=$('pmenu'),me=n===S.name;
+ let b='';
+ if(me)b=`<button data-pleave2="1">🚪 Sair do grupo</button>`;
+ else{b=isFriend(n)?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`;
+  if(S.gm){let sid='';const st=NET.room&&NET.room.state;if(st&&st.players)st.players.forEach((p,id)=>{if(p.name===n)sid=id;});if(sid)b+=`<button data-pgm="${esc(sid)}" style="color:#ffe28a">✨ Buff do GM</button>`;}}
+ m.innerHTML=`<b>${esc(n)}</b>${b}<button data-pcl="1">Cancelar</button>`;
+ m.style.display='block';m.style.left=Math.min(e.clientX+8,innerWidth-190)+'px';m.style.top=Math.min(e.clientY+8,innerHeight-150)+'px';});
 function showPMenu(o,x,y){
  const m=$('pmenu'),n=o.name||'?';const fr=isFriend(n);
  m.innerHTML=`<b>${esc(n)}${o.lv>0?' <small style="color:#ffd27a">Nv '+o.lv+'</small>':''}</b>${fr?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`}<button data-pinv2="${esc(n)}">👥 Convidar para o grupo</button>${S&&S.gm&&o.id?`<button data-pgm="${esc(o.id)}" style="color:#ffe28a">✨ Buff do GM</button>`:''}<button data-pcl="1">Cancelar</button>`;
@@ -1590,6 +1598,7 @@ function showPMenu(o,x,y){
 $('pmenu').addEventListener('pointerdown',e=>e.stopPropagation());
 $('pmenu').addEventListener('click',e=>{
  const a=e.target.closest('[data-padd]'),d=e.target.closest('[data-pdel]'),i=e.target.closest('[data-pinv2]'),gm=e.target.closest('[data-pgm]');
+ if(e.target.closest('[data-pleave2]')&&NET.room)NET.room.send('pleave');
  if(gm&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:'id',id:gm.dataset.pgm});
  if(a)addFriend(a.dataset.padd);else if(d)delFriend(d.dataset.pdel);else if(i&&NET.room){NET.room.send('pinvite',{name:i.dataset.pinv2});toast('Convite enviado para '+i.dataset.pinv2);}
  $('pmenu').style.display='none';});
