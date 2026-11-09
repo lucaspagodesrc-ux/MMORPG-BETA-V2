@@ -1,0 +1,11 @@
+ATUALIZAÇÃO 1.3 — Efeitos de habilidade e barras personalizáveis
+
+1. Envie index.html e rules.js para a RAIZ do repositório no GitHub (substituindo os atuais).
+2. Aguarde o redeploy do Render terminar.
+3. Abra o jogo e pressione Ctrl+F5.
+
+Novidades:
+- Ao lançar uma habilidade, aparece uma marca no chão por ~3s com o elemento dela (fogo, gelo, raio, água, vento, terra, sombra, sagrado, etc.).
+- Tecla K: arraste (ou clique) cada habilidade para qualquer número da barra. Botão direito no número remove.
+- Segunda barra acima da original: use Shift + 1 a 8.
+- Personagens existentes mantêm a barra 1 padrão; nada é apagado.

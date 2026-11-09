@@ -120,6 +120,12 @@ const CLASSES={
    {n:'Redemoinho Circense',i:'🎪',lv:20,cd:16,mp:38,type:'aoeMulti',hits:4,mult:.95,radius:4.4,color:'#ff4a8a',d:'Um furacão de lâminas: vários giros em sequência.'},
    {n:'Grand Finale',i:'🎭',lv:25,cd:24,mp:45,type:'single',mult:6.5,range:3.6,forceCrit:true,color:'#ffe28a',d:'Golpe final teatral: CRÍTICO garantido.'}]}
 };
+/* Elemento visual de cada habilidade (efeitos no chão, partículas): wind, fire, ice, water, lightning, earth, poison, shadow, holy, blood, steel, arcane, nature, circus */
+const SKFX={guerreiro:['steel','wind','wind','fire','earth','blood','fire','steel'],arqueiro:['wind','water','wind','fire','wind','ice','lightning','shadow'],
+ mago:['fire','ice','arcane','fire','lightning','nature','ice','fire'],assassino:['shadow','shadow','steel','wind','blood','shadow','lightning','shadow'],
+ cavaleiro:['steel','earth','holy','holy','earth','nature','holy','holy'],tanque:['steel','earth','fire','steel','earth','steel','shadow','earth'],
+ pierrot:['circus','wind','circus','nature','circus','arcane','wind','circus']};
+for(const k in SKFX)CLASSES[k].skills.forEach((s,i)=>{s.fx=SKFX[k][i];});
 const MT={
  slime:{n:'Gosma da Floresta',lv:[1,3],hp:45,atk:6,def:0,spd:1.5,xp:10,gold:[1,4],aggro:6,rng:1.7,atkInt:1700,resp:10,leash:15,h:1.7,mats:{gosma:0.510,erva:0.212,essencia:0.025},eq:0.042,pot:0.048},
  lobo:{n:'Lobo Cinzento',lv:[4,6],hp:110,atk:11,def:4,spd:3.2,xp:60,gold:[4,8],aggro:8,rng:1.9,atkInt:1300,resp:12,leash:18,h:1.8,mats:{couro:0.468,erva:0.170,essencia:0.043},eq:0.060,pot:0.048},
@@ -495,9 +501,17 @@ function questKill(c, type) {
 }
 
 /* ---------- criação / migração de personagens ---------- */
+/** Barras de habilidade: 16 casas (1–8 e Shift+1–8); cada casa guarda o índice da habilidade (0–7) ou -1. */
+const defBar = () => [0, 1, 2, 3, 4, 5, 6, 7, -1, -1, -1, -1, -1, -1, -1, -1];
+function cleanBar(b) {
+  const o = defBar().fill(-1), seen = new Set();
+  if (!Array.isArray(b)) return defBar();
+  for (let i = 0; i < 16; i++) { const v = Math.floor(b[i]); if (v >= 0 && v < 8 && !seen.has(v)) { o[i] = v; seen.add(v); } }
+  return o;
+}
 function newChar(cls, name) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(24).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
-  c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
+  c.bar = defBar(); c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
@@ -539,6 +553,7 @@ function cleanItem(it) {
 function migrate(c) {
   if (!c.sk || !Array.isArray(c.sk)) { c.sk = Array(8).fill(0); c.sk[0] = 1; if (c.sp === undefined) c.sp = c.level; }
   while (c.sk.length < 8) c.sk.push(0); if (c.sp === undefined) c.sp = 0;
+  c.bar = cleanBar(c.bar);
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
@@ -585,11 +600,12 @@ function act(sess, m, ctx) {
     const j = c.inv.indexOf(null); if (j < 0) return fail('Mochila cheia!'); c.inv[j] = it; c.eq[m.slot] = null; return done();
   }
   if (t === 'stat') { if (!STN[m.k] || c.pts <= 0) return fail(); c.alloc[m.k]++; c.pts--; F('ui'); return done(); }
+  if (t === 'bar') { if (!Array.isArray(m.bar) || m.bar.length !== 16) return fail(); c.bar = cleanBar(m.bar); return done(); }
   if (t === 'skup') {
     if (!intIn(m.i, 0, 8)) return fail(); const s = CLASSES[c.cls].skills[m.i], r = c.sk[m.i] || 0; if (r >= MAXRANK) return fail();
     if (c.level < s.lv) return fail('Nível ' + s.lv + ' necessário');
     const cost = skCost(r); if (c.sp < cost) return fail('Pontos de habilidade insuficientes');
-    c.sp -= cost; c.sk[m.i] = r + 1; F('learn'); T((r ? '⬆️ ' : '📖 ') + s.n + ' — Rank ' + (r + 1));
+    c.sp -= cost; c.sk[m.i] = r + 1; if (!r) { c.bar = cleanBar(c.bar); if (!c.bar.includes(m.i)) { const e = c.bar.indexOf(-1); if (e >= 0) c.bar[e] = m.i; } } F('learn'); T((r ? '⬆️ ' : '📖 ') + s.n + ' — Rank ' + (r + 1));
     L(`<span style="color:#ffe28a">${s.i} ${s.n} ${r ? 'melhorada para' : 'aprendida —'} rank ${r + 1}</span>`); return done();
   }
   if (t === 'pot') {
@@ -682,7 +698,7 @@ function act(sess, m, ctx) {
   return fail();
 }
 
-Object.assign(R, { skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

@@ -34,7 +34,14 @@
   #tracker{position:relative;margin-top:8px;padding:8px 10px;font-size:11.5px;line-height:1.5;min-height:34px}
   #target{top:12px;left:50%;transform:translateX(-50%);min-width:220px;text-align:center;padding:8px 14px;display:none;z-index:3}
   #targetBar{height:7px;background:#3a2830;border-radius:8px;margin-top:5px;overflow:hidden}#targetFill{height:100%;background:#e45b65;width:100%}
-  #skillbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:7px;z-index:3}
+  #skillbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;z-index:3}
+  .sbrow{display:flex;gap:7px}#sbr2.hide{display:none}
+  .sk2{width:42px!important;height:42px!important;font-size:20px!important;opacity:.9}.sk.empty{opacity:.3}
+  .edrow{display:flex;gap:5px;margin:3px 0 9px;flex-wrap:wrap}
+  .edslot{position:relative;width:38px;height:38px;border-radius:8px;border:2px dashed #55687d;background:#121c28;display:grid;place-items:center;font-size:20px;cursor:pointer}
+  .edslot.has{border-style:solid;border-color:#8fb0d0}.edslot.over{outline:2px solid #6fdc7f}
+  .edslot .key{position:absolute;left:2px;top:0;font-size:9px;color:#9fb0c2}
+  .row2.picked{outline:2px solid #6fdc7f}.row2 .ri[data-pick]{cursor:pointer}
   .sk{position:relative;width:54px;height:54px;border-radius:10px;border:2px solid #55687d;background:#17222f;display:grid;place-items:center;font-size:26px;cursor:pointer;overflow:hidden}
   .sk.pot{border-color:#7b5a2e}
   .sk .key{position:absolute;left:3px;top:1px;font-size:10px;color:#cbd6e2;font-weight:700}
@@ -189,7 +196,7 @@
   <span class="muted">Clique no chão</span> — andar (segure para seguir o mouse)<br>
   <span class="muted">Clique no monstro</span> — selecionar e atacar automaticamente<br>
   <span class="muted">WASD / Setas</span> — andar direto<br>
-  <span class="muted">1 a 8</span> — habilidades (aprenda e melhore em <span class="muted">K</span>) · <span class="muted">9 / 0</span> — poção de vida / mana<br>
+  <span class="muted">1 a 8</span> — habilidades da barra 1 • <span class="muted">Shift + 1 a 8</span> — barra 2 (monte suas barras em <span class="muted">K</span>) · <span class="muted">9 / 0</span> — poção de vida / mana<br>
   <span class="muted">Espaço</span> — atacar o inimigo mais próximo<br>
   <span class="muted">E</span> — pegar item / falar com NPC próximo · <span class="muted">Clique no NPC</span> — conversar<br>
   <span class="muted">M</span> — liga/desliga a música · <span class="muted">🔊</span> (menu) — volume da música e dos efeitos<br>
@@ -1355,6 +1362,85 @@ function dropLoot(m){
 }
 
 /* =================== COMBATE =================== */
+/* =================== EFEITOS DE HABILIDADE: marca no chão (~3 s) + elemento (fogo, gelo, raio, vento...) =================== */
+const SKEL={
+ fire:{c1:'#ffe27a',c2:'#ff5a1a',c3:'#401000',disc:'#ff6a2a',up:1.7,sz:[.25,.6],life:[.5,1],add:1},
+ ice:{c1:'#f4feff',c2:'#8fd8ff',c3:'#2a6ab0',disc:'#8fe3ff',up:.2,sz:[.1,.25],life:[.9,1.5],add:1,g:-.2},
+ lightning:{c1:'#ffffff',c2:'#9fd0ff',c3:'#4a6aff',disc:'#9fc4ff',up:.5,sz:[.08,.2],life:[.2,.45],add:1,spd:2.5},
+ water:{c1:'#e0f6ff',c2:'#3a9aff',c3:'#0a3a80',disc:'#3a9aff',up:1.4,sz:[.1,.22],life:[.8,1.3],add:1,g:-2.5},
+ wind:{c1:'#ffffff',c2:'#c8f5e0',c3:'#7fd0b0',disc:'#9fe7d0',up:.9,sz:[.18,.4],life:[.7,1.2],add:0,spd:1.8},
+ earth:{c1:'#e8cf9a',c2:'#a07a4a',c3:'#40301a',disc:'#a08060',up:.9,sz:[.25,.55],life:[.8,1.3],add:0},
+ poison:{c1:'#d8ff8a',c2:'#4fd04a',c3:'#103a1a',disc:'#5fd04a',up:.8,sz:[.15,.35],life:[.8,1.4],add:1},
+ shadow:{c1:'#e0b8ff',c2:'#8a4fc0',c3:'#1a0830',disc:'#6a3fa0',up:.8,sz:[.2,.45],life:[.8,1.3],add:0},
+ holy:{c1:'#fff6c0',c2:'#ffd24a',c3:'#a06a10',disc:'#ffd24a',up:1,sz:[.08,.2],life:[.8,1.4],add:1},
+ blood:{c1:'#ffb0b0',c2:'#d02a2a',c3:'#400808',disc:'#c0302a',up:1.1,sz:[.1,.26],life:[.6,1.1],add:0,g:-1.5},
+ steel:{c1:'#ffffff',c2:'#cfd8e6',c3:'#6a7686',disc:'#cfd8e6',up:1.2,sz:[.05,.12],life:[.3,.6],add:1,spd:2},
+ arcane:{c1:'#e8d8ff',c2:'#9a7aff',c3:'#2a1a6a',disc:'#8f7aff',up:.8,sz:[.1,.25],life:[.9,1.5],add:1},
+ nature:{c1:'#e8ffd0',c2:'#6fdc7f',c3:'#1a5a2a',disc:'#6fdc7f',up:1,sz:[.1,.24],life:[.9,1.5],add:1},
+ circus:{c1:'#fff0a0',c2:'#ff4a8a',c3:'#5a2d82',disc:'#ff6a9a',up:1.3,sz:[.1,.25],life:[.7,1.2],add:1}
+};
+const GFX=[];
+function skPs(emitter,E,rate,box,cap){
+ const ps=new BABYLON.ParticleSystem('skp',cap||90,scene);ps.particleTexture=ptex();ps.emitter=emitter;
+ ps.minEmitBox=new V3(-box,0,-box);ps.maxEmitBox=new V3(box,.1,box);
+ ps.color1=BABYLON.Color4.FromHexString(E.c1+'d0');ps.color2=BABYLON.Color4.FromHexString(E.c2+'c0');ps.colorDead=BABYLON.Color4.FromHexString(E.c3+'00');
+ ps.minSize=E.sz[0];ps.maxSize=E.sz[1];ps.minLifeTime=E.life[0];ps.maxLifeTime=E.life[1];ps.emitRate=rate;
+ const sp=E.spd||1;ps.direction1=new V3(-.5*sp,E.up,-.5*sp);ps.direction2=new V3(.5*sp,E.up*1.5,.5*sp);ps.gravity=new V3(0,E.g||0,0);
+ ps.minEmitPower=.5;ps.maxEmitPower=1.1;ps.updateSpeed=.02;ps.blendMode=E.add?BABYLON.ParticleSystem.BLENDMODE_ONEONE:BABYLON.ParticleSystem.BLENDMODE_STANDARD;
+ return ps;
+}
+function groundFx(x,z,r,el,dur){
+ dur=dur||3000;const E=SKEL[el]||SKEL.steel;
+ while(GFX.length>=12)GFX.shift().kill();
+ const root=new BABYLON.TransformNode('gfx',scene);root.position.set(x,0,z);
+ const ms=[],mk=(m,vis,col)=>{m.parent=root;m.isPickable=false;m.material=fxMat(col||E.disc);m.visibility=vis;m.metadata=null;ms.push({m,v:vis});return m;};
+ const disc=mk(B.CreateDisc('gd',{radius:1,tessellation:40},scene),.2);disc.rotation.x=Math.PI/2;disc.position.y=.05;disc.scaling.set(r,r,1);
+ const edge=mk(B.CreateTorus('ge',{diameter:2,thickness:.08,tessellation:48},scene),.9);edge.position.y=.07;edge.scaling.set(r,1,r);
+ const inner=mk(B.CreateTorus('gi',{diameter:1.4,thickness:.05,tessellation:36},scene),.55);inner.position.y=.07;inner.scaling.set(r,1,r);
+ const spin=new BABYLON.TransformNode('spin',scene);spin.parent=root;
+ for(let i=0;i<8;i++){const a=i/8*Math.PI*2,b=mk(B.CreateBox('rn',{width:.16,height:.03,depth:.5},scene),.8,E.c2);b.parent=spin;b.position.set(Math.cos(a)*r*.78,.08,Math.sin(a)*r*.78);b.rotation.y=-a;}
+ const pos=()=>{const a=Math.random()*6.283,d=Math.sqrt(Math.random())*r*.85;return [Math.cos(a)*d,Math.sin(a)*d];};
+ const deco=[];   // {m,f(ms)}
+ const cone=(h,w,col,vis)=>{const [px,pz]=pos(),c=mk(B.CreateCylinder('cn',{height:h,diameterTop:0,diameterBottom:w,tessellation:6},scene),vis,col);c.position.set(px,h/2,pz);return c;};
+ if(el==='fire'){for(let i=0;i<Math.min(10,3+Math.round(r*2));i++){const c=cone(1.3,.55,E.c2,.6),ph=Math.random()*6;deco.push({m:c,f:t=>{c.scaling.y=.55+.45*Math.abs(Math.sin(t*.018+ph));c.position.y=.65*c.scaling.y;}});}}
+ else if(el==='ice'){for(let i=0;i<Math.min(12,4+Math.round(r*2.4));i++){const h=.9+Math.random()*1.1,c=cone(h,.4,E.c2,.85);c.rotation.z=(Math.random()-.5)*.3;deco.push({m:c,f:(t,fade)=>{const g=Math.min(1,t/260);c.scaling.y=Math.max(.01,g*fade);c.position.y=h/2*c.scaling.y;}});}}
+ else if(el==='earth'){for(let i=0;i<Math.min(9,3+Math.round(r*1.6));i++){const s=.3+Math.random()*.4,[px,pz]=pos(),c=mk(B.CreateBox('rk',{size:s},scene),.95,E.c2);c.position.set(px,s/2,pz);c.rotation.set(Math.random(),Math.random(),Math.random());deco.push({m:c,f:(t,fade)=>{c.scaling.setAll(Math.max(.01,Math.min(1,t/220)*fade));c.position.y=s/2*c.scaling.y;}});}
+  for(let i=0;i<6;i++){const a=i/6*Math.PI*2,k=mk(B.CreateBox('ck',{width:.12,height:.02,depth:r*.9},scene),.9,'#2a1d10');k.position.set(Math.cos(a)*r*.45,.06,Math.sin(a)*r*.45);k.rotation.y=-a+Math.PI/2;}}
+ else if(el==='water'){for(let i=0;i<3;i++){const w=mk(B.CreateTorus('wv',{diameter:2,thickness:.06,tessellation:40},scene),.7,E.c1);w.position.y=.09;deco.push({m:w,f:t=>{const u=((t*.001+i/3)%1);w.scaling.set(r*u,1,r*u);w.visibility=(1-u)*.8;}});}}
+ else if(el==='wind'){for(let i=0;i<3;i++){const w=mk(B.CreateTorus('tw',{diameter:2,thickness:.07,tessellation:30},scene),.55,E.c1);deco.push({m:w,f:t=>{const u=i/3,s=(1-u*.55)*r*.55;w.scaling.set(s,1,s);w.position.y=.35+u*1.6+((t*.0012)%.4);w.rotation.y=t*.01*(i+1);w.rotation.x=.2*Math.sin(t*.006+i);}});}}
+ const bolts=[];
+ if(el==='lightning')for(let i=0;i<3;i++){const l=B.CreateLines('bl',{points:[new V3(0,0,0),new V3(0,1,0)],updatable:true},scene);l.color=new C3(.8,.92,1);l.parent=root;l.isPickable=false;bolts.push(l);}
+ const E2=el==='fire'?40:el==='steel'?30:24,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.parent=root;em.position.y=.1;
+ const ps=skPs(em,E,E2,Math.max(.4,r*.7),Math.ceil(E2*2.2)+10);ps.start();
+ const o={root,kill(){try{ps.dispose();}catch(e){}try{root.dispose();}catch(e){}const k=GFX.indexOf(o);if(k>=0)GFX.splice(k,1);}};GFX.push(o);
+ let lastB=0;
+ fx.push({t0:performance.now(),dur,upd:p=>{
+  const t=p*dur,fade=p<.78?1:Math.max(0,1-(p-.78)/.22);
+  for(const q of ms)q.m.visibility=q.v*fade*(q.m===edge?(.8+.2*Math.sin(t*.012)):1);
+  edge.scaling.set(r*(1+.025*Math.sin(t*.01)),1,r*(1+.025*Math.sin(t*.01)));inner.scaling.set(r*(.92+.05*Math.sin(t*.008)),1,r*(.92+.05*Math.sin(t*.008)));spin.rotation.y=t*.0016;
+  for(const d of deco)d.f(t,fade);
+  if(p>.7&&ps.isStarted())ps.stop();
+  if(bolts.length&&t<2000&&t-lastB>140){lastB=t;bolts.forEach((l,i)=>{if(Math.random()<.35){l.visibility=0;return;}l.visibility=1;const [px,pz]=pos(),pts=[];let cx=px+(Math.random()-.5)*1.2,cz=pz+(Math.random()-.5)*1.2;for(let k=0;k<=7;k++){const u=k/7;pts.push(new V3(cx+(Math.random()-.5)*.6*(1-u),7*(1-u),cz+(Math.random()-.5)*.6*(1-u)));}pts[7]=new V3(px,.05,pz);B.CreateLines(null,{points:pts,instance:l});});}
+  else if(t>=2000)bolts.forEach(l=>l.visibility=0);
+ },done:()=>o.kill()});
+}
+function burst(x,z,el){
+ const E=SKEL[el]||SKEL.steel,em=B.CreateBox('bm',{size:.02},scene);em.isVisible=false;em.position.set(x,.15,z);
+ const ps=skPs(em,E,260,.4,80);ps.minLifeTime=.3;ps.maxLifeTime=.7;ps.direction1=new V3(-1.6,E.up*2,-1.6);ps.direction2=new V3(1.6,E.up*3,1.6);ps.start();
+ setTimeout(()=>{try{ps.stop();}catch(e){}},130);setTimeout(()=>{try{ps.dispose();em.dispose();}catch(e){}},1800);
+}
+/* cp = posição de quem lançou; tp = posição do alvo (ou null) */
+function skillFx(s,cp,tp){
+ if(!s)return;const el=s.fx||'steel',r=Math.max(1.6,s.radius||0);burst(cp.x,cp.z,el);
+ switch(s.type){
+  case 'aoeSelf':case 'aoeMulti':case 'taunt':groundFx(cp.x,cp.z,Math.max(2,r),el);break;
+  case 'aoeTarget':if(tp)groundFx(tp.x,tp.z,Math.max(2,r),el);break;
+  case 'single':case 'multi':if(tp)groundFx(tp.x,tp.z,1.7,el);break;
+  case 'dash':case 'barrage':groundFx(cp.x,cp.z,1.5,el,2200);if(tp)groundFx(tp.x,tp.z,2,el);break;
+  case 'dashBack':groundFx(cp.x,cp.z,1.8,el,2400);break;
+  default:groundFx(cp.x,cp.z,2.3,el);
+ }
+}
 function chainFx(from,m,color,cb){
  const a0=new V3(from.x,1.2,from.z),line=B.CreateLines('chain',{points:[a0,a0.clone()],updatable:true},scene);line.color=C3.FromHexString(color);line.isPickable=false;
  fx.push({t0:performance.now(),dur:430,upd:t=>{const e=new V3(m.pos.x,1.0,m.pos.z),a=new V3(from.x,1.2,from.z),end=V3.Lerp(a,e,t<.5?t*2:1),pts=[];for(let i=0;i<=8;i++){const u=i/8,p=V3.Lerp(a,end,u);p.y+=Math.sin(u*Math.PI)*.18;pts.push(p);}B.CreateLines(null,{points:pts,instance:line});},done:()=>{line.dispose();if(cb)cb();}});
@@ -1444,7 +1530,7 @@ function castSkill(i){
   if(cb){s.mult*=1+(s.cbonus||.5);P.mp=Math.min(D().maxMp,P.mp+s.mp*.4);if(s.reset)for(const j of s.reset)P.cd[j]=0;floatText('⚡ COMBO ×'+P.cst+'!',P.pos,'#ffd24a',true);AUD.sfx('combo',null,{n:P.cst});logMsg(`<span style="color:#ffd24a">⚡ COMBO ×${P.cst}: ${CLASSES[S.cls].skills[P.lastSkill].n} → ${s.n}</span>`);}
   if(s.mark&&tgt){tgt.markUntil=now+s.mark*1000;floatText('🎯 Marcado',tgt.pos,'#ff7ad9');}
  }
- P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});
+ P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});skillFx(s,P.pos,tgt?tgt.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null),so={slow:s.slow,defMult:s.defMult,exec:s.exec,forceCrit:s.forceCrit};
  switch(s.type){
   case 'single':
@@ -1491,15 +1577,30 @@ function learnSkill(i){
 }
 function renderSkills(){
  const C=CLASSES[S.cls];
- const allMax=C.skills.every((s,i)=>rk(i)>=MAXRANK);
- let h=allMax?`<p class="ok" style="margin:0 0 6px">✔ Todas as habilidades estão no rank máximo (${MAXRANK})!</p>`:`<div class="stat"><span>Pontos de habilidade</span><b class="${RULES.canSkillUp(S)?'ok':''}">${S.sp}</b></div><p class="muted">Ganhe 1 ponto por nível. Melhorar custa 1 ponto (ranks 1–3), 2 (4–10) e 3 (11–20). Rank máximo ${MAXRANK}: os 5 primeiros ranks rendem mais (+20% de efeito, -4% de recarga, +6% de mana); depois o ganho é menor.</p>`;
+ const allMax=C.skills.every((s,i)=>rk(i)>=MAXRANK),bar=S.bar||RULES.defBar();
+ const barH=(base,label)=>`<div class="muted" style="font-size:11px">${label}</div><div class="edrow">${Array.from({length:8},(_,j)=>{const n=base+j,si=bar[n],s=si>=0?C.skills[si]:null;return `<div class="edslot${s?' has':''}" data-eslot="${n}"${s?` draggable="true" data-dragsk="${si}" title="${s.n} (botão direito remove)"`:''}><span class="key">${base?'⇧'+(j+1):j+1}</span>${s?s.i:''}</div>`;}).join('')}</div>`;
+ let h=`<div class="muted" style="margin-bottom:4px">🎛️ <b>Suas barras</b>: arraste uma habilidade para um número (ou clique na habilidade e depois no número). Botão direito no número remove.</div>`+barH(0,'Barra 1 — teclas 1 a 8')+barH(8,'Barra 2 — Shift + 1 a 8')+(allMax?`<p class="ok" style="margin:0 0 6px">✔ Todas as habilidades estão no rank máximo (${MAXRANK})!</p>`:`<div class="stat"><span>Pontos de habilidade</span><b class="${RULES.canSkillUp(S)?'ok':''}">${S.sp}</b></div><p class="muted">Ganhe 1 ponto por nível. Melhorar custa 1 ponto (ranks 1–3), 2 (4–10) e 3 (11–20). Rank máximo ${MAXRANK}: os 5 primeiros ranks rendem mais (+20% de efeito, -4% de recarga, +6% de mana); depois o ganho é menor.</p>`);
  C.skills.forEach((s,i)=>{
   const r=rk(i),locked=S.level<s.lv,cost=RULES.skCost(r),st=skStat(i);
-  h+=`<div class="row2 ${locked&&!r?'dim':''}"><div class="ri">${s.i}</div><div class="rt"><b>${s.n}</b> <small style="display:inline">• Rank ${r}/${MAXRANK}${locked?' • Nv '+s.lv:''} • tecla ${i+1}</small><small>${s.d}</small><small>Mana ${st.mp} • Recarga ${st.cd.toFixed(1)}s${st.mult?' • Dano ×'+st.mult.toFixed(1):''}${st.pct?' • Cura '+Math.round(st.pct*100)+'%':''}${st.radius?' • Área '+st.radius.toFixed(1):''}${st.hits?' • '+st.hits+' golpes':''}${st.stun?' • Atordoa '+(st.stun/1000).toFixed(1)+'s':''}${st.root?' • Imobiliza '+(st.root/1000).toFixed(1)+'s':''}${st.lift?' • Levanta '+(st.lift/1000).toFixed(1)+'s':''}${st.pull?' • Puxa':''}${st.clones?' • '+st.clones+' clone(s) • '+Math.round(st.cloneMult*100)+'% do dano cada':''}${s.after?' • Combo após: '+s.after.map(j=>C.skills[j].n).join(' / '):''}${st.defMult?' • +'+Math.round(st.defMult*100)+'% DEF em dano':''}${st.buffs&&st.buffs.defdmg?' • DEF→dano '+Math.round(st.buffs.defdmg*100)+'%':''}</small></div><div class="rb">${r>=MAXRANK?'<span class="ok">Máx</span>':`<button data-act="skup" data-id="${i}" ${locked||S.sp<cost?'disabled':''}>${r?'Melhorar':'Aprender'} (${cost})</button>`}</div></div>`;
+  const bp=bar.indexOf(i),keyTxt=bp<0?'sem atalho':(bp>=8?'Shift+'+(bp-7):'tecla '+(bp+1));
+  h+=`<div class="row2 ${locked&&!r?'dim':''}${SELSK===i?' picked':''}"${r?` draggable="true" data-dragsk="${i}"`:''}><div class="ri"${r?` data-pick="${i}" title="Clique para escolher e depois clique em um número"`:''}>${s.i}</div><div class="rt"><b>${s.n}</b> <small style="display:inline">• Rank ${r}/${MAXRANK}${locked?' • Nv '+s.lv:''} • ${keyTxt}</small><small>${s.d}</small><small>Mana ${st.mp} • Recarga ${st.cd.toFixed(1)}s${st.mult?' • Dano ×'+st.mult.toFixed(1):''}${st.pct?' • Cura '+Math.round(st.pct*100)+'%':''}${st.radius?' • Área '+st.radius.toFixed(1):''}${st.hits?' • '+st.hits+' golpes':''}${st.stun?' • Atordoa '+(st.stun/1000).toFixed(1)+'s':''}${st.root?' • Imobiliza '+(st.root/1000).toFixed(1)+'s':''}${st.lift?' • Levanta '+(st.lift/1000).toFixed(1)+'s':''}${st.pull?' • Puxa':''}${st.clones?' • '+st.clones+' clone(s) • '+Math.round(st.cloneMult*100)+'% do dano cada':''}${s.after?' • Combo após: '+s.after.map(j=>C.skills[j].n).join(' / '):''}${st.defMult?' • +'+Math.round(st.defMult*100)+'% DEF em dano':''}${st.buffs&&st.buffs.defdmg?' • DEF→dano '+Math.round(st.buffs.defdmg*100)+'%':''}</small></div><div class="rb">${r>=MAXRANK?'<span class="ok">Máx</span>':`<button data-act="skup" data-id="${i}" ${locked||S.sp<cost?'disabled':''}>${r?'Melhorar':'Aprender'} (${cost})</button>`}</div></div>`;
  });
  $('skillBody').innerHTML=h;
 }
-$('skillBody').addEventListener('click',e=>{const b=e.target.closest('[data-act="skup"]');if(b&&!b.disabled)learnSkill(+b.dataset.id);});
+let SELSK=-1;
+function setBar(nb){S.bar=nb;ACT({t:'bar',bar:nb});buildSkillbar();renderSkills();}
+function placeSkill(slot,si){
+ if(!rk(si)){toast('Aprenda a habilidade antes de colocá-la na barra');return;}
+ const nb=(S.bar||RULES.defBar()).slice(),old=nb[slot],from=nb.indexOf(si);nb[slot]=si;if(from>=0&&from!==slot)nb[from]=old;SELSK=-1;setBar(nb);
+}
+$('skillBody').addEventListener('click',e=>{
+ const es=e.target.closest('[data-eslot]');if(es){const n=+es.dataset.eslot;if(SELSK>=0)placeSkill(n,SELSK);else{const si=(S.bar||[])[n];if(si>=0){SELSK=si;renderSkills();}}return;}
+ const pk=e.target.closest('[data-pick]');if(pk){const i=+pk.dataset.pick;SELSK=SELSK===i?-1:i;renderSkills();return;}
+ const b=e.target.closest('[data-act="skup"]');if(b&&!b.disabled)learnSkill(+b.dataset.id);});
+$('skillBody').addEventListener('contextmenu',e=>{const es=e.target.closest('[data-eslot]');if(!es)return;e.preventDefault();const nb=(S.bar||RULES.defBar()).slice();nb[+es.dataset.eslot]=-1;setBar(nb);});
+$('skillBody').addEventListener('dragstart',e=>{const d=e.target.closest('[data-dragsk]');if(!d)return;e.dataTransfer.setData('text/plain',d.dataset.dragsk);e.dataTransfer.effectAllowed='move';});
+$('skillBody').addEventListener('dragover',e=>{if(e.target.closest('[data-eslot]'))e.preventDefault();});
+$('skillBody').addEventListener('drop',e=>{const es=e.target.closest('[data-eslot]');if(!es)return;e.preventDefault();const si=+e.dataTransfer.getData('text/plain');if(Number.isInteger(si)&&si>=0&&si<8)placeSkill(+es.dataset.eslot,si);});
 function usePot(kind){
  if(!S||P.dead)return;const now=performance.now();if(now<P.potCd)return;
  const d=D(),key=kind==='hp'?'hp':'mp',mx=kind==='hp'?d.maxHp:d.maxMp;
@@ -1667,7 +1768,7 @@ window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;held=false
 window.addEventListener('keydown',e=>{
  if(!S||e.target.tagName==='INPUT')return;if(e.key==='Enter'){if(NET.room){e.preventDefault();const c=$('chatIn');c.style.display='block';c.focus();}return;}const k=e.key.toLowerCase();keys[k]=true;
  if(e.code==='Space'){e.preventDefault();if(!P.dead){const n=nearestMonster(CLASSES[S.cls].range+3);if(n){selectMonster(n);P.atkTarget=n;}else toast('Nenhum inimigo por perto');}return;}
- if(k>='1'&&k<='8'){castSkill(+k-1);return;}
+ {const dm=/^Digit([1-8])$/.exec(e.code);if(dm){e.preventDefault();const bar=S.bar||RULES.defBar(),si=bar[(+dm[1]-1)+(e.shiftKey?8:0)];if(si>=0)castSkill(si);return;}}
  if(k==='9'){usePot('hp');return;}if(k==='0'){usePot('mp');return;}
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){const off=AUD.toggleMusic();toast(off?'🔇 Música desligada':'🎵 Música ligada');return;}
@@ -1824,16 +1925,21 @@ $('dialog').addEventListener('click',e=>{
 });
 
 /* =================== HUD / MINIMAPA =================== */
+let SBSIG='',SBEL=[],POTEL=[];
 function buildSkillbar(){
- const C=CLASSES[S.cls];
- $('skillbar').innerHTML=C.skills.map((s,i)=>`<div class="sk" data-sk="${i}" title="${s.n} — ${s.d}"><span class="key">${i+1}</span>${s.i}<div class="cdm"></div><span class="cdt"></span><span class="rk"></span></div>`).join('')+['hp','mp'].map((k,i)=>`<div class="sk pot" data-pot="${k}" title="${POTS[k].n}"><span class="key">${i?0:9}</span>${POTS[k].i}<span class="cnt"></span></div>`).join('');
+ const C=CLASSES[S.cls];if(!S.bar)S.bar=RULES.defBar();
+ const slot=n=>{const si=S.bar[n],s=si>=0?C.skills[si]:null;return `<div class="sk${n>=8?' sk2':''}${s?'':' empty'}" data-slot="${n}"${s?` title="${s.n} — ${s.d}"`:''}><span class="key">${n>=8?'⇧'+(n-7):n+1}</span>${s?s.i:''}<div class="cdm"></div><span class="cdt"></span><span class="rk"></span></div>`;};
+ const r=(a,b)=>Array.from({length:b-a},(_,j)=>slot(a+j)).join('');
+ $('skillbar').innerHTML=`<div class="sbrow${S.bar.slice(8).some(v=>v>=0)?'':' hide'}" id="sbr2">${r(8,16)}</div><div class="sbrow">${r(0,8)}`+['hp','mp'].map((k,i)=>`<div class="sk pot" data-pot="${k}" title="${POTS[k].n}"><span class="key">${i?0:9}</span>${POTS[k].i}<span class="cnt"></span></div>`).join('')+'</div>';
+ SBSIG=S.bar.join();SBEL=[...$('skillbar').querySelectorAll('[data-slot]')];POTEL=[...$('skillbar').querySelectorAll('.pot')];
 }
-$('skillbar').addEventListener('pointerdown',e=>{const s=e.target.closest('[data-sk]');if(s){e.stopPropagation();castSkill(+s.dataset.sk);return;}const p=e.target.closest('[data-pot]');if(p){e.stopPropagation();usePot(p.dataset.pot);}});
+$('skillbar').addEventListener('pointerdown',e=>{const s=e.target.closest('[data-slot]');if(s){e.stopPropagation();const si=S.bar[+s.dataset.slot];if(si>=0)castSkill(si);return;}const p=e.target.closest('[data-pot]');if(p){e.stopPropagation();usePot(p.dataset.pot);}});
 function updateSkillbar(now){
- const els=$('skillbar').children;if(els.length<10)return;const C=CLASSES[S.cls];
- for(let i=0;i<8;i++){const el=els[i],r=rk(i),left=P.cd[i]-now;el.classList.toggle('locked',!r);el.querySelector('.rk').textContent=r?'R'+r:'';
-  el.querySelector('.cdm').style.height=left>0?(left/P.cdMax[i]*100)+'%':'0';el.querySelector('.cdt').textContent=left>0?Math.ceil(left/1000):'';el.classList.toggle('nomp',r>0&&P.mp<skStat(i).mp);const sa=C.skills[i].after;el.classList.toggle('combo',!!(r>0&&C.combo&&sa&&P.lastSkill>=0&&now-P.lastSkillAt<3500&&sa.includes(P.lastSkill)));}
- for(let j=0;j<2;j++){const k=j?'mp':'hp',pc=have(k)+have(k+'2');els[8+j].querySelector('.cnt').textContent=pc;els[8+j].style.opacity=pc?1:.45;}
+ if(!S.bar)S.bar=RULES.defBar();if(S.bar.join()!==SBSIG||!SBEL.length)buildSkillbar();
+ const C=CLASSES[S.cls];
+ for(const el of SBEL){const si=S.bar[+el.dataset.slot];if(si<0)continue;const r=rk(si),left=P.cd[si]-now;el.classList.toggle('locked',!r);el.querySelector('.rk').textContent=r?'R'+r:'';
+  el.querySelector('.cdm').style.height=left>0?(left/P.cdMax[si]*100)+'%':'0';el.querySelector('.cdt').textContent=left>0?Math.ceil(left/1000):'';el.classList.toggle('nomp',r>0&&P.mp<skStat(si).mp);const sa=C.skills[si].after;el.classList.toggle('combo',!!(r>0&&C.combo&&sa&&P.lastSkill>=0&&now-P.lastSkillAt<3500&&sa.includes(P.lastSkill)));}
+ for(const el of POTEL){const k=el.dataset.pot,pc=have(k)+have(k+'2');el.querySelector('.cnt').textContent=pc;el.style.opacity=pc?1:.45;}
  let bh='';for(const k in P.buffs){const b=P.buffs[k];if(b.until>now)bh+=`<span>${k==='combo'?'🔥 Combo ×'+P.cst:BUFFN[k]} ${Math.ceil((b.until-now)/1000)}s</span>`;}$('buffs').innerHTML=bh;
 }
 function zoneName(){if(P.pos.x>450)return '🏺 Cripta das Areias';{const t=townAt(P.pos);if(t)return t.name;}for(const z of ZONES)if(Math.hypot(P.pos.x-z.x,P.pos.z-z.z)<z.r+5)return z.name;return regionOf(P.pos)?'🏜️ Deserto de Solara':'Terras Selvagens';}
@@ -2023,7 +2129,7 @@ function remoteSkill(m){
  const far=hyp(P.pos,o.root.position)>34;if(far)return;
  const mo=m.tid?monsters.find(x=>x.id===m.tid):null,now=performance.now(),from=o.root.position;o.swingAt=now;
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
- AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));
+ AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));skillFx(s,from,mo?mo.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null);
  switch(s.type){
   case 'single':if(mo){if(pr==='hook')chainFx(from,mo,s.color);else if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
