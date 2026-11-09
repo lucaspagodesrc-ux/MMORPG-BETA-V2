@@ -1,0 +1,4 @@
+ATUALIZAÇÃO 1.11 — Organizar baú
+
+Suba index.html e rules.js para a RAIZ do GitHub (substituindo), aguarde o redeploy e use Ctrl+F5.
+Fale com o Baú do Aventureiro: aba Baú → botão "🧹 Organizar baú" (junta pilhas e ordena como na mochila).

@@ -1961,7 +1961,7 @@ function renderDialog(){
   h+=(SHOPS[n.shop||'aurora']||[]).filter(o=>!o.f||o.f(S)).map(o=>{const c=o.c(S);return `<div class="row2"><div class="ri">${o.i}</div><div class="rt"><b>${o.n}</b><small>${o.d}</small></div><div class="rb"><div class="${S.gold>=c?'ok':'no'}">💰 ${c}</div><button data-act="buy" data-id="${o.id}" ${S.gold>=c?'':'disabled'}>Comprar</button></div></div>`;}).join('');
  }else if(dlg.tab==='bau'){
   const slotH=(it,act,i,at)=>`<div class="slot" data-act="${act}" data-id="${i}" ${at}="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`;
-  h+=`<div class="dsec">📦 Baú compartilhado (${ACC.stash.filter(Boolean).length}/${ACC.stash.length}) — clique para retirar</div><div class="stgrid">`+ACC.stash.map((it,i)=>slotH(it,'wd',i,'data-st')).join('')+`</div><div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid">`+S.inv.map((it,i)=>slotH(it,'dep',i,'data-inv')).join('')+'</div>';
+  h+=`<div class="dsec" style="display:flex;justify-content:space-between;align-items:center"><span>📦 Baú compartilhado (${ACC.stash.filter(Boolean).length}/${ACC.stash.length}) — clique para retirar</span><button data-act="orgs" title="Junta pilhas e ordena o baú">🧹 Organizar baú</button></div><div class="stgrid">`+ACC.stash.map((it,i)=>slotH(it,'wd',i,'data-st')).join('')+`</div><div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid">`+S.inv.map((it,i)=>slotH(it,'dep',i,'data-inv')).join('')+'</div>';
  }else if(dlg.tab==='dungeon'){
   h+=DUNGEONS.map(d=>{const hv=(S.tix&&S.tix[d.id])||0,okL=S.level>=d.minLevel,okG=S.gold>=d.price;return `<div class="row2"><div class="ri">${d.icon}</div><div class="rt"><b>${d.name}</b> <small style="display:inline">(Nv ${d.minLevel}+ • ⏱ ${Math.round(d.time/60)} min • até 6 jogadores)</small><small>${d.desc}</small><small>🎟️ Você tem: <b>${hv}</b> ingresso(s)</small></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${d.price}</div><button data-act="buyticket" data-id="${d.id}" ${okL&&okG?'':'disabled'}>Comprar</button></div></div>`;}).join('')+'<p class="muted">O ingresso é gasto ao entrar. Se você sair (ou a conexão cair), tem <b>5 minutos</b> para voltar sem pagar de novo. Em grupo, o líder entra primeiro e os outros entram em seguida, cada um com seu ingresso. Vá até a entrada, no canto mais afastado do deserto, e fale com o portal.</p>';
  }else if(dlg.tab==='vender'){
@@ -1983,6 +1983,7 @@ $('dialog').addEventListener('click',e=>{
  const npc=dlg.npc.id;
  if(a==='dep'){ACT({t:'dep',npc,i:+id});return;}
  if(a==='wd'){ACT({t:'wd',npc,i:+id});return;}
+ if(a==='orgs'){ACT({t:'orgs',npc});return;}
  if(a==='craft'){ACT({t:'craft',npc,id});return;}
  if(a==='up'){ACT({t:'up',npc,ref:id});return;}
  if(a==='buy'){ACT({t:'buy',npc,id});return;}

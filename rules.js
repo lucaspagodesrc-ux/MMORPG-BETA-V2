@@ -639,6 +639,17 @@ function migrateStash(st) { st = Array.isArray(st) ? st : []; st = st.slice(0, 4
    sess = { c: personagem, stash: baú da conta }; m = ação {t, ...}; ctx = { near(npc)->bool, now }.
    Devolve { ok, out:[{toast|log|sfx|lvl|heal}], spawn:[{item,life}] } e altera sess diretamente.
    O servidor chama isto para cada pedido do jogador; o modo offline chama o mesmo código. */
+/** Junta pilhas e ordena uma lista de itens (mochila ou baú): equipamentos (por peça, classe, raridade, nível, aprimoramento), poções e materiais; sem buracos. */
+function organizeList(list, cls) {
+  const eq = [], rest = [], pots = {}, mats = {}, tm = {}, ORD = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'shield', 'cape'];
+  for (const it of list) { if (!it) continue; if (it.k === 'eq') eq.push(it); else if (it.k === 'pot' || it.k === 'mat') { const g = it.k === 'pot' ? pots : mats; g[it.id] = (g[it.id] || 0) + it.n; tm[it.k + it.id] = it; } else rest.push(it); }
+  const foreign = it => Number(!!(it.cls && it.cls !== cls));
+  eq.sort((a, b) => ORD.indexOf(a.slot) - ORD.indexOf(b.slot) || foreign(a) - foreign(b) || String(a.cls || '').localeCompare(String(b.cls || '')) || b.rar - a.rar || b.ilvl - a.ilvl || (b.plus || 0) - (a.plus || 0) || String(a.name).localeCompare(String(b.name)));
+  const o = [...eq];
+  const stacks = (g, k, ids) => { for (const id of ids) { let n = g[id]; while (n > 0) { const q = Math.min(99, n); o.push({ ...tm[k + id], n: q }); n -= q; } } };
+  stacks(pots, 'pot', Object.keys(pots).sort()); stacks(mats, 'mat', Object.keys(mats).sort((a, b) => String(MATS[a].n).localeCompare(String(MATS[b].n)))); o.push(...rest);
+  while (o.length < list.length) o.push(null); list.splice(0, list.length, ...o.slice(0, list.length));
+}
 function act(sess, m, ctx) {
   const c = sess.c, stash = sess.stash, out = [], spawn = [];
   const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), F = s => out.push({ sfx: s });
@@ -680,16 +691,8 @@ function act(sess, m, ctx) {
     if (!intIn(m.i, 0, c.inv.length) || !c.inv[m.i]) return fail(); const it = c.inv[m.i]; c.inv[m.i] = null; spawn.push({ item: it, life: 30000 });
     L(`Você largou <b style="color:${colOf(it)}">${nm(it)}${it.n > 1 ? ' ×' + it.n : ''}</b> no chão — some em 30 s (E para pegar de volta).`); return done();
   }
-  if (t === 'org') {
-    const eq = [], rest = [], pots = {}, mats = {}, tm = {}, ORD = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'shield', 'cape'];
-    for (const it of c.inv) { if (!it) continue; if (it.k === 'eq') eq.push(it); else if (it.k === 'pot' || it.k === 'mat') { const g = it.k === 'pot' ? pots : mats; g[it.id] = (g[it.id] || 0) + it.n; tm[it.k + it.id] = it; } else rest.push(it); }
-    const foreign = it => Number(!!(it.cls && it.cls !== c.cls));
-    eq.sort((a, b) => ORD.indexOf(a.slot) - ORD.indexOf(b.slot) || foreign(a) - foreign(b) || b.rar - a.rar || b.ilvl - a.ilvl || (b.plus || 0) - (a.plus || 0) || String(a.name).localeCompare(String(b.name)));
-    const o = [...eq];
-    const stacks = (g, k, ids) => { for (const id of ids) { let n = g[id]; while (n > 0) { const q = Math.min(99, n); o.push({ ...tm[k + id], n: q }); n -= q; } } };
-    stacks(pots, 'pot', Object.keys(pots).sort()); stacks(mats, 'mat', Object.keys(mats).sort((a, b) => String(MATS[a].n).localeCompare(String(MATS[b].n)))); o.push(...rest);
-    while (o.length < c.inv.length) o.push(null); c.inv.splice(0, c.inv.length, ...o.slice(0, c.inv.length)); T('🧹 Mochila organizada'); return done();
-  }
+  if (t === 'org') { organizeList(c.inv, c.cls); T('🧹 Mochila organizada'); return done(); }
+  if (t === 'orgs') { if (!npcFor('bau')) return fail('Chegue perto do Baú.'); organizeList(stash, c.cls); T('🧹 Baú organizado'); return done(); }
   if (t === 'sell' || t === 'sellmany') {
     if (!npcFor('vender')) return fail('Chegue perto de um comerciante.');
     const idx = t === 'sell' ? [m.i] : (Array.isArray(m.idx) ? [...new Set(m.idx)] : []);
