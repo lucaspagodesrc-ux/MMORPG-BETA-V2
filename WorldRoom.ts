@@ -168,7 +168,7 @@ export class WorldRoom extends Room<WorldState> {
       this.broadcast("fx", { by: s.client.sessionId, i, pid: String(m.pid), x: p.x, z: p.z }, { except: s.client });
       return;
     }
-    const off = !["buff", "dashBack", "heal", "clone"].includes(sk.type);
+    const off = !["buff", "dashBack", "heal", "clone", "transform"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
     let tgt: Sim | undefined;
     if (["single", "dash", "aoeTarget", "multi", "barrage", "mark", "chainPull"].includes(sk.type)) {
@@ -288,14 +288,18 @@ export class WorldRoom extends Room<WorldState> {
         this.later(tFly + 2000, ret);
         break;
       }
-      case "dashBack": case "buff": for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur); break;
+      case "stab3": {                      // Golpe Poderoso: 3 estocadas para a frente
+        for (let n = 0; n < 3; n++) this.later(120 + n * 180, () => { const q = this.playerOf(s); if (!q || q.dead) return; this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.8, mult, so); });
+        break;
+      }
+      case "dashBack": case "buff": case "transform": case "heal": for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur); break;
     }
   }
 
   private basic(s: Sess, m: any) {
     const p = this.playerOf(s); if (!p || p.dead || R.inTown(p.x, p.z)) return;
     const C = R.CLASSES[s.c.cls], now = Date.now(), d = this.stats(s);
-    if (now - s.lastBasic < (900 / d.atkSpd) * 0.7) return;
+    if (now - s.lastBasic < (900 / (d.atkSpd * (1 + this.buff(s, "aspd")))) * 0.7) return;
     const tgt = this.sim.byId.get(Number(m?.tid));
     if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > C.range + HIT_SLACK) return;
     s.lastBasic = now;

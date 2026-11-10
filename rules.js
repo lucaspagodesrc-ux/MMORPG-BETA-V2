@@ -48,15 +48,14 @@ const CLASSES={
  guerreiro:{n:'Guerreiro',i:'⚔️',wi:'⚔️',main:'str',base:{str:10,agi:5,int:2,vit:9},range:2.8,ranged:false,
   d:'Combate corpo a corpo com montante (espada grande, sem escudo). Muita vida e dano em área.',
   skills:[
-   {n:'Golpe Poderoso',i:'💥',lv:1,cd:3,mp:8,type:'single',mult:2.2,range:3.2,color:'#ffcf6b',d:'Ataque forte contra um alvo.'},
-   {n:'Giro de Lâmina',i:'🌀',lv:3,cd:6,mp:14,type:'aoeSelf',mult:1.5,radius:3.6,color:'#ffd27a',d:'Golpeia todos ao redor.'},
+   {n:'Golpe Poderoso',i:'💥',lv:1,cd:5,cdMin:5,mp:8,type:'stab3',mult:.75,range:3.6,anim:'stab',color:'#ffcf6b',d:'Três estocadas rápidas para a frente (o dano total continua o mesmo, dividido nas 3 estocadas).'},
+   {n:'Giro de Lâmina',i:'🌀',lv:3,cd:10,cdMin:10,mp:14,type:'aoeSelf',mult:1.5,radius:3.6,anim:'spin',color:'#ffd27a',d:'O personagem gira com a lâmina golpeando todos ao redor.'},
    {n:'Investida',i:'⚡',lv:5,cd:8,mp:12,type:'dash',mult:1.8,range:10,color:'#8fd3ff',d:'Avança até o alvo e ataca.'},
-   {n:'Grito de Guerra',i:'📣',lv:8,cd:25,mp:20,type:'buff',buffs:{dmg:.35,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido.'},
-   {n:'Terremoto',i:'🌋',lv:12,cd:12,mp:28,type:'aoeSelf',mult:2.2,radius:5,slow:3000,color:'#c9a56b',d:'Abala o chão: dano em área e lentidão.'},
-   {n:'Sangue de Guerra',i:'🩸',lv:15,cd:30,mp:25,type:'heal',pct:.35,color:'#ff6b6b',d:'Recupera 35% da vida máxima.'},
-   {n:'Fúria Berserker',i:'😡',lv:20,cd:40,mp:35,type:'buff',buffs:{dmg:.6,haste:.3},dur:12,color:'#ff5a3a',d:'+60% dano e +30% velocidade.'},
-   {n:'Execução',i:'🗡️',lv:25,cd:20,mp:40,type:'single',mult:6,range:3.4,color:'#ffe9a8',d:'Golpe devastador contra um alvo.'}]},
- arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
+   {n:'Grito de Guerra',i:'📣',lv:8,cd:60,cdMin:60,mp:20,type:'buff',buffs:{dmg:.35,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido. Recarga: 60s.'},
+   {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:2.2,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
+   {n:'Sangue de Guerra',i:'🩸',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.35,buffs:{dmg:.1},fixBuff:1,dur:20,fixDur:1,color:'#ff6b6b',d:'Auto buff: recupera 35% da vida máxima e dá +10% de dano base por 20s.'},
+   {n:'Metamorfose',i:'🐻',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.3},fixBuff:1,dur:10,fixDur:1,color:'#a8743c',d:'Vira um urso em pé por 10s: o ataque básico vira patadas com garras (+30% de velocidade de ataque) e +20% de velocidade de movimento. A espada fica guardada.'},
+   {n:'Execução',i:'🗡️',lv:25,cd:20,mp:40,type:'single',mult:6,range:3.4,color:'#ffe9a8',d:'Golpe devastador contra um alvo.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
   d:'Ataque à distância. Crítico alto e mobilidade.',
   skills:[
    {n:'Tiro Preciso',i:'🎯',lv:1,cd:3,mp:8,type:'single',mult:2.3,range:11,proj:'arrow',color:'#fff2a8',d:'Disparo certeiro em um alvo.'},
@@ -491,7 +490,7 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 
 /** Valores de uma habilidade conforme o rank. */
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
-const BCAP = { defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
+const BCAP = { aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));

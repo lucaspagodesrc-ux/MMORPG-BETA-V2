@@ -1,19 +1,16 @@
-Versão 1.22 - Tanque: novas habilidades
-Requer as versões anteriores (até 1.21) já instaladas.
+Versão 1.23 - Guerreiro: novas habilidades
+Requer as versões anteriores (até 1.22) já instaladas.
 
 COMO INSTALAR
-1. Envie index.html, rules.js, WorldRoom.ts e monsters.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
+1. Envie index.html, rules.js e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
 2. Aguarde o Render terminar o redeploy.
 3. No navegador, Ctrl+F5.
 
 O QUE MUDOU
-- Nenhuma habilidade do Tanque causa mais dano baseado em defesa.
-- Gancho de Corrente (Puxão): mesmos atributos.
-- Pisão Sísmico: mesmos atributos; pedras sobem do chão e o chão racha (efeito de 2s).
-- Provocar: igual.
-- Correntes de Aço: prende até 5 monstros e junta todos no centro; 3s de atordoamento (1s em jogadores, campo pvpStun já preparado para o futuro PvP).
-- Golpe Ascendente: o personagem bate mãos e pés no chão (sumô) e lança os monstros. Monstros de esquiva alta (lobo, aranha, chacal, cobra, escorpião) têm chance de escapar.
-- Muralha de Ferro: buff de 20s, -50% de dano e +10% de esquiva (nv.1) até +30% (nv. máx.). Recarga 180s. Em outro jogador: clique no personagem dele (ou no nome dele na lista do grupo) e use "Muralha de Ferro"; recarga de 360s.
-- Campo de Atração: REMOVIDO. Os pontos gastos nele são devolvidos automaticamente e a Sentença do Colosso passa para o 7º slot da lista.
-- Sentença do Colosso: rolamento de 4s batendo nos monstros; ricocheteia ao bater em parede, pedra, árvore etc.
-- Ataque básico do Tanque: +15% de dano.
+- Golpe Poderoso: 3 estocadas para a frente (o dano total é o mesmo de antes, dividido nas 3). Recarga 5s.
+- Giro de Lâmina: o personagem gira junto com a animação. Recarga 10s.
+- Grito de Guerra: mesmos efeitos, recarga 60s.
+- Terremoto: mesma animação (finca a espada no chão), recarga 10s.
+- Sangue de Guerra: mantém a cura de 35% e agora dá +10% de dano por 20s (auto buff). Recarga 60s.
+- Fúria Berserker virou "Metamorfose": por 10s vira um urso em pé, espada guardada; ataque básico vira patadas com marcas de garra no ar, +30% de velocidade de ataque e +20% de velocidade de movimento. Recarga 60s.
+- Novo buff "Vel. de ataque" (🐾) na barra de buffs.
