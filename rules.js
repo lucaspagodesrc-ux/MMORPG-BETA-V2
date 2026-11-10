@@ -70,13 +70,13 @@ const CLASSES={
   d:'Magia devastadora. Frágil, mas com enorme dano.',
   skills:[
    {n:'Bola de Fogo',i:'🔥',lv:1,cd:3,mp:10,type:'single',mult:2.4,range:10.5,proj:'big',color:'#ff8a3d',d:'Esfera flamejante em um alvo.'},
-   {n:'Nova Gélida',i:'❄️',lv:3,cd:8,mp:18,type:'aoeSelf',mult:1.4,radius:4.2,slow:3500,color:'#8fe3ff',d:'Explosão de gelo que retarda inimigos.'},
-   {n:'Escudo Arcano',i:'🔮',lv:5,cd:24,mp:20,type:'buff',buffs:{shield:.5},dur:10,color:'#c79bff',d:'Reduz 50% do dano recebido.'},
+   {n:'Nova Gélida',i:'❄️',lv:3,cd:8,mp:18,type:'aoeSelf',mult:1.4,radius:4.2,slow:3500,fxMon:1,color:'#8fe3ff',d:'Explosão de gelo lançada sobre os monstros ao redor, que retarda os inimigos.'},
+   {n:'Escudo Arcano',i:'🔮',lv:5,cd:45,cdMin:45,mp:20,type:'buff',buffs:{shield:.35,dmg:.2},fixBuff:1,dur:10,fixDur:1,color:'#c79bff',d:'Por 10s: reduz 35% do dano recebido e aumenta em 20% o seu dano.'},
    {n:'Meteoro',i:'☄️',lv:8,cd:18,mp:45,type:'aoeTarget',meteor:true,mult:3.4,radius:4,range:11,color:'#ff6a2a',d:'Um meteoro devastador na área.'},
-   {n:'Raio Arcano',i:'⚡',lv:12,cd:8,mp:26,type:'multi',hits:4,mult:1.0,range:10.5,proj:'orb',color:'#9fc4ff',d:'Quatro descargas arcanas no alvo.'},
-   {n:'Cura Arcana',i:'💚',lv:15,cd:28,mp:30,type:'heal',pct:.4,color:'#6fdc7f',d:'Recupera 40% da vida máxima.'},
-   {n:'Tempestade de Gelo',i:'🌨️',lv:20,cd:16,mp:50,type:'aoeTarget',mult:2.4,radius:5.5,range:11,slow:3500,color:'#8fe3ff',d:'Nevasca em grande área que retarda inimigos.'},
-   {n:'Apocalipse',i:'🌠',lv:25,cd:40,mp:90,type:'aoeTarget',meteor:true,mult:7,radius:6.5,range:12,color:'#ff3a2a',d:'Chuva de fogo apocalíptica.'}]},
+   {n:'Raio Arcano',i:'⚡',lv:12,cd:8,mp:26,type:'arcRay',mult:3,range:10.5,radius:3.5,dot:200,dotDur:4,slow:3000,color:'#9fc4ff',d:'Um raio arcano vai até os monstros: dano em área, 200 de dano por segundo durante 4s e lentidão.'},
+   {n:'Cura Arcana',i:'💚',lv:15,cd:28,mp:30,type:'heal',pct:.6,fixPct:1,hot:50,hotDur:5,color:'#6fdc7f',d:'Recupera 60% da vida máxima e depois cura 50 de vida por segundo durante 5s.'},
+   {n:'Tempestade de Gelo',i:'🌨️',lv:20,cd:16,mp:50,type:'aoeTarget',mult:2.4,radius:5.5,range:11,slow:3500,stun:1500,fixStun:1,ice:1,color:'#8fe3ff',d:'Nevasca em grande área: pedras de gelo prendem os monstros atingidos, petrificando-os por 1,5s.'},
+   {n:'Apocalipse',i:'🌠',lv:25,cd:40,mp:90,type:'aoeTarget',meteor:true,balls:3,gap:420,mult:7,radius:6.5,range:12,color:'#ff3a2a',d:'Três bolas de fogo caem em sequência, pela diagonal, na área (dano total mantido).'}]},
  assassino:{n:'Assassino',i:'🥷',wi:'🔪',main:'agi',base:{str:4,agi:12,int:4,vit:5},range:2.4,ranged:false,combo:true,
   d:'Lâminas e sombras. +30% vel. de ataque, +12% crítico, -10% vida. Encadeie habilidades em COMBOS: bônus de dano, mana de volta e recargas reiniciadas.',
   skills:[
@@ -497,7 +497,7 @@ function skStat(cls, i, rank) {
   if (s.flatMin != null) bf.flat = s.flatMin + (s.flatMax - s.flatMin) * Math.min(1, k / (MAXRANK - 1));
   if (s.evMin != null && bf.evade != null) bf.evade = s.evMin + (s.evMax - s.evMin) * Math.min(1, k / (MAXRANK - 1));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
-  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */

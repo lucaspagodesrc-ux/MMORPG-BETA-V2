@@ -1,10 +1,13 @@
-MMORPG 1.26 - Guerreiro: Fúria do Bárbaro melhorada + Trovão
-Requer as versões anteriores até a 1.25 já instaladas.
+MMORPG 1.27 - Mago: novas animações e atributos
+Requer as versões anteriores até a 1.26 já instaladas.
 
-- Fúria do Bárbaro: velocidade de ataque +50% e dano +20%.
-- Execução virou "Trovão" (nível 25, recarga 45s): o personagem aponta a espada
-  para o céu, cai um raio no alvo (dano em área com o dano da habilidade) e os
-  atingidos recebem 240 de dano por segundo durante 8 segundos.
+- Bola de Fogo, Meteoro: mantidos.
+- Nova Gélida: mesmos atributos; a explosão de gelo agora surge sobre os monstros.
+- Escudo Arcano: -35% de dano recebido, +20% de dano, 10s de duração, recarga 45s.
+- Raio Arcano: raio que vai até os monstros, dano em área (3x), 200 de dano/s por 4s e lentidão.
+- Cura Arcana: cura 60% da vida máxima + 50 de vida/s por 5s.
+- Tempestade de Gelo: mesmos atributos; pedras de gelo prendem os monstros atingidos (1,5s).
+- Apocalipse: 3 bolas de fogo em sequência, caindo pela diagonal (dano total mantido).
 
 Instalação: envie index.html, rules.js e WorldRoom.ts para a raiz do GitHub,
 aguarde o redeploy do Render e use Ctrl+F5.

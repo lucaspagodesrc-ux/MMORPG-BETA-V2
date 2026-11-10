@@ -124,9 +124,9 @@ export class WorldRoom extends Room<WorldState> {
     const inst = this.playerOf(s)?.inst || 0;
     for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, o);
   }
-  private dot(s: Sess, sim: Sim, dmg: number) {                     // dano contínuo fixo
+  private dot(s: Sess, sim: Sim, dmg: number, slow = 0) {                     // dano contínuo fixo
     if (!sim.m.alive) return; const sid = s.client.sessionId;
-    const died = this.sim.damage(sid, sim, dmg, 0);
+    const died = this.sim.damage(sid, sim, dmg, slow);
     this.broadcast("dmg", { id: sim.m.id, d: dmg, c: 0, by: sid });
     if (died) this.onKill(sim);
   }
@@ -178,7 +178,7 @@ export class WorldRoom extends Room<WorldState> {
     const off = !["buff", "dashBack", "heal", "clone", "transform"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
     let tgt: Sim | undefined;
-    if (["single", "dash", "aoeTarget", "multi", "barrage", "mark", "chainPull", "thunder"].includes(sk.type)) {
+    if (["single", "dash", "aoeTarget", "multi", "barrage", "mark", "chainPull", "thunder", "arcRay"].includes(sk.type)) {
       tgt = this.sim.byId.get(Number(m?.tid));
       if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
     }
@@ -232,7 +232,8 @@ export class WorldRoom extends Room<WorldState> {
         break;
       }
       case "clone": s.clone = { n: sk.clones, mult: sk.cloneMult, until: now + sk.dur * 1000 }; this.broadcast("clones", { by: s.client.sessionId, n: sk.clones, dur: sk.dur }); break;
-      case "aoeTarget": { const tx = tgt!.m.x, tz = tgt!.m.z; this.later(sk.meteor ? 600 : 650, () => this.hitArea(s, tx, tz, sk.radius, mult, so)); break; }
+      case "aoeTarget": { const tx = tgt!.m.x, tz = tgt!.m.z; if (sk.balls) { for (let k = 0; k < sk.balls; k++) this.later(600 + k * sk.gap, () => this.hitArea(s, tx, tz, sk.radius, mult / sk.balls, so)); break; }
+        this.later(sk.meteor ? 600 : 650, () => this.hitArea(s, tx, tz, sk.radius, mult, so)); break; }
       case "barrage": case "dash": {
         const dx = tgt!.m.x - p.x, dz = tgt!.m.z - p.z, d = Math.hypot(dx, dz) || 1, mv = Math.max(0, d - (sk.type === "dash" ? 1.7 : 1.6));
         p.x = clampX(p.x + (dx / d) * mv, p.x); p.z = clamp(p.z + (dz / d) * mv); s.t = now;
@@ -263,13 +264,13 @@ export class WorldRoom extends Room<WorldState> {
         });
         break;
       }
-      case "thunder": {                    // Trovão: raio em área + dano contínuo (240/s por 8s)
+      case "thunder": case "arcRay": {                    // Trovão: raio em área + dano contínuo (240/s por 8s)
         const tx0 = tgt!.m.x, tz0 = tgt!.m.z, sid = s.client.sessionId;
-        this.later(700, () => {
+        this.later(sk.type === "thunder" ? 700 : 350, () => {
           const cx0 = tgt!.m.alive ? tgt!.m.x : tx0, cz0 = tgt!.m.alive ? tgt!.m.z : tz0, hit: Sim[] = [], inst = tgt!.inst;
           for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(cx0) && Math.hypot(sim.m.x - cx0, sim.m.z - cz0) <= sk.radius + 0.5 * sim.bs) hit.push(sim);
           hit.forEach((sim) => this.hit(s, sim, mult, so));
-          for (let k = 1; k <= sk.dotDur; k++) this.later(k * 1000, () => { if (!this.sess.has(sid)) return; for (const q of hit) this.dot(s, q, sk.dot); });
+          for (let k = 1; k <= sk.dotDur; k++) this.later(k * 1000, () => { if (!this.sess.has(sid)) return; for (const q of hit) this.dot(s, q, sk.dot, sk.slow || 0); });
         });
         break;
       }
