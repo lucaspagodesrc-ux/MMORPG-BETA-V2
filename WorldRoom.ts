@@ -10,14 +10,16 @@ const RATE = 14;         // unidades/s sustentadas (jogador anda ~6-8)
 const BURST = 20;        // folga para habilidades de avanço (ex.: Investida)
 const clamp = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 // O mundo tem duas regiões de 160x160: a Vila Aurora (centro x=0) e Solara (centro x=300).
-const cx = (x: number) => (x > 450 ? 600 : x > 150 ? 300 : 0);
+const cx = (x: number) => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
 const clampX = (x: number, ref: number) => { const c = cx(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
-const SOLARA_MIN_LEVEL = 50;
+const SOLARA_MIN_LEVEL = 50, SNOW_MIN_LEVEL = 75;
 const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number }; minLevel: number }> = {
   portal_a: { x: 14, z: 56, to: { x: 300, z: -7 }, minLevel: SOLARA_MIN_LEVEL },
   portal_b: { x: 300, z: -11, to: { x: 14, z: 52 }, minLevel: 0 },
+  portal_c: { x: -32, z: -45, to: { x: -300, z: -7 }, minLevel: SNOW_MIN_LEVEL },
+  portal_d: { x: -300, z: -11, to: { x: -32, z: -41 }, minLevel: 0 },
 };
-const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }];   // pontos de renascimento / retorno
+const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }];   // pontos de renascimento / retorno
 const NPC_REACH = 8, PICK_REACH = 7, HIT_SLACK = 4;  // folgas por causa da latência
 
 type Buff = { val: number; until: number };
@@ -606,6 +608,7 @@ export class WorldRoom extends Room<WorldState> {
     const pos = c.pos && Number.isFinite(c.pos.x) && Number.isFinite(c.pos.z) ? c.pos : { x: Number.isFinite(options?.x) ? options.x : 0, z: Number.isFinite(options?.z) ? options.z : 5 };
     p.x = clampX(pos.x, pos.x); p.z = clamp(pos.z);
     if (p.x > 150 && p.x < 450 && c.level < SOLARA_MIN_LEVEL) { p.x = 0; p.z = 5; }
+    if (p.x < -150 && c.level < SNOW_MIN_LEVEL) { p.x = 0; p.z = 5; }
     this.state.players.set(client.sessionId, p);
     const now = Date.now();
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,

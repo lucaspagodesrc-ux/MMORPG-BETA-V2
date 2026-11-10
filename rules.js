@@ -13,7 +13,7 @@ const rnd = (a, b) => a + Math.random() * (b - a), ri = (a, b) => Math.floor(rnd
 /* ---------- BALANCEAMENTO (versão 0.8) ---------- */
 const PTS_PER_LEVEL = 3;                    // pontos de atributo por nível (antes: 5)
 const GOLD_CAP_PER_LEVEL = 3000;            // teto de ouro aceito ao migrar personagens antigos
-const MAX_LEVEL = 100;
+const MAX_LEVEL = 170;
 const xpNeed = l => Math.floor(24 * Math.pow(l, 2.3));   // XP para sair do nível l (antes: 50·l^1.45)
 R.PTS_PER_LEVEL = PTS_PER_LEVEL; R.MAX_LEVEL = MAX_LEVEL; R.xpNeed = xpNeed; R.VERSION = 4;
 
@@ -35,8 +35,11 @@ WN.pierrot=['Florete de Brinquedo','Florete de Ferro','Florete de Aço','Florete
 const SHN=['Escudo de Madeira','Escudo de Ferro','Escudo de Aço','Escudo Rúnico','Escudo do Guardião','Escudo Abissal','Escudo Dracônico'];
 const XN={weapon:{tanque:['Gancho Solar','Gancho Faraônico','Gancho Imortal'],pierrot:['Florete Solar','Florete Faraônico','Florete Imortal'],assassino:['Adaga Solar','Adaga Faraônica','Adaga Imortal'],cavaleiro:['Espada Solar','Espada Faraônica','Espada Imortal'],guerreiro:['Montante Solar','Montante Faraônico','Montante Imortal'],arqueiro:['Arco Solar','Arco Faraônico','Arco Imortal'],mago:['Cajado Solar','Cajado Faraônico','Cajado Imortal']},
  armor:['Armadura Solar','Armadura Faraônica','Armadura Imortal'],helmet:['Elmo Solar','Elmo Faraônico','Elmo Imortal'],boots:['Botas Solares','Botas Faraônicas','Botas Imortais'],ring:['Anel Solar','Anel Faraônico','Anel Imortal'],bracelet:['Bracelete Solar','Bracelete Faraônico','Bracelete Imortal'],earring:['Brinco Solar','Brinco Faraônico','Brinco Imortal'],shield:['Escudo Solar','Escudo Faraônico','Escudo Imortal']};
+{const fem=n=>/^(Armadura|Espada|Adaga)/.test(n),pl=n=>/^Botas/.test(n);
+ const ext=a=>{const l=a[a.length-1];a.push(l.replace('Imortais','Glaciais').replace('Imortal','Glacial'));a.push(l.replace('Imortais','Eternas').replace('Imortal',fem(l)?'Eterna':'Eterno'));};
+ for(const k in XN){if(Array.isArray(XN[k]))ext(XN[k]);else for(const c in XN[k])ext(XN[k][c]);}}
 const SUF=['do Dragão','da Tempestade','da Sombra','do Titã','da Aurora','do Lobo'];
-const MATS={gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
+const MATS={pelepolar:{n:'Pelagem Polar',i:'🤍',v:280},runabar:{n:'Runa Bárbara',i:'🔰',v:330},ossogelo:{n:'Osso Congelado',i:'❄️',v:380},fiocristal:{n:'Fio de Cristal',i:'🕸️',v:430},coracaogelo:{n:'Coração de Gelo',i:'💙',v:560},essenciagelo:{n:'Essência Glacial',i:'🔷',v:640},nucleogelo:{n:'Núcleo Glacial',i:'💠',v:2200},cristalpuro:{n:'Cristal Eterno',i:'💎',v:2800},escamagelo:{n:'Escama Glacial',i:'🐲',v:4500},gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
  seda:{n:'Seda de Aranha',i:'🕸️',v:12},presa:{n:'Presa de Orc',i:'🦷',v:18},cristal:{n:'Cristal de Gelo',i:'🧊',v:25},brasa:{n:'Brasa Infernal',i:'🔥',v:35},escama:{n:'Escama de Dragão',i:'🐉',v:300},
  ferrao:{n:'Ferrão de Escorpião',i:'🦂',v:60},linho:{n:'Linho Amaldiçoado',i:'🧻',v:90},veneno:{n:'Glândula de Naja',i:'🐍',v:120},cristalsol:{n:'Cristal do Deserto',i:'🔶',v:160},garra:{n:'Garra de Chacal',i:'🐾',v:200},ankh:{n:'Ankh Sagrado',i:'☥',v:260},obsidiana:{n:'Obsidiana Negra',i:'⬛',v:700},selo:{n:'Selo do Faraó',i:'🔱',v:1200}};
 const POTS={hp:{n:'Poção de Vida',i:'🧪',v:12,pct:.4,d:'Recupera 40% da vida'},mp:{n:'Poção de Mana',i:'🔷',v:12,pct:.4,d:'Recupera 40% da mana'},
@@ -205,12 +208,37 @@ const OG={
  colosso:{sf:'do Colosso',col:'#4a4f66',col2:'#1f2233',el:'lightning',ft:'rock'},
  farao:{sf:'do Faraó',col:'#ffd24a',col2:'#b8860b',el:'gold',ft:'crown'}
 };
+Object.assign(OG,{
+ lobo_polar:{sf:'do Lobo Polar',col:'#e8f2ff',col2:'#9ab4d0',el:'ice',ft:'ears'},
+ barbaro:{sf:'do Bárbaro',col:'#9fc4e8',col2:'#4a6a8a',el:'ice',ft:'tusks'},
+ esq_gelo:{sf:'do Congelado',col:'#aee8ff',col2:'#5a9ac0',el:'ice',ft:'skull'},
+ aranha_cristal:{sf:'do Cristal',col:'#c8f0ff',col2:'#6aa8d0',el:'ice',ft:'crystals'},
+ yeti_anciao:{sf:'do Yeti Ancião',col:'#ffffff',col2:'#9fcaf0',el:'ice',ft:'fur'},
+ espectro:{sf:'do Espectro',col:'#8fe0ff',col2:'#3a78b8',el:'soul',ft:'horns'},
+ golem_gelo:{sf:'do Golem Eterno',col:'#9fd8ff',col2:'#3a6a90',el:'ice',ft:'rock'},
+ yeti_rei:{sf:'do Yeti Rei',col:'#e0f0ff',col2:'#78a8d8',el:'ice',ft:'crown'},
+ dragao_gelo:{sf:'do Dragão Glacial',col:'#7fd0ff',col2:'#1f4a80',el:'ice',ft:'spikes'}});
 OG.dg_a=OG.mumia;OG.dg_b=OG.escorpiao;OG.dg_c=OG.chacal;OG.dg_d=OG.cobra;OG.dg_s1=OG.colosso;OG.dg_s2=OG.sacerdote;OG.dg_boss=OG.farao;
 for(const k in MT)MT[k].id=k;
 const DUPKEY={ring:1,bracelet:1,earring:1};
 const keyBase=k=>String(k).replace(/2$/,'');
 const validKey=k=>!!SLOTS[keyBase(k)]&&(k===keyBase(k)||!!DUPKEY[k.slice(0,-1)]);
 
+/* ===== Nevasca (neve) — níveis 75 a 100 ===== */
+const snMob=(base,o)=>{const L=(o.lv[0]+o.lv[1])/2,k=L-72,B0=MT[base];return Object.assign({},B0,{model:base,eva:B0.eva||0,boss:false,hp:Math.round(6200+k*330),atk:Math.round(540+k*14),def:Math.round(130+k*3.8),xp:Math.round(xpNeed(L)/55),gold:[Math.round(660+k*30),Math.round(1080+k*45)],aggro:9,resp:15,leash:20,eq:.17,pot:.07,mats:{}},o);};
+const snBoss=(base,o)=>{const L=o.lv[0],k=L-75;return Object.assign({},MT[base],{model:base,boss:true,hp:Math.round(110000+k*6500),atk:Math.round(900+k*16),def:Math.round(175+k*3.5),xp:Math.round(xpNeed(L)*.45),gold:[12000+k*500,18000+k*750],resp:400,leash:26,eq:1,pot:1,rb:3,matMax:3},o);};
+Object.assign(MT,{
+ lobo_polar:snMob('lobo',{n:'Lobo Polar',lv:[75,78],tint:'#eef6ff',sc:1.15,mats:{pelepolar:.45,essencia:.25}}),
+ barbaro:snMob('orc',{n:'Bárbaro das Neves',lv:[79,82],tint:'#9fc4e8',mats:{runabar:.45,presa:.18,essencia:.28}}),
+ esq_gelo:snMob('esqueleto',{n:'Esqueleto Congelado',lv:[83,86],tint:'#8fd8ff',mats:{ossogelo:.45,essencia:.30}}),
+ aranha_cristal:snMob('aranha',{n:'Aranha de Cristal',lv:[87,90],tint:'#b8e8ff',mats:{fiocristal:.45,essencia:.32}}),
+ yeti_anciao:snMob('yeti',{n:'Yeti Ancião',lv:[91,94],tint:'#ffffff',sc:1.25,mats:{coracaogelo:.40,cristal:.2,essencia:.34}}),
+ espectro:snMob('demonio',{n:'Espectro Glacial',lv:[95,98],tint:'#7fd8ff',mats:{essenciagelo:.42,essencia:.36}}),
+ golem_gelo:snBoss('golem',{n:'Golem de Gelo Eterno',lv:[88,88],tint:'#9fd8ff',sc:1.2,mats:{nucleogelo:1,cristalpuro:1,essencia:1}}),
+ yeti_rei:snBoss('yeti',{n:'Yeti Rei',lv:[95,95],tint:'#cfe8ff',sc:1.6,rng:4,atkInt:1700,mats:{coracaogelo:1,cristalpuro:1,essencia:1}}),
+ dragao_gelo:snBoss('dragao',{n:'Dragão Glacial',lv:[100,100],tint:'#8fd0ff',mats:{escamagelo:1,nucleogelo:1,cristalpuro:1,essencia:1}})
+});
+for(const k in MT)MT[k].id=k;
 const ZONES=[
  {t:'slime',x:-18,z:-10,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
  {t:'lobo',x:18,z:-20,r:9,n:10,col:'#4b5a45',name:'Floresta dos Lobos'},
@@ -231,7 +259,18 @@ const ZONES=[
  {t:'colosso',x:242,z:-52,r:4,n:1,col:'#2a2024',name:'Cânion do Colosso'},
  {t:'farao',x:300,z:58,r:5,n:1,col:'#8a6a1a',name:'Pirâmide do Faraó'},
  {t:'espantalho',x:0,z:25,r:7,n:9,grid:4,col:'#8a7440',name:'🌾 Campo de Treino de Vila Aurora'},
- {t:'espantalho',x:300,z:28,r:7,n:9,grid:4,col:'#a08a4a',name:'🌾 Campo de Treino de Solara'}];
+ {t:'espantalho',x:300,z:28,r:7,n:9,grid:4,col:'#a08a4a',name:'🌾 Campo de Treino de Solara'},
+ // ===== Nevasca (centro em x=-300) =====
+ {t:'lobo_polar',x:-272,z:-24,r:9,n:10,col:'#b8c8d8',name:'Tundra dos Lobos Polares'},
+ {t:'barbaro',x:-330,z:-22,r:9,n:10,col:'#7a8aa0',name:'Acampamento Bárbaro'},
+ {t:'esq_gelo',x:-334,z:22,r:10,n:10,col:'#6a8aa8',name:'Cemitério Congelado'},
+ {t:'aranha_cristal',x:-264,z:24,r:10,n:10,col:'#8ab8d8',name:'Caverna de Cristal'},
+ {t:'yeti_anciao',x:-302,z:-52,r:10,n:9,col:'#dbe8f5',name:'Cume dos Yetis'},
+ {t:'espectro',x:-250,z:-48,r:10,n:9,col:'#5a8ab8',name:'Vale dos Espectros'},
+ {t:'golem_gelo',x:-352,z:-50,r:4,n:1,col:'#4a6a88',name:'Geleira do Golem Eterno'},
+ {t:'yeti_rei',x:-356,z:38,r:4,n:1,col:'#c8dcee',name:'Trono do Yeti Rei'},
+ {t:'dragao_gelo',x:-296,z:60,r:5,n:1,col:'#3a5a7a',name:'Pico do Dragão Glacial'},
+ {t:'espantalho',x:-300,z:28,r:7,n:9,grid:4,col:'#a8c0d8',name:'🌾 Campo de Treino de Nevasca'}];
 
 const Q=(id,npc,t,d,tg,qty,rec,xp,gold,x)=>({id,npc,t,d,tg,qty,rec,rw:{xp:Math.max(20,Math.round(xpNeed(rec)*(qty===1?1:.025*qty+.05))),gold:Math.round(gold*.6),...(x||{})}});
 const E=(slot,ilvl,rar)=>({eq:{slot,ilvl,rar}});
@@ -277,15 +316,37 @@ const QUESTS=[
  Q('n2','nadir','Rainha das Dunas','A ninhada não para. Elimine mais 30.','escorpiao',30,52,7000,14000,E('ring',54,3)),
  Q('m1','neferu','Bandagens Malditas','Colete bandagens das múmias. Elimine 20.','mumia',20,54,6000,12000,E('helmet',56,3)),
  Q('m2','neferu','Sarcófagos Abertos','Feche as tumbas: elimine 30 múmias.','mumia',30,56,9000,19000,{sp:1}),
+ // ===== Nevasca =====
+ Q('n1x','astrid','Lobos da Tundra','Lobos polares cercam a vila. Elimine 12.','lobo_polar',12,75,9000,40000,E('weapon',76,3)),
+ Q('n2x','astrid','Bárbaros das Neves','Clãs bárbaros atacam as caravanas. Elimine 14.','barbaro',14,79,11000,55000,E('armor',80,3)),
+ Q('n3x','astrid','Os Mortos Congelados','O cemitério gelado desperta. Destrua 14 esqueletos.','esq_gelo',14,83,13000,70000,E('helmet',84,3)),
+ Q('n4x','astrid','A Caverna de Cristal','Aranhas de cristal tomaram a caverna. Elimine 14.','aranha_cristal',14,87,15000,90000,{...E('boots',88,3),sp:1}),
+ Q('n5x','astrid','O Golem de Gelo Eterno','Uma criatura de gelo milenar desperta na geleira. Derrote-a!','golem_gelo',1,88,30000,160000,{...E('weapon',89,3),sp:2}),
+ Q('n6x','astrid','Cume dos Yetis','Yetis anciões descem das montanhas. Elimine 15.','yeti_anciao',15,91,19000,120000,E('ring',92,3)),
+ Q('n7x','astrid','Vale dos Espectros','Espíritos do gelo vagam pelo vale. Elimine 15.','espectro',15,95,23000,150000,{...E('armor',96,3),sp:1}),
+ Q('n8x','astrid','O Dragão Glacial','A lenda do pico acorda. Derrote o Dragão Glacial!','dragao_gelo',1,99,60000,320000,{...E('weapon',100,3),sp:3}),
+ Q('b1x','bjorn','Peles Polares','Preciso de peles frescas. Elimine 25 lobos polares.','lobo_polar',25,76,12000,50000,{pot:{hp:10}}),
+ Q('b2x','bjorn','A Alcateia','A alcateia não para de crescer. Elimine 35.','lobo_polar',35,77,16000,80000,E('boots',78,3)),
+ Q('k1x','skadi','Rituais Profanados','Os bárbaros profanam o gelo sagrado. Elimine 25.','barbaro',25,79,14000,70000,E('ring',80,3)),
+ Q('k2x','skadi','Sangue no Gelo','Mais bárbaros chegam. Elimine 35.','barbaro',35,81,20000,110000,{sp:1}),
+ Q('h1x','hilda','Descanso Eterno','Dê paz aos mortos. Elimine 25 esqueletos congelados.','esq_gelo',25,83,17000,100000,E('helmet',85,3)),
+ Q('h2x','hilda','Cova Rasa','Eles voltam sempre. Elimine 35.','esq_gelo',35,85,24000,140000,{sp:1}),
+ Q('i1x','ingrid','Fios de Cristal','Preciso de fios para o tear. Elimine 25 aranhas.','aranha_cristal',25,87,20000,130000,E('boots',88,3)),
+ Q('i2x','ingrid','Ninho de Cristal','Destrua o ninho: elimine 35 aranhas.','aranha_cristal',35,89,28000,170000,E('armor',90,3)),
+ Q('l1x','leif','Pegadas Gigantes','Os yetis anciões estão enormes. Elimine 20.','yeti_anciao',20,91,24000,150000,E('weapon',92,3)),
+ Q('l2x','leif','Coração de Gelo','Colete corações de gelo: elimine 30 yetis.','yeti_anciao',30,93,32000,200000,{sp:1}),
+ Q('v1x','solveig','Sussurros do Vale','Os espectros sussurram meu nome. Elimine 25.','espectro',25,95,30000,190000,E('ring',96,3)),
+ Q('v2x','solveig','Almas Inquietas','Liberte as almas: elimine 35 espectros.','espectro',35,97,40000,260000,{sp:1}),
+ Q('o1x','odin','O Rei das Neves','O Yeti Rei domina o trono de gelo. Derrote-o!','yeti_rei',1,95,50000,300000,{...E('helmet',96,3),sp:2}),
  Q('z1','zafira','Presas Venenosas','Preciso de veneno fresco. Elimine 20 najas.','cobra',20,58,7500,15000,E('boots',60,3)),
  Q('z2','zafira','Ninho das Najas','Destrua o ninho: elimine 30 najas.','cobra',30,60,10500,22000,E('weapon',61,3)),
  Q('i1','ibrahim','Redemoinhos Vivos','As tempestades têm vida! Elimine 20 elementais.','elemental',20,62,9000,20000,E('armor',63,3)),
  Q('i2','ibrahim','Olho da Tempestade','Acalme o deserto: elimine 30 elementais.','elemental',30,64,12500,28000,{sp:1}),
- Q('a1','anuket','Guardiões Caídos','Liberte as almas dos chacais. Elimine 20.','chacal',20,66,10500,26000,E('ring',68,3)),
- Q('a2','anuket','Fim da Vigília','Purifique o templo: elimine 20 sacerdotes.','sacerdote',20,70,13000,36000,E('helmet',71,3)),
+ Q('a1s','anuket','Guardiões Caídos','Liberte as almas dos chacais. Elimine 20.','chacal',20,66,10500,26000,E('ring',68,3)),
+ Q('a2s','anuket','Fim da Vigília','Purifique o templo: elimine 20 sacerdotes.','sacerdote',20,70,13000,36000,E('helmet',71,3)),
  Q('h1','hamid','Relíquias Perdidas','Os sacerdotes guardam relíquias. Elimine 25.','sacerdote',25,71,14500,42000,E('boots',72,3)),
  Q('h2','hamid','A Maldição Eterna','Quebre a maldição: derrote o Faraó Imortal outra vez.','farao',1,74,20000,60000,{...E('weapon',76,3),sp:2})];
-const QNAME={slime:'gosmas',lobo:'lobos',goblin:'goblins',esqueleto:'esqueletos',golem:'Golem Ancião',aranha:'aranhas',orc:'orcs',yeti:'yetis',demonio:'demônios',dragao:'Dragão Rubro',escorpiao:'escorpiões',mumia:'múmias',cobra:'najas',elemental:'elementais',chacal:'chacais',sacerdote:'sacerdotes',colosso:'Colosso de Obsidiana',farao:'Faraó Imortal'};
+const QNAME={slime:'gosmas',lobo:'lobos',goblin:'goblins',esqueleto:'esqueletos',golem:'Golem Ancião',aranha:'aranhas',orc:'orcs',yeti:'yetis',demonio:'demônios',dragao:'Dragão Rubro',escorpiao:'escorpiões',mumia:'múmias',cobra:'najas',elemental:'elementais',chacal:'chacais',sacerdote:'sacerdotes',colosso:'Colosso de Obsidiana',farao:'Faraó Imortal',lobo_polar:'lobos polares',barbaro:'bárbaros',esq_gelo:'esqueletos congelados',aranha_cristal:'aranhas de cristal',yeti_anciao:'yetis anciões',espectro:'espectros glaciais',golem_gelo:'Golem de Gelo Eterno',yeti_rei:'Yeti Rei',dragao_gelo:'Dragão Glacial'};
 
 const RECIPES=[
  {id:'pot_hp',n:'Poção de Vida ×3',icon:'🧪',d:'Cura rápida.',ing:{erva:3,gosma:1},gold:0,out:(cls)=>({k:'pot',id:'hp',n:3})},
@@ -314,6 +375,13 @@ const RECIPES=[
  {id:'s_anel',at:'ferreira',n:'Anel do Chacal (Nv 66)',icon:'💍',d:'Épico',ing:{garra:10,ankh:4,essencia:15},gold:24000,out:(cls)=>genItem('ring',66,3,undefined,undefined,0,'chacal')},
  {id:'s_escudo',at:'ferreira',cls:'cavaleiro',n:'Escudo de Obsidiana (Nv 63)',icon:'🛡️',d:'Só Cavaleiro • Épico',ing:{obsidiana:2,ferrao:15,essencia:15},gold:20000,out:(cls)=>genItem('shield',63,3,undefined,undefined,0,'colosso')},
  {id:'s_solar',at:'ferreira',n:'Arma Solar (Nv 67)',icon:'☀️',d:'Arma da sua classe • Épico',ing:{ankh:6,cristalsol:12,essencia:20},gold:32000,out:(cls)=>genItem('weapon',67,3,cls,cls,0,'elemental')},
+ {id:'g_arma1',at:'ferreiro_gelo',n:'Arma Polar (Nv 78)',icon:'⚒️',d:'Arma da sua classe • Épico',ing:{pelepolar:10,runabar:6,essencia:30},gold:120000,out:(cls)=>genItem('weapon',78,3,cls,cls,0,'lobo_polar')},
+ {id:'g_arm',at:'ferreiro_gelo',n:'Armadura Bárbara de Gelo (Nv 82)',icon:'🥋',d:'Épico',ing:{runabar:12,pelepolar:8,essencia:30},gold:150000,out:(cls)=>genItem('armor',82,3,undefined,undefined,0,'barbaro')},
+ {id:'g_elmo',at:'ferreiro_gelo',n:'Elmo Congelado (Nv 86)',icon:'🪖',d:'Épico',ing:{ossogelo:12,runabar:6,essencia:35},gold:180000,out:(cls)=>genItem('helmet',86,3,undefined,undefined,0,'esq_gelo')},
+ {id:'g_botas',at:'ferreiro_gelo',n:'Botas de Cristal (Nv 90)',icon:'👢',d:'Épico',ing:{fiocristal:12,ossogelo:8,essencia:35},gold:210000,out:(cls)=>genItem('boots',90,3,undefined,undefined,0,'aranha_cristal')},
+ {id:'g_anel',at:'ferreiro_gelo',n:'Anel do Yeti Ancião (Nv 94)',icon:'💍',d:'Épico',ing:{coracaogelo:8,fiocristal:6,essencia:40},gold:260000,out:(cls)=>genItem('ring',94,3,undefined,undefined,0,'yeti_anciao')},
+ {id:'g_gelo',at:'ferreiro_gelo',n:'Arma Glacial (Nv 98)',icon:'❄️',d:'Arma da sua classe • Épico',ing:{essenciagelo:10,coracaogelo:8,nucleogelo:2,essencia:50},gold:340000,out:(cls)=>genItem('weapon',98,3,cls,cls,0,'espectro')},
+ {id:'g_dragao',at:'ferreiro_gelo',n:'Arma do Dragão Glacial (Nv 102)',icon:'🐲',d:'Arma da sua classe • Épico',ing:{escamagelo:3,nucleogelo:4,cristalpuro:4,essencia:60},gold:600000,out:(cls)=>genItem('weapon',102,3,cls,cls,0,'dragao_gelo')},
  {id:'s_farao',at:'ferreira',n:'Arma Faraônica (Nv 74)',icon:'👑',d:'Arma da sua classe • Épico',ing:{selo:3,obsidiana:4,ankh:10,essencia:30},gold:80000,out:(cls)=>genItem('weapon',74,3,cls,cls,0,'farao')}];
 const SHOPT=['missoes','comprar','vender'];
 const NPCS=[
@@ -345,13 +413,27 @@ const NPCS=[
  {id:'anuket',name:'Sacerdotisa Anuket',icon:'☥',x:322,z:-42,col:'#4a3a8a',tabs:SHOPT,greet:'Os guardiões de Anúbis já não descansam.',hat:'#d4a62a',camp:true,shop:'solara'},
  {id:'guarda_cripta',name:'Guardião das Criptas',icon:'🗝️',x:309,z:6,col:'#5a4a7a',tabs:['dungeon'],greet:'Há criptas esquecidas nos cantos mais distantes do deserto. Compre o ingresso comigo e fale com o portal da cripta. Quem tem ingresso e está no seu grupo entra junto!',hat:'#d4a62a'},
  {id:'dg_cripta',name:'🏺 Cripta das Areias (Nv 50+)',icon:'🏺',x:366,z:66,col:'#d4a62a',tabs:[],greet:'',dungeon:'cripta'},
+ // ===== Nevasca (neve) =====
+ {id:'portal_c',name:'🌀 Portal da Nevasca (Nv 75+)',icon:'🌀',x:-32,z:-45,col:'#8fd8ff',tabs:[],greet:'',portal:{name:'Vila da Nevasca',lvl:75,to:{x:-300,z:-7}}},
+ {id:'portal_d',name:'🌀 Portal para a Vila Aurora',icon:'🌀',x:-300,z:-11,col:'#ffcf6b',tabs:[],greet:'',portal:{name:'Vila Aurora',lvl:0,to:{x:-32,z:-41}}},
+ {id:'bau3',name:'Baú do Aventureiro',icon:'📦',x:-295.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'O mesmo baú da Vila Aurora: seus itens guardados aqui são compartilhados com todos os seus personagens.',chest:true},
+ {id:'ferreiro_gelo',name:'Ragnar, o Ferreiro do Gelo',icon:'🔨',x:-307,z:-2,col:'#6a8aa8',tabs:['forja','aprimorar'],greet:'O aço temperado na neve nunca quebra. Também aprimoro equipamentos — mas há risco!',hat:'#3a5a78',smith:true},
+ {id:'mercador3',name:'Frida, a Mercadora Polar',icon:'💰',x:-293,z:-2,col:'#5a9ab8',tabs:['comprar','vender'],greet:'Poções, caixas e capas para o frio! Tudo caro, mas vale cada moeda.',hat:'#e8f2ff',shop:'gelo'},
+ {id:'astrid',name:'Capitã Astrid',icon:'🛡️',x:-305,z:-6,col:'#4a78a8',tabs:['missoes'],greet:'A Vila da Nevasca resiste graças a heróis como você. Cumpra as missões principais da tundra.',hat:'#c8dcee'},
+ {id:'bjorn',name:'Caçador Bjorn',icon:'🐺',x:-288,z:-14,col:'#8a9aa8',tabs:SHOPT,greet:'Os lobos polares ficaram enormes. Não corra, eles são mais rápidos.',hat:'#e8f2ff',camp:true,shop:'gelo'},
+ {id:'skadi',name:'Xamã Skadi',icon:'🪓',x:-320,z:-12,col:'#7a5a8a',tabs:SHOPT,greet:'Os bárbaros esqueceram os velhos pactos com o gelo.',hat:'#4a3a6a',camp:true,shop:'gelo'},
+ {id:'hilda',name:'Coveira Hilda',icon:'⚰️',x:-322,z:14,col:'#6a7a98',tabs:SHOPT,greet:'Nem a morte descansa neste frio...',hat:'#3a4a68',camp:true,shop:'gelo'},
+ {id:'ingrid',name:'Tecelã Ingrid',icon:'🕸️',x:-280,z:12,col:'#8ab8d0',tabs:SHOPT,greet:'Os fios de cristal valem mais que ouro, se você sobreviver para colhê-los.',hat:'#c8e8f8',camp:true,shop:'gelo'},
+ {id:'leif',name:'Explorador Leif',icon:'🧭',x:-300,z:-34,col:'#a8b8c8',tabs:SHOPT,greet:'Vi pegadas do tamanho de uma carroça. Cuidado nos cumes!',hat:'#6a7a8a',camp:true,shop:'gelo'},
+ {id:'solveig',name:'Vidente Solveig',icon:'🔮',x:-262,z:-34,col:'#5a8ad0',tabs:SHOPT,greet:'Os espectros me contaram seu nome antes de você chegar.',hat:'#2a4a8a',camp:true,shop:'gelo'},
+ {id:'odin',name:'Sábio Odin',icon:'📖',x:-300,z:44,col:'#9a8ab8',tabs:SHOPT,greet:'O trono de gelo e o pico do dragão guardam o destino deste mundo.',hat:'#4a3a78',camp:true,shop:'gelo'},
  {id:'hamid',name:'Arqueólogo Hamid',icon:'🔭',x:300,z:44,col:'#8a6a4a',tabs:SHOPT,greet:'A grande pirâmide esconde o maior tesouro do mundo... e o maior perigo.',hat:'#a8833a',camp:true,shop:'solara'}];
 
 
 /* ====================== FUNÇÕES DE REGRA ====================== */
 const MON_TOWN_R = 11;
 R.TOWN_R = MON_TOWN_R;
-R.TOWNS = [{ x: 0, z: 0, r: 11 }, { x: 300, z: 0, r: 13 }];   // zonas seguras (Vila Aurora e Solara)
+R.TOWNS = [{ x: 0, z: 0, r: 11 }, { x: 300, z: 0, r: 13 }, { x: -300, z: 0, r: 13 }];   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + '◇'.repeat(it.sl) : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
@@ -375,7 +457,7 @@ function capeStats(it) {
   it.icon = m ? '🧣' : a ? '🥷' : '🧥'; delete it.sl; delete it.mo; return it;
 }
 function genCape(ilvl, cls, name) {
-  ilvl = Math.max(1, Math.min(80, Math.floor(ilvl))); const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), kind = capeKind(cls), m = kind === 'm';
+  ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(ilvl))); const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), kind = capeKind(cls), m = kind === 'm';
   const it = { k: 'eq', slot: 'cape', ilvl, rar: 0, req: Math.max(1, ilvl - 1), plus: 0, cs: kind, hp: 0, atk: 0, def: 0, bon: {} };
   it.name = kind === 'a' ? (tier > 6 ? XCA[tier - 7] : CAN[tier]) : tier > 6 ? (m ? XCM : XCP)[tier - 7] : (m ? CMN : CPN)[tier]; if (name) it.name = name; return capeStats(it);
 }
@@ -383,7 +465,7 @@ function rarRoll(b) { b = b || 0; const r = Math.random(), k = 1 + b; if (r < .0
 /** Gera um equipamento. `cls` fixa a classe da arma; sem ela, 70% de chance de ser da classe do dono (`owner`). */
 function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   if (mo === true) mo = originFor(ilvl);
-  const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), mult = RAR[rar].m, j = () => rnd(.92, 1.08);
+  const tier = ilvl >= 120 ? 11 : ilvl >= 90 ? 10 : ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), mult = RAR[rar].m, j = () => rnd(.92, 1.08);
   const it = { k: 'eq', slot, ilvl, rar, req: Math.max(1, ilvl - 1), plus: 0, bon: {}, hp: 0, atk: 0, def: 0 };
   if (slot === 'weapon') { cls = cls || (Math.random() < .7 && owner ? owner : pick(Object.keys(CLASSES))); it.cls = cls; it.name = tier > 6 ? XN.weapon[cls][tier - 7] : WN[cls][tier]; it.atk = Math.round((3 + ilvl * 1.7) * mult * j()); it.icon = CLASSES[cls].wi; }
   else if (slot === 'shield') { it.cls = 'cavaleiro'; it.name = tier > 6 ? XN.shield[tier - 7] : SHN[tier]; it.def = Math.round((3 + ilvl * 1.3) * mult * j()); it.hp = Math.round(ilvl * 3 * mult); it.icon = '🛡️'; }
@@ -410,6 +492,17 @@ const SHOPS = {
     { id: 'estola', i: '🧣', n: 'Estola do Aventureiro (Nv 32)', d: 'Estola azul fina — Arqueiro, Mago e Pierrot. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, mk: () => genCape(32, 'mago', 'Estola do Aventureiro') },
     { id: 'manto', i: '🥷', n: 'Manto do Aventureiro (Nv 32)', d: 'Manto encapuzado — só para o Assassino. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 50000, mk: () => genCape(32, 'assassino', 'Manto do Aventureiro') },
     { id: 'box', i: '🎁', n: 'Caixa de Equipamento', d: 'Item aleatório do seu nível. Pode vir raro ou épico!', c: c => 200 + c.level * 25, box: 1, mk: c => genItem(pick(slotPool(c.cls)), Math.max(1, c.level + ri(0, 1)), rarRoll(.5), undefined, c.cls, 0, true) }],
+  gelo: [
+    { id: 'capa3', i: '🧥', n: 'Capa Glacial (Nv 90)', d: 'Capa vermelha — Tanque, Guerreiro e Cavaleiro Pesado. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 180000, mk: () => genCape(90, 'guerreiro') },
+    { id: 'estola3', i: '🧣', n: 'Estola Glacial (Nv 90)', d: 'Estola azul fina — Arqueiro, Mago e Pierrot. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 180000, mk: () => genCape(90, 'mago') },
+    { id: 'manto3', i: '🥷', n: 'Manto Glacial (Nv 90)', d: 'Manto encapuzado — só para o Assassino. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 180000, mk: () => genCape(90, 'assassino') },
+    { id: 'hp3', i: '🍷', n: 'Poção de Vida Superior', d: 'Recupera 70% da vida', c: () => 140, mk: () => ({ k: 'pot', id: 'hp2', n: 1 }) },
+    { id: 'mp3', i: '💧', n: 'Poção de Mana Superior', d: 'Recupera 70% da mana', c: () => 140, mk: () => ({ k: 'pot', id: 'mp2', n: 1 }) },
+    { id: 'hp3x5', i: '🍷', n: 'Poção de Vida Superior ×5', d: 'Pacote da nevasca', c: () => 620, mk: () => ({ k: 'pot', id: 'hp2', n: 5 }) },
+    { id: 'mp3x5', i: '💧', n: 'Poção de Mana Superior ×5', d: 'Pacote da nevasca', c: () => 620, mk: () => ({ k: 'pot', id: 'mp2', n: 5 }) },
+    { id: 'box3', i: '🎁', n: 'Caixa Glacial', d: 'Equipamento de nível 75+ (qualquer peça). Boas chances de raro/épico.', c: c => 30000 + c.level * 300, box: 1, mk: c => genItem(pick(slotPool(c.cls)), Math.max(75, c.level) + ri(0, 3), rarRoll(1.5), undefined, c.cls, 0, true) },
+    { id: 'boxw3', i: '⚔️', n: 'Caixa de Arma Glacial', d: 'Uma arma da SUA classe, nível 78+.', c: c => 60000 + c.level * 500, box: 1, mk: c => genItem('weapon', Math.max(78, c.level + 2) + ri(0, 3), rarRoll(2), c.cls, c.cls, 0, true) },
+    { id: 'boxe3', i: '👑', n: 'Caixa Eterna', d: 'Equipamento de nível 90+ com chance muito alta de raro e épico.', c: () => 250000, box: 1, mk: c => genItem(pick(slotPool(c.cls)), Math.max(90, c.level + 4) + ri(0, 4), rarRoll(4), undefined, c.cls, 0, true) }],
   solara: [
     { id: 'capa2', i: '🧥', n: 'Capa Solar (Nv 64)', d: 'Capa vermelha — Tanque, Guerreiro e Cavaleiro Pesado. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, mk: () => genCape(64, 'guerreiro') },
     { id: 'estola2', i: '🧣', n: 'Estola Solar (Nv 64)', d: 'Estola azul fina — Arqueiro, Mago e Pierrot. Sem raridade, atributos fixos; brilha junto com a sua armadura.', c: () => 75000, mk: () => genCape(64, 'mago') },
@@ -586,7 +679,7 @@ function gmChar(cls, old) {
   c.gm = 1; c.gmu = 0; c.level = MAX_LEVEL; c.xp = 0; c.sp = 0; c.sk = Array(8).fill(MAXRANK);
   const tot = PTS_PER_LEVEL * (MAX_LEVEL - 1), main = Math.round(tot * .6); c.alloc = { str: 0, agi: 0, int: 0, vit: tot - main }; c.alloc[C.main] += main; c.pts = 0;
   c.gold = GM_GOLD;
-  const mk = (slot, w) => { const it = genItem(slot, 80, 3, cls, cls, 0, true); if (slot === 'weapon') it.cls = cls; it.plus = MAXPLUS; return it; };
+  const mk = (slot, w) => { const it = genItem(slot, MAX_LEVEL, 3, cls, cls, 0, true); if (slot === 'weapon') it.cls = cls; it.plus = MAXPLUS; return it; };
   c.eq = { weapon: mk('weapon'), helmet: mk('helmet'), armor: mk('armor'), boots: mk('boots'), ring: mk('ring'), ring2: mk('ring'), bracelet: mk('bracelet'), bracelet2: mk('bracelet'), earring: mk('earring'), earring2: mk('earring'), cape: genCape(80, cls) };
   if (cls === 'cavaleiro') c.eq.shield = mk('shield');
   for (const k in c.eq) c.eq[k] = cleanItem(c.eq[k]);
@@ -616,7 +709,7 @@ function cleanItem(it) {
   if (it.k === 'mat') return MATS[it.id] && Number.isFinite(it.n) ? { k: 'mat', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k === 'pot') return POTS[it.id] && Number.isFinite(it.n) ? { k: 'pot', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
-  it.ilvl = Math.max(1, Math.min(80, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
+  it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
   it.plus = Math.max(0, Math.min(MAXPLUS, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
   const mx = itemMax(it.slot, it.ilvl, it.rar);
   for (const k of ['atk', 'def', 'hp']) { const v = Number(it[k]) || 0; it[k] = Math.max(0, Math.min(Math.round(mx[k] + 1), Math.round(v))); }

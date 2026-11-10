@@ -7,7 +7,7 @@ const MT: Record<string, any> = R.MT, ZONES: any[] = R.ZONES;
 const MAP = 80;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const ri = (a: number, b: number) => Math.floor(rnd(a, b + 1));
-const cxOf = (x: number) => (x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
+const cxOf = (x: number) => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
 const clampX = (x: number, ref: number) => { const c = cxOf(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
 const clampZ = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 const safe = (x: number, z: number) => R.inTown(x, z);
@@ -36,7 +36,7 @@ export class MonsterSim {
       const T = MT[zone.t];
       const m = new Monster();
       m.id = ++id; m.type = zone.t;
-      const s: Sim = { m, T, zone, atk: 0, def: 0, bs: T.boss ? 1.6 : 1, sx: 0, sz: 0, aggro: null, returning: false, atkAt: 0, slowUntil: 0, stunUntil: 0, rootUntil: 0, liftUntil: 0, tauntUntil: 0, slamAt: 0, wanderAt: 0, wx: 0, wz: 0, deadAt: 0, markUntil: 0, contrib: new Map(), boss: !!T.boss, lastHitBy: '', inst: 0, noResp: false, tier: 0 };
+      const s: Sim = { m, T, zone, atk: 0, def: 0, bs: (T.boss ? 1.6 : 1) * (T.sc || 1), sx: 0, sz: 0, aggro: null, returning: false, atkAt: 0, slowUntil: 0, stunUntil: 0, rootUntil: 0, liftUntil: 0, tauntUntil: 0, slamAt: 0, wanderAt: 0, wx: 0, wz: 0, deadAt: 0, markUntil: 0, contrib: new Map(), boss: !!T.boss, lastHitBy: '', inst: 0, noResp: false, tier: 0 };
       s.slot = i;
       this.respawn(s, Date.now());
       this.list.push(s); this.byId.set(m.id, s);

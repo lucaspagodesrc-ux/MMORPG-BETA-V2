@@ -1,24 +1,18 @@
-MMORPG 1.28 - Drops compartilhados, trava de animação e calabouço
-Requer as versões anteriores até a 1.27 já instaladas.
+MMORPG 1.29 - Vila da Nevasca (bioma de neve) e nível máximo 170
+Requer as versões anteriores até a 1.28 já instaladas.
 
-DROPS
-- O drop agora aparece para todos que estão perto (e na mesma dungeon).
-- Só o dono (quem derrubou/jogou o item) pega nos primeiros 20s; depois qualquer um pega.
-  Membros do mesmo grupo pegam na hora. Item com cadeado 🔒 = ainda travado.
-- Vale para drops de monstros, itens jogados da mochila (botão direito) e dungeon.
+NOVA REGIÃO: VILA DA NEVASCA (Nv 75 a 100)
+- Portal: na Vila Aurora, perto dos Yetis das Montanhas Geladas (noroeste). Só abre a partir do nível 75.
+- Zona segura com ferreiro (forja/aprimorar), mercadora, baú compartilhado, capitã de missões e portal de volta.
+- 6 monstros novos: Lobo Polar (75-78), Bárbaro das Neves (79-82), Esqueleto Congelado (83-86),
+  Aranha de Cristal (87-90), Yeti Ancião (91-94), Espectro Glacial (95-98).
+- 3 chefes: Golem de Gelo Eterno (88), Yeti Rei (95), Dragão Glacial (100).
+- 8 NPCs novos com 21 missões, materiais novos, receitas do ferreiro e loja própria.
+- Campo de Treino de Nevasca (9 espantalhos), neve caindo e minimapa próprio.
+- Equipamentos: novos nomes "Glacial" (Nv 90+) e "Eterno" (Nv 120+).
 
-HABILIDADES
-- Uma habilidade (ou o ataque básico) só sai depois do fim da animação da anterior.
-  Exceção: todas as habilidades/ataques do Assassino. Se você apertar quase no fim, a habilidade fica na fila.
+NÍVEL MÁXIMO: 170 (era 100). Contas GM sobem para o nível 170 no próximo login (equipamento Nv 170).
+Correção: duas missões da Sacerdotisa Anuket tinham o mesmo código das do Padre Anselmo; foram separadas.
 
-CALABOUÇO (DUNGEON)
-- Só termina de fato ao chegar ao fim e sair pelo portal. Saindo pelo botão 🚪 Sair (HUD) ou pelo portal
-  do começo, você tem 3 minutos para voltar sem gastar outro ingresso. Queda de internet: você pode voltar
-  enquanto a dungeon existir. Se a dungeon encerrar por falha do servidor, o ingresso é devolvido.
-- O ingresso comprado aparece na mochila (🎟️ com a quantidade) até ser consumido.
-- Botão ⏸ Pausar (só solo): congela a tela e os monstros e para o relógio. Máx. 10 min por vez (30 min no total).
-- Em grupo: todos precisam ter ingresso para começar; quem sair pode voltar enquanto alguém do grupo estiver lá dentro.
-- O ingresso também cai de monstros (Nv 42+): 0,3% comum / 4% chefe (afetado por Sorte). Máx. 5 ingressos.
-
-Instalação: envie index.html, rules.js, WorldRoom.ts, dungeon.ts e monsters.ts para a raiz do GitHub,
+Instalação: envie index.html, rules.js, WorldRoom.ts e monsters.ts para a raiz do GitHub,
 aguarde o redeploy do Render e use Ctrl+F5.
