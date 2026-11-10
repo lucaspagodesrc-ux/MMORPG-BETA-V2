@@ -1,14 +1,19 @@
-Versão 1.21 - Campo de espantalhos
-Requer as versões anteriores (até 1.20) já instaladas.
+Versão 1.22 - Tanque: novas habilidades
+Requer as versões anteriores (até 1.21) já instaladas.
 
 COMO INSTALAR
-1. Envie index.html, rules.js, monsters.ts e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
+1. Envie index.html, rules.js, WorldRoom.ts e monsters.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
 2. Aguarde o Render terminar o redeploy.
 3. No navegador, Ctrl+F5.
 
 O QUE MUDOU
-- Um "Campo de Treino" com 9 espantalhos (grade 3x3, cercado) ao sul de Vila Aurora e outro ao sul do Oásis de Solara.
-- Espantalho: 3.000.000 de HP, não ataca, não anda, não dá XP/drop/missão.
-- A vida só começa a regenerar 1s depois do último golpe, a 5% do total por segundo.
-- Ao morrer renasce em 0,4s no mesmo lugar.
-Ajustes: HP em _data.js (hp do 'espantalho'); regeneração em monsters.ts (0.05 e 1000 ms).
+- Nenhuma habilidade do Tanque causa mais dano baseado em defesa.
+- Gancho de Corrente (Puxão): mesmos atributos.
+- Pisão Sísmico: mesmos atributos; pedras sobem do chão e o chão racha (efeito de 2s).
+- Provocar: igual.
+- Correntes de Aço: prende até 5 monstros e junta todos no centro; 3s de atordoamento (1s em jogadores, campo pvpStun já preparado para o futuro PvP).
+- Golpe Ascendente: o personagem bate mãos e pés no chão (sumô) e lança os monstros. Monstros de esquiva alta (lobo, aranha, chacal, cobra, escorpião) têm chance de escapar.
+- Muralha de Ferro: buff de 20s, -50% de dano e +10% de esquiva (nv.1) até +30% (nv. máx.). Recarga 180s. Em outro jogador: clique no personagem dele (ou no nome dele na lista do grupo) e use "Muralha de Ferro"; recarga de 360s.
+- Campo de Atração: REMOVIDO. Os pontos gastos nele são devolvidos automaticamente e a Sentença do Colosso passa para o 7º slot da lista.
+- Sentença do Colosso: rolamento de 4s batendo nos monstros; ricocheteia ao bater em parede, pedra, árvore etc.
+- Ataque básico do Tanque: +15% de dano.

@@ -92,6 +92,7 @@ export class MonsterSim {
   /** Controle de grupo: atordoar, imobilizar, levantar e puxar. Chefes resistem (35% do tempo, sem puxar/levantar). */
   cc(s: Sim, o: any, px: number, pz: number) {
     if (!s.m.alive || s.T.chest || s.T.dummy) return;
+    if (o.lift && Math.random() < (s.T.eva || 0)) return;          // esquiva alta: escapa de ser lançado/atordoado
     const now = Date.now(), f = s.boss ? 0.35 : 1;
     if (o.stun) s.stunUntil = Math.max(s.stunUntil, now + o.stun * f);
     if (o.root) s.rootUntil = Math.max(s.rootUntil, now + o.root * f);

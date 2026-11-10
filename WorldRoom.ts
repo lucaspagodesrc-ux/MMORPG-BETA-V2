@@ -159,10 +159,19 @@ export class WorldRoom extends Room<WorldState> {
       return;
     }
     if (now < s.cd[i] - 300) return;                                   // recarga (com folga de latência)
+    if (sk.ally && m?.pid) {                                            // Muralha de Ferro em outro jogador (recarga maior)
+      const ts = this.sess.get(String(m.pid)), q = ts && this.state.players.get(String(m.pid));
+      if (!ts || !q || q.dead || q.inst !== p.inst || cx(q.x) !== cx(p.x) || Math.hypot(q.x - p.x, q.z - p.z) > 16) return;
+      s.cd[i] = now + sk.cdAlly * 1000;
+      for (const k in sk.buffs) this.addBuff(ts, k, sk.buffs[k], sk.dur);
+      ts.client.send("abuff", { i, cls: s.c.cls, by: s.c.name, buffs: sk.buffs, dur: sk.dur });
+      this.broadcast("fx", { by: s.client.sessionId, i, pid: String(m.pid), x: p.x, z: p.z }, { except: s.client });
+      return;
+    }
     const off = !["buff", "dashBack", "heal", "clone"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
     let tgt: Sim | undefined;
-    if (["single", "dash", "aoeTarget", "multi", "barrage", "mark"].includes(sk.type)) {
+    if (["single", "dash", "aoeTarget", "multi", "barrage", "mark", "chainPull"].includes(sk.type)) {
       tgt = this.sim.byId.get(Number(m?.tid));
       if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
     }
@@ -178,9 +187,12 @@ export class WorldRoom extends Room<WorldState> {
     }
     s.lastSkill = i; s.lastSkillAt = now;
     let star: Sim[] = [];
-    if (sk.type === "starJump") {
-      const ids: any[] = Array.isArray(m?.tids) ? m.tids.slice(0, sk.jumps) : [];
-      for (const id of ids) { const q = this.sim.byId.get(Number(id)); if (q && q.m.alive && !star.includes(q) && q.inst === p.inst && cx(q.m.x) === cx(p.x) && Math.hypot(q.m.x - p.x, q.m.z - p.z) <= sk.range + 6) star.push(q); }
+    if (sk.type === "starJump" || sk.type === "chainPull") {
+      const chain = sk.type === "chainPull", lim = chain ? sk.radius + 2 : sk.range + 6, mx = chain ? sk.cnt : sk.jumps;
+      const ox = chain && tgt ? tgt.m.x : p.x, oz = chain && tgt ? tgt.m.z : p.z;
+      const ids: any[] = Array.isArray(m?.tids) ? m.tids.slice(0, mx) : [];
+      for (const id of ids) { const q = this.sim.byId.get(Number(id)); if (q && q.m.alive && !star.includes(q) && q.inst === p.inst && cx(q.m.x) === cx(p.x) && Math.hypot(q.m.x - ox, q.m.z - oz) <= lim) star.push(q); }
+      if (chain && tgt) { const k = star.indexOf(tgt); if (k > 0) star.splice(k, 1); if (k !== 0) star.unshift(tgt); star = star.slice(0, mx); }
       if (!star.length) { s.cd[i] = 0; return; }
     }
     let ux = 0, uz = 1;                    // direção da habilidade (Escudo Voador / Raio do Escudo)
@@ -221,6 +233,26 @@ export class WorldRoom extends Room<WorldState> {
           for (let h = 0; h < sk.hits; h++) this.later(150 + h * 130, () => this.hit(s, tgt!, mult));
           this.later(200 + sk.hits * 130, () => { for (let j = 0; j < 8; j++) if (j !== i) s.cd[j] = 0; });
         }
+        break;
+      }
+      case "chainPull": {                  // prende até 5 monstros e junta todos no centro
+        const grp = star.length ? star : [tgt!];
+        let cx0 = 0, cz0 = 0; for (const q of grp) { cx0 += q.m.x; cz0 += q.m.z; } cx0 /= grp.length; cz0 /= grp.length;
+        const ring = grp.length > 1 ? 0.9 : 0, st0 = grp.map((q) => ({ x: q.m.x, z: q.m.z }));
+        grp.forEach((q) => this.sim.cc(q, { stun: 900 }, p.x, p.z));
+        grp.forEach((q, n) => {
+          const a = (n / grp.length) * 6.283, ex = cx0 + Math.cos(a) * ring, ez = cz0 + Math.sin(a) * ring;
+          for (let k = 1; k <= 6; k++) this.later(250 + k * 70, () => { if (!q.m.alive || q.boss) return; const f = k / 6; q.m.x = st0[n].x + (ex - st0[n].x) * f; q.m.z = st0[n].z + (ez - st0[n].z) * f; });
+          this.later(250 + 6 * 70 + 40, () => this.hit(s, q, mult, so));
+        });
+        break;
+      }
+      case "roll": {                       // Sentença do Colosso: rolamento de 4s; o cliente cuida de ricochetear em obstáculos
+        const last = new Map<Sim, number>(), dur = sk.dur * 1000;
+        for (let t = 150; t <= dur; t += 150) this.later(t, () => {
+          const q = this.playerOf(s); if (!q || q.dead) return; const tn = Date.now();
+          for (const sim of this.sim.list) if (sim.m.alive && sim.inst === q.inst && cx(sim.m.x) === cx(q.x) && Math.hypot(sim.m.x - q.x, sim.m.z - q.z) <= sk.radius + 0.5 * sim.bs && tn - (last.get(sim) || 0) > 650) { last.set(sim, tn); this.hit(s, sim, mult, so); }
+        });
         break;
       }
       case "mark": break;                                                        // só marca (já feito acima), sem dano
@@ -269,7 +301,7 @@ export class WorldRoom extends Room<WorldState> {
     s.lastBasic = now;
     this.broadcast("matk", { by: s.client.sessionId, tid: tgt.m.id }, { except: s.client });
     const flight = Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000;
-    this.later(C.ranged ? flight : 130, () => this.hit(s, tgt, 1));
+    this.later(C.ranged ? flight : 130, () => this.hit(s, tgt, s.c.cls === "tanque" ? 1.15 : 1));   // Tanque: ataque básico +15%
   }
 
   /* ---------- mensagens ---------- */

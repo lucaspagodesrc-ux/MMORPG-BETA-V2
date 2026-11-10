@@ -103,15 +103,13 @@ const CLASSES={
  tanque:{n:'Tanque',i:'⛓️',wi:'🔨',main:'vit',base:{str:6,agi:2,int:2,vit:14},range:2.8,ranged:false,
   d:'O mais resistente: DEFESA +75%, vida +30%. Puxa, atordoa, imobiliza, levanta e PROVOCA os monstros para levar o dano.',
   skills:[
-   {n:'Gancho de Corrente',i:'⛓️',lv:1,cd:7,mp:10,type:'single',mult:.9,defMult:.7,range:10,proj:'hook',pull:true,stun:1200,color:'#9fb4c8',d:'Arremessa o gancho, PUXA o alvo até você e o atordoa.'},
-   {n:'Pisão Sísmico',i:'🦶',lv:3,cd:9,mp:14,type:'aoeSelf',mult:.5,defMult:1,radius:4,stun:1000,color:'#c9a56b',d:'Pisa com força: dano em área baseado na DEFESA e ATORDOA os inimigos.'},
+   {n:'Gancho de Corrente',i:'⛓️',lv:1,cd:7,mp:10,type:'single',mult:.9,range:10,proj:'hook',pull:true,stun:1200,color:'#9fb4c8',d:'Arremessa o gancho, PUXA o alvo até você e o atordoa.'},
+   {n:'Pisão Sísmico',i:'🦶',lv:3,cd:9,mp:14,type:'aoeSelf',mult:.5,radius:4,stun:1000,anim:'stomp',color:'#c9a56b',d:'Pisa com força: pedras sobem do chão e o chão racha (efeito de 2s). Dano em área e ATORDOA os inimigos.'},
    {n:'Provocar',i:'📢',lv:5,cd:16,mp:16,type:'taunt',radius:9,buffs:{shield:.35},dur:8,color:'#ff7a5a',d:'Provoca todos ao redor: eles passam a te focar. -35% de dano recebido.'},
-   {n:'Correntes de Aço',i:'🔗',lv:8,cd:13,mp:22,type:'aoeTarget',mult:.6,defMult:.8,radius:4,range:10,root:3500,color:'#8fb0d0',d:'Prende os inimigos da área no chão: IMOBILIZADOS.'},
-   {n:'Golpe Ascendente',i:'⏫',lv:12,cd:15,mp:28,type:'aoeSelf',mult:.8,defMult:1.3,radius:4.5,lift:1600,color:'#ffd27a',d:'Lança os inimigos para o alto: LEVANTADOS e atordoados.'},
-   {n:'Muralha de Ferro',i:'🧱',lv:15,cd:40,mp:30,type:'buff',buffs:{shield:.5,defdmg:.3},dur:12,color:'#7fa6d9',d:'-50% de dano recebido e 30% da DEFESA vira dano.'},
-   {n:'Campo de Atração',i:'🌀',lv:20,cd:24,mp:35,type:'aoeSelf',mult:.6,defMult:1,radius:9,pull:true,root:2500,color:'#a78bfa',d:'PUXA todos os inimigos próximos para perto de você e os imobiliza.'},
-   {n:'Sentença do Colosso',i:'🗿',lv:25,cd:40,mp:55,type:'aoeSelf',mult:1.4,defMult:3,radius:5.5,stun:2500,lift:2000,color:'#fff2a8',d:'Pancada colossal: dano enorme baseado na DEFESA, atordoa e levanta tudo ao redor.'}]},
- pierrot:{n:'Pierrot',i:'🤡',wi:'🤺',main:'agi',base:{str:3,agi:12,int:4,vit:4},range:2.6,ranged:false,
+   {n:'Correntes de Aço',i:'🔗',lv:8,cd:13,mp:22,type:'chainPull',mult:.4,range:10,radius:6,cnt:5,stun:3000,pvpStun:1000,color:'#8fb0d0',d:'Lança correntes que prendem até 5 monstros e os juntam no centro, atordoando-os por 3s (1s em jogadores, quando o PvP existir).'},
+   {n:'Golpe Ascendente',i:'⏫',lv:12,cd:15,mp:28,type:'aoeSelf',mult:.8,radius:4.5,lift:1600,delay:600,anim:'sumo',color:'#ffd27a',d:'Bate mãos e pés no chão como um lutador de sumô e lança os inimigos para o alto, atordoados. Alvos com esquiva alta podem escapar.'},
+   {n:'Muralha de Ferro',i:'🧱',lv:15,cd:180,cdMin:180,cdAlly:360,mp:30,type:'buff',ally:1,buffs:{shield:.5,evade:.1},evMin:.1,evMax:.3,fixBuff:1,dur:20,fixDur:1,color:'#7fa6d9',d:'Buff de 20s: -50% de dano recebido e +10% de esquiva (até +30% no nível máximo). Recarga 180s. Também pode ser lançada em outro jogador (clique no personagem dele), com recarga de 360s.'},
+   {n:'Sentença do Colosso',i:'🗿',lv:25,cd:40,mp:55,type:'roll',mult:.6,radius:2.4,range:10,dur:4,fixDur:1,stun:500,color:'#fff2a8',d:'Rola pelo mapa por 4s batendo nos monstros. Ao bater em parede, pedra ou árvore, ricocheteia e muda de sentido.'}]}, pierrot:{n:'Pierrot',i:'🤡',wi:'🤺',main:'agi',base:{str:3,agi:12,int:4,vit:4},range:2.6,ranged:false,
   d:'Palhaço acrobata: frágil, mas com CRÍTICO alto e muita SORTE (mais raros, slots e épicos +0~+4). Giros, estocadas e CLONES.',
   skills:[
    {n:'Estocada',i:'🤺',lv:1,cd:2.5,mp:6,type:'single',mult:2.1,range:3.4,color:'#ff6b9a',d:'Estocada veloz de florete.'},
@@ -131,22 +129,22 @@ const SKFX={guerreiro:['steel','wind','wind','fire','earth','blood','fire','stee
 for(const k in SKFX)CLASSES[k].skills.forEach((s,i)=>{s.fx=SKFX[k][i];});
 const MT={
  slime:{n:'Gosma da Floresta',lv:[1,3],hp:45,atk:6,def:0,spd:1.5,xp:10,gold:[1,4],aggro:6,rng:1.7,atkInt:1700,resp:10,leash:15,h:1.7,mats:{gosma:0.510,erva:0.212,essencia:0.025},eq:0.042,pot:0.048},
- lobo:{n:'Lobo Cinzento',lv:[4,6],hp:110,atk:11,def:4,spd:3.2,xp:60,gold:[4,8],aggro:8,rng:1.9,atkInt:1300,resp:12,leash:18,h:1.8,mats:{couro:0.468,erva:0.170,essencia:0.043},eq:0.060,pot:0.048},
+ lobo:{n:'Lobo Cinzento',eva:0.3,lv:[4,6],hp:110,atk:11,def:4,spd:3.2,xp:60,gold:[4,8],aggro:8,rng:1.9,atkInt:1300,resp:12,leash:18,h:1.8,mats:{couro:0.468,erva:0.170,essencia:0.043},eq:0.060,pot:0.048},
  goblin:{n:'Goblin Saqueador',lv:[7,9],hp:200,atk:18,def:10,spd:2.9,xp:138,gold:[7,17],aggro:8,rng:1.8,atkInt:1400,resp:13,leash:18,h:2.4,mats:{ferro:0.425,couro:0.212,essencia:0.060},eq:0.084,pot:0.060},
  esqueleto:{n:'Esqueleto Amaldiçoado',lv:[10,12],hp:330,atk:28,def:18,spd:2.6,xp:236,gold:[15,33],aggro:8,rng:1.9,atkInt:1500,resp:14,leash:18,h:2.6,mats:{osso:0.468,ferro:0.255,essencia:0.085},eq:0.108,pot:0.060},
  espantalho:{n:'Espantalho de Treino',lv:[1,1],hp:3000000,atk:0,def:0,spd:0,xp:0,gold:[0,0],aggro:0,rng:0,atkInt:99999,resp:.4,leash:1,h:2.9,dummy:true,mats:{},eq:0,pot:0},
  golem:{n:'Golem Ancião',lv:[15,15],hp:3200,atk:62,def:35,spd:2.0,xp:4259,gold:[180,300],aggro:9,rng:3.0,atkInt:1800,resp:150,leash:20,h:5.2,boss:true,mats:{nucleo:1,ferro:1,essencia:1},matMax:3,eq:1,pot:1,rb:3},
- aranha:{n:'Aranha Gigante',lv:[13,15],hp:520,atk:40,def:24,spd:3.4,xp:347,gold:[24,54],aggro:8,rng:1.9,atkInt:1200,resp:14,leash:18,h:2.0,mats:{seda:0.468,osso:0.170,essencia:0.102},eq:0.120,pot:0.060},
+ aranha:{n:'Aranha Gigante',eva:0.3,lv:[13,15],hp:520,atk:40,def:24,spd:3.4,xp:347,gold:[24,54],aggro:8,rng:1.9,atkInt:1200,resp:14,leash:18,h:2.0,mats:{seda:0.468,osso:0.170,essencia:0.102},eq:0.120,pot:0.060},
  orc:{n:'Orc Guerreiro',lv:[16,18],hp:900,atk:58,def:34,spd:2.9,xp:470,gold:[42,84],aggro:8,rng:2.1,atkInt:1500,resp:15,leash:18,h:3.2,mats:{presa:0.425,ferro:0.340,essencia:0.119},eq:0.132,pot:0.060},
  yeti:{n:'Yeti das Montanhas',lv:[19,21],hp:1500,atk:80,def:45,spd:2.8,xp:603,gold:[72,132],aggro:8,rng:2.4,atkInt:1600,resp:16,leash:18,h:3.6,mats:{cristal:0.425,couro:0.255,essencia:0.128},eq:0.144,pot:0.060},
  demonio:{n:'Demônio Flamejante',lv:[22,24],hp:2300,atk:110,def:60,spd:3.2,xp:744,gold:[120,216],aggro:9,rng:2.2,atkInt:1400,resp:18,leash:20,h:3.4,mats:{brasa:0.425,osso:0.255,essencia:0.170},eq:0.156,pot:0.072},
  dragao:{n:'Dragão Rubro',lv:[28,28],hp:14000,atk:190,def:90,spd:2.6,xp:20452,gold:[1200,1800],aggro:10,rng:4.6,atkInt:1800,resp:400,leash:24,h:8,boss:true,mats:{escama:1,brasa:1,essencia:1},matMax:3,eq:1,pot:1,rb:3},
  // ===== Solara (deserto) — níveis 50 a 75 =====
- escorpiao:{n:'Escorpião Gigante',lv:[50,53],hp:2800,atk:330,def:70,spd:3.3,xp:4414,gold:[228,390],aggro:8,rng:2.0,atkInt:1300,resp:14,leash:18,h:2.4,mats:{ferrao:0.468,linho:0.170,essencia:0.170},eq:0.132,pot:0.060},
+ escorpiao:{n:'Escorpião Gigante',eva:0.2,lv:[50,53],hp:2800,atk:330,def:70,spd:3.3,xp:4414,gold:[228,390],aggro:8,rng:2.0,atkInt:1300,resp:14,leash:18,h:2.4,mats:{ferrao:0.468,linho:0.170,essencia:0.170},eq:0.132,pot:0.060},
  mumia:{n:'Múmia Ancestral',lv:[54,57],hp:3400,atk:370,def:85,spd:2.5,xp:4774,gold:[288,492],aggro:8,rng:2.0,atkInt:1500,resp:14,leash:18,h:3.2,mats:{linho:0.468,ankh:0.128,essencia:0.187},eq:0.138,pot:0.060},
- cobra:{n:'Naja Dourada',lv:[58,61],hp:3600,atk:420,def:80,spd:3.8,xp:5143,gold:[360,600],aggro:9,rng:2.2,atkInt:1200,resp:14,leash:18,h:3.0,mats:{veneno:0.468,cristalsol:0.170,essencia:0.212},eq:0.144,pot:0.060},
+ cobra:{n:'Naja Dourada',eva:0.25,lv:[58,61],hp:3600,atk:420,def:80,spd:3.8,xp:5143,gold:[360,600],aggro:9,rng:2.2,atkInt:1200,resp:14,leash:18,h:3.0,mats:{veneno:0.468,cristalsol:0.170,essencia:0.212},eq:0.144,pot:0.060},
  elemental:{n:'Elemental de Areia',lv:[62,65],hp:4600,atk:450,def:110,spd:2.9,xp:5521,gold:[450,750],aggro:8,rng:2.4,atkInt:1500,resp:15,leash:18,h:3.6,mats:{cristalsol:0.425,veneno:0.170,essencia:0.238},eq:0.150,pot:0.060},
- chacal:{n:'Guardião Chacal',lv:[66,69],hp:5400,atk:500,def:120,spd:3.1,xp:5906,gold:[540,900],aggro:9,rng:2.3,atkInt:1400,resp:16,leash:20,h:3.6,mats:{garra:0.425,ankh:0.212,essencia:0.255},eq:0.156,pot:0.060},
+ chacal:{n:'Guardião Chacal',eva:0.3,lv:[66,69],hp:5400,atk:500,def:120,spd:3.1,xp:5906,gold:[540,900],aggro:9,rng:2.3,atkInt:1400,resp:16,leash:20,h:3.6,mats:{garra:0.425,ankh:0.212,essencia:0.255},eq:0.156,pot:0.060},
  sacerdote:{n:'Sacerdote Profano',lv:[70,73],hp:6200,atk:540,def:130,spd:2.8,xp:6299,gold:[660,1080],aggro:10,rng:5.5,atkInt:1700,resp:16,leash:20,h:3.8,mats:{ankh:0.425,garra:0.170,essencia:0.297},eq:0.168,pot:0.072},
  colosso:{n:'Colosso de Obsidiana',lv:[65,65],hp:48000,atk:700,def:150,spd:2.2,xp:124159,gold:[5400,8400],aggro:10,rng:3.6,atkInt:1800,resp:300,leash:22,h:6.4,boss:true,mats:{obsidiana:1,ankh:1,essencia:1},matMax:3,eq:1,pot:1,rb:3},
  farao:{n:'Faraó Imortal',lv:[75,75],hp:110000,atk:900,def:175,spd:2.4,xp:197202,gold:[12000,18000],aggro:11,rng:5.0,atkInt:1800,resp:500,leash:26,h:7.4,boss:true,mats:{selo:1,obsidiana:1,essencia:1},matMax:3,eq:1,pot:1,rb:3}
@@ -497,6 +495,7 @@ const BCAP = { defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
+  if (s.evMin != null && bf.evade != null) bf.evade = s.evMin + (s.evMax - s.evMin) * Math.min(1, k / (MAXRANK - 1));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
   return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
@@ -594,6 +593,7 @@ function gmChar(cls, old) {
   c.tb = 1; c.title = 'bright';
   c.inv = Array(24).fill(null); c.inv[0] = { k: 'pot', id: 'hp', n: 99 }; c.inv[1] = { k: 'pot', id: 'mp', n: 99 };
   c.bar = defBar(); c.v = R.VERSION;
+  if (cls === 'tanque') { c.tkv = 1; c.sk[7] = 0; c.bar = [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1]; }
   return c;
 }
 /** Limites máximos possíveis de um equipamento (para detectar itens editados). */
@@ -635,6 +635,12 @@ function cleanItem(it) {
 function migrate(c) {
   if (!c.sk || !Array.isArray(c.sk)) { c.sk = Array(8).fill(0); c.sk[0] = 1; if (c.sp === undefined) c.sp = c.level; }
   while (c.sk.length < 8) c.sk.push(0); if (c.sp === undefined) c.sp = 0;
+  if (c.cls === 'tanque' && !c.tkv) {            // Campo de Atração foi removido: Sentença do Colosso passa de 7 para 6
+    c.tkv = 1; const old = c.sk[6] || 0; let rf = 0; for (let r = 0; r < old; r++) rf += skCost(r);
+    c.sp = (c.sp || 0) + rf; c.sk[6] = c.sk[7] || 0; c.sk[7] = 0;
+    const b0 = Array.isArray(c.bar) ? c.bar : defBar(), isDef = b0.slice(0, 8).every((v, i) => v === i);
+    c.bar = isDef ? [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1] : b0.map(v => v === 6 ? -1 : v === 7 ? 6 : v);
+  }
   c.bar = cleanBar(c.bar);
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
