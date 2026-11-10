@@ -54,7 +54,7 @@ const CLASSES={
    {n:'Grito de Guerra',i:'📣',lv:8,cd:60,cdMin:60,mp:20,type:'buff',buffs:{dmg:.35,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido. Recarga: 60s.'},
    {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:2.2,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
    {n:'Sangue de Guerra',i:'🩸',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.35,buffs:{dmg:.1},fixBuff:1,dur:20,fixDur:1,color:'#ff6b6b',d:'Auto buff: recupera 35% da vida máxima e dá +10% de dano base por 20s.'},
-   {n:'Metamorfose',i:'🐻',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.3},fixBuff:1,dur:10,fixDur:1,color:'#a8743c',d:'Vira um urso em pé por 10s: o ataque básico vira patadas com garras (+30% de velocidade de ataque) e +20% de velocidade de movimento. A espada fica guardada.'},
+   {n:'Metamorfose',i:'😡',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.3},fixBuff:1,dur:10,fixDur:1,color:'#d83a2a',d:'Forma bárbara por 10s: o personagem fica maior e exala fumaça vermelha, com +30% de velocidade de ataque e +20% de velocidade de movimento. Nessa forma só o ataque básico funciona (sem habilidades).'},
    {n:'Execução',i:'🗡️',lv:25,cd:20,mp:40,type:'single',mult:6,range:3.4,color:'#ffe9a8',d:'Golpe devastador contra um alvo.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
   d:'Ataque à distância. Crítico alto e mobilidade.',
   skills:[

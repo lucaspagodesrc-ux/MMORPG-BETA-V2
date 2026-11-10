@@ -890,7 +890,6 @@ function animLimbs(o,px,pz,now,sa,melee){
  else if(kind==='spin'){const e=act?Math.min(1,sw*5,(1-sw)*5):0;atR=e*.8;atL=0;extraL=1.4*e;wr=0;}
  else if(kind==='stomp'){atR=0;atL=0;wr=0;}
  else if(kind==='stab'){const p=act?sw*3:0,f=p-Math.floor(p),l=act?Math.sin(f*Math.PI):0;atR=l*.8;atL=0;wr=-l*1.43;}
- else if(kind==='claw'){const fl=!!o.swFlip;atR=fl?at:0;atL=fl?0:at*.5;extraL=fl?0:at;wr=0;}
  else if(kind==='sumo'){const p=act?sw*3:0,f=p-Math.floor(p),l=act?Math.sin(f*Math.PI):0;atR=l*.9;atL=l*.9;extraL=l*1.0;wr=0;}
  else if(kind==='jump'){const rz=act?(sw<.8?Math.min(1,sw/.25):Math.max(0,1-(sw-.8)/.12)):0;atR=0;wr=0;atL=0;extraL=2.4*rz;wy=Math.PI/2*Math.min(1,rz*1.5);
   if(act){const y=sw<.8?3*Math.sin(Math.PI*sw/.8):0;o.root.position.y=y;o._jy=1;Lg[0].h.rotation.x=-.6*rz;Lg[1].h.rotation.x=-.4*rz;Lg[0].k.rotation.x=.9*rz;Lg[1].k.rotation.x=.9*rz;AR.s.rotation.x=0;}}
@@ -1715,41 +1714,18 @@ function rollRemote(o,dur){
 }
 
 
-/* =================== GUERREIRO: Metamorfose (urso) =================== */
-function animEnt(o,px,pz,now,sa,melee){
- if(o.bear&&o.bear.L){const q=o.bear.px;q.swKind=o.swKind;q.swKA=o.swKA;q.swFlip=o.swFlip;animLimbs(q,px,pz,now,sa,true);}
- else animLimbs(o,px,pz,now,sa,melee);
-}
-function mkBear(o){
- const n=new BABYLON.TransformNode('bearN',scene);n.parent=o.root;n.scaling.setAll(1.18);
- const fur=mat('brfur','#6e4a2c'),fur2=mat('brfur2','#85603d'),belly=mat('brbel','#b8946a'),dark=mat('brdk','#1c1008'),claw=mat('brcl','#f2efe6');
- const add=(m,x,y,z,mt)=>{m.parent=n;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
- add(B.CreateCapsule('bb',{height:1.25,radius:.55},scene),0,1.3,0,fur);
- add(B.CreateSphere('bl',{diameter:.8,segments:8},scene),0,1.25,.3,belly).scaling.set(1,1.3,.55);
- add(B.CreateSphere('bh',{diameter:.78,segments:8},scene),0,2.05,.04,fur);
- add(B.CreateSphere('bs',{diameter:.4,segments:8},scene),0,1.98,.38,belly).scaling.z=1.1;
- add(B.CreateSphere('bn',{diameter:.13,segments:6},scene),0,2.04,.6,dark);
- for(const sx of[-1,1]){add(B.CreateSphere('be',{diameter:.24,segments:6},scene),sx*.3,2.42,0,fur);add(B.CreateSphere('bi',{diameter:.09,segments:5},scene),sx*.16,2.1,.34,dark);}
- const L=mkLimbs(n,{hx:.24,T:.42,S:.42,ay:.1,lr:.21,mL:fur,mB:fur2,sx:.7,sy:1.8,U:.5,F:.5,ar:.2,mA:fur,mH:fur2,rest:[-.25,-.45],restL:[-.25,-.45]});
- for(const h of[L.hL,L.hR])for(let k=-1;k<=1;k++){const c=B.CreateCylinder('bc',{height:.28,diameterTop:0,diameterBottom:.06,tessellation:5},scene);c.parent=h;c.position.set(k*.07,-.2,.06);c.rotation.x=-.5;c.material=claw;c.isPickable=false;}
- return{n,L,px:{limbs:L,root:o.root},hid:[]};
-}
-function setBear(o,on){
- try{
-  if(on){if(o.bear)return;const hid=[];for(const m of o.root.getChildMeshes())if(m.isVisible!==false){m.isVisible=false;hid.push(m);}const b=mkBear(o);b.hid=hid;o.bear=b;}
-  else{const b=o.bear;if(!b)return;for(const m of b.hid)m.isVisible=true;b.n.dispose();o.bear=null;}
- }catch(e){o.bear=null;}
-}
-function bearFx(o,dur){
- const p=o.root.position;ring(p.x,p.z,2.6,'#a8743c',600);burst(p.x,p.z,'steel');
- setBear(o,true);o.bearUntil=performance.now()+dur*1000;
- later(dur*1000+30,()=>{if(performance.now()>=o.bearUntil-5&&o.bear){setBear(o,false);const q=o.root.position;ring(q.x,q.z,2.6,'#a8743c',600);burst(q.x,q.z,'steel');}});
-}
-function clawFx(o,flip){
- const p=o.root.position,ry=o.root.rotation.y,cx=p.x+Math.sin(ry)*1.7,cz=p.z+Math.cos(ry)*1.7;
- const mt=new BABYLON.StandardMaterial('clw',scene);mt.disableLighting=true;mt.emissiveColor=new C3(1,.85,.7);mt.alpha=.95;mt.backFaceCulling=false;
- const ms=[];for(let k=-1;k<=1;k++){const m=B.CreateBox('clawk',{width:.16,height:1.6,depth:.05},scene);m.material=mt;m.isPickable=false;m.rotation.y=ry;m.rotation.z=flip?.7:-.7;m.renderingGroupId=1;m.position.set(cx+Math.cos(ry)*k*.45,1.5,cz-Math.sin(ry)*k*.45);ms.push(m);}
- fx.push({t0:performance.now(),dur:450,upd:t=>{mt.alpha=.95*(1-t*t);for(const m of ms)m.scaling.y=.6+.8*Math.min(1,t*3);},done:()=>{for(const m of ms)m.dispose();mt.dispose();}});
+/* =================== GUERREIRO: Metamorfose (bárbaro) =================== */
+function animEnt(o,px,pz,now,sa,melee){animLimbs(o,px,pz,now,sa,melee);}
+function endBarb(o){o.barbUntil=0;try{o.root.scaling.setAll(1);}catch(e){}}
+function barbFx(o,dur){
+ const p0=o.root.position,ms=dur*1000;ring(p0.x,p0.z,2.8,'#c02020',700);burst(p0.x,p0.z,'fire');
+ o.barbUntil=performance.now()+ms;o.root.scaling.setAll(1.2);
+ const puff=()=>{const p=o.root.position,pm=new BABYLON.StandardMaterial('rsm',scene);pm.disableLighting=true;pm.emissiveColor=new C3(.78,.1,.07);pm.alpha=.55;
+  const q=B.CreateSphere('rs',{diameter:.55,segments:6},scene);q.material=pm;q.isPickable=false;const bx=p.x+(Math.random()-.5)*1.1,bz=p.z+(Math.random()-.5)*1.1,by=.3+Math.random()*1.6;
+  fx.push({t0:performance.now(),dur:850,upd:t=>{q.scaling.setAll(1+1.6*t);q.position.set(bx,by+1.1*t,bz);pm.alpha=.55*(1-t);},done:()=>{q.dispose();pm.dispose();}});};
+ let nx=0;
+ fx.push({t0:performance.now(),dur:ms,upd:()=>{const now=performance.now();if(now>nx){nx=now+70;puff();}},
+  done:()=>{if(performance.now()>=o.barbUntil-5){endBarb(o);const q=o.root.position;ring(q.x,q.z,2.4,'#c02020',500);}}});
 }
 
 /* =================== BARRAS DE VIDA DO GRUPO =================== */
@@ -1861,7 +1837,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,clawFx,bearFx};
+if(location.search==='?dbg')window.__G={get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -2047,7 +2023,6 @@ function revive(){
 function basicAttack(m,now){
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');P.atkTarget=null;return;}
  const C=CLASSES[S.cls];if(NET.room)NET.room.send('atk',{tid:m.id});P.nextAtk=now+900/(D().atkSpd*(1+getBuff('aspd')));P.swingAt=now;P.lastCombat=now;AUD.basic(S.cls);
- if(P.bear){P.swKind='claw';P.swKA=now;P.swFlip=!P.swFlip;clawFx(P,P.swFlip);}
  const bm=S.cls==='tanque'?1.15:1;
  if(C.ranged)shoot(P.pos,m,C.pcol,C.proj,()=>playerHit(m,bm));else later(130,()=>playerHit(m,bm));
 }
@@ -2059,6 +2034,7 @@ function skStat(i){return RULES.skStat(S.cls,i,rk(i));}
 function castSkill(i){
  if(!S||P.dead)return;const C=CLASSES[S.cls];if(!C.skills[i])return;
  if(!rk(i)){toast(S.level>=C.skills[i].lv?'Aprenda esta habilidade em K':'Habilidade disponível no nível '+C.skills[i].lv);return;}
+ if(P.barbUntil&&performance.now()<P.barbUntil){toast('😡 Metamorfose: só o ataque básico funciona');return;}
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');return;}
  const s=skStat(i),now=performance.now();
  if(s.type==='daggerFan'&&P.dag&&P.dag.st==='stuck'){P.dag.recall();if(NET.room)NET.room.send('cast',{i});return;}
@@ -2095,7 +2071,7 @@ function castSkill(i){
    if(pr==='hook')hookFx(P,tgt,s.color,()=>playerHit(tgt,s.mult,so));else if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult,so));else{ring(tgt.pos.x,tgt.pos.z,1.5,s.color,300);later(150,()=>playerHit(tgt,s.mult,so));}break;
   case 'multi':
    for(let h=0;h<s.hits;h++)later(h*190,()=>{if(!tgt.alive||P.dead)return;if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult));else playerHit(tgt,s.mult);});break;
-  case 'transform':for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);bearFx(P,s.dur);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}!</span>`);break;
+  case 'transform':for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);barbFx(P,s.dur);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}!</span>`);break;
   case 'stab3':[0,1,2].forEach(n=>later(120+n*180,()=>{if(P.dead)return;P.pos.x+=dirx*.35;P.pos.z+=dirz*.35;collide(P.pos,.4);}));break;
   case 'heal':{
    if(s.buffs)for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);
@@ -2270,7 +2246,7 @@ function updateMonsters(dt,now){
 
 /* =================== PLAYER UPDATE =================== */
 function updatePlayer(dt,now){
- if(P.dead){if(P.roll)endRoll();if(P.bear)setBear(P,false);return;}
+ if(P.dead){if(P.roll)endRoll();if(P.barbUntil)endBarb(P);return;}
  if(P.roll){rollStep(dt,now);return;}
  if(now<(P.lock||0)){P.moving=false;return;}
  const spd=6*(1+getBuff('haste'));
@@ -2780,7 +2756,7 @@ function remoteSkill(m){
   case 'starJump':starFx(o,(m.tids||[]).map(id=>monsters.find(x=>x.id===id)).filter(Boolean),s,false);break;
   case 'chainPull':chainPullFx(o,(m.tids||[]).map(id=>monsters.find(x=>x.id===id)).filter(Boolean),s);break;
   case 'roll':rollRemote(o,s.dur);break;
-  case 'transform':bearFx(o,s.dur);break;
+  case 'transform':barbFx(o,s.dur);break;
   case 'aoeMulti':for(let h=0;h<s.hits;h++)later(200+h*200,()=>ring(from.x,from.z,s.radius,s.color,420));break;
   case 'taunt':ring(from.x,from.z,s.radius,s.color,700);break;
   case 'aoeTarget':if(mo){const c={x:mo.pos.x,z:mo.pos.z};
@@ -2794,7 +2770,6 @@ function remoteSkill(m){
 function remoteBasic(m){
  const o=remoteOf(m.by);if(!o||!S)return;if(hyp(P.pos,o.root.position)>34)return;
  const C=CLASSES[o.cls],mo=monsters.find(x=>x.id===m.tid),from=o.root.position;o.swingAt=performance.now();
- if(o.bear){o.swKind='claw';o.swKA=o.swingAt;o.swFlip=!o.swFlip;clawFx(o,o.swFlip);}
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
  AUD.basic(o.cls,spat(from,26));if(mo&&C.ranged)shoot(from,mo,C.pcol,C.proj);
 }

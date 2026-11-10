@@ -26,7 +26,7 @@ type Sess = {
   t: number; budget: number; lastChat: number; lastRecall: number; lastPortal: number; lastRevive: number;
   dirty: boolean; saving: boolean; d: any;
   tokens: number; tokT: number;
-  cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; dag?: { id: number; st: string; ret?: () => void };
+  cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
   drops: Map<number, { item: any; x: number; z: number; exp: number }>; dropSeq: number;
   partyId: number; clone?: { n: number; mult: number; until: number };
 };
@@ -152,6 +152,7 @@ export class WorldRoom extends Room<WorldState> {
     const c = s.c, C = R.CLASSES[c.cls], i = m?.i;
     if (!Number.isInteger(i) || i < 0 || i >= C.skills.length) return;
     const rank = c.sk[i] || 0; if (!rank || c.level < C.skills[i].lv) return;
+    if (s.form && Date.now() < s.form) return;                         // Metamorfose: só ataque básico
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
     if (C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck" && s.dag.ret) {      // chamar as adagas de volta
       s.dag.ret();
@@ -186,6 +187,7 @@ export class WorldRoom extends Room<WorldState> {
       if (sk.mark && tgt) tgt.markUntil = now + sk.mark * 1000;
     }
     s.lastSkill = i; s.lastSkillAt = now;
+    if (sk.type === "transform") s.form = now + sk.dur * 1000;
     let star: Sim[] = [];
     if (sk.type === "starJump" || sk.type === "chainPull") {
       const chain = sk.type === "chainPull", lim = chain ? sk.radius + 2 : sk.range + 6, mx = chain ? sk.cnt : sk.jumps;

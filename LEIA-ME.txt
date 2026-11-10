@@ -1,5 +1,5 @@
-Versão 1.23 - Guerreiro: novas habilidades
-Requer as versões anteriores (até 1.22) já instaladas.
+Versão 1.24 - Guerreiro: Metamorfose agora é a forma bárbara
+Requer as versões anteriores (até 1.23) já instaladas.
 
 COMO INSTALAR
 1. Envie index.html, rules.js e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
@@ -7,10 +7,7 @@ COMO INSTALAR
 3. No navegador, Ctrl+F5.
 
 O QUE MUDOU
-- Golpe Poderoso: 3 estocadas para a frente (o dano total é o mesmo de antes, dividido nas 3). Recarga 5s.
-- Giro de Lâmina: o personagem gira junto com a animação. Recarga 10s.
-- Grito de Guerra: mesmos efeitos, recarga 60s.
-- Terremoto: mesma animação (finca a espada no chão), recarga 10s.
-- Sangue de Guerra: mantém a cura de 35% e agora dá +10% de dano por 20s (auto buff). Recarga 60s.
-- Fúria Berserker virou "Metamorfose": por 10s vira um urso em pé, espada guardada; ataque básico vira patadas com marcas de garra no ar, +30% de velocidade de ataque e +20% de velocidade de movimento. Recarga 60s.
-- Novo buff "Vel. de ataque" (🐾) na barra de buffs.
+- Removida a forma de urso (guardada para um futuro Druida) e as garras.
+- Metamorfose = forma bárbara: personagem 20% maior, exalando fumaça vermelha, espada normal.
+- Mesmos tempos e atributos: 10s, +30% vel. de ataque, +20% vel. de movimento, recarga 60s.
+- Durante a forma só o ataque básico funciona (habilidades ficam bloqueadas, validado também no servidor).
