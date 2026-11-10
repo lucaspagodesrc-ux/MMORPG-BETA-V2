@@ -1,18 +1,34 @@
-MMORPG 1.29 - Vila da Nevasca (bioma de neve) e nível máximo 170
-Requer as versões anteriores até a 1.28 já instaladas.
+MMORPG v1.30 - Visual Stylized 3D / Hand-Painted em todo o jogo
+(somente o cliente: index.html. O servidor e o rules.js continuam os da v1.29.)
 
-NOVA REGIÃO: VILA DA NEVASCA (Nv 75 a 100)
-- Portal: na Vila Aurora, perto dos Yetis das Montanhas Geladas (noroeste). Só abre a partir do nível 75.
-- Zona segura com ferreiro (forja/aprimorar), mercadora, baú compartilhado, capitã de missões e portal de volta.
-- 6 monstros novos: Lobo Polar (75-78), Bárbaro das Neves (79-82), Esqueleto Congelado (83-86),
-  Aranha de Cristal (87-90), Yeti Ancião (91-94), Espectro Glacial (95-98).
-- 3 chefes: Golem de Gelo Eterno (88), Yeti Rei (95), Dragão Glacial (100).
-- 8 NPCs novos com 21 missões, materiais novos, receitas do ferreiro e loja própria.
-- Campo de Treino de Nevasca (9 espantalhos), neve caindo e minimapa próprio.
-- Equipamentos: novos nomes "Glacial" (Nv 90+) e "Eterno" (Nv 120+).
+TEXTURAS PINTADAS À MÃO (geradas por código, sem arquivos de imagem)
+- Pinceladas em canvas: grama, folhas, casca, madeira, pedra, rocha em camadas, areia, neve, gelo, tecido, couro, metal, escamas, pelo, osso, tijolo, tapete...
+- Contorno de tinta marrom em personagens, monstros, casas, árvores, pedras e objetos; luzes quentes e sombras frias.
+- Referências seguidas: deserto laranja em camadas com cactos floridos (Solara) e vila nevada pintada (Nevasca).
 
-NÍVEL MÁXIMO: 170 (era 100). Contas GM sobem para o nível 170 no próximo login (equipamento Nv 170).
-Correção: duas missões da Sacerdotisa Anuket tinham o mesmo código das do Padre Anselmo; foram separadas.
+MAPAS
+- Vila Aurora: gramado e calçada de pedra pintados, árvores e pinheiros, casas de reboco com telhado, fonte, lampiões, caixotes e barris novos.
+- Oásis de Solara: areia pintada, rochedos laranja em camadas, cactos com flores, palmeiras, casas com cúpula dourada.
+- Vila da Nevasca: neve com sombras azuladas, gelo, pinheiros nevados, casas com neve e pingentes.
+- Portais novos: arco de pedra pintada com runas brilhantes, vórtice animado e círculo rúnico no chão (pedra, areia, gelo e Cripta).
+- Cripta: lajes pintadas, paredes de tijolo, tapete bordado, pilares com tochas que tremulam, estandartes, sarcófagos, ossos, portões de ferro, estátuas guardiãs e círculos rúnicos. Dentro da masmorra a luz fica mais fria e baixa.
 
-Instalação: envie index.html, rules.js, WorldRoom.ts e monsters.ts para a raiz do GitHub,
-aguarde o redeploy do Render e use Ctrl+F5.
+PERSONAGENS (7 classes), NPCs, ALDEÕES E GUARDAS
+- Rostos pintados (olhos, sobrancelhas, boca), cabelos, barbas, elmos, capuzes e chapéus novos, armaduras com ombreiras, cintos, capas e detalhes; armas redesenhadas.
+- Equipamentos vestidos (peitoral, elmo, botas, escudo, capa, joias): agora pintados e com contorno; o elmo deixa o rosto livre e o escudo é redondo, com aro e cruz.
+- NPCs com roupas e adereços por função (ferreiro com bigorna e forja, mercadores com barraca, capitão com estandarte, exploradores com tendas...); aldeões, guardas e animais também.
+
+MONSTROS
+- Olhos expressivos, presas, garras, chifres, espinhos, cicatrizes e pelagem pintada; variantes de gelo e chefes com detalhes extras; lobo e chacal remodelados.
+- Corrigido: o corpo novo de lobos/chacais é clicável (selecionar alvo).
+
+DESEMPENHO E OPÇÕES (ícone 🔊 no menu: "Áudio e gráficos")
+- "Contorno de tinta" e "Realce de cores" (contraste, saturação e vinheta): ficam salvos no navegador.
+- Contorno inteligente: o contorno some das peças minúsculas (quase invisíveis na tela) e volta ao dar zoom. Isso corta cerca de 30% das chamadas de desenho nas cidades.
+- Se o jogo ficar lento (FPS abaixo de 26 por cerca de 15 s), o contorno passa a valer só para as peças grandes; se continuar lento, é desligado sozinho e o jogo avisa. Para reativar: 🔊 > Contorno de tinta. Se você mexer nessa opção, o ajuste automático nunca mais age.
+- Aviso: o contorno de tinta é novo nesta versão e é a parte mais pesada do visual. Em PCs fracos, desligue-o.
+
+INSTALAÇÃO
+1) Envie o index.html para a RAIZ do repositório no GitHub (substitua o atual; requer a v1.29).
+2) Aguarde o redeploy no Render.
+3) Abra o jogo e use Ctrl+F5.
