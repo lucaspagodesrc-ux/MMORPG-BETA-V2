@@ -1,14 +1,10 @@
-Versão 1.25 - Guerreiro: Fúria do Bárbaro
-Requer as versões anteriores (até 1.24) já instaladas.
+MMORPG 1.26 - Guerreiro: Fúria do Bárbaro melhorada + Trovão
+Requer as versões anteriores até a 1.25 já instaladas.
 
-COMO INSTALAR
-1. Envie index.html, rules.js e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
-2. Aguarde o Render terminar o redeploy.
-3. No navegador, Ctrl+F5.
+- Fúria do Bárbaro: velocidade de ataque +50% e dano +20%.
+- Execução virou "Trovão" (nível 25, recarga 45s): o personagem aponta a espada
+  para o céu, cai um raio no alvo (dano em área com o dano da habilidade) e os
+  atingidos recebem 240 de dano por segundo durante 8 segundos.
 
-O QUE MUDOU
-- Metamorfose agora se chama "Fúria do Bárbaro".
-- A espada fica vermelha, em chamas, quase transparente durante a forma.
-- Novo: +10 de dano base no nível 1 até +100 no nível 20 da habilidade (buff "Dano base").
-- Novo: +10% de crítico.
-- Mantidos: 10s, +30% vel. de ataque, +20% vel. de movimento, recarga 60s, personagem maior com fumaça vermelha, só ataque básico.
+Instalação: envie index.html, rules.js e WorldRoom.ts para a raiz do GitHub,
+aguarde o redeploy do Render e use Ctrl+F5.
