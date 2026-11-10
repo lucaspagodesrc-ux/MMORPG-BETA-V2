@@ -5,7 +5,7 @@ const R: any = require("./rules.js");
 
 export type Inst = {
   id: number; def: any; endsAt: number; stage: number; cnt: number; talked: boolean; done: boolean; closed: boolean;
-  members: Set<string>; emptySince: number; chests: Map<number, Sim>;
+  members: Set<string>; emptySince: number; chests: Map<number, Sim>; grp: boolean; paused: number; pausedTotal: number;
 };
 
 export class Dungeons {
@@ -16,7 +16,7 @@ export class Dungeons {
   entryOf(def: any) { const n = R.NPCS.find((x: any) => x.dungeon === def.id); return { x: n.x, z: n.z - 4 }; }
 
   create(def: any): Inst {
-    const id = ++this.seq, inst: Inst = { id, def, endsAt: Date.now() + (Number(process.env.DG_TIME) || def.time) * 1000, stage: 0, cnt: 0, talked: false, done: false, closed: false, members: new Set(), emptySince: Date.now(), chests: new Map() };
+    const id = ++this.seq, inst: Inst = { id, def, endsAt: Date.now() + (Number(process.env.DG_TIME) || def.time) * 1000, stage: 0, cnt: 0, talked: false, done: false, closed: false, members: new Set(), emptySince: Date.now(), chests: new Map(), grp: false, paused: 0, pausedTotal: 0 };
     let slot = 0;
     for (const st of def.stages) {
       const sp = st.spawn;
@@ -45,7 +45,7 @@ export class Dungeons {
         else { text = `Volte à ${st.name} para concluir`; need = 0; }
       } else if (st.k === "kill") text = `${st.text}`;
     }
-    return { id: def.id, name: def.name, stage: inst.stage, total: def.stages.length, text, cur, need, maxZ: this.maxZ(inst), endsAt: inst.endsAt, done: inst.done };
+    return { id: def.id, name: def.name, stage: inst.stage, total: def.stages.length, text, cur, need, maxZ: this.maxZ(inst), endsAt: inst.endsAt, done: inst.done, paused: inst.paused, canPause: !inst.grp && inst.members.size === 1 };
   }
   sendState(inst: Inst, only?: string) {
     const msg = this.info(inst);
@@ -114,10 +114,13 @@ export class Dungeons {
     if (c.level < def.minLevel) return `Nível ${def.minLevel} necessário.`;
     const now = Date.now();
     let inst: Inst | undefined, free = false;
-    if (c.run && c.run.id === id) {                                   // voltando dentro do prazo (ingresso já pago)
-      const old = this.insts.get(c.run.inst);
-      if (old && !old.closed && c.run.until && now < c.run.until) { inst = old; free = true; }
-      else delete c.run;
+    if (c.run && c.run.id === id) {                                   // voltando (ingresso já pago): vale até o fim da instância
+      const old = this.insts.get(c.run.inst), until = c.run.until;
+      if (old && !old.closed && (!until || now < until || (old.grp && old.members.size > 0))) { inst = old; free = true; }
+      else {
+        if (!old && (!until || now < until) && c.run.ends && now < c.run.ends) { c.tix = c.tix || {}; c.tix[id] = Math.min(5, (c.tix[id] || 0) + 1); this.h.res(s, [{ log: '<span style="color:#9fe7b0">🎟️ A dungeon foi encerrada antes do tempo. Seu ingresso foi devolvido.</span>' }]); }
+        delete c.run;
+      }
     }
     if (!inst) {
       if (!(c.tix && c.tix[id] > 0)) return "Você precisa de um ingresso. Compre com o Guardião das Criptas, em Solara.";
@@ -125,17 +128,22 @@ export class Dungeons {
       if (party) {
         for (const msid of party.members) {                           // já existe instância do grupo?
           const mp = this.h.state.players.get(msid), ms = this.h.sess.get(msid);
-          const cand = mp && mp.inst ? this.insts.get(mp.inst) : (ms && ms.c.run && ms.c.run.until ? this.insts.get(ms.c.run.inst) : undefined);
+          const cand = mp && mp.inst ? this.insts.get(mp.inst) : (ms && ms.c.run ? this.insts.get(ms.c.run.inst) : undefined);
           if (cand && cand.def.id === id && !cand.closed && !cand.done) { inst = cand; break; }
         }
         if (!inst && party.leader !== sid) return "O líder do grupo precisa entrar primeiro.";
+        if (!inst && party.members.length > 1) {                       // início em grupo: todos precisam ter o ingresso
+          const miss = party.members.filter((x: string) => { const ms = this.h.sess.get(x); return ms && !(ms.c.tix && ms.c.tix[id] > 0); }).map((x: string) => this.h.sess.get(x).c.name);
+          if (miss.length) return "Todos do grupo precisam ter o ingresso para começar. Sem ingresso: " + miss.join(", ") + ".";
+        }
       }
       if (inst && inst.members.size >= 6) return "A dungeon do seu grupo está cheia (6 jogadores).";
       if (!inst) inst = this.create(def);
     }
+    if (inst.paused) return "A dungeon está pausada.";
     if (!free) { c.tix[id]--; if (c.tix[id] <= 0) delete c.tix[id]; }
-    c.run = { id, inst: inst.id }; delete c.run.until;
-    inst.members.add(sid); inst.emptySince = 0;
+    c.run = { id, inst: inst.id, ends: inst.endsAt };
+    { const pt = this.h.partyOf(s); inst.members.add(sid); inst.emptySince = 0; if (inst.members.size > 1 || (pt && pt.members.length > 1)) inst.grp = true; }
     p.inst = inst.id; p.dead = false;
     const back = free && c.pos && c.pos.x > 450 ? c.pos : { x: def.cx, z: def.start.z };
     p.x = back.x; p.z = Math.min(back.z, this.maxZ(inst) - 0.5); s.budget = 40; s.t = now;
@@ -146,16 +154,34 @@ export class Dungeons {
   }
 
   /** Sai da instância (portal de saída, desconexão). Dá 5 minutos para voltar, a menos que já tenha acabado. */
-  leave(s: any, teleport: boolean) {
+  leave(s: any, teleport: boolean, finished = false) {
     const sid = s.client.sessionId, p = this.h.state.players.get(sid); if (!p || !p.inst) return;
     const inst = this.insts.get(p.inst); const now = Date.now();
-    if (inst) { inst.members.delete(sid); if (!inst.members.size) inst.emptySince = now; }
-    if (s.c.run) { if (inst && !inst.closed && !inst.done) s.c.run.until = now + (inst.def.grace || 300) * 1000; else delete s.c.run; }
+    if (inst) { inst.members.delete(sid); if (!inst.members.size) { inst.emptySince = now; if (inst.paused) this.resume(inst); } else this.sendState(inst); }
+    if (s.c.run) {
+      if (finished || !inst || inst.closed) delete s.c.run;               // concluiu e saiu pelo portal do fim
+      else if (teleport) s.c.run.until = now + 180_000;                    // saiu pelo botão/portal: 3 minutos para voltar
+      else delete s.c.run.until;                                           // queda de conexão: pode voltar enquanto a dungeon existir
+    }
     if (teleport) {
       const e = this.entryOf(inst ? inst.def : R.DUNGEONS[0]);
       p.inst = 0; p.x = e.x; p.z = e.z; s.budget = 40; s.t = now; s.client.send("dgleave", { reason: "", x: p.x, z: p.z });
     }
     s.dirty = true;
+  }
+
+  pause(s: any, on: boolean): string | null {
+    const p = this.h.state.players.get(s.client.sessionId), inst = this.insts.get(p?.inst || 0); if (!inst || inst.closed) return "Você não está em uma dungeon.";
+    if (!on) { if (inst.paused) this.resume(inst); return null; }
+    if (inst.grp || inst.members.size !== 1) return "A pausa só funciona quando você está sozinho na dungeon.";
+    if (inst.paused) return null;
+    if (inst.pausedTotal > 1_800_000) return "Você já usou o tempo máximo de pausa (30 min).";
+    inst.paused = Date.now(); this.h.sim.frozen.add(inst.id); this.sendState(inst);
+    return null;
+  }
+  resume(inst: Inst) {
+    if (!inst.paused) return;
+    const d = Date.now() - inst.paused; inst.endsAt += d; inst.pausedTotal += d; inst.paused = 0; this.h.sim.frozen.delete(inst.id); this.sendState(inst);
   }
 
   private eject(sid: string, msg: string) {
@@ -169,13 +195,15 @@ export class Dungeons {
     inst.closed = true;
     for (const sid of [...inst.members]) this.eject(sid, msg);
     for (const s of this.h.sess.values()) if (s.c.run && s.c.run.inst === inst.id) { delete s.c.run; s.dirty = true; }
-    this.h.sim.removeInst(inst.id); this.insts.delete(inst.id);
+    this.h.sim.frozen.delete(inst.id); this.h.sim.removeInst(inst.id); this.insts.delete(inst.id);
   }
 
   tick(now: number) {
     for (const inst of [...this.insts.values()]) {
+      if (inst.paused && now - inst.paused > 600_000) this.resume(inst);      // pausa máxima de 10 min por vez
+      if (inst.paused) continue;
       if (now > inst.endsAt) this.close(inst, inst.done ? "🏺 A cripta se fechou." : "⏳ O tempo da dungeon acabou! Você foi levado para fora.");
-      else if (!inst.members.size && inst.emptySince && now - inst.emptySince > (inst.def.grace + 30) * 1000) this.close(inst, "");
+      else if (!inst.members.size && inst.emptySince && now - inst.emptySince > 600_000) this.close(inst, "");
     }
   }
 }

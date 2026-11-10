@@ -26,6 +26,7 @@ export type Hooks = {
 };
 
 export class MonsterSim {
+  frozen = new Set<number>();                            // instâncias de dungeon pausadas
   hidden = new Map<string, number>();                    // jogadores invisíveis (Manto Fumaça): sessionId → até quando
   list: Sim[] = [];
   byId = new Map<number, Sim>();
@@ -109,6 +110,7 @@ export class MonsterSim {
     const now = Date.now(), players = this.state.players;
     for (const s of this.list) {
       const { m, T } = s;
+      if (s.inst && this.frozen.has(s.inst)) continue;
       if (!m.alive) { if (!s.noResp && now - s.deadAt > T.resp * 1000) this.respawn(s, now); continue; }
       if (T.chest) continue;                    // baús não se movem nem atacam
       if (T.dummy) {                            // espantalho: parado, regenera rápido depois de 1s sem apanhar

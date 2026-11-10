@@ -662,7 +662,7 @@ const addBuff=(n,val,dur,sk)=>{P.buffs[n]={val,until:performance.now()+dur*1000,
 /* =================== ITENS =================== */
 const rarRoll=RULES.rarRoll;
 const genItem=(slot,ilvl,rar,cls)=>RULES.genItem(slot,ilvl,rar,cls,S&&S.cls);
-const ico=it=>it.k==='eq'?(it.plus?`<span class="ig${it.plus>=7?' hi':''}" style="--gp:${it.plus};--gc:${(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?MATS[it.id].i:it.k==='pot'?POTS[it.id].i:'💰';
+const ico=it=>it.k==='tix'?'🎟️':it.k==='eq'?(it.plus?`<span class="ig${it.plus>=7?' hi':''}" style="--gp:${it.plus};--gc:${(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?MATS[it.id].i:it.k==='pot'?POTS[it.id].i:'💰';
 const col=it=>it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):RAR[it.rar].c):'#455568';
 function tipOf(it){
  if(it.k==='eq'){const cape=it.slot==='cape',r=cape?{c:col(it),n:it.cs==='m'?'Estola mágica':it.cs==='a'?'Manto encapuzado':'Capa física'}:RAR[it.rar];let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n}${cape?' • sem raridade':' • '+SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
@@ -1444,6 +1444,7 @@ function applyRes(r){
 
 
 /* =================== DUNGEON: CENÁRIO, HUD E ESTÁTUAS =================== */
+let PAUSED=false;
 const DG={built:false,root:null,ground:null,gates:[],objs:[],st:null};
 const allNpcs=()=>NET.inst?NPCS.concat(DG.objs):NPCS;
 function buildDungeon(){
@@ -1483,7 +1484,7 @@ function hideDungeon(){
  scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
 }
 function leaveDungeonLocal(m){
- NET.inst=0;P.inst=0;DG.st=null;P.dgMaxZ=undefined;hideDungeon();$('dgHud').style.display='none';
+ setPaused(false);NET.inst=0;P.inst=0;DG.st=null;P.dgMaxZ=undefined;hideDungeon();$('dgHud').style.display='none';
  if(m&&Number.isFinite(m.x)){P.pos.set(m.x,0,m.z);camera.target.copyFromFloats(m.x,.6,m.z);}
  P.moveTo=null;P.atkTarget=null;P.interact=null;selectMonster(null);closeDialog();
  if(m&&m.reason){toast(m.reason);logMsg(`<span style="color:#ffb86b">${m.reason}</span>`);}
@@ -1501,7 +1502,8 @@ function enterDungeon(n){
  if(S.level<d.minLevel){toast('🔒 '+d.name+' exige nível '+d.minLevel+'.');return;}
  NET.room.send('dgenter',{id:d.id});
 }
-document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" class="panel"><div class="dgt"><b id="dgName"></b><span id="dgTime"></span></div><div id="dgObj"></div><div id="dgBar"><i id="dgFill"></i></div></div>
+document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" class="panel"><div class="dgt"><b id="dgName"></b><span id="dgTime"></span></div><div id="dgObj"></div><div id="dgBar"><i id="dgFill"></i></div><div style="display:flex;gap:6px;justify-content:center;margin-top:6px;pointer-events:auto"><button id="dgPause" style="display:none">⏸ Pausar</button><button id="dgOut">🚪 Sair</button></div></div>
+<div id="pauseOv" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(5,8,14,.6);align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;font-size:28px;font-weight:700">⏸ JOGO PAUSADO<button id="dgResume" style="font-size:16px;padding:9px 20px">▶ Continuar</button></div>
 <div id="invBox" class="panel"><span id="invTxt"></span><div><button id="invOk">Aceitar</button><button id="invNo">Recusar</button></div></div>
 <div id="win-party" class="panel win"><h3><span>👥 Grupo</span><button class="x" data-close="party">✕</button></h3><div id="partyBody"></div></div>
 <div id="win-friends" class="panel win"><h3><span>🤝 Amigos</span><button class="x" data-close="friends">✕</button></h3><div id="friendsBody"></div></div>
@@ -1511,11 +1513,17 @@ document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" cl
 <div id="win-titles" class="panel win"><h3><span>🏅 Títulos</span><button class="x" data-close="titles">✕</button></h3><div id="titlesBody"></div></div>`);
 function updDgHud(){
  const h=$('dgHud'),m=DG.st;if(!NET.inst||!m){h.style.display='none';return;}h.style.display='block';
- const left=Math.max(0,Math.floor((m.endsAt-sharedNow())/1000)),mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
+ const left=Math.max(0,Math.floor((m.endsAt-(m.paused||sharedNow()))/1000)),mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
  $('dgName').textContent='🏺 '+m.name;$('dgTime').textContent='⏱ '+mm+':'+ss;$('dgTime').style.color=left<300?'#ff6b6b':'#ffe28a';
  $('dgObj').innerHTML=m.done?'<span class="ok">✔ Dungeon concluída! Colete os tesouros e saia pela Saída.</span>':`<b>Etapa ${m.stage+1}/${m.total}</b> — ${m.text}${m.need?` <b style="color:${m.cur>=m.need?'#6fdc7f':'#ffd27a'}">${m.cur}/${m.need}</b>`:''}`;
+ $('dgPause').style.display=(m.canPause&&!m.paused)?'inline-block':'none';
  $('dgFill').style.width=(m.done?100:Math.min(100,(m.stage+(m.need?m.cur/m.need:0))/m.total*100))+'%';
 }
+document.addEventListener('click',e=>{const t=e.target;if(!t||!t.id)return;
+ if(t.id==='dgPause'&&NET.room)NET.room.send('dgpause',{on:1});
+ else if(t.id==='dgResume'&&NET.room)NET.room.send('dgpause',{on:0});
+ else if(t.id==='dgOut'&&NET.room){if(t.dataset.c){NET.room.send('dgexit',{btn:1});t.dataset.c='';t.textContent='🚪 Sair';}else{t.dataset.c='1';t.textContent='Confirmar saída?';setTimeout(()=>{t.dataset.c='';t.textContent='🚪 Sair';},4000);}}});
+function setPaused(on){PAUSED=!!on;$('pauseOv').style.display=PAUSED?'flex':'none';if(PAUSED){P.moveTo=null;P.atkTarget=null;}}
 function updateDungeon(){if(!NET.inst)return;for(const o of DG.objs){if(o.endExit&&!(DG.st&&DG.st.done)){o.label.style.display='none';continue;}if(hyp(P.pos,o.pos)<16)place(o.label,o.pos,o.dgexit?5.2:5);else o.label.style.display='none';}}
 
 /* =================== GRUPO =================== */
@@ -1924,17 +1932,17 @@ function spawnDrop(item,pos,life){
  const x=pos.x+rnd(-1.2,1.2),z=pos.z+rnd(-1.2,1.2);const root=new BABYLON.TransformNode('drop',scene);root.position.set(x,0,z);
  let mesh;
  if(item.k==='gold'){mesh=B.CreateCylinder('coin',{height:.08,diameter:.45,tessellation:14},scene);mesh.material=M.gold;mesh.rotation.x=Math.PI/2;}
- else{mesh=B.CreatePolyhedron('gem',{type:1,size:.28},scene);mesh.material=fxMat(col(item)==='#455568'?(item.k==='pot'?(item.id.startsWith('hp')?'#ff6b7a':'#6bb0ff'):'#d8c28a'):col(item));}
+ else{mesh=B.CreatePolyhedron('gem',{type:1,size:.28},scene);mesh.material=fxMat(col(item)==='#455568'?(item.k==='pot'?(item.id.startsWith('hp')?'#ff6b7a':'#6bb0ff'):(item.k==='tix'?'#ffd24a':'#d8c28a')):col(item));}
  mesh.parent=root;mesh.position.y=.5;mesh.metadata={t:'d'};
  const d={item,root,x,z,mesh,born:performance.now(),warn:0,life:life||0};mesh.metadata.ref=d;
- if(item.k==='eq'&&item.rar>=2){const b=B.CreateCylinder('beam',{height:5,diameter:.12,tessellation:8},scene);b.parent=root;b.position.y=2.5;b.material=fxMat(col(item));b.visibility=.4;b.isPickable=false;}
+ if((item.k==='eq'&&item.rar>=2)||item.k==='tix'){const b=B.CreateCylinder('beam',{height:5,diameter:.12,tessellation:8},scene);b.parent=root;b.position.y=2.5;b.material=fxMat(item.k==='tix'?'#ffd24a':col(item));b.visibility=.4;b.isPickable=false;}
  d.label=mkLabel(item.k==='gold'?`💰 ${item.n}`:`${ico(item)} ${nm(item)}${item.n>1?' ×'+item.n:''}`,'drop');d.label.style.color=item.k==='gold'?'#ffe28a':col(item)==='#455568'?'#d9e4ee':col(item);
- d.base=d.label.innerHTML;drops.push(d);
+ d.base=d.label.innerHTML;d.base0=d.base;drops.push(d);
 }
 function removeDrop(d){const i=drops.indexOf(d);if(i>=0)drops.splice(i,1);d.root.dispose();d.label.remove();}
 function tryPickup(d,manual){
  const it=d.item,now=performance.now();
- if(TOKEN){if(!NET.room||P.dead)return false;if(now-(d.req||0)<700)return false;d.req=now;NET.room.send('pick',{id:d.sid});return true;}
+ if(TOKEN){if(!NET.room||P.dead||PAUSED)return false;if(d.lockUntil&&now<d.lockUntil){if(manual&&now-(d.warn||0)>1500){toast('🔒 Item de outro jogador — libera em '+Math.ceil((d.lockUntil-now)/1000)+'s');d.warn=now;}return false;}if(now-(d.req||0)<700)return false;d.req=now;NET.room.send('pick',{id:d.sid});return true;}
  if(it.k==='gold'){S.gold+=it.n;floatText('+'+it.n+' 💰',P.pos,'#ffe28a');AUD.sfx('coin');removeDrop(d);refreshUI();return true;}
  const label=nm(it)+(it.n>1?' ×'+it.n:'');
  if(addItem(it)){AUD.sfx('pickup');logMsg(`Você obteve <b style="color:${col(it)==='#455568'?'#fff':col(it)}">${label}</b>`);removeDrop(d);refreshUI();return true;}
@@ -2101,8 +2109,9 @@ function revive(){
  P.dead=false;AUD.sfx('revive');P.root.rotation.z=0;{const t=NET.inst?{x:600,z:-72}:nearestTown();P.pos.set(t.x,0,t.z);camera.target.copyFromFloats(t.x,.6,t.z);}P.hp=D().maxHp*.7;P.mp=D().maxMp*.5;$('death').style.display='none';if(NET.room)NET.room.send('revive');
 }
 function basicAttack(m,now){
+ if(PAUSED||(S.cls!=='assassino'&&now<(P.actUntil||0)))return;
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');P.atkTarget=null;return;}
- const C=CLASSES[S.cls];if(NET.room)NET.room.send('atk',{tid:m.id});P.nextAtk=now+900/(D().atkSpd*(1+getBuff('aspd')));P.swingAt=now;P.lastCombat=now;AUD.basic(S.cls);
+ const C=CLASSES[S.cls];if(NET.room)NET.room.send('atk',{tid:m.id});P.nextAtk=now+900/(D().atkSpd*(1+getBuff('aspd')));P.actUntil=now+260;P.swingAt=now;P.lastCombat=now;AUD.basic(S.cls);
  const bm=S.cls==='tanque'?1.15:1;
  if(C.ranged)shoot(P.pos,m,C.pcol,C.proj,()=>playerHit(m,bm));else later(130,()=>playerHit(m,bm));
 }
@@ -2118,6 +2127,8 @@ function castSkill(i){
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');return;}
  const s=skStat(i),now=performance.now();
  if(s.type==='daggerFan'&&P.dag&&P.dag.st==='stuck'){P.dag.recall();if(NET.room)NET.room.send('cast',{i});return;}
+ if(PAUSED)return;
+ if(S.cls!=='assassino'&&now<(P.actUntil||0)){const w=P.actUntil-now;if(w<400&&!P.qSk){P.qSk=1;later(w+15,()=>{P.qSk=0;castSkill(i);});}return;}
  if(now<P.cd[i])return;
  if(P.mp<s.mp){toast('Mana insuficiente');return;}
  const off=!['buff','dashBack','heal','clone','transform'].includes(s.type);
@@ -2134,7 +2145,7 @@ function castSkill(i){
  let stars=[];
  if(s.type==='starJump'){stars=pickStar(s.range,s.jumps||5);if(!stars.length){toast('Sem alvo próximo');return;}}
  if(s.type==='chainPull'&&tgt)stars=pickGrab(tgt,s.radius,s.cnt);
- P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
+ P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.actUntil=now+RULES.animMs(S.cls,i);P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
  if(NET.room)NET.room.send('cast',{i,tid:tgt?tgt.id:0,dx:dirx,dz:dirz,tids:stars.map(m=>m.id)});
  if(C.combo){
   const prevOk=P.lastSkill>=0&&now-P.lastSkillAt<3500;
@@ -2374,7 +2385,7 @@ function updatePlayer(dt,now){
  // fecha diálogo se afastar
  if(dlg&&hyp(P.pos,dlg.npc.pos)>7)closeDialog();
 }
-function updateDrops(dt,now){for(const d of drops.slice()){d.mesh.rotation.y+=dt*1.7;d.mesh.position.y=.5+Math.sin(now*.004+d.x)*.12;const life=d.life||120000;if(now-d.born>life){removeDrop(d);continue;}
+function updateDrops(dt,now){for(const d of drops.slice()){const lk=!!(d.lockUntil&&now<d.lockUntil);if(lk!==!!d.lk){d.lk=lk;d.base=(lk?'🔒 ':'')+d.base0;d.label.innerHTML=d.base;d.secs=null;d.mesh.visibility=lk?.45:1;}d.mesh.rotation.y+=dt*1.7;d.mesh.position.y=.5+Math.sin(now*.004+d.x)*.12;const life=d.life||120000;if(now-d.born>life){removeDrop(d);continue;}
  if(d.life){const s=Math.ceil((life-(now-d.born))/1000);if(s!==d.secs){d.secs=s;d.label.innerHTML=d.base+' <span style="opacity:.75">('+s+'s)</span>';}if(s<=5)d.mesh.visibility=Math.sin(now*.02)>0?1:.35;}}}
 function regen(dt,now){
  P.rg+=dt;if(P.rg<1)return;P.rg-=1;if(P.dead)return;
@@ -2457,7 +2468,7 @@ $('invSell').addEventListener('click',e=>{const b=e.target.closest('[data-sellac
 
 function renderInv(){
  for(const i of [...SELL])if(!S.inv[i])SELL.delete(i);
- $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${'◆'.repeat(it.sl)}</span>`:''):''}</div>`).join('');
+ $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${'◆'.repeat(it.sl)}</span>`:''):''}</div>`).join('')+Object.entries(S.tix||{}).filter(([k,v])=>v>0).map(([k,v])=>{const dg=DUNGEONS.find(x=>x.id===k);return `<div class="slot" data-tix="${k}" title="Ingresso: ${dg?dg.name:k} — é consumido ao entrar" style="border-color:#d4a62a">🎟️<span class="cnt">${v}</span></div>`;}).join('');
  $('invGold').textContent='💰 '+(S.gm?'∞':S.gold);updInvSell();
 }
 $('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
@@ -2798,7 +2809,7 @@ async function netJoin(){
   room.onMessage('res',m=>applyRes(m));
   room.onMessage('abuff',m=>{const sk=CLASSES[m.cls]&&CLASSES[m.cls].skills[m.i];if(!sk)return;for(const k in m.buffs)addBuff(k,m.buffs[k],m.dur,sk);ring(P.pos.x,P.pos.z,2.6,sk.color,700);toast(`${sk.i} ${m.by} protegeu você com ${sk.n}!`);logMsg(`<span style="color:${sk.color}">${sk.i} ${esc(m.by)} lançou ${sk.n} em você.</span>`);});
   room.onMessage('gmb',m=>{dirty();if(m&&m.on){const d=D();P.hp=d.maxHp;P.mp=d.maxMp;AUD.sfx('levelUp');ring(P.pos.x,P.pos.z,5,'#ffe28a',900);toast('✨ Você recebeu o Buff do GM por 5 minutos!');logMsg('<span style="color:#ffe28a">✨ <b>Buff do GM</b> ativo por 5 minutos'+(m.by?' (de '+esc(m.by)+')':'')+'</span>');}else{afterChange();logMsg('<span style="color:#cbd6e2">✨ O Buff do GM terminou.</span>');}});
-  room.onMessage('drop',m=>{spawnDrop(m.item,{x:m.x,z:m.z},m.life);const d=drops[drops.length-1];if(d)d.sid=m.id;if(m.item.k==='eq'&&m.item.rar>=2)setTimeout(()=>AUD.sfx('rare'),300);else setTimeout(()=>AUD.sfx('drop'),200);});
+  room.onMessage('drop',m=>{spawnDrop(m.item,{x:m.x,z:m.z},m.life);const d=drops[drops.length-1];if(d){d.sid=m.id;d.lockUntil=m.lock?performance.now()+m.lock:0;}if((m.item.k==='eq'&&m.item.rar>=2)||m.item.k==='tix')setTimeout(()=>AUD.sfx('rare'),300);else setTimeout(()=>AUD.sfx('drop'),200);});
   room.onMessage('drm',m=>{const d=drops.find(x=>x.sid===m.id);if(d)removeDrop(d);});
   room.onMessage('dmg',m=>{const mo=monsters.find(x=>x.id===m.id);if(!mo)return;const mine=m.by===room.sessionId;
    mo.hitAt=performance.now();
@@ -2811,7 +2822,7 @@ async function netJoin(){
   room.onMessage('clones',m=>{const own=m.by===room.sessionId?P:remoteOf(m.by);if(!own)return;if(own!==P)own.id=m.by;spawnClones(own,own===P?S.cls:own.cls,m.n,m.dur);});
   room.onMessage('dgenter',m=>enterDungeonLocal(m));
   room.onMessage('dgleave',m=>leaveDungeonLocal(m));
-  room.onMessage('dg',m=>{DG.st=m;P.dgMaxZ=m.maxZ;DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));if(DG.exit2){const was=DG.exit2.root.isEnabled(false);DG.exit2.root.setEnabled(!!m.done);if(m.done&&!was){ring(DG.exit2.pos.x,DG.exit2.pos.z,3.2,'#d4a62a',900);AUD.sfx('teleport');}}updDgHud();});
+  room.onMessage('dg',m=>{DG.st=m;setPaused(!!m.paused);P.dgMaxZ=m.maxZ;DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));if(DG.exit2){const was=DG.exit2.root.isEnabled(false);DG.exit2.root.setEnabled(!!m.done);if(m.done&&!was){ring(DG.exit2.pos.x,DG.exit2.pos.z,3.2,'#d4a62a',900);AUD.sfx('teleport');}}updDgHud();});
   room.onMessage('party',m=>{PARTY=m;NET.hpL=null;renderParty();});
   room.onMessage('pinv',m=>showInvite(m.from));
   room.onMessage('matk',m=>remoteBasic(m));
@@ -2910,6 +2921,7 @@ function updateRecall(dt,now){
 let last=performance.now();
 engine.runRenderLoop(()=>{
  const now=performance.now(),dt=Math.min((now-last)/1000,.05);last=now;
+ if(PAUSED&&S){scene.render();return;}
  if(S){
   updatePlayer(dt,now);updateMonsters(dt,now);updateLife(dt,now);updateNet(dt,now);updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);
   const t=camera.target;t.x+=(P.pos.x-t.x)*.15;t.y=.6;t.z+=(P.pos.z-t.z)*.15;

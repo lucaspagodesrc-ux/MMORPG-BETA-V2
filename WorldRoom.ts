@@ -27,9 +27,10 @@ type Sess = {
   dirty: boolean; saving: boolean; d: any;
   tokens: number; tokT: number;
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
-  drops: Map<number, { item: any; x: number; z: number; exp: number }>; dropSeq: number;
+  seen: Set<number>; busyUntil: number;
   partyId: number; clone?: { n: number; mult: number; until: number };
 };
+type WDrop = { id: number; item: any; x: number; z: number; exp: number; life: number; inst: number; owner: string; party: number; free: number };
 type Party = { id: number; leader: string; members: string[] };
 
 export class WorldRoom extends Room<WorldState> {
@@ -40,6 +41,8 @@ export class WorldRoom extends Room<WorldState> {
   private parties = new Map<number, Party>();
   private partySeq = 0;
   private invites = new Map<string, { from: string; until: number }>();
+  private wd = new Map<number, WDrop>();            // drops do mundo (visíveis a todos)
+  private wdSeq = 0;
 
   /* ---------- utilidades ---------- */
   private S(client: Client) { return this.sess.get(client.sessionId); }
@@ -51,12 +54,28 @@ export class WorldRoom extends Room<WorldState> {
     const now = Date.now(); s.tokens = Math.min(30, s.tokens + (now - s.tokT) / 1000 * 12); s.tokT = now;
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
+  private isPaused(p: any) { const I = p && p.inst ? this.dg.insts.get(p.inst) : undefined; return !!(I && I.paused); }
   private sync(s: Sess) { if (s.c.gm) s.c.gold = R.GM_GOLD; const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
-    const id = ++s.dropSeq;
-    s.drops.set(id, { item, x, z, exp: Date.now() + (life ? life : 600_000) + 3000 });
-    s.client.send("drop", { id, item, x, z, life });
+    const id = ++this.wdSeq, now = Date.now(), p = this.playerOf(s);
+    this.wd.set(id, { id, item, x, z, exp: now + (life ? life : 600_000) + 3000, life, inst: p?.inst || 0, owner: s.client.sessionId, party: s.partyId, free: now + 20_000 });
+    this.pushDrops();
+  }
+  private canPick(d: WDrop, s: Sess) { return d.owner === s.client.sessionId || Date.now() >= d.free || (d.party > 0 && s.partyId === d.party); }
+  /** Mostra a cada jogador os drops da sua instância/perto dele (e remove os que sumiram). */
+  private pushDrops() {
+    const now = Date.now();
+    for (const s of this.sess.values()) {
+      const p = this.playerOf(s); if (!p) continue;
+      const vis = new Set<number>();
+      for (const d of this.wd.values()) {
+        if (d.inst !== (p.inst || 0) || cx(d.x) !== cx(p.x) || Math.hypot(d.x - p.x, d.z - p.z) > 90) continue;
+        vis.add(d.id);
+        if (!s.seen.has(d.id)) { s.seen.add(d.id); s.client.send("drop", { id: d.id, item: d.item, x: d.x, z: d.z, life: d.life ? Math.max(1000, d.exp - 3000 - now) : 0, lock: this.canPick(d, s) ? 0 : Math.max(0, d.free - now) }); }
+      }
+      for (const id of [...s.seen]) if (!vis.has(id)) { s.seen.delete(id); s.client.send("drm", { id }); }
+    }
   }
   /* ---------- grupos ---------- */
   partyOf(s: Sess): Party | undefined { return s.partyId ? this.parties.get(s.partyId) : undefined; }
@@ -149,6 +168,8 @@ export class WorldRoom extends Room<WorldState> {
       out.push(...R.questKill(c, sim.m.type));
       this.touch(s); this.sync(s); this.res(s, out);
       for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck")))) this.addDrop(s, it, mx, mz, 0);
+      const dgd = R.DUNGEONS[0];                                        // ingresso da dungeon: drop raro (0,3% comum / 4% chefe)
+      if (!sim.inst && dgd && mlvl >= dgd.minLevel - 8 && Math.random() < (T.boss ? 0.04 : 0.003) * (1 + R.luckOf(c, this.buff(s, "luck")))) this.addDrop(s, { k: "tix", id: dgd.id, n: 1 }, mx, mz, 0);
     });
     if (sim.inst) this.dg.onKill(sim);
   }
@@ -159,6 +180,8 @@ export class WorldRoom extends Room<WorldState> {
     if (!Number.isInteger(i) || i < 0 || i >= C.skills.length) return;
     const rank = c.sk[i] || 0; if (!rank || c.level < C.skills[i].lv) return;
     if (s.form && Date.now() < s.form) return;                         // Metamorfose: só ataque básico
+    if (this.isPaused(p)) return;
+    if (c.cls !== "assassino" && Date.now() < s.busyUntil - 220) return;   // uma habilidade só depois do fim da animação da outra
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
     if (C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck" && s.dag.ret) {      // chamar as adagas de volta
       s.dag.ret();
@@ -182,7 +205,7 @@ export class WorldRoom extends Room<WorldState> {
       tgt = this.sim.byId.get(Number(m?.tid));
       if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
     }
-    s.cd[i] = now + sk.cd * 1000;
+    s.cd[i] = now + sk.cd * 1000; s.busyUntil = now + R.animMs(c.cls, i);
     let mult = sk.mult;
     if (C.combo) {
       const prevOk = s.lastSkill >= 0 && now - s.lastSkillAt < 3500;
@@ -318,10 +341,12 @@ export class WorldRoom extends Room<WorldState> {
   private basic(s: Sess, m: any) {
     const p = this.playerOf(s); if (!p || p.dead || R.inTown(p.x, p.z)) return;
     const C = R.CLASSES[s.c.cls], now = Date.now(), d = this.stats(s);
+    if (this.isPaused(p)) return;
+    if (s.c.cls !== "assassino" && now < s.busyUntil - 220) return;
     if (now - s.lastBasic < (900 / (d.atkSpd * (1 + this.buff(s, "aspd")))) * 0.7) return;
     const tgt = this.sim.byId.get(Number(m?.tid));
     if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > C.range + HIT_SLACK) return;
-    s.lastBasic = now;
+    s.lastBasic = now; s.busyUntil = now + 260;
     this.broadcast("matk", { by: s.client.sessionId, tid: tgt.m.id }, { except: s.client });
     const flight = Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000;
     this.later(C.ranged ? flight : 130, () => this.hit(s, tgt, s.c.cls === "tanque" ? 1.15 : 1));   // Tanque: ataque básico +15%
@@ -343,7 +368,9 @@ export class WorldRoom extends Room<WorldState> {
       if (this.clients.length) this.sim.update(dt);
       if (now > sweepAt) {
         sweepAt = now + 2000;
-        for (const s of this.sess.values()) for (const [id, d] of s.drops) if (now > d.exp) s.drops.delete(id);
+        let ch = false;
+        for (const [id, d] of this.wd) if (now > d.exp || (d.inst && !this.dg.insts.has(d.inst))) { this.wd.delete(id); ch = true; }
+        if (ch || this.sess.size) this.pushDrops();
       }
       if (now > gmAt) { gmAt = now + 1000; for (const s of this.sess.values()) if (s.c.gmu && s.c.gmu <= now) { s.c.gmu = 0; this.touch(s); this.sync(s); s.client.send("gmb", { on: 0 }); } }
       if (now > dgAt) { dgAt = now + 1000; this.dg.tick(now); }
@@ -384,18 +411,25 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("pick", (client, m) => {
       const s = this.S(client), p = this.state.players.get(client.sessionId);
       if (!s || !p || p.dead || !this.okRate(s, 1)) return;
-      const d = s.drops.get(Number(m?.id)); if (!d) return;
+      if (this.isPaused(p)) return;
+      const d = this.wd.get(Number(m?.id)); if (!d || d.inst !== (p.inst || 0) || cx(d.x) !== cx(p.x)) return;
       if (Math.hypot(d.x - p.x, d.z - p.z) > PICK_REACH) return;
+      if (!this.canPick(d, s)) return this.res(s, [{ toast: `🔒 Item de outro jogador — libera em ${Math.ceil((d.free - Date.now()) / 1000)}s` }], false);
       const c = s.c, it = d.item, id = Number(m.id);
       let out: any[];
-      if (it.k === "gold") { c.gold += it.n; out = [{ sfx: "coin" }, { float: { t: "+" + it.n + " 💰", c: "#ffe28a" } }]; }
+      if (it.k === "tix") {
+        c.tix = c.tix || {};
+        if ((c.tix[it.id] || 0) >= 5) return this.res(s, [{ toast: "Você já tem 5 ingressos." }], false);
+        c.tix[it.id] = (c.tix[it.id] || 0) + 1;
+        out = [{ sfx: "rare" }, { log: `🎟️ Você obteve <b style="color:#ffd24a">${R.nm(it)}</b>!` }];
+      } else if (it.k === "gold") { c.gold += it.n; out = [{ sfx: "coin" }, { float: { t: "+" + it.n + " 💰", c: "#ffe28a" } }]; }
       else {
         if (!R.canAdd(c.inv, it)) return this.res(s, [{ toast: "Mochila cheia!" }], false);
         const label = R.nm(it) + (it.n > 1 ? " ×" + it.n : "");
         R.addItem(c.inv, it);
         out = [{ sfx: "pickup" }, { log: `Você obteve <b style="color:${it.k === "eq" ? R.RAR[it.rar].c : "#fff"}">${label}</b>` }];
       }
-      s.drops.delete(id); client.send("drm", { id });
+      this.wd.delete(id); this.pushDrops();
       this.touch(s); this.sync(s); this.res(s, out);
     });
 
@@ -448,14 +482,18 @@ export class WorldRoom extends Room<WorldState> {
       const err = this.dg.enter(s, String(m?.id));
       if (err) this.res(s, [{ toast: err }], false); else { this.touch(s); this.sync(s); const pt = this.partyOf(s); if (pt) this.sendParty(pt); }
     });
-    this.onMessage("dgexit", (client) => {
+    this.onMessage("dgexit", (client, m) => {
       const s = this.S(client), p = this.state.players.get(client.sessionId); if (!s || !p || !p.inst) return;
       const I = this.dg.insts.get(p.inst);
       const atEnd = !!(I && I.done && I.def.exitZ !== undefined && Math.hypot(p.x - I.def.cx, p.z - I.def.exitZ) <= 14);
-      if (I && p.z > I.def.start.z + 9 && !atEnd) { this.res(s, [{ toast: I.done ? "Vá até o portal de saída, no fim da cripta." : "Vá até o portal de saída, no começo da cripta." }], false); return; }
-      this.dg.leave(s, true); this.touch(s); this.sync(s);
-      this.res(s, [{ log: '<span style="color:#9fe7b0">🚪 Você saiu da dungeon. Seu ingresso continua válido por <b>5 minutos</b> — volte pelo portal da cripta para continuar.</span>' }]);
+      if (!m?.btn && I && p.z > I.def.start.z + 9 && !atEnd) { this.res(s, [{ toast: I.done ? "Vá até o portal de saída, no fim da cripta." : "Vá até o portal de saída, no começo da cripta." }], false); return; }
+      this.dg.leave(s, true, atEnd); this.touch(s); this.sync(s);
+      this.res(s, [{ log: atEnd ? '<span style="color:#9fe7b0">🏆 Você concluiu a dungeon e saiu pelo portal.</span>' : '<span style="color:#9fe7b0">🚪 Você saiu da dungeon. Seu ingresso continua válido por <b>3 minutos</b> — volte pelo portal da cripta para continuar (em grupo, enquanto alguém ainda estiver lá dentro).</span>' }]);
       const pt = this.partyOf(s); if (pt) this.sendParty(pt);
+    });
+    this.onMessage("dgpause", (client, m) => {
+      const s = this.S(client); if (!s || !this.okRate(s, 2)) return;
+      const err = this.dg.pause(s, !!m?.on); if (err) this.res(s, [{ toast: err }], false);
     });
     this.onMessage("dgtalk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 1)) this.dg.talk(s, String(m?.id)); });
 
@@ -571,15 +609,21 @@ export class WorldRoom extends Room<WorldState> {
     this.state.players.set(client.sessionId, p);
     const now = Date.now();
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,
-      dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(8).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, drops: new Map(), dropSeq: 0, partyId: 0 };
+      dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(8).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, seen: new Set(), busyUntil: 0, partyId: 0 };
     this.sess.set(client.sessionId, s);
     if (p.x > 450) {                                            // estava numa dungeon: volta para a instância se ainda estiver no prazo
       const I = c.run ? this.dg.insts.get(c.run.inst) : undefined;
-      if (I && !I.closed && c.run.until && Date.now() < c.run.until) {
+      if (I && !I.closed && !I.paused && (!c.run.until || Date.now() < c.run.until || (I.grp && I.members.size > 0))) {
         I.members.add(client.sessionId); I.emptySince = 0; delete c.run.until; p.inst = I.id; p.z = Math.min(p.z, this.dg.maxZ(I) - 0.5);
         client.send("dgenter", { id: I.def.id, inst: I.id, cx: I.def.cx, x: p.x, z: p.z }); this.dg.sendState(I, client.sessionId);
       } else { const e = this.dg.entryOf(R.DUNGEONS[0]); p.x = e.x; p.z = e.z; delete c.run; client.send("dgleave", { reason: "A dungeon se fechou enquanto você estava fora.", x: e.x, z: e.z }); }
-    } else if (c.run) delete c.run;
+    } else if (c.run) {                                         // fora da dungeon: mantém o direito de voltar enquanto valer
+      const I = this.dg.insts.get(c.run.inst);
+      if (!(I && !I.closed && (!c.run.until || Date.now() < c.run.until || (I.grp && I.members.size > 0)))) {
+        if (!I && (!c.run.until || Date.now() < c.run.until) && c.run.ends && Date.now() < c.run.ends) { c.tix = c.tix || {}; c.tix[c.run.id] = Math.min(5, (c.tix[c.run.id] || 0) + 1); }
+        delete c.run;
+      }
+    }
     this.sync(s);
     this.broadcast("chat", { kind: "sys", text: `${p.name} entrou no mundo.` }, { except: client });
   }
@@ -587,7 +631,7 @@ export class WorldRoom extends Room<WorldState> {
   async onLeave(client: Client) {
     const p = this.state.players.get(client.sessionId), s = this.sess.get(client.sessionId);
     if (p) this.broadcast("chat", { kind: "sys", text: `${p.name} saiu do mundo.` }, { except: client });
-    if (s) { this.dg.leave(s, false); this.partyLeave(client.sessionId); this.invites.delete(client.sessionId); s.saving = false; await this.save(s); }
+    if (s) { this.dg.leave(s, false); for (const dd of this.wd.values()) if (dd.owner === client.sessionId) dd.owner = ""; this.partyLeave(client.sessionId); this.invites.delete(client.sessionId); s.saving = false; await this.save(s); }
     this.state.players.delete(client.sessionId);
     this.sess.delete(client.sessionId);
     for (const sim of this.sim.list) sim.contrib.delete(client.sessionId);
