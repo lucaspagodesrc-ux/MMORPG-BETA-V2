@@ -1,5 +1,5 @@
-Versão 1.24 - Guerreiro: Metamorfose agora é a forma bárbara
-Requer as versões anteriores (até 1.23) já instaladas.
+Versão 1.25 - Guerreiro: Fúria do Bárbaro
+Requer as versões anteriores (até 1.24) já instaladas.
 
 COMO INSTALAR
 1. Envie index.html, rules.js e WorldRoom.ts para a RAIZ do repositório no GitHub (substituindo os atuais).
@@ -7,7 +7,8 @@ COMO INSTALAR
 3. No navegador, Ctrl+F5.
 
 O QUE MUDOU
-- Removida a forma de urso (guardada para um futuro Druida) e as garras.
-- Metamorfose = forma bárbara: personagem 20% maior, exalando fumaça vermelha, espada normal.
-- Mesmos tempos e atributos: 10s, +30% vel. de ataque, +20% vel. de movimento, recarga 60s.
-- Durante a forma só o ataque básico funciona (habilidades ficam bloqueadas, validado também no servidor).
+- Metamorfose agora se chama "Fúria do Bárbaro".
+- A espada fica vermelha, em chamas, quase transparente durante a forma.
+- Novo: +10 de dano base no nível 1 até +100 no nível 20 da habilidade (buff "Dano base").
+- Novo: +10% de crítico.
+- Mantidos: 10s, +30% vel. de ataque, +20% vel. de movimento, recarga 60s, personagem maior com fumaça vermelha, só ataque básico.

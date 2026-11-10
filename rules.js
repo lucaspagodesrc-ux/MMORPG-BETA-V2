@@ -54,7 +54,7 @@ const CLASSES={
    {n:'Grito de Guerra',i:'📣',lv:8,cd:60,cdMin:60,mp:20,type:'buff',buffs:{dmg:.35,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido. Recarga: 60s.'},
    {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:2.2,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
    {n:'Sangue de Guerra',i:'🩸',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.35,buffs:{dmg:.1},fixBuff:1,dur:20,fixDur:1,color:'#ff6b6b',d:'Auto buff: recupera 35% da vida máxima e dá +10% de dano base por 20s.'},
-   {n:'Metamorfose',i:'😡',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.3},fixBuff:1,dur:10,fixDur:1,color:'#d83a2a',d:'Forma bárbara por 10s: o personagem fica maior e exala fumaça vermelha, com +30% de velocidade de ataque e +20% de velocidade de movimento. Nessa forma só o ataque básico funciona (sem habilidades).'},
+   {n:'Fúria do Bárbaro',i:'😡',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.3,crit:.1,flat:10},flatMin:10,flatMax:100,fixBuff:1,dur:10,fixDur:1,color:'#d83a2a',d:'Forma bárbara por 10s: o personagem fica maior, exala fumaça vermelha e a espada pega fogo. +10 de dano base no nível 1 (até +100 no nível 20), +10% de crítico, +30% de velocidade de ataque e +20% de velocidade de movimento. Só o ataque básico funciona nessa forma.'},
    {n:'Execução',i:'🗡️',lv:25,cd:20,mp:40,type:'single',mult:6,range:3.4,color:'#ffe9a8',d:'Golpe devastador contra um alvo.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
   d:'Ataque à distância. Crítico alto e mobilidade.',
   skills:[
@@ -490,10 +490,11 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 
 /** Valores de uma habilidade conforme o rank. */
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
-const BCAP = { aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
+const BCAP = { flat: 1000, aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
+  if (s.flatMin != null) bf.flat = s.flatMin + (s.flatMax - s.flatMin) * Math.min(1, k / (MAXRANK - 1));
   if (s.evMin != null && bf.evade != null) bf.evade = s.evMin + (s.evMax - s.evMin) * Math.min(1, k / (MAXRANK - 1));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
   return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? Math.min(.9, s.pct * (1 + ph(k, .15, .05))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
@@ -503,7 +504,7 @@ function skStat(cls, i, rank) {
 function hitDamage(d, o, mon) {
   const b = o.buffs || {};
   const crit = o.forceCrit || Math.random() < Math.min(.75, (d.crit + (b.crit || 0) * 100) / 100);
-  const base = d.dmg + (o.defMult ? d.def * o.defMult : 0) + (b.defdmg || 0) * d.def;
+  const base = d.dmg + (b.flat || 0) + (o.defMult ? d.def * o.defMult : 0) + (b.defdmg || 0) * d.def;
   let dmg = base * (1 + (b.dmg || 0)) * o.mult * rnd(.9, 1.1);
   if (crit) dmg *= (d.critMul || 1.7); if (o.marked) dmg *= 1.35; if (o.exec && mon.hp < mon.maxHp * .4) dmg *= 2; dmg *= (1 + (b.combo || 0));
   return { dmg: Math.max(1, Math.round(dmg * 100 / (100 + mon.def * 2))), crit };

@@ -99,7 +99,7 @@ export class WorldRoom extends Room<WorldState> {
     if (!sim.m.alive) return;
     const sid = s.client.sessionId, p = this.state.players.get(sid);
     if (!p || p.dead) return;
-    const buffs = { dmg: this.buff(s, "dmg"), defdmg: this.buff(s, "defdmg"), crit: this.buff(s, "crit"), combo: this.buff(s, "combo") };
+    const buffs = { dmg: this.buff(s, "dmg"), defdmg: this.buff(s, "defdmg"), crit: this.buff(s, "crit"), combo: this.buff(s, "combo"), flat: this.buff(s, "flat") };
     const r = R.hitDamage(this.stats(s), { mult, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def * (1 - (o.pierce || 0)), hp: sim.m.hp, maxHp: sim.m.maxHp });
     const died = this.sim.damage(sid, sim, r.dmg, o.slow || 0);
     this.broadcast("dmg", { id: sim.m.id, d: r.dmg, c: r.crit ? 1 : 0, by: sid });
