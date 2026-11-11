@@ -1,21 +1,17 @@
-ATUALIZAÇÃO 1.42 — ATRIBUTOS ESPECIAIS NOS DROPS DE CHEFE
-Pacote CUMULATIVO: contém tudo da 1.41, 1.40, 1.39 e 1.38. Se a 1.41 já está instalada, só rules.js, index.html e worldboss.ts mudam.
+ATUALIZAÇÃO 1.43 — MESMA GEMA EM VÁRIOS ENGASTES
+Pacote CUMULATIVO: contém tudo da 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.42 já está instalada, só rules.js e index.html mudam.
 
-NOVO: ATRIBUTOS DE ITEM (fora dos engastes) — SÓ EM DROPS DE CHEFE
-Equipamentos que caem de chefes podem vir com atributos extras fixos, mostrados em dourado na dica do item
-("★ ... (atributo do item)"). Cada atributo é sorteado separadamente, por equipamento de chefe:
-- Dano Crítico:           10% de chance • valor +8%, +10% ou +16%
-- Técnica de Amp.:         5% de chance • valor +4%, +6% ou +8%  (Espada para classes físicas, Mágica para Mago/Pierrot)
-- Taxa Crítica Máxima:     5% de chance • valor +1%, +2% ou +3%
-- Dentro de cada atributo, o valor menor é o mais comum (50% / 35% / 15%).
-- Um mesmo item pode (raramente) vir com mais de um.
-- Os atributos somam com os das gemas e valem os mesmos tetos totais. A taxa crítica continua limitada a 52% + Taxa Crítica Máxima.
-- Capas não recebem esse atributo. Monstros comuns e baús de calabouço NÃO dão (só chefes).
-- Vale para: chefes de campo e de calabouço (drop do próprio chefe), prêmios e relíquias dos Chefes de Mundo.
-- O item continua com os 0–3 engastes normais: o atributo é separado do engaste.
+O QUE MUDOU
+- Removida a regra "cada opção só pode aparecer uma vez por item".
+- Agora o mesmo pergaminho pode ser engastado em quantos engastes o item tiver (até 3, o máximo de engastes).
+  Ex.: 3× "Dano Crítico" em uma arma de 3 engastes soma os 3 valores.
+- Continua valendo: a gema precisa ser da categoria certa para o equipamento, e não dá para engastar a mesma gema
+  num engaste que já a tem (use outro engaste ou outra gema). Trocar uma gema destrói a antiga.
+- Os tetos TOTAIS de cada atributo (ex.: Taxa Crítica, Amp.) continuam valendo; o excedente é desperdiçado.
+- Itens já existentes não são alterados.
 
 INSTALAÇÃO
-1) Envie rules.js, index.html e worldboss.ts para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
-   à 1.41, envie todos os arquivos do pacote.
+1) Envie rules.js e index.html para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
+   à 1.42, envie todos os arquivos do pacote.
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.

@@ -732,7 +732,7 @@ function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
 /* ====================== GEMAS / PERGAMINHOS DE OPÇÃO (engastes ◇) ======================
    Cada pergaminho é uma gema que ocupa UM engaste (◇) de um equipamento e dá um bônus fixo (como as "opções" do Cabal).
    Categoria: 'w' = só em ARMAS • 'a' = armaduras, elmo, botas, escudo e acessórios. O grau define o preço do pergaminho.
-   Regras: 1 opção igual por item; engaste ocupado pode ser trocado (a gema antiga é destruída); capas não têm engastes. */
+   Regras: a mesma opção pode repetir em vários engastes do item; engaste ocupado pode ser trocado (a gema antiga é destruída); capas não têm engastes. */
 const GRADES = [
   { id: 'low',  n: 'Baixo',     en: 'Low',     p: 2e6,  c: '#8fd07a' },
   { id: 'med',  n: 'Médio',     en: 'Medium',  p: 5e6,  c: '#5fb4ff' },
@@ -1327,8 +1327,8 @@ function cleanItem(it) {
   it.bon = nb;
   { const xa = {}; if (it.xa && typeof it.xa === 'object' && it.slot !== 'cape') for (const k in it.xa) if (xaOk(k, it.xa[k])) xa[k] = it.xa[k]; if (Object.keys(xa).length) it.xa = xa; else delete it.xa; }
   it.sl = Math.max(0, Math.min(MAX_SLOTS, Math.floor(it.sl || 0))); if (!it.sl || it.slot === 'cape') delete it.sl;
-  { const cat = it.slot === 'weapon' ? 'w' : 'a', gm = [], seen = new Set();   // gemas engastadas: categoria certa, sem repetir a mesma opção
-    for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat && !seen.has(id)) { gm.push(id); seen.add(id); } else gm.push(null); }
+  { const cat = it.slot === 'weapon' ? 'w' : 'a', gm = [];   // gemas engastadas: categoria certa (a mesma opção PODE repetir em vários engastes)
+    for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat) gm.push(id); else gm.push(null); }
     if (gm.some(Boolean)) it.gm = gm; else delete it.gm; }
   if (!(typeof it.mo === 'string' && OG[it.mo])) delete it.mo;
   if (typeof it.name !== 'string') it.name = SLOTS[it.slot];
@@ -1575,7 +1575,6 @@ function act(sess, m, ctx) {
     const g = GEMD[MATS[sc.id].gem], cat = gemCat(it);
     if (g.cat !== cat) return fail(cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas.' : 'Esta gema é de ARMA: só serve em armas.');
     const gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl) : []; while (gm.length < it.sl) gm.push(null);
-    if (gm.some((x, j) => x === g.id && j !== si)) return fail('Este item já tem a opção "' + g.o + '" em outro engaste.');
     if (gm[si] === g.id) return fail('Este engaste já tem essa mesma gema.');
     if (gm[si] && !m.rep) return fail('O engaste já está ocupado: confirme para substituir (a gema antiga é destruída).');
     sc.n--; if (sc.n <= 0) c.inv[gi] = null; gm[si] = g.id; it.gm = gm;
