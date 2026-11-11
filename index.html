@@ -63,7 +63,9 @@
   #buffs{display:none!important;position:absolute;left:50%;bottom:80px;transform:translateX(-50%);display:flex;gap:6px;font-size:11px;z-index:3}
   #buffs span{background:rgba(13,20,31,.85);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
   #log{left:12px;bottom:12px;width:310px;height:128px;padding:8px 10px;font-size:11.5px;line-height:1.45;overflow:hidden;z-index:3;pointer-events:none}
-  #menu{position:absolute;right:12px;top:174px;display:flex;flex-direction:column;gap:5px;z-index:3}
+  #menu{position:absolute;right:12px;top:174px;bottom:10px;display:flex;flex-direction:column;flex-wrap:wrap-reverse;align-content:flex-start;gap:5px;z-index:3;pointer-events:none}
+  #menu button{pointer-events:auto}
+  @media(max-height:760px){#menu button{width:36px;height:36px;font-size:16px;border-radius:8px}#menu{gap:4px}}
   #menu button{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:rgba(13,20,31,.9);color:#fff;font-size:19px;cursor:pointer}
   #menu button:hover{border-color:var(--gold)}
   .win{display:none;top:92px;width:318px;padding:12px;z-index:6}
@@ -113,6 +115,8 @@
   #trWin input{background:#0f1822;color:#e6edf5;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px;width:70px}
   #trWin .bar{display:flex;gap:8px;align-items:center;justify-content:space-between}
   #trInv{display:none;top:140px;left:50%;transform:translateX(-50%);padding:10px 14px;z-index:8;gap:12px;align-items:center;font-size:13px}
+  .panel.win h3,#dialog .dh,#ahWin .dh,#mailWin .dh,#trWin .dh,#audioPanel h3{cursor:move;touch-action:none;user-select:none}
+  #help{cursor:move;max-height:92vh;overflow:auto}
   #dialog .dh{display:flex;justify-content:space-between;align-items:center;font-size:16px}
   .greet{color:var(--mut);font-size:12px;margin:4px 0 8px}
   .tabs{display:flex;gap:6px;margin-bottom:8px}
@@ -4181,6 +4185,29 @@ $('ahWin').addEventListener('click',e=>{
   return ahSend({op:'sell',i,qty:Math.max(1,qty),price});}
 });
 
+
+/* =================== JANELAS ARRASTÁVEIS ===================
+   Qualquer janela aberta pode ser arrastada pelo título (a de ajuda, por qualquer ponto). Clicar numa janela a traz para a frente. */
+(()=>{
+ const SEL='.panel.win,#help,#dialog,#ahWin,#mailWin,#trWin,#audioPanel',order=[];
+ const raise=el=>{if(el.id==='audioPanel')return;const i=order.indexOf(el);if(i>=0)order.splice(i,1);order.push(el);order.forEach((w,k)=>w.style.zIndex=String(10+k));};
+ const clamp=(w,x,y)=>{const W=w.offsetWidth;return[Math.max(-W+90,Math.min(innerWidth-90,x)),Math.max(0,Math.min(innerHeight-40,y))];};
+ document.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const w=e.target.closest&&e.target.closest(SEL);if(!w)return;
+  raise(w);
+  if(e.target.closest('button,input,select,textarea,a,label,.row2,.ri,.opt'))return;
+  const hd=w.id==='help'?w:e.target.closest('h3,.dh');if(!hd||!w.contains(hd))return;
+  const r=w.getBoundingClientRect();
+  w.style.transform='none';w.style.left=r.left+'px';w.style.top=r.top+'px';w.style.right='auto';w.style.bottom='auto';w.style.width=r.width+'px';
+  const dx=e.clientX-r.left,dy=e.clientY-r.top;
+  const mv=ev=>{const[x,y]=clamp(w,ev.clientX-dx,ev.clientY-dy);w.style.left=x+'px';w.style.top=y+'px';};
+  const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);
+  e.preventDefault();
+ });
+ addEventListener('resize',()=>{for(const w of document.querySelectorAll(SEL)){if(!w.style.left||w.style.transform!=='none')continue;const[x,y]=clamp(w,parseFloat(w.style.left)||0,parseFloat(w.style.top)||0);w.style.left=x+'px';w.style.top=y+'px';}});
+})();
 /* =================== CORREIO =================== */
 const MAIL={open:false,list:[],n:0,msg:'',ok:false};
 function tipMail(k){const[a,b]=k.split(',').map(Number),L=MAIL.list[a];return L&&L.items[b]&&L.items[b].item;}

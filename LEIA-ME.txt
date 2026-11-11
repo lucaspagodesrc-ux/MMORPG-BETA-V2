@@ -1,31 +1,13 @@
-ATUALIZAÇÃO 1.34 — CORREIO, TAXA/EXPIRAÇÃO NO LEILÃO E TROCA ENTRE JOGADORES
+ATUALIZAÇÃO 1.35 — BARRA DA DIREITA AJUSTADA E JANELAS ARRASTÁVEIS (somente o index.html mudou)
 
-1) CORREIO (botão 📬 no menu da direita, funciona em qualquer lugar do mapa; vale para todos os personagens da conta)
-- Recebe os ganhos das vendas do Leilão, os itens de anúncios vencidos e (no futuro) recompensas de eventos.
-- Um número vermelho no 📬 mostra quantas cartas novas existem; quem está online recebe aviso no chat.
-- "Receber" pega ouro e itens da carta. Se a mochila estiver cheia, a carta NÃO é perdida: fica esperando
-  até você liberar espaço. Também há "Receber tudo" e "Marcar como lidas". Cartas sem anexos podem ser apagadas.
-- Os ganhos que já estavam guardados no Leilão (versão 1.33) viram uma carta automaticamente.
-
-2) LEILÃO
-- Taxa de 5% sobre cada venda (o vendedor recebe 95% por carta; a carta mostra a taxa cobrada). Só paga quem vende.
-- Anúncios duram 3 dias. Se não venderem, o item volta para o dono por carta, com todos os anexos.
-- Se você adicionar mais itens idênticos pelo mesmo preço num anúncio existente, o prazo de 3 dias recomeça.
-- Em "Meus anúncios" aparece quanto tempo falta para expirar.
-
-3) TROCA ENTRE JOGADORES
-- Clique em outro jogador (ou no nome dele na barra do grupo) e escolha "🔁 Propor troca". Precisam estar perto.
-- O outro jogador aceita ou recusa. Na janela, cada um escolhe até 10 itens da mochila e uma quantia de ouro.
-- Mudou a oferta? As confirmações dos dois são zeradas. Quando AMBOS clicam em "Confirmar troca", o
-  servidor confere tudo de novo (itens, ouro, espaço na mochila dos dois) e troca de uma vez só.
-  Se algo estiver errado, a troca é cancelada e ninguém perde nada.
-- A troca também é cancelada se alguém sair do jogo, se afastar demais ou cancelar.
+- A barra de botões da direita (mochila, personagem, ... trocar personagem) agora cabe em qualquer altura
+  de tela: os botões diminuem em telas baixas e, se ainda faltar espaço, formam uma segunda coluna ao lado.
+- TODAS as janelas do jogo podem ser arrastadas pelo título: mochila, personagem, habilidades, missões, grupo,
+  amigos, títulos, painel do GM, diálogos de NPC (loja, forja, baú...), Leilão, Correio, Troca e Áudio.
+  A janela de Ajuda (controles) pode ser arrastada por qualquer ponto.
+- Clicar numa janela a traz para a frente. Ela não sai totalmente da tela, e a posição é mantida ao
+  fechar e abrir de novo (até recarregar a página).
 
 COMO INSTALAR
-1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub (mail.ts, trade.ts e itemutil.ts são NOVOS):
-   index.html, auction.ts, mail.ts, trade.ts, itemutil.ts, db.ts, WorldRoom.ts
-2. Aguarde o Render terminar o deploy (a tabela do correio é criada sozinha).
-3. No navegador, aperte Ctrl+F5.
-
-OBSERVAÇÃO
-- Cartas já lidas e vazias são removidas sozinhas após 14 dias; cartas com anexos nunca expiram.
+1. Envie o index.html deste zip para a raiz do repositório no GitHub (substituindo o existente).
+2. Aguarde o Render terminar o deploy e aperte Ctrl+F5 no navegador.
