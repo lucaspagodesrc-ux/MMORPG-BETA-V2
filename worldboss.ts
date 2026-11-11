@@ -198,8 +198,8 @@ export class WorldBosses {
     items.push({ item: { k: "pot", id: L >= 75 ? "mp2" : "mp" }, qty: 10 });
     for (const mk of Object.keys(T.mats || {})) items.push({ item: { k: "mat", id: mk }, qty: (mk === "essencia" ? 3 : 2) + (top3 ? 2 : 0) });
     const pool = R.slotPool(cls);
-    items.push({ item: R.genItem(pick(pool), L, top3 ? 3 : Math.max(2, R.rarRoll(2)), cls, cls, 0, d.id), qty: 1 });
-    if (top3) items.push({ item: R.genItem(pick(pool), L, 3, cls, cls, 0, d.id), qty: 1 });
+    items.push({ item: R.rollBossAttr(R.genItem(pick(pool), L, top3 ? 3 : Math.max(2, R.rarRoll(2)), cls, cls, 0, d.id), cls), qty: 1 });
+    if (top3) items.push({ item: R.rollBossAttr(R.genItem(pick(pool), L, 3, cls, cls, 0, d.id), cls), qty: 1 });
     if (Math.random() < (top3 ? 0.25 : 0.06)) items.push({ item: R.rollScroll(cls, L), qty: 1 });
     let relic: any = null;
     if (Math.random() < 0.012 + (rank === 1 ? 0.02 : rank <= 3 ? 0.01 : 0)) { relic = R.genRelic(cls, L + 1, d.id); items.push({ item: relic, qty: 1 }); }

@@ -794,10 +794,28 @@ const gemTxt = (g, ilvl) => '+' + gemVal(g, ilvl).toLocaleString('pt-BR') + (g.u
 const gemCat = it => it && it.slot === 'weapon' ? 'w' : 'a';
 /** escola de habilidades da classe: 'E' = física (Espada) • 'M' = mágica */
 const schoolOf = cls => (cls === 'mago' || cls === 'pierrot') ? 'M' : 'E';
+/** ATRIBUTOS DE ITEM (fora do engaste): só vêm em drops de CHEFE. it.xa = { cdmg | ampE | ampM | cmax : valor }.
+ *  p = chance (por equipamento de chefe) • v = valores possíveis (sorteados com peso 50/35/15) */
+const XA = { cdmg: { p: .10, v: [8, 10, 16], n: 'Dano Crítico' }, amp: { p: .05, v: [4, 6, 8], n: 'Técnica de Amp.' }, cmax: { p: .05, v: [1, 2, 3], n: 'Taxa Crítica Máxima' } };
+const XA_W = [.5, .85, 1];
+const xaOk = (k, v) => (k === 'cdmg' && XA.cdmg.v.includes(v)) || ((k === 'ampE' || k === 'ampM') && XA.amp.v.includes(v)) || (k === 'cmax' && XA.cmax.v.includes(v));
+const xaName = k => k === 'cdmg' ? 'Dano Crítico' : k === 'cmax' ? 'Taxa Crítica Máxima' : k === 'ampM' ? 'Técnica de Amp. Mágica' : 'Técnica de Amp. Espada';
+/** Rola os atributos de item de um equipamento dropado por chefe (cada um é sorteado separadamente). */
+function rollBossAttr(it, cls) {
+  if (!it || it.k !== 'eq' || it.slot === 'cape') return it;
+  const tier = () => { const r = Math.random(); return r < XA_W[0] ? 0 : r < XA_W[1] ? 1 : 2; };
+  const xa = {};
+  if (Math.random() < XA.cdmg.p) xa.cdmg = XA.cdmg.v[tier()];
+  if (Math.random() < XA.amp.p) xa[schoolOf(cls || it.cls) === 'M' ? 'ampM' : 'ampE'] = XA.amp.v[tier()];
+  if (Math.random() < XA.cmax.p) xa.cmax = XA.cmax.v[tier()];
+  if (Object.keys(xa).length) it.xa = xa;
+  return it;
+}
 /** soma dos bônus das gemas dos itens EQUIPADOS (já com os tetos) */
 function gemTotals(c) {
   const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0, acc: 0, ignPen: 0, ignAcc: 0, ignRcrit: 0, ignRcdmg: 0, ignBlock: 0, ignRdmg: 0, rdmg: 0, rcrit: 0, rcdmg: 0, ramp: 0, lhpUp: 0, lmpUp: 0, lhpLim: 0, lmpLim: 0 };
-  for (const k in c.eq) { const it = c.eq[k]; if (!it || !Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g) t[g.k] += gemVal(g, it.ilvl); } }
+  for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; if (it.xa) for (const x in it.xa) if (x in t && xaOk(x, it.xa[x])) t[x] += it.xa[x];   // atributo de item (drop de chefe)
+    if (!Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g) t[g.k] += gemVal(g, it.ilvl); } }
   for (const k in GCAP) t[k] = Math.min(t[k], GCAP[k]);
   for (const k in GCAPL) t[k] = Math.min(t[k], GCAPL[k] * Math.max(1, c.level || 1));
   return t;
@@ -1022,7 +1040,7 @@ function rollLoot(T, mlvl, cls, luck) {
   const out = [];
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
   for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
-  if (Math.random() < T.eq * (1 + luck / 100)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .015 * lk ? 2 : Math.random() < .08 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); out.push(it); } }
+  if (Math.random() < T.eq * (1 + luck / 100)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .015 * lk ? 2 : Math.random() < .08 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
   if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
   if (T.boss && !T.chest && Math.random() < (T.dg ? .035 : .02) * (1 + luck / 100)) out.push(rollScroll(cls, mlvl));   // pergaminho de opção: chance mínima em chefes
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
@@ -1240,7 +1258,7 @@ function genRelic(cls, ilvl, mo, slot) {
   const main = (CLASSES[cls] || {}).main || 'str', st = ['str', 'agi', 'int', 'vit'], q = Math.max(1, Math.round(ilvl / 3));
   it.bon = {}; it.bon[main] = Math.round(q * 2);
   for (let n = 0; n < 3; n++) { const s2 = n === 0 ? 'vit' : pick(st); it.bon[s2] = (it.bon[s2] || 0) + Math.max(1, q); }
-  it.wb = 1; it.name = '✦ ' + it.name.replace(/^★ /, ''); return it;
+  it.wb = 1; it.name = '✦ ' + it.name.replace(/^★ /, ''); return rollBossAttr(it, cls);
 }
 /** tabela de cor/nome de raridade (relíquias têm a sua) */
 const rarOf = it => it && it.wb ? { n: 'Relíquia', c: '#ffcf4a', m: RAR[3].m } : RAR[it ? it.rar : 0];
@@ -1307,6 +1325,7 @@ function cleanItem(it) {
   const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1) * (it.wb ? 3 : 1), nb = {};
   for (const s of ['str', 'agi', 'int', 'vit']) if (it.bon && it.bon[s] > 0) nb[s] = Math.min(bmax, Math.floor(it.bon[s]));
   it.bon = nb;
+  { const xa = {}; if (it.xa && typeof it.xa === 'object' && it.slot !== 'cape') for (const k in it.xa) if (xaOk(k, it.xa[k])) xa[k] = it.xa[k]; if (Object.keys(xa).length) it.xa = xa; else delete it.xa; }
   it.sl = Math.max(0, Math.min(MAX_SLOTS, Math.floor(it.sl || 0))); if (!it.sl || it.slot === 'cape') delete it.sl;
   { const cat = it.slot === 'weapon' ? 'w' : 'a', gm = [], seen = new Set();   // gemas engastadas: categoria certa, sem repetir a mesma opção
     for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat && !seen.has(id)) { gm.push(id); seen.add(id); } else gm.push(null); }
@@ -1486,7 +1505,7 @@ function act(sess, m, ctx) {
     if (!npcFor('comprar')) return fail('Chegue perto de um comerciante.');
     const sh = (SHOPS[npcById(m.npc).shop || 'aurora'] || []).find(x => x.id === m.id); if (!sh) return fail();
     if (sh.f && !sh.f(c)) return fail();
-    const cost = sh.c(c); if (c.gold < cost) return fail('Ouro insuficiente');
+    const cost = c.gm ? 0 : sh.c(c); if (c.gold < cost) return fail('Ouro insuficiente');   // GM compra de graça
     const it = sh.mk(c); if (!canAdd(c.inv, it)) return fail('Mochila cheia!'); c.gold -= cost; addItem(c.inv, it); F('coin');
     if (sh.box) { T('Você abriu: ' + nm(it)); L(`🎁 A caixa continha <b style="color:${colOf(it)}">${nm(it)}</b>`); if (it.rar >= 2) F('rare'); } return done();
   }
@@ -1562,6 +1581,20 @@ function act(sess, m, ctx) {
     sc.n--; if (sc.n <= 0) c.inv[gi] = null; gm[si] = g.id; it.gm = gm;
     F('upOk'); T('💎 Gema engastada: ' + g.o); L(`<span style="color:${GRADES[g.g].c}">💎 ${g.n} engastada em ${it.name}: <b>${g.o} ${gemTxt(g, it.ilvl)}</b></span>`); DW('sock'); return done();
   }
+  if (t === 'unsocket') {                                                  // SÓ GM: retira gemas engastadas quando quiser (volta o pergaminho)
+    if (!c.gm) return fail('Só contas GM podem retirar gemas.');
+    if (!npcFor('engastar')) return fail('Chegue perto de um Gemólogo.');
+    const ref = String(m.ref || ''); let it = null;
+    if (ref.startsWith('eq:')) it = validKey(ref.slice(3)) && c.eq[ref.slice(3)]; else if (ref.startsWith('inv:')) { const i = +ref.slice(4); it = intIn(i, 0, c.inv.length) ? c.inv[i] : null; }
+    if (!it || it.k !== 'eq' || !Array.isArray(it.gm)) return fail('Esse equipamento não tem gemas.');
+    const idx = m.all ? it.gm.map((_, i) => i) : (intIn(m.si, 0, it.gm.length) ? [m.si] : []);
+    const ids = idx.filter(i => it.gm[i]).map(i => it.gm[i]); if (!ids.length) return fail('Nenhuma gema nesse engaste.');
+    const inv2 = c.inv.map(x => x && { ...x });
+    for (const id of ids) if (!addItem(inv2, { k: 'mat', id: 'g_' + id, n: 1 })) return fail('Mochila cheia!');
+    for (const id of ids) addItem(c.inv, { k: 'mat', id: 'g_' + id, n: 1 });
+    for (const i of idx) it.gm[i] = null; if (!it.gm.some(Boolean)) delete it.gm;
+    F('upOk'); T('💎 Gema(s) retirada(s): ' + ids.length); L(`<span style="color:#7fe0ff">💎 GM: ${ids.length} gema(s) retirada(s) de ${it.name} (voltaram como pergaminho).</span>`); return done();
+  }
   if (t === 'sp_start' || t === 'sp_pick' || t === 'sp_reset') {            // Mestre dos Caminhos (nível 100)
     if (!npcFor('caminhos')) return fail('Chegue perto do Mestre dos Caminhos.');
     if (c.level < SPEC_LV) return fail('Os Caminhos abrem no nível ' + SPEC_LV + '.');
@@ -1636,7 +1669,7 @@ const arenaPrize = (c, i) => {
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, breakReturn, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

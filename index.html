@@ -875,6 +875,7 @@ function tipOf(it){
   h+=`<span class="${S.level>=it.req?'':'no'}">Nível necessário: ${it.req}</span><br>`;
   if(it.mo&&OG[it.mo]){const g=OG[it.mo];h+=`<span style="color:${g.col}">◆ Origem: ${MT[it.mo].n} • ${EL[g.el].n}</span><br>`;if(it.plus>=7)h+=`<span style="color:#ffd27a">✨ Efeito ativo: ${EL[g.el].n}</span><br>`;}else if(it.plus>=7)h+=`<span style="color:#ffd27a">✨ Efeito ativo: Brilho dourado</span><br>`;
   if(it.mo&&RULES.OGK[it.mo]&&RULES.SETB[OG[it.mo].el]){const key=RULES.OGK[it.mo],hv=RULES.setCounts(S)[key]||0,si=RULES.setInfo(key,hv);h+=`<span style="color:${si.col}">⛓ ${si.name} — ${hv} peça(s) equipada(s)</span><br>`+si.tiers.map(t=>`<span class="${t.on?'ok':'muted'}" style="font-size:11px">${t.on?'✔':'·'} (${t.n}) ${t.txt}</span><br>`).join('');}
+  if(it.xa)for(const k in it.xa)h+=`<span style="color:#ffd24a">★ ${RULES.xaName(k)} <b>+${it.xa[k]}%</b></span> <span class="muted" style="font-size:11px">(atributo do item)</span><br>`;
   if(it.sl){h+=`<span style="color:#7fe0ff">Engastes (${(it.gm||[]).filter(Boolean).length}/${it.sl}):</span><br>`;for(let i=0;i<it.sl;i++){const g=it.gm&&it.gm[i]?GEMD[it.gm[i]]:null;h+=g?`${sockH(it,i)}<span style="color:${GRADES[g.g].c}">${g.o} <b>${RULES.gemTxt(g,it.ilvl)}</b></span><br>`:`${sockH(it,i)}<span class="muted">vazio</span><br>`;}}
   if(it.atk)h+=`Ataque: <b>${Math.round(eff(it,'atk'))}</b><br>`;if(it.def)h+=`Defesa: <b>${Math.round(eff(it,'def'))}</b><br>`;if(it.hp)h+=`Vida: +${it.hp}<br>`;
   for(const s in it.bon)h+=`<span class="ok">+${it.bon[s]} ${STN[s]}</span><br>`;
@@ -5037,7 +5038,7 @@ function renderDialog(){
  }else if(dlg.tab==='comprar'){
    {let last='';h+=(SHOPS[n.shop||'aurora']||[]).filter(o=>!o.f||o.f(S)).map(o=>{const c=o.c(S);let sec='';if(o.sec&&o.sec!==last){last=o.sec;sec=`<div class="secH">${o.sec}</div>`;}
     const g=o.scr?GEMD[o.scr]:null,gc=g?GRADES[g.g].c:'',sc=RULES.schoolOf(S.cls),bad=g&&(((g.k==='ampE'||g.k==='atkE')&&sc==='M')||((g.k==='ampM'||g.k==='atkM')&&sc==='E'));
-    return sec+`<div class="row2"><div class="ri"${g?` style="border-color:${gc}"`:''}>${g?gemSvg(o.scr):o.i}</div><div class="rt"><b${g?` style="color:${gc}"`:''}>${o.n}</b><small>${o.d}</small>${bad?'<small class="no">⚠ Não funciona para a sua classe</small>':''}</div><div class="rb"><div class="${S.gold>=c?'ok':'no'}">💰 ${fmt(c)}</div><button data-act="buy" data-id="${o.id}" ${S.gold>=c?'':'disabled'}>Comprar</button></div></div>`;}).join('');}
+    return sec+`<div class="row2"><div class="ri"${g?` style="border-color:${gc}"`:''}>${g?gemSvg(o.scr):o.i}</div><div class="rt"><b${g?` style="color:${gc}"`:''}>${o.n}</b><small>${o.d}</small>${bad?'<small class="no">⚠ Não funciona para a sua classe</small>':''}</div><div class="rb"><div class="${S.gm||S.gold>=c?'ok':'no'}">${S.gm?'🆓 grátis (GM)':'💰 '+fmt(c)}</div><button data-act="buy" data-id="${o.id}" ${S.gm||S.gold>=c?'':'disabled'}>Comprar</button></div></div>`;}).join('');}
  }else if(dlg.tab==='engastar'){
    const list=[];for(const sk in S.eq){const it=S.eq[sk];if(it&&it.slot!=='cape')list.push({ref:'eq:'+sk,it,tip:`data-eq="${sk}"`,eq:true});}
    S.inv.forEach((it,i)=>{if(it&&it.k==='eq'&&it.slot!=='cape')list.push({ref:'inv:'+i,it,tip:`data-inv="${i}"`});});
@@ -5046,6 +5047,7 @@ function renderDialog(){
    h+=`<div class="dsec">① Equipamento (${list.length})</div><div class="gmbox">`+(list.length?list.map(o=>{const it=o.it;return `<div class="row2 gsrow${o.ref===dlg.gsel?' sel':''}" data-act="gsel" data-id="${o.ref}"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${esc(it.name)}${it.plus?' +'+it.plus:''}${o.eq?' <small style="display:inline">(equipado)</small>':''}</b><small>${it.sl?socksH(it):'sem engastes'}</small></div></div>`;}).join(''):'<p class="muted">Você não tem equipamentos.</p>')+'</div>';
    if(cur){const it=cur.it,n3=it.sl||0,gi=Math.min(dlg.gsi||0,Math.max(0,n3-1));dlg.gsi=gi;
     h+=`<div class="dsec">② Engastes de <b style="color:${col(it)}">${esc(it.name)}</b> (${n3}/${RULES.MAX_SLOTS})</div>`;
+    if(S.gm&&n3&&(it.gm||[]).some(Boolean))h+=`<div class="row2"><div class="ri" style="border-color:#7fe0ff">🧲</div><div class="rt"><b>Retirar gemas (GM)</b><small>Devolve o pergaminho para a mochila. Só para contas GM.</small></div><div class="rb"><button data-act="gunone" ${(it.gm||[])[gi]?'':'disabled'}>Retirar do engaste ${gi+1}</button><button data-act="gunall">Retirar todas</button></div></div>`;
     if(n3)h+='<div class="gslots">'+Array.from({length:n3},(_,i)=>{const g=it.gm&&it.gm[i]?GEMD[it.gm[i]]:null;return `<div class="gs">${sockH(it,i,{lg:1,act:'gslot',on:i===gi})}<span>${g?`<b style="color:${GRADES[g.g].c}">${g.o}</b><br>${RULES.gemTxt(g,it.ilvl)}`:'vazio'}</span></div>`;}).join('')+'</div>';
     else h+='<p class="muted">Este item não tem engastes. Use um Extensor de Slot para criar o primeiro.</p>';
     h+=`<div class="row2"><div class="ri" style="border-color:#c9a8ff">🔳</div><div class="rt"><b>Extensor de Slot</b><small>Cria +1 engaste neste item (máx. ${RULES.MAX_SLOTS}). Você tem: <b>${exts}</b> • preço ${fmt(RULES.EXT_PRICE)} 💰 (aba Comprar)</small></div><div class="rb"><button data-act="gext" ${exts>0&&n3<RULES.MAX_SLOTS?'':'disabled'}>Usar extensor</button></div></div>`;
@@ -5114,6 +5116,8 @@ $('dialog').addEventListener('click',e=>{
   if(a==='gsel'){dlg.gsel=id;dlg.gsi=0;dlg.rep=null;return renderDialog();}
   if(a==='gslot'){dlg.gsi=+id;dlg.rep=null;return renderDialog();}
   if(a==='gext'){ACT({t:'extend',npc,ref:dlg.gsel});return;}
+  if(a==='gunone'){ACT({t:'unsocket',npc,ref:dlg.gsel,si:dlg.gsi||0});return;}
+  if(a==='gunall'){ACT({t:'unsocket',npc,ref:dlg.gsel,all:1});return;}
   if(a==='gins'){const r=dlg.gsel||'',it=r.startsWith('eq:')?S.eq[r.slice(3)]:S.inv[+r.slice(4)],occ=!!(it&&it.gm&&it.gm[dlg.gsi]);if(occ&&dlg.rep!==+id){dlg.rep=+id;return renderDialog();}dlg.rep=null;ACT({t:'socket',npc,ref:r,si:dlg.gsi,gi:+id,rep:occ?1:0});return;}
  if(a==='arenter'){if(NET.room)NET.room.send('arena',{op:'enter'});closeDialog();return;}
  if(a==='arleave'){if(NET.room)NET.room.send('arena',{op:'leave'});closeDialog();return;}

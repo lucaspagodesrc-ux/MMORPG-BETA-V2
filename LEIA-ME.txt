@@ -1,44 +1,21 @@
-ATUALIZAÇÃO 1.40 — ATRIBUTOS DOS PERGAMINHOS E ABA "C"
-Pacote CUMULATIVO: contém tudo da 1.39 (Quebrar itens) e da 1.38. Se a 1.39 já está instalada, só rules.js, index.html e pvp.ts mudam.
+ATUALIZAÇÃO 1.42 — ATRIBUTOS ESPECIAIS NOS DROPS DE CHEFE
+Pacote CUMULATIVO: contém tudo da 1.41, 1.40, 1.39 e 1.38. Se a 1.41 já está instalada, só rules.js, index.html e worldboss.ts mudam.
 
-1) NOVOS PERGAMINHOS (gemas) — todos os atributos das suas listas existem agora
-- Ofensivos: Ataque, Ataque Mágico, Amp. Espada, Amp. Mágica, Taxa Crítica, Dano Crítico, Taxa Crítica Máxima,
-  Perfuração (antes "Taxa de Ataque"), Acerto (NOVO) e Dano Adicional.
-- Defensivos: HP, MP, Defesa, Evasão, Taxa de Defesa, Redução de Danos (NOVO), Resistência à Taxa Crítica (NOVO),
-  Resistência ao Dano Crítico (NOVO), Resistência à Técnica Amp. (NOVO), Absorção de HP e Absorção de MP.
-- Especiais (NOVOS): Aumento de Absorção de HP/MP, Aumento do Limite de Absorção de HP/MP, Ignorar Perfuração,
-  Ignorar Resistência à Taxa Crítica, Ignorar Resistência ao Dano Crítico, Ignorar Redução de Danos, Ignorar Acerto,
-  Ignorar Bloqueio.
-- Armas aceitam: Acerto e os "Ignorar" ofensivos (Resist. Taxa Crítica, Resist. Dano Crítico, Redução de Danos, Bloqueio).
-  Armaduras/acessórios aceitam: Redução de Danos, Resistências, Ignorar Perfuração, Ignorar Acerto e os de Absorção.
-- Cada pergaminho novo tem ícone e cor próprios. Os graus/preços seguem o padrão (Baixo a Extremo).
-
-2) COMO CADA ATRIBUTO FUNCIONA
-- Taxa Crítica = chance do golpe ser crítico. Dano Crítico = quanto o dano aumenta quando é crítico.
-  LIMITE DA TAXA CRÍTICA: 52%. Só sobe com o atributo Taxa Crítica Máxima (no máximo 95%).
-- Perfuração ignora parte da defesa do alvo. Dano Adicional soma um valor fixo a cada golpe, depois da defesa.
-- Evasão = chance de esquivar. O Acerto do atacante reduz a Evasão do alvo (1% por 1%).
-- Taxa de Defesa = chance de BLOQUEAR o golpe inteiro. "Ignorar Bloqueio" do atacante reduz essa chance.
-- Redução de Danos tira um valor fixo de cada golpe recebido (mínimo 1). "Ignorar Redução de Danos" diminui isso.
-- Resistência à Taxa Crítica / ao Dano Crítico / à Técnica Amp. reduzem o crítico e a Amp. do ADVERSÁRIO (PvP);
-  "Ignorar Resistência ..." do atacante diminui essas resistências. "Ignorar Perfuração" reduz a Perfuração do adversário.
-- Absorção de HP/MP recupera uma % do dano causado. "Aumento de Absorção" soma % a isso.
-- "Aumento do Limite de Absorção" de HP/MP: a cada golpe, recupera esse valor FIXO por monstro atingido pela habilidade
-  (ex.: 10 = +10 por monstro por golpe). SÓ FUNCIONA com pelo menos 2% de Aumento de Absorção do mesmo recurso (HP ou MP).
-- Tetos somados continuam valendo (ex.: Aumento de Absorção HP até 6%).
-- Resistências, Acerto, Ignorar... só têm efeito contra JOGADORES (duelo/Arena). Contra monstros valem: Ataque, Amp.,
-  Crítico, Perfuração, Dano Adicional, HP, MP, Defesa, Evasão, Taxa de Defesa, Redução de Danos e Absorções.
-
-3) ABA "C" (Personagem) reorganizada em: Atributos ofensivos • Atributos defensivos • Atributos especiais • Outros.
-- Mostra todos os atributos das listas (os que estão zerados ficam esmaecidos), com explicação ao passar o mouse.
-- Em "Aumento do Limite de Absorção", aparece "(inativo)" se você tem o pergaminho mas ainda não chegou a 2%.
-- A tela de comparação de itens também mostra os novos atributos.
-
-OBSERVAÇÃO: pergaminhos já engastados continuam funcionando; "Taxa de Ataque" virou "Perfuração" (mesmo efeito).
-A Taxa de Defesa agora é chance de bloqueio (antes reduzia o dano em %), com o mesmo valor médio.
+NOVO: ATRIBUTOS DE ITEM (fora dos engastes) — SÓ EM DROPS DE CHEFE
+Equipamentos que caem de chefes podem vir com atributos extras fixos, mostrados em dourado na dica do item
+("★ ... (atributo do item)"). Cada atributo é sorteado separadamente, por equipamento de chefe:
+- Dano Crítico:           10% de chance • valor +8%, +10% ou +16%
+- Técnica de Amp.:         5% de chance • valor +4%, +6% ou +8%  (Espada para classes físicas, Mágica para Mago/Pierrot)
+- Taxa Crítica Máxima:     5% de chance • valor +1%, +2% ou +3%
+- Dentro de cada atributo, o valor menor é o mais comum (50% / 35% / 15%).
+- Um mesmo item pode (raramente) vir com mais de um.
+- Os atributos somam com os das gemas e valem os mesmos tetos totais. A taxa crítica continua limitada a 52% + Taxa Crítica Máxima.
+- Capas não recebem esse atributo. Monstros comuns e baús de calabouço NÃO dão (só chefes).
+- Vale para: chefes de campo e de calabouço (drop do próprio chefe), prêmios e relíquias dos Chefes de Mundo.
+- O item continua com os 0–3 engastes normais: o atributo é separado do engaste.
 
 INSTALAÇÃO
-1) Envie rules.js, index.html e pvp.ts para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior à 1.39,
-   envie todos os arquivos do pacote.
+1) Envie rules.js, index.html e worldboss.ts para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
+   à 1.41, envie todos os arquivos do pacote.
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.
