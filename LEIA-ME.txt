@@ -1,34 +1,27 @@
-MMORPG v1.30 - Visual Stylized 3D / Hand-Painted em todo o jogo
-(somente o cliente: index.html. O servidor e o rules.js continuam os da v1.29.)
+MMORPG v1.31 - Otimização de desempenho (FPS e muitos jogadores online)
+(somente o cliente: index.html. O servidor e o rules.js continuam os da v1.29/v1.30.)
 
-TEXTURAS PINTADAS À MÃO (geradas por código, sem arquivos de imagem)
-- Pinceladas em canvas: grama, folhas, casca, madeira, pedra, rocha em camadas, areia, neve, gelo, tecido, couro, metal, escamas, pelo, osso, tijolo, tapete...
-- Contorno de tinta marrom em personagens, monstros, casas, árvores, pedras e objetos; luzes quentes e sombras frias.
-- Referências seguidas: deserto laranja em camadas com cactos floridos (Solara) e vila nevada pintada (Nevasca).
+O QUE FOI FEITO
+- Versão leve dos personagens: NPCs, aldeões, monstros e jogadores que estão longe do seu personagem viram uma malha única com contorno (2 chamadas de desenho, em vez de 50 a 130). Os mais próximos continuam completos e animados. A troca é automática e depende do zoom e do tamanho da tela.
+- Jogadores online: só aparecem (são criados) os que estão perto de você, e somente os ~6 mais próximos têm o personagem completo; os demais usam a versão leve (jogadores com a mesma aparência dividem os mesmos desenhos). Jogadores de outras regiões não custam nada.
+- Fila de criação: quando várias pessoas entram juntas, os personagens são montados um de cada vez, em intervalos, em vez de travar o jogo de uma vez.
+- Montagem de personagens ~4x mais rápida (evita varrer todas as malhas a cada mudança de material).
+- Contorno de tinta mais barato: agora é feito com "casco invertido" (1 desenho por peça, antes eram 3), com o mesmo visual. A opção 🔊 > Contorno de tinta continua funcionando.
+- Sombras dos personagens agora são instâncias de um único disco (1 desenho no total).
+- Menos trabalho por quadro: rótulos (nomes/vida) só atualizam o que mudou; opções do motor gráfico mais leves (sem buffer extra).
+- Ajuste automático ampliado: se o FPS ficar abaixo de 26 por muito tempo, o jogo reduz o raio dos personagens completos e o contorno; se ainda assim ficar lento, reduz a resolução um pouco.
 
-MAPAS
-- Vila Aurora: gramado e calçada de pedra pintados, árvores e pinheiros, casas de reboco com telhado, fonte, lampiões, caixotes e barris novos.
-- Oásis de Solara: areia pintada, rochedos laranja em camadas, cactos com flores, palmeiras, casas com cúpula dourada.
-- Vila da Nevasca: neve com sombras azuladas, gelo, pinheiros nevados, casas com neve e pingentes.
-- Portais novos: arco de pedra pintada com runas brilhantes, vórtice animado e círculo rúnico no chão (pedra, areia, gelo e Cripta).
-- Cripta: lajes pintadas, paredes de tijolo, tapete bordado, pilares com tochas que tremulam, estandartes, sarcófagos, ossos, portões de ferro, estátuas guardiãs e círculos rúnicos. Dentro da masmorra a luz fica mais fria e baixa.
+MEDIÇÕES (teste local, mesmo cenário antes/depois, chamadas de desenho por quadro)
+- Praça de Aurora, sozinho: 1596 -> ~1040
+- Área de monstros: ~600 -> ~320
+- 20 jogadores com equipamento máximo na praça: ~4130 -> ~1870 (agora cada jogador extra custa poucas chamadas)
+- 40 jogadores: ~1270 (antes passava de 6000)
 
-PERSONAGENS (7 classes), NPCs, ALDEÕES E GUARDAS
-- Rostos pintados (olhos, sobrancelhas, boca), cabelos, barbas, elmos, capuzes e chapéus novos, armaduras com ombreiras, cintos, capas e detalhes; armas redesenhadas.
-- Equipamentos vestidos (peitoral, elmo, botas, escudo, capa, joias): agora pintados e com contorno; o elmo deixa o rosto livre e o escudo é redondo, com aro e cruz.
-- NPCs com roupas e adereços por função (ferreiro com bigorna e forja, mercadores com barraca, capitão com estandarte, exploradores com tendas...); aldeões, guardas e animais também.
-
-MONSTROS
-- Olhos expressivos, presas, garras, chifres, espinhos, cicatrizes e pelagem pintada; variantes de gelo e chefes com detalhes extras; lobo e chacal remodelados.
-- Corrigido: o corpo novo de lobos/chacais é clicável (selecionar alvo).
-
-DESEMPENHO E OPÇÕES (ícone 🔊 no menu: "Áudio e gráficos")
-- "Contorno de tinta" e "Realce de cores" (contraste, saturação e vinheta): ficam salvos no navegador.
-- Contorno inteligente: o contorno some das peças minúsculas (quase invisíveis na tela) e volta ao dar zoom. Isso corta cerca de 30% das chamadas de desenho nas cidades.
-- Se o jogo ficar lento (FPS abaixo de 26 por cerca de 15 s), o contorno passa a valer só para as peças grandes; se continuar lento, é desligado sozinho e o jogo avisa. Para reativar: 🔊 > Contorno de tinta. Se você mexer nessa opção, o ajuste automático nunca mais age.
-- Aviso: o contorno de tinta é novo nesta versão e é a parte mais pesada do visual. Em PCs fracos, desligue-o.
+OBSERVAÇÕES
+- Jogadores/NPCs distantes ficam em pose fixa (com leve balanço ao andar); ao chegar perto voltam ao modelo completo animado.
+- Efeitos especiais que usam a mão/escudo de um jogador distante (gancho, escudo arremessado etc.) só aparecem quando ele está perto.
 
 INSTALAÇÃO
-1) Envie o index.html para a RAIZ do repositório no GitHub (substitua o atual; requer a v1.29).
+1) Envie o index.html para a RAIZ do repositório no GitHub (substitua o atual; requer a v1.29 no servidor).
 2) Aguarde o redeploy no Render.
 3) Abra o jogo e use Ctrl+F5.
