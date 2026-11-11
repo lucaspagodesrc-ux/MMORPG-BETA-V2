@@ -114,16 +114,41 @@ authRouter.get("/account", authed, async (req, res) => {
   res.json({ username: u.username, chars, stash });
 });
 
+const cleanName = (s: any) => String(s || "").replace(/[\u0000-\u001f<>&"]/g, "").replace(/\s+/g, " ").trim();
+const nameErr = (nm: string) => (nm.length < 2 || nm.length > 16 ? "O nome é obrigatório: de 2 a 16 caracteres." : "");
+async function nameTaken(nm: string, exceptId = "") {
+  const r = await pool.query("select 1 from characters where lower(name)=lower($1) and id<>$2 limit 1", [nm, exceptId]);
+  return r.rowCount! > 0;
+}
+const NAME_USED = "Esse nome já está em uso. Escolha outro.";
+
 authRouter.post("/chars", authed, async (req, res) => {
   const u = (req as any).user as AuthUser;
   const { cls, name } = req.body || {};
-  const nm = String(name || "").replace(/[\u0000-\u001f<>&"]/g, "").trim();
+  const nm = cleanName(name);
   if (!CLASSES.includes(cls)) return res.status(400).json({ error: "Classe inválida." });
-  if (nm.length < 1 || nm.length > 16) return res.status(400).json({ error: "Nome: 1 a 16 caracteres." });
+  if (nameErr(nm)) return res.status(400).json({ error: nameErr(nm) });
+  if (await nameTaken(nm)) return res.status(409).json({ error: NAME_USED });
   const n = await pool.query("select count(*)::int as n from characters where account_id=$1", [u.id]);
   if (n.rows[0].n >= 6 && u.username.toLowerCase() !== GM_USER) return res.status(400).json({ error: "Limite de 6 personagens." });
-  const c = R.newChar(cls, nm);
-  await saveChar(u.id, c);
+  const c = R.newChar(cls, nm); c.nmOk = 1;
+  try { await saveChar(u.id, c); } catch (e: any) { if (e?.code === "23505") return res.status(409).json({ error: NAME_USED }); throw e; }
+  res.json({ char: c });
+});
+
+// Escolha do nome de um personagem que ainda não tem nome (os antigos "Mago 1", "Assassino 2"...).
+authRouter.post("/chars/:id/name", authed, async (req, res) => {
+  const u = (req as any).user as AuthUser;
+  const id = String(req.params.id);
+  const nm = cleanName(req.body?.name);
+  const cur = await pool.query("select data from characters where id=$1 and account_id=$2", [id, u.id]);
+  if (!cur.rows[0]) return res.status(404).json({ error: "Personagem não encontrado." });
+  const d = cur.rows[0].data || {};
+  if (d.name) return res.status(400).json({ error: "Este personagem já tem nome." });
+  if (nameErr(nm)) return res.status(400).json({ error: nameErr(nm) });
+  if (await nameTaken(nm, id)) return res.status(409).json({ error: NAME_USED });
+  const c = R.migrate(d); c.name = nm; c.nmOk = 1;
+  try { await saveChar(u.id, c); } catch (e: any) { if (e?.code === "23505") return res.status(409).json({ error: NAME_USED }); throw e; }
   res.json({ char: c });
 });
 

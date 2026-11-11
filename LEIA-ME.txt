@@ -1,30 +1,24 @@
-MMORPG v1.31 - Otimização de desempenho (FPS e muitos jogadores online)
-(somente o cliente: index.html. O servidor e o rules.js continuam os da v1.29/v1.30.)
+ATUALIZAÇÃO 1.32 — NOME DO PERSONAGEM OBRIGATÓRIO E ÚNICO
 
-O QUE FOI FEITO
-- Versão leve dos personagens: NPCs, aldeões, monstros e jogadores que estão longe do seu personagem viram uma malha única com contorno (2 chamadas de desenho, em vez de 50 a 130). Os mais próximos continuam completos e animados. A troca é automática e depende do zoom e do tamanho da tela.
-- Jogadores online: só aparecem (são criados) os que estão perto de você, e somente os ~6 mais próximos têm o personagem completo; os demais usam a versão leve (jogadores com a mesma aparência dividem os mesmos desenhos). Jogadores de outras regiões não custam nada.
-- Fila de criação: quando várias pessoas entram juntas, os personagens são montados um de cada vez, em intervalos, em vez de travar o jogo de uma vez.
-- Montagem de personagens ~4x mais rápida (evita varrer todas as malhas a cada mudança de material).
-- Contorno de tinta mais barato: agora é feito com "casco invertido" (1 desenho por peça, antes eram 3), com o mesmo visual. A opção 🔊 > Contorno de tinta continua funcionando.
-- Sombras dos personagens agora são instâncias de um único disco (1 desenho no total).
-- Menos trabalho por quadro: rótulos (nomes/vida) só atualizam o que mudou; opções do motor gráfico mais leves (sem buffer extra).
-- Ajuste automático ampliado: se o FPS ficar abaixo de 26 por muito tempo, o jogo reduz o raio dos personagens completos e o contorno; se ainda assim ficar lento, reduz a resolução um pouco.
+O QUE MUDOU
+- Ao criar um personagem, o nome é obrigatório (2 a 16 caracteres). O campo agora começa vazio.
+- Não pode haver nomes repetidos (não diferencia maiúsculas de minúsculas, vale para todas as contas).
+  Se o nome já estiver em uso, aparece a mensagem "Esse nome já está em uso. Escolha outro."
+- Personagens que já têm nome escolhido por você: continuam exatamente como estão.
+- Personagens que ficaram com o nome padrão ("Mago 1", "Assassino 2" etc.): o nome é apagado
+  automaticamente quando o servidor sobe. Na lista aparecem como "(sem nome)". Ao clicar neles,
+  a tela mostra o campo de nome; só depois de confirmar um nome válido e livre o jogador entra.
+  O nome só pode ser escolhido uma vez (nessa primeira entrada).
+- NENHUM personagem é apagado. Nível, itens e progresso ficam intactos; só o nome padrão é limpo.
+- O servidor também recusa entrar no mundo com personagem sem nome.
 
-MEDIÇÕES (teste local, mesmo cenário antes/depois, chamadas de desenho por quadro)
-- Praça de Aurora, sozinho: 1596 -> ~1040
-- Área de monstros: ~600 -> ~320
-- 20 jogadores com equipamento máximo na praça: ~4130 -> ~1870 (agora cada jogador extra custa poucas chamadas)
-- 40 jogadores: ~1270 (antes passava de 6000)
-
-CORREÇÃO (v1.31b)
-- Monstros/NPCs nunca somem por distância: se a versão leve de algum ainda não estiver pronta, o modelo completo continua visível (antes podia ficar só a sombra). Só é desligado o que está a mais de 110 unidades (fora da tela).
+COMO INSTALAR
+1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub (substituindo os existentes):
+   index.html, auth.ts, db.ts, rules.js, WorldRoom.ts
+2. Aguarde o Render terminar o deploy (a limpeza dos nomes padrão acontece na subida do servidor).
+3. No navegador, aperte Ctrl+F5.
 
 OBSERVAÇÕES
-- Jogadores/NPCs distantes ficam em pose fixa (com leve balanço ao andar); ao chegar perto voltam ao modelo completo animado.
-- Efeitos especiais que usam a mão/escudo de um jogador distante (gancho, escudo arremessado etc.) só aparecem quando ele está perto.
-
-INSTALAÇÃO
-1) Envie o index.html para a RAIZ do repositório no GitHub (substitua o atual; requer a v1.29 no servidor).
-2) Aguarde o redeploy no Render.
-3) Abra o jogo e use Ctrl+F5.
+- Se já existirem nomes repetidos antigos no banco, o servidor não cria o índice único do banco
+  (aparece um aviso no log), mas a checagem de nome repetido continua valendo pelo código do servidor.
+- A conta GM não é afetada.

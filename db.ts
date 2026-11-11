@@ -25,4 +25,16 @@ export async function migrate() {
       updated_at timestamptz not null default now());
     create index if not exists characters_account on characters(account_id);
   `);
+  // Nomes padrão ("Mago 1", "Assassino 2"...) viram vazios: o jogador escolhe o nome na primeira entrada. Nenhum personagem é apagado.
+  // Só mexe em quem ainda não escolheu nome (data.nmOk ausente); nomes já escolhidos ficam como estão.
+  try {
+    const r = await pool.query(`
+      update characters set name='', data=jsonb_set(data,'{name}','""'::jsonb)
+      where coalesce(data->>'nmOk','')='' and coalesce((data->>'gm')::int,0)=0
+        and name ~ '^(Guerreiro|Arqueiro|Mago|Assassino|Cavaleiro|Cavaleiro Pesado|Tanque|Pierrot) [0-9]+$'`);
+    if (r.rowCount) console.log(`[nomes] ${r.rowCount} personagem(ns) com nome padrão aguardam novo nome.`);
+  } catch (e) { console.error("[nomes] migração de nomes padrão falhou", e); }
+  // Unicidade (sem diferenciar maiúsculas). Se já existirem nomes repetidos no banco, o índice não é criado e a checagem fica só no código.
+  try { await pool.query(`create unique index if not exists characters_name_lower on characters(lower(name)) where name <> ''`); }
+  catch (e) { console.warn("[nomes] índice único não criado (há nomes repetidos antigos); a checagem continua no código."); }
 }

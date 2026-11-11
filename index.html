@@ -4225,14 +4225,15 @@ const NEWSTASH=()=>Array(40).fill(null);
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){if(!ACC||TOKEN)return;try{if(S&&P.root)S.pos={x:P.pos.x,z:P.pos.z};localStorage.setItem(SAVE_KEY,JSON.stringify(ACC));}catch(e){}}   // online o servidor é quem salva
 const migrate=c=>RULES.migrate(c);
+const dropDefName=c=>{if(!c.nmOk&&!c.gm&&/^(Guerreiro|Arqueiro|Mago|Assassino|Cavaleiro|Cavaleiro Pesado|Tanque|Pierrot) \d+$/.test(c.name||''))c.name='';return c;};
 function loadAcc(){
- try{const j=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(j&&Array.isArray(j.chars)){j.chars=j.chars.filter(c=>c&&CLASSES[c.cls]&&c.inv&&c.eq&&c.alloc).map(migrate);j.stash=Array.isArray(j.stash)?j.stash:NEWSTASH();while(j.stash.length<40)j.stash.push(null);return j;}}catch(e){}
+ try{const j=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(j&&Array.isArray(j.chars)){j.chars=j.chars.filter(c=>c&&CLASSES[c.cls]&&c.inv&&c.eq&&c.alloc).map(migrate).map(dropDefName);j.stash=Array.isArray(j.stash)?j.stash:NEWSTASH();while(j.stash.length<40)j.stash.push(null);return j;}}catch(e){}
  const acc={chars:[],stash:NEWSTASH()};
- try{const o=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(o&&CLASSES[o.cls]&&o.inv&&o.eq&&o.alloc)acc.chars.push(migrate(o));}catch(e){}
+ try{const o=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(o&&CLASSES[o.cls]&&o.inv&&o.eq&&o.alloc)acc.chars.push(dropDefName(migrate(o)));}catch(e){}
  return acc;
 }
 const newChar=(cls,name)=>RULES.newChar(cls,name);
-function play(c){
+function play(c){if(!c||!c.name){alert("Escolha um nome para o personagem antes de entrar.");return;}
  pvHide();S=c;dirty();buildPlayer(S.cls);
  const p=S.pos||{x:0,z:5};P.pos.set(p.x,0,p.z);if(Math.hypot(p.x,p.z)<2)P.pos.set(0,0,5);
  P.hp=D().maxHp;P.mp=D().maxMp;P.dead=false;P.cd=Array(8).fill(0);P.cdMax=Array(8).fill(1);P.lastSkill=-1;P.cst=0;P.buffs={};P.moveTo=null;P.atkTarget=null;P.interact=null;P.sel=null;
@@ -4260,18 +4261,18 @@ const SEL={t:null,id:null};
 function renderSelect(){
  if(!ACC)ACC=loadAcc();const full=ACC.chars.length>=6;
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
- $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${esc(c.name)}</b><small>${CLASSES[c.cls].n} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
+ $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${CLASSES[c.cls].n} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
  $('secChars').textContent='Seus personagens ('+ACC.chars.length+'/6)';
  $('selNote').textContent=full?'Limite de 6 personagens. Exclua um para criar outro.':'O baú da cidade é compartilhado entre todos os seus personagens.';
  const info=$('clsInfo'),cap=$('selCap'),act=$('selAct');
  if(SEL.t==='cls'){const c=CLASSES[SEL.id];
   info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo (+10, brilho e efeitos). É só visual: o personagem novo começa sem esses itens.</p>`;
   cap.innerHTML=`<b>${c.i} ${c.n}</b><small>Prévia: equipamento máximo (apenas visual)</small>`;
-  const def=c.n+' '+(ACC.chars.length+1);act.innerHTML=`<input id="newName" maxlength="16" value="${esc(def)}" placeholder="Nome do personagem"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${c.n} e entrar no jogo</button>`;}
+  act.innerHTML=`<input id="newName" maxlength="16" value="" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${c.n} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
  else if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c){SEL.t=null;return renderSelect();}
   info.innerHTML='<p class="muted">Selecione uma classe aqui para criar outro personagem e ver a prévia dela.</p>';
-  cap.innerHTML=`<b>${esc(c.name)}</b><small>${CLASSES[c.cls].n} • Nível ${c.level} • com os itens equipados</small>`;
-  act.innerHTML=`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>`;}
+  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${CLASSES[c.cls].n} • Nível ${c.level} • com os itens equipados</small>`;
+  act.innerHTML=c.name?`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>`:`<input id="newName" maxlength="16" value="" placeholder="Escolha o nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo">✔ Confirmar nome e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
  else{info.innerHTML='<p class="muted">Clique em uma classe para ver a descrição e a prévia.</p>';cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em uma classe (esquerda) ou em um personagem seu (direita)</small>';act.style.display='none';return;}
  act.style.display='flex';
 }
@@ -4289,9 +4290,19 @@ $('select').addEventListener('click',e=>{
  const pl=e.target.closest('[data-play]');if(pl){selPick('chr',pl.dataset.play);return;}
  const cl=e.target.closest('[data-cls]');if(cl){selPick('cls',cl.dataset.cls);return;}
  if(e.target.closest('#selGo')){
-  if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(c)play(c);return;}
-  if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,def=CLASSES[k].n+' '+(ACC.chars.length+1);let name=($('newName').value||'').trim().slice(0,16)||def;$('selGo').disabled=true;
-   (async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name})).char;}else c=newChar(k,name);ACC.chars.push(c);play(c);}catch(er){alert(er.message);$('selGo').disabled=false;}})();}}
+  const nmMsg=t=>{const m=$('nameMsg');if(m)m.textContent=t||'';if(t&&!m)alert(t);};
+  const readName=()=>(($('newName')&&$('newName').value)||'').replace(/[\u0000-\u001f<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,16);
+  const taken=(nm,exId)=>(ACC.chars||[]).some(x=>x.id!==exId&&(x.name||'').toLowerCase()===nm.toLowerCase());
+  if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;if(c.name){play(c);return;}
+   const nm=readName();if(nm.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
+   if(taken(nm,c.id)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}
+   $('selGo').disabled=true;nmMsg('');
+   (async()=>{try{if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/name','POST',{name:nm})).char;c.name=r.name;c.nmOk=1;}else{c.name=nm;c.nmOk=1;save();}play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
+  if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,name=readName();
+   if(name.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
+   if(taken(name)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}
+   $('selGo').disabled=true;nmMsg('');
+   (async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name})).char;}else{c=newChar(k,name);c.nmOk=1;}ACC.chars.push(c);play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
 });
 {const m=$('selMid');m.addEventListener('pointerdown',e=>{if(e.target.closest('#selAct'))return;PV.drag=e.clientX;});window.addEventListener('pointermove',e=>{if(PV.drag!==false&&PV.drag!==undefined&&PV.drag!==null){PV.rot+=(e.clientX-PV.drag)*.012;PV.drag=e.clientX;}});window.addEventListener('pointerup',()=>{PV.drag=false;});}
 window.addEventListener('beforeunload',()=>{save();});

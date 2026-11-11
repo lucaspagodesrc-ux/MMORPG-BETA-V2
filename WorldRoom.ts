@@ -595,6 +595,7 @@ export class WorldRoom extends Room<WorldState> {
     if (!acc) throw new ServerError(401, "Sessão inválida.");
     const c = await loadCharacter(acc.id, String(options?.charId || ""));
     if (!c) throw new ServerError(404, "Personagem não encontrado.");
+    if (!c.name) throw new ServerError(403, "Escolha um nome para este personagem antes de entrar.");
     const stash = await loadStash(acc.id);
     return { acc, c, stash };
   }

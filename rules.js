@@ -736,7 +736,7 @@ function migrate(c) {
   }
   c.bar = cleanBar(c.bar);
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
-  c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = c.name || CLASSES[c.cls].n;
+  c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = typeof c.name === 'string' ? c.name : CLASSES[c.cls].n;   // nome vazio = o jogador ainda vai escolher (não preencher)
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
   c.gm = c.gm ? 1 : 0; c.gmu = (Number(c.gmu) || 0) > Date.now() ? Number(c.gmu) : 0;
   { const dc = {}; if (c.dgc && typeof c.dgc === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.dgc[d.id]); if (n > 0) dc[d.id] = Math.min(9999, n); } c.dgc = dc; c.tb = c.tb ? 1 : 0; if (!c.tb && brightProg(c).ok) c.tb = 1; if (typeof c.title !== 'string' || (c.title && !titleHave(c, c.title))) c.title = ''; }
