@@ -389,6 +389,7 @@ const NPCS=[
  {id:'mercador',name:'Mira, a Mercadora',icon:'💰',x:6,z:-3,col:'#c79a3b',tabs:['comprar','vender'],greet:'Poções, caixas misteriosas e compro o que você não precisar!'},
  {id:'capitao',name:'Capitão Aldric',icon:'🛡️',x:0,z:-7,col:'#3f6fb5',tabs:['missoes'],greet:'A vila precisa de heróis. Cumpra as missões principais e será recompensado.'},
  {id:'mestre',name:'Mestre Kaelen',icon:'📖',x:-4.5,z:4,col:'#6b46b5',tabs:[],greet:'',hat:'#4b2f85'},
+ {id:'leilao',name:'Valter, o Leiloeiro',icon:'⚖️',x:9.4,z:1.8,col:'#a8782e',tabs:['leilao'],greet:'Bem-vindo à Casa de Leilão! Aqui você anuncia seus itens e compra o que outros aventureiros estão vendendo.',hat:'#5a3a1a'},
  {id:'bau',name:'Baú do Aventureiro',icon:'📦',x:4.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'Seus itens guardados aqui são compartilhados com todos os seus personagens.'},
  {id:'elda',name:'Vovó Elda',icon:'🌿',x:-14,z:2,col:'#5a8a4a',tabs:SHOPT,greet:'As gosmas estragam minha horta... e eu tenho poções para vender, querido.',hat:'#7a5a3a',camp:true},
  {id:'lyra',name:'Patrulheira Lyra',icon:'🏹',x:12,z:-13,col:'#3f7a55',tabs:SHOPT,greet:'Os lobos andam inquietos. Fique alerta!',hat:'#2f5a2c',camp:true},

@@ -24,6 +24,18 @@ export async function migrate() {
       data jsonb not null,
       updated_at timestamptz not null default now());
     create index if not exists characters_account on characters(account_id);
+    alter table accounts add column if not exists ah_gold bigint not null default 0;
+    create table if not exists auction(
+      id serial primary key,
+      account_id int not null references accounts(id) on delete cascade,
+      seller text not null,
+      ikey text not null,
+      item jsonb not null,
+      qty int not null check (qty > 0),
+      price int not null check (price > 0),
+      created_at timestamptz not null default now());
+    create index if not exists auction_account on auction(account_id);
+    create index if not exists auction_price on auction(price);
   `);
   // Nomes padrão ("Mago 1", "Assassino 2"...) viram vazios: o jogador escolhe o nome na primeira entrada. Nenhum personagem é apagado.
   // Só mexe em quem ainda não escolheu nome (data.nmOk ausente); nomes já escolhidos ficam como estão.

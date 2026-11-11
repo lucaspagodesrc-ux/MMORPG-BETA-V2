@@ -1,5 +1,6 @@
 import { Room, Client, ServerError } from "colyseus";
 import { WorldState, Player } from "./schema";
+import { auctionMsg } from "./auction";
 import { verifyToken, loadCharacter, loadStash, saveChar, saveStash, AuthUser } from "./auth";
 import { MonsterSim, Sim } from "./monsters";
 import { Dungeons } from "./dungeon";
@@ -408,6 +409,7 @@ export class WorldRoom extends Room<WorldState> {
       p.level = s.c.level; this.touch(s);
       this.sync(s); this.res(s, r.out, r.ok);
     });
+    this.onMessage("ah", (client, m) => { const s = this.S(client); if (s && m && typeof m.op === "string" && this.okRate(s, 2)) auctionMsg(this, s, m); });
     this.onMessage("cast", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.cast(s, m); });
     this.onMessage("atk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.basic(s, m); });
     this.onMessage("pick", (client, m) => {

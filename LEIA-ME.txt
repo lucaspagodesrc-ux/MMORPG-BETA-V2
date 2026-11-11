@@ -1,24 +1,31 @@
-ATUALIZAÇÃO 1.32 — NOME DO PERSONAGEM OBRIGATÓRIO E ÚNICO
+ATUALIZAÇÃO 1.33 — CASA DE LEILÃO
 
-O QUE MUDOU
-- Ao criar um personagem, o nome é obrigatório (2 a 16 caracteres). O campo agora começa vazio.
-- Não pode haver nomes repetidos (não diferencia maiúsculas de minúsculas, vale para todas as contas).
-  Se o nome já estiver em uso, aparece a mensagem "Esse nome já está em uso. Escolha outro."
-- Personagens que já têm nome escolhido por você: continuam exatamente como estão.
-- Personagens que ficaram com o nome padrão ("Mago 1", "Assassino 2" etc.): o nome é apagado
-  automaticamente quando o servidor sobe. Na lista aparecem como "(sem nome)". Ao clicar neles,
-  a tela mostra o campo de nome; só depois de confirmar um nome válido e livre o jogador entra.
-  O nome só pode ser escolhido uma vez (nessa primeira entrada).
-- NENHUM personagem é apagado. Nível, itens e progresso ficam intactos; só o nome padrão é limpo.
-- O servidor também recusa entrar no mundo com personagem sem nome.
+ONDE FICA
+Vila Aurora, ao lado leste da praça, junto à borda da zona segura: prédio "Casa de Leilão" e o NPC
+"Valter, o Leiloeiro". Clique no Valter (precisa estar perto dele) para abrir o Leilão.
+O Leilão só funciona jogando online.
+
+COMO FUNCIONA
+- Cada jogador (conta) pode ter até 10 anúncios ao mesmo tempo (10 vagas).
+- Itens idênticos pelo MESMO preço ficam na mesma vaga e mostram a quantidade (ex.: Poção de Vida ×30).
+- Aba "Vender": escolha o item da mochila, a quantidade e o PREÇO POR UNIDADE, e clique em Anunciar.
+- Aba "Comprar": mostra tudo que está à venda. Sem filtro, aparece tudo.
+  Filtros: nome, tipo (equipamento/materiais/poções), categoria (arma, elmo, armadura...), classe,
+  raridade, atributo (Força, Agilidade, Inteligência, Vitalidade, Ataque, Defesa, Vida), nível mín./máx.,
+  refino mínimo, engastes, faixa de preço, "só o que posso pagar", "só o que posso usar" e "só os meus".
+  Ordenar: mais barato → mais caro, mais caro → mais barato, mais recentes ou maior nível.
+- Só compra quem tem ouro suficiente (o botão Comprar fica desabilitado e o preço em vermelho). Dá para
+  comprar parte de uma pilha escolhendo a quantidade. É preciso ter espaço na mochila.
+- O ouro das vendas fica guardado e é recebido no botão "Receber ganhos" do Leilão. Quem vende e está
+  online recebe um aviso no chat quando um item é comprado.
+- Aba "Meus anúncios": mostra seus anúncios e permite retirá-los (os itens voltam para a mochila).
+- Não dá para comprar o próprio anúncio. O servidor valida tudo (ouro, preço, quantidade, distância do NPC).
 
 COMO INSTALAR
-1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub (substituindo os existentes):
-   index.html, auth.ts, db.ts, rules.js, WorldRoom.ts
-2. Aguarde o Render terminar o deploy (a limpeza dos nomes padrão acontece na subida do servidor).
+1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub (auction.ts é um arquivo NOVO):
+   index.html, auction.ts, db.ts, rules.js, WorldRoom.ts
+2. Aguarde o Render terminar o deploy (as tabelas do leilão são criadas sozinhas na subida do servidor).
 3. No navegador, aperte Ctrl+F5.
 
-OBSERVAÇÕES
-- Se já existirem nomes repetidos antigos no banco, o servidor não cria o índice único do banco
-  (aparece um aviso no log), mas a checagem de nome repetido continua valendo pelo código do servidor.
-- A conta GM não é afetada.
+OBSERVAÇÃO
+- Não foi cobrada taxa de venda nem há prazo de expiração dos anúncios; dá para adicionar depois.

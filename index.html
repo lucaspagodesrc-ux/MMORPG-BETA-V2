@@ -79,6 +79,22 @@
   .stat{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:3px 0;border-bottom:1px solid #202c3a}
   .stat button{width:22px;height:22px;border-radius:5px;border:1px solid var(--gold);background:#3b3014;color:#ffe28a;font-weight:800;cursor:pointer;margin-left:6px}
   #dialog{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:500px;max-width:94vw;max-height:80vh;padding:14px;z-index:8;overflow:hidden;flex-direction:column}
+  #ahWin{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:960px;max-width:97vw;max-height:90vh;padding:12px;z-index:9;overflow:hidden;flex-direction:column;font-size:12.5px}
+  #ahWin .dh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:16px;margin-bottom:6px}
+  #ahWin .dh .gr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
+  #ahWin .fil{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px;margin-bottom:8px}
+  #ahWin .fil label{display:flex;flex-direction:column;gap:2px;font-size:10.5px;color:var(--mut)}
+  #ahWin .fil input,#ahWin .fil select,#ahWin .sellrow input{background:#0f1822;color:#e6edf5;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;min-width:0}
+  #ahWin .fil .ck{flex-direction:row;align-items:center;gap:5px;color:#cbd6e2;font-size:11.5px}
+  #ahWin .fil .ck input{width:auto}
+  #ahWin .lst{overflow:auto;flex:1;min-height:180px;max-height:52vh;border-top:1px solid #202c3a}
+  #ahWin .row2 .rt .sel2{color:#9fb2c6}
+  #ahWin .pr{font-weight:700;color:#ffe28a}.pr.no{color:#ff7a6a}
+  #ahWin .pg{display:flex;justify-content:center;align-items:center;gap:10px;padding:6px 0 0}
+  #ahWin .sellrow{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+  #ahWin .sellrow input{width:84px}
+  #ahWin .msg{min-height:16px;font-size:12px;color:#ffb36b;margin:4px 0}
+  #ahWin .msg.ok{color:#7be08a}
   #dialog .dh{display:flex;justify-content:space-between;align-items:center;font-size:16px}
   .greet{color:var(--mut);font-size:12px;margin:4px 0 8px}
   .tabs{display:flex;gap:6px;margin-bottom:8px}
@@ -220,6 +236,7 @@
 </div>
 
 <div id="dialog" class="panel"></div>
+<div id="ahWin" class="panel"></div>
 <div id="death"><div>💀 Você morreu</div><button id="reviveBtn">Voltar à cidade</button></div>
 <div id="help" class="panel">
   <b style="color:#ffe28a">CONTROLES</b> <button class="x" data-close="help" style="float:right">✕</button><br>
@@ -1346,7 +1363,7 @@ function srcWell(){return MERGE('well',[cyl(.9,2.0,2.2,14,0,.45,0,AM.stone),tor(
  deco('barrel',srcBarrel,-8.2,-3.8,0,.5);deco('barrel',srcBarrel,-7.4,-4.8,0,.5);deco('crate',srcCrate,-8.5,-2.2,.3,.55);
  deco('crate',srcCrate,8.3,-4.2,.2,.55);deco('crate',srcCrate,9.0,-3.1,-.3,.55);deco('barrel',srcBarrel,7.5,-5.1,0,.5);
  deco('bench',srcBench,-3.4,-5.4,.35,.8,1);deco('bench',srcBench,3.4,-5.4,-.35,.8,1);
- deco('well',srcWell,-1.2,9.4,0,1.2,1.5);deco('hay',srcHay,9.6,7.8,.4,.8,1);deco('hay',srcHay,-9.7,8.2,-.3,.8,1);
+ deco('houseA',srcHouseA,13.4,1.8,-Math.PI/2,2.1,2.7);deco('well',srcWell,-1.2,9.4,0,1.2,1.5);deco('hay',srcHay,9.6,7.8,.4,.8,1);deco('hay',srcHay,-9.7,8.2,-.3,.8,1);
 }
 // árvores e pedras (instâncias pintadas, com contorno e sombra suave)
 const nearZone=(x,z,pad)=>ZONES.some(zn=>Math.hypot(x-zn.x,z-zn.z)<zn.r+(pad||0));
@@ -1379,7 +1396,7 @@ for(const b of BRIDGES){const z=riverZ(b),g=new BABYLON.TransformNode('br',scene
  RES.push({x:b,z,r:7});sign(b+3,z-5.5,'🌉 Ponte do Rio Cristalino');
  for(const sd of[-1,1])for(const k of[-1,1]){const xa=b+k*2.4,xb=b+k*7;fence(xa,riverZ(xa)+sd*3.3,xb,riverZ(xb)+sd*3.3);}}
 fence(-40,-28,-28,-28);fence(-40,-28,-40,-20);fence(-28,-28,-28,-20);fence(-40,-20,-35,-20);fence(-33,-20,-28,-20);RES.push({x:-34,z:-24,r:10});sign(-31.5,-18.5,'🐑 Pasto da Aldeia');
-sign(3.4,12.2,'🏰 Vila Aurora • Zona Segura');
+sign(3.4,12.2,'🏰 Vila Aurora • Zona Segura');sign(12.4,-0.6,'⚖️ Casa de Leilão');
 for(const Z of ZONES){const H=Z.x<-150?SN:Z.x>150?SC:{x:0,z:0},rx=Z.x-H.x,rz=Z.z-H.z,d=Math.hypot(rx,rz),k=Math.max(15,d-Z.r-4)/d,T=MT[Z.t],a=T.lv[0],b=T.lv[1]||a;sign(H.x+rx*k,H.z+rz*k,T.dummy?Z.name:`${Z.name} • Nv ${a}${b>a?'–'+b:''}`);}
 const nearNpc=(x,z,r)=>NPCS.some(n=>Math.hypot(x-n.x,z-n.z)<r)||RES.some(q=>Math.hypot(x-q.x,z-q.z)<q.r);
 for(let i=0;i<620;i++){const x=rnd(-MAP+1,MAP-1),z=rnd(-MAP+1,MAP-1);if(Math.hypot(x,z)<TOWN_R+2||nearZone(x,z,1)||nearNpc(x,z,4.5))continue;addTree(x,z);}
@@ -3916,6 +3933,7 @@ function updatePlayer(dt,now){
  for(const d of drops.slice())if(!d.life&&hyp(P.pos,{x:d.x,z:d.z})<1.5)tryPickup(d,false);
  // fecha diálogo se afastar
  if(dlg&&hyp(P.pos,dlg.npc.pos)>7)closeDialog();
+ if(AH.open&&hyp(P.pos,AH.npc.pos)>9)closeAuction();
 }
 function updateDrops(dt,now){for(const d of drops.slice()){const lk=!!(d.lockUntil&&now<d.lockUntil);if(lk!==!!d.lk){d.lk=lk;d.base=(lk?'🔒 ':'')+d.base0;d.label.innerHTML=d.base;d.secs=null;d.mesh.visibility=lk?.45:1;}d.mesh.rotation.y+=dt*1.7;d.mesh.position.y=.5+Math.sin(now*.004+d.x)*.12;const life=d.life||120000;if(now-d.born>life){removeDrop(d);continue;}
  if(d.life){const s=Math.ceil((life-(now-d.born))/1000);if(s!==d.secs){d.secs=s;d.label.innerHTML=d.base+' <span style="opacity:.75">('+s+'s)</span>';}if(s<=5)d.mesh.visibility=Math.sin(now*.02)>0?1:.35;}}}
@@ -4046,7 +4064,98 @@ function renderTracker(){
 
 /* =================== DIÁLOGO NPC =================== */
 let dlg=null;
-function openDialog(npc){if(npc.dgexit){if(NET.room)NET.room.send('dgexit');return;}if(npc.statue){if(NET.room)NET.room.send('dgtalk',{id:npc.id});return;}if(npc.dungeon){enterDungeon(npc);return;}if(npc.portal){usePortal(npc);return;}if(npc.id==='mestre'){setWin('skill',true);return;}dlg={npc,tab:npc.tabs[0]};$('dialog').style.display='flex';renderDialog();}
+function openDialog(npc){if(npc.dgexit){if(NET.room)NET.room.send('dgexit');return;}if(npc.statue){if(NET.room)NET.room.send('dgtalk',{id:npc.id});return;}if(npc.dungeon){enterDungeon(npc);return;}if(npc.portal){usePortal(npc);return;}if(npc.id==='mestre'){setWin('skill',true);return;}if(npc.id==='leilao'){openAuction();return;}dlg={npc,tab:npc.tabs[0]};$('dialog').style.display='flex';renderDialog();}
+
+/* =================== LEILÃO (casa de compra e venda) =================== */
+const AH={open:false,tab:'buy',list:[],page:0,pages:1,total:0,gold:0,used:0,busy:false,msg:'',ok:false,npc:null,
+ f:{q:'',cat:'',slot:'',cls:'',rar:-1,attr:'',lvMin:'',lvMax:'',plusMin:0,slMin:0,pMin:'',pMax:'',afford:false,usable:false,mine:false,sort:'asc'},timer:0};
+const AH_SLOTS=10,fmt=n=>Number(n).toLocaleString('pt-BR');
+const ahSend=o=>{if(NET.room){AH.busy=true;NET.room.send('ah',o);}};
+function ahKey(it){const so=o=>Array.isArray(o)?o.map(so):o&&typeof o==='object'?Object.keys(o).sort().reduce((a,k)=>{a[k]=so(o[k]);return a;},{}):o;return it.k==='eq'?JSON.stringify(so(it)):it.k+':'+it.id;}
+function openAuction(){
+ if(!NET.room){toast('⚖️ O Leilão só funciona jogando online.');return;}
+ AH.npc=NPCS.find(n=>n.id==='leilao');AH.open=true;AH.msg='';$('ahWin').style.display='flex';ahRender();ahSearch(0);
+}
+function closeAuction(){AH.open=false;$('ahWin').style.display='none';}
+function ahSearch(page){AH.f.page=page||0;ahSend({op:'search',f:AH.f});}
+function ahSoon(){clearTimeout(AH.timer);AH.timer=setTimeout(()=>ahSearch(0),350);}
+function ahReply(m){
+ AH.busy=false;if(!m)return;
+ if(m.msg){AH.msg=m.msg;AH.ok=!!m.ok;}
+ if(m.gold!==undefined)AH.gold=m.gold;if(m.used!==undefined)AH.used=m.used;
+ if(m.op==='search'&&m.ok){AH.list=m.list;AH.page=m.page;AH.pages=m.pages;AH.total=m.total;}
+ if(m.op==='mine'&&m.ok){AH.list=m.list;AH.total=m.list.length;}
+ if((m.op==='buy'||m.op==='cancel'||m.op==='sell'||m.op==='collect')&&m.ok||m.gone){ahRefresh();}
+ if(AH.open)ahRender(true);
+}
+function ahRefresh(){if(AH.tab==='buy')ahSearch(AH.page);else if(AH.tab==='mine')ahSend({op:'mine'});else ahSend({op:'mine'});}
+const ahOpt=(arr,cur)=>arr.map(([v,t])=>`<option value="${v}"${String(v)===String(cur)?' selected':''}>${t}</option>`).join('');
+function ahRender(onlyList){
+ if(!AH.open)return;const f=AH.f;
+ const head=`<div class="dh"><b>⚖️ Casa de Leilão</b><div class="gr"><span class="muted">💰 ${fmt(S.gold)}</span><span class="muted">Anúncios: ${AH.used}/${AH_SLOTS}</span><button data-ah="collect" ${AH.gold>0?'':'disabled'}>💵 Receber ganhos${AH.gold>0?' ('+fmt(AH.gold)+')':''}</button><button data-ah="close">✕</button></div></div>
+ <div class="tabs"><button class="tab ${AH.tab==='buy'?'on':''}" data-ah="tab" data-v="buy">🔎 Comprar</button><button class="tab ${AH.tab==='sell'?'on':''}" data-ah="tab" data-v="sell">➕ Vender</button><button class="tab ${AH.tab==='mine'?'on':''}" data-ah="tab" data-v="mine">📋 Meus anúncios</button></div>`;
+ if(!onlyList||!$('ahBody')){
+  let body='';
+  if(AH.tab==='buy'){
+   const SL=[['','Todas'],...Object.keys(SLOTS).map(k=>[k,SLOTS[k]])],CL=[['','Todas'],...Object.keys(CLASSES).map(k=>[k,CLASSES[k].n])],RR=[[-1,'Todas'],...RAR.map((r,i)=>[i,r.n])];
+   const AT=[['','Qualquer'],['str','Força'],['agi','Agilidade'],['int','Inteligência'],['vit','Vitalidade'],['atk','Ataque'],['def','Defesa'],['hp','Vida']];
+   body=`<div class="fil" id="ahFil">
+    <label>Nome<input data-f="q" value="${esc(f.q)}" placeholder="Buscar pelo nome" maxlength="40"></label>
+    <label>Tipo<select data-f="cat">${ahOpt([['','Tudo'],['eq','Equipamento'],['mat','Materiais'],['pot','Poções']],f.cat)}</select></label>
+    <label>Categoria<select data-f="slot">${ahOpt(SL,f.slot)}</select></label>
+    <label>Classe<select data-f="cls">${ahOpt(CL,f.cls)}</select></label>
+    <label>Raridade<select data-f="rar">${ahOpt(RR,f.rar)}</select></label>
+    <label>Atributo<select data-f="attr">${ahOpt(AT,f.attr)}</select></label>
+    <label>Nível mín.<input data-f="lvMin" type="number" min="0" value="${f.lvMin}"></label>
+    <label>Nível máx.<input data-f="lvMax" type="number" min="0" value="${f.lvMax}"></label>
+    <label>Refino mín.<select data-f="plusMin">${ahOpt(Array.from({length:11},(_,i)=>[i,i?'+'+i:'Qualquer']),f.plusMin)}</select></label>
+    <label>Engastes mín.<select data-f="slMin">${ahOpt([[0,'Qualquer'],[1,'◇ 1+'],[2,'◇◇ 2']],f.slMin)}</select></label>
+    <label>Preço mín.<input data-f="pMin" type="number" min="0" value="${f.pMin}"></label>
+    <label>Preço máx.<input data-f="pMax" type="number" min="0" value="${f.pMax}"></label>
+    <label>Ordenar<select data-f="sort">${ahOpt([['asc','Mais barato → mais caro'],['desc','Mais caro → mais barato'],['new','Mais recentes'],['lvl','Maior nível']],f.sort)}</select></label>
+    <label class="ck"><input type="checkbox" data-f="afford" ${f.afford?'checked':''}>Só o que posso pagar</label>
+    <label class="ck"><input type="checkbox" data-f="usable" ${f.usable?'checked':''}>Só o que posso usar</label>
+    <label class="ck"><input type="checkbox" data-f="mine" ${f.mine?'checked':''}>Só os meus</label>
+    <label><span>&nbsp;</span><button data-ah="clear">Limpar filtros</button></label></div>`;
+  }
+  $('ahWin').innerHTML=head+body+`<div class="msg" id="ahMsg"></div><div class="lst" id="ahBody"></div><div class="pg" id="ahPg"></div>`;
+ }else{ // só atualiza o cabeçalho (ouro/ganhos) sem perder o foco dos filtros
+  const gr=$('ahWin').querySelector('.dh .gr');if(gr)gr.innerHTML=`<span class="muted">💰 ${fmt(S.gold)}</span><span class="muted">Anúncios: ${AH.used}/${AH_SLOTS}</span><button data-ah="collect" ${AH.gold>0?'':'disabled'}>💵 Receber ganhos${AH.gold>0?' ('+fmt(AH.gold)+')':''}</button><button data-ah="close">✕</button>`;
+ }
+ const msg=$('ahMsg');if(msg){msg.textContent=AH.msg||'';msg.className='msg'+(AH.ok?' ok':'');}
+ const bd=$('ahBody'),pg=$('ahPg');if(!bd)return;pg.innerHTML='';
+ if(AH.tab==='sell'){
+  const seen=new Map();S.inv.forEach((it,i)=>{if(!it||!['eq','mat','pot'].includes(it.k))return;const k=ahKey(it),g=seen.get(k);if(g)g.n+=(it.k==='eq'?1:it.n);else seen.set(k,{i,it,n:it.k==='eq'?1:it.n});});
+  const rows=[...seen.values()].map(g=>`<div class="row2"><div class="ri" data-inv="${g.i}" style="border-color:${col(g.it)}">${ico(g.it)}</div><div class="rt"><b style="color:${col(g.it)==='#455568'?'#fff':col(g.it)}">${nm(g.it)}${g.n>1?' ×'+g.n:''}</b><small>Valor de loja: ${fmt(sellPrice(g.it))} 💰 (cada)</small></div>
+   <div class="sellrow">${g.n>1?`<input type="number" min="1" max="${g.n}" value="${g.n}" data-q="${g.i}" title="Quantidade">`:''}<input type="number" min="1" placeholder="Preço cada" data-p="${g.i}"><button data-ah="sell" data-i="${g.i}">Anunciar</button></div></div>`).join('');
+  bd.innerHTML=(rows||'<p class="muted" style="padding:10px">Mochila sem itens que possam ser leiloados.</p>');
+  pg.innerHTML='<span class="muted">Itens idênticos pelo mesmo preço dividem uma única vaga. O preço é por unidade.</span>';return;
+ }
+ const L=AH.list;
+ bd.innerHTML=L.length?L.map((a,i)=>{const it=a.item,tot=a.price*a.qty,can=S.gm||S.gold>=a.price;
+  return `<div class="row2"><div class="ri" data-ah="${i}" style="border-color:${col(it)}">${ico(it)}</div>
+  <div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}${a.qty>1?' ×'+a.qty:''}</b><small>${a.mine?'Seu anúncio':'Vendedor: '+esc(a.seller||'')}${it.k==='eq'?' • Nv '+it.req:''}</small></div>
+  <div class="rb"><div class="pr${can?'':' no'}">💰 ${fmt(a.price)}${a.qty>1?' <small class="muted">cada</small>':''}</div>${a.qty>1?`<small class="muted">Total ${fmt(tot)}</small>`:''}</div>
+  <div class="sellrow">${AH.tab==='mine'?`<button data-ah="cancel" data-id="${a.id}">Retirar</button>`:(a.mine?'<button data-ah="cancel" data-id="'+a.id+'">Retirar</button>':`${a.qty>1?`<input type="number" min="1" max="${a.qty}" value="1" data-bq="${i}" title="Quantidade">`:''}<button data-ah="buy" data-i="${i}" ${can?'':'disabled'}>Comprar</button>`)}</div></div>`;}).join(''):'<p class="muted" style="padding:10px">Nenhum item encontrado.</p>';
+ if(AH.tab==='buy')pg.innerHTML=`<button data-ah="pg" data-v="-1" ${AH.page>0?'':'disabled'}>◀</button><span class="muted">Página ${AH.page+1}/${AH.pages} • ${fmt(AH.total)} anúncio(s)</span><button data-ah="pg" data-v="1" ${AH.page<AH.pages-1?'':'disabled'}>▶</button>`;
+}
+$('ahWin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')closeAuction();});
+$('ahWin').addEventListener('input',e=>{const k=e.target.dataset.f;if(!k)return;const t=e.target;
+ AH.f[k]=t.type==='checkbox'?t.checked:(k==='rar'||k==='plusMin'||k==='slMin')?+t.value:t.value;ahSoon();});
+$('ahWin').addEventListener('click',e=>{
+ const b=e.target.closest('button[data-ah]');if(!b||b.disabled||!S)return;const a=b.dataset.ah;
+ if(a==='close')return closeAuction();
+ if(a==='tab'){AH.tab=b.dataset.v;AH.msg='';AH.list=[];ahRender();if(AH.tab==='buy')ahSearch(0);else ahSend({op:'mine'});return;}
+ if(a==='clear'){Object.assign(AH.f,{q:'',cat:'',slot:'',cls:'',rar:-1,attr:'',lvMin:'',lvMax:'',plusMin:0,slMin:0,pMin:'',pMax:'',afford:false,usable:false,mine:false,sort:'asc'});ahRender();ahSearch(0);return;}
+ if(a==='pg')return ahSearch(Math.max(0,AH.page+ +b.dataset.v));
+ if(a==='collect')return ahSend({op:'collect'});
+ if(a==='cancel')return ahSend({op:'cancel',id:+b.dataset.id});
+ if(a==='buy'){const x=AH.list[+b.dataset.i];if(!x)return;const qi=$('ahWin').querySelector(`[data-bq="${b.dataset.i}"]`),qty=Math.max(1,Math.min(x.qty,Math.floor(+(qi&&qi.value)||1)));return ahSend({op:'buy',id:x.id,qty,price:x.price});}
+ if(a==='sell'){const i=+b.dataset.i,pi=$('ahWin').querySelector(`[data-p="${i}"]`),qi=$('ahWin').querySelector(`[data-q="${i}"]`);
+  const price=Math.floor(+pi.value),qty=qi?Math.floor(+qi.value):1;
+  if(!(price>=1)){AH.msg='Digite o valor do item (preço por unidade).';AH.ok=false;ahRender(true);return;}
+  return ahSend({op:'sell',i,qty:Math.max(1,qty),price});}
+});
 function closeDialog(){const was=!!dlg;dlg=null;SELL.clear();$('dialog').style.display='none';if(was&&S)refreshUI();}
 let portalAt=0;
 function usePortal(n){
@@ -4212,9 +4321,9 @@ function cmpOf(it){
 // tooltip
 const tip=$('tip');
 document.addEventListener('mousemove',e=>{
- const t=S&&e.target.closest?e.target.closest('[data-inv],[data-eq],[data-st]'):null;
+ const t=S&&e.target.closest?e.target.closest('[data-inv],[data-eq],[data-st],[data-ah]'):null;
  if(!t){tip.style.display='none';return;}
- const it=t.dataset.st!==undefined?ACC.stash[+t.dataset.st]:t.dataset.inv!==undefined?S.inv[+t.dataset.inv]:S.eq[t.dataset.eq];
+ const it=t.dataset.ah!==undefined?(AH.list[+t.dataset.ah]||{}).item:t.dataset.st!==undefined?ACC.stash[+t.dataset.st]:t.dataset.inv!==undefined?S.inv[+t.dataset.inv]:S.eq[t.dataset.eq];
  if(!it){tip.style.display='none';return;}
  tip.innerHTML=tipOf(it)+(t.dataset.eq===undefined?cmpOf(it):'');tip.style.display='block';const w=tip.offsetWidth,h=tip.offsetHeight;
  tip.style.left=Math.min(e.clientX+14,innerWidth-w-8)+'px';tip.style.top=Math.min(e.clientY+14,innerHeight-h-8)+'px';
@@ -4350,6 +4459,7 @@ async function netJoin(){
    if(S._respec&&!NET.ack){NET.ack=true;logMsg(`<span style="color:#ffe28a">⚖️ Seu personagem foi ajustado às novas regras de equilíbrio: seu nível foi mantido e os <b>${S.pts} pontos de atributo</b> foram devolvidos para você redistribuir (tecla C).</span>`);toast('⚖️ Personagem ajustado: redistribua seus atributos (C)');room.send('a',{t:'ack'});}
    if(S) refreshUI();});
   room.onMessage('res',m=>applyRes(m));
+  room.onMessage('ahr',m=>ahReply(m));
   room.onMessage('abuff',m=>{const sk=CLASSES[m.cls]&&CLASSES[m.cls].skills[m.i];if(!sk)return;for(const k in m.buffs)addBuff(k,m.buffs[k],m.dur,sk);ring(P.pos.x,P.pos.z,2.6,sk.color,700);toast(`${sk.i} ${m.by} protegeu você com ${sk.n}!`);logMsg(`<span style="color:${sk.color}">${sk.i} ${esc(m.by)} lançou ${sk.n} em você.</span>`);});
   room.onMessage('gmb',m=>{dirty();if(m&&m.on){const d=D();P.hp=d.maxHp;P.mp=d.maxMp;AUD.sfx('levelUp');ring(P.pos.x,P.pos.z,5,'#ffe28a',900);toast('✨ Você recebeu o Buff do GM por 5 minutos!');logMsg('<span style="color:#ffe28a">✨ <b>Buff do GM</b> ativo por 5 minutos'+(m.by?' (de '+esc(m.by)+')':'')+'</span>');}else{afterChange();logMsg('<span style="color:#cbd6e2">✨ O Buff do GM terminou.</span>');}});
   room.onMessage('drop',m=>{spawnDrop(m.item,{x:m.x,z:m.z},m.life);const d=drops[drops.length-1];if(d){d.sid=m.id;d.lockUntil=m.lock?performance.now()+m.lock:0;}if((m.item.k==='eq'&&m.item.rar>=2)||m.item.k==='tix')setTimeout(()=>AUD.sfx('rare'),300);else setTimeout(()=>AUD.sfx('drop'),200);});
