@@ -609,7 +609,7 @@ const RECIPES=[
  {id:'s_farao',at:'ferreira',n:'Arma Faraônica (Nv 74)',icon:'👑',d:'Arma da sua classe • Épico',ing:{selo:3,obsidiana:4,ankh:10,essencia:30},gold:80000,out:(cls)=>genItem('weapon',74,3,cls,cls,0,'farao')}];
 const SHOPT=['missoes','comprar','vender'];
 const NPCS=[
- {id:'ferreiro',name:'Dorn, o Ferreiro',icon:'🔨',x:-6,z:-3,col:'#8a5a3a',tabs:['forja','aprimorar'],greet:'Traga materiais e ouro e eu forjo o que precisar. Também posso aprimorar seu equipamento — mas há risco!'},
+ {id:'ferreiro',name:'Dorn, o Ferreiro',icon:'🔨',x:-6,z:-3,col:'#8a5a3a',tabs:['forja','aprimorar','quebrar'],greet:'Traga materiais e ouro e eu forjo o que precisar. Também posso aprimorar seu equipamento — mas há risco!'},
  {id:'mercador',name:'Mira, a Mercadora',icon:'💰',x:6,z:-3,col:'#c79a3b',tabs:['comprar','vender'],greet:'Poções, caixas misteriosas e compro o que você não precisar!'},
  {id:'capitao',name:'Capitão Aldric',icon:'🛡️',x:0,z:-7,col:'#3f6fb5',tabs:['missoes'],greet:'A vila precisa de heróis. Cumpra as missões principais e será recompensado.'},
  {id:'mestre',name:'Mestre Kaelen',icon:'📖',x:-4.5,z:4,col:'#6b46b5',tabs:[],greet:'',hat:'#4b2f85'},
@@ -628,7 +628,7 @@ const NPCS=[
  {id:'portal_a',name:'🌀 Portal de Solara (Nv 50+)',icon:'🌀',x:14,z:56,col:'#9b7bff',tabs:[],greet:'',portal:{name:'Oásis de Solara',lvl:50,to:{x:300,z:-7}}},
  {id:'portal_b',name:'🌀 Portal para a Vila Aurora',icon:'🌀',x:300,z:-11,col:'#ffcf6b',tabs:[],greet:'',portal:{name:'Vila Aurora',lvl:0,to:{x:14,z:52}}},
  {id:'bau2',name:'Baú do Aventureiro',icon:'📦',x:304.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'O mesmo baú da Vila Aurora: seus itens guardados aqui são compartilhados com todos os seus personagens.',chest:true},
- {id:'ferreira',name:'Sahra, a Ferreira Solar',icon:'🔨',x:293,z:-2,col:'#a86a3a',tabs:['forja','aprimorar'],greet:'Materiais do deserto forjam o melhor aço que você já viu. Também aprimoro equipamentos — mas há risco!',hat:'#6a3a1a',smith:true},
+ {id:'ferreira',name:'Sahra, a Ferreira Solar',icon:'🔨',x:293,z:-2,col:'#a86a3a',tabs:['forja','aprimorar','quebrar'],greet:'Materiais do deserto forjam o melhor aço que você já viu. Também aprimoro equipamentos — mas há risco!',hat:'#6a3a1a',smith:true},
  {id:'mercador2',name:'Hakim, o Mercador',icon:'💰',x:307,z:-2,col:'#2f7a8a',tabs:['comprar','vender'],greet:'Poções superiores e caixas raras, direto das caravanas! Tudo mais caro, mas vale cada moeda.',hat:'#d8c9a0',shop:'solara'},
  {id:'khalid',name:'Comandante Khalid',icon:'🛡️',x:295,z:-6,col:'#a8832a',tabs:['missoes'],greet:'Solara resiste graças a heróis como você. Cumpra as missões principais do deserto.',hat:'#c9a227'},
  {id:'nadir',name:'Caçador Nadir',icon:'🦂',x:321,z:-9,col:'#8a6a3a',tabs:SHOPT,greet:'Os escorpiões ficaram enormes. Cuidado com o ferrão!',hat:'#d8c9a0',camp:true,shop:'solara'},
@@ -646,7 +646,7 @@ const NPCS=[
  {id:'dg_cidadela',name:'🏰 Cidadela Congelada (Nv 78+)',icon:'🏰',x:-368,z:-70,col:'#8fd8ff',tabs:[],greet:'',dungeon:'cidadela'},
  {id:'dg_abismo',name:'🌌 Abismo do Vazio (Nv 90+)',icon:'🌌',x:-232,z:68,col:'#a070ff',tabs:[],greet:'',dungeon:'abismo'},
  {id:'bau3',name:'Baú do Aventureiro',icon:'📦',x:-295.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'O mesmo baú da Vila Aurora: seus itens guardados aqui são compartilhados com todos os seus personagens.',chest:true},
- {id:'ferreiro_gelo',name:'Ragnar, o Ferreiro do Gelo',icon:'🔨',x:-307,z:-2,col:'#6a8aa8',tabs:['forja','aprimorar'],greet:'O aço temperado na neve nunca quebra. Também aprimoro equipamentos — mas há risco!',hat:'#3a5a78',smith:true},
+ {id:'ferreiro_gelo',name:'Ragnar, o Ferreiro do Gelo',icon:'🔨',x:-307,z:-2,col:'#6a8aa8',tabs:['forja','aprimorar','quebrar'],greet:'O aço temperado na neve nunca quebra. Também aprimoro equipamentos — mas há risco!',hat:'#3a5a78',smith:true},
  {id:'mercador3',name:'Frida, a Mercadora Polar',icon:'💰',x:-293,z:-2,col:'#5a9ab8',tabs:['comprar','vender'],greet:'Poções, caixas e capas para o frio! Tudo caro, mas vale cada moeda.',hat:'#e8f2ff',shop:'gelo'},
  {id:'astrid',name:'Capitã Astrid',icon:'🛡️',x:-305,z:-6,col:'#4a78a8',tabs:['missoes'],greet:'A Vila da Nevasca resiste graças a heróis como você. Cumpra as missões principais da tundra.',hat:'#c8dcee'},
  {id:'bjorn',name:'Caçador Bjorn',icon:'🐺',x:-288,z:-14,col:'#8a9aa8',tabs:SHOPT,greet:'Os lobos polares ficaram enormes. Não corra, eles são mais rápidos.',hat:'#e8f2ff',camp:true,shop:'gelo'},
@@ -1337,6 +1337,31 @@ function organizeList(list, cls) {
   stacks(pots, 'pot', Object.keys(pots).sort()); stacks(mats, 'mat', Object.keys(mats).sort((a, b) => String(MATS[a].n).localeCompare(String(MATS[b].n)))); o.push(...rest);
   while (o.length < list.length) o.push(null); list.splice(0, list.length, ...o.slice(0, list.length));
 }
+/* ---------- QUEBRAR ITEM ---------- */
+let _brk = null;
+function brkRecipe(it) {   // receita que produz esse tipo de item (slot + nível + raridade; arma ignora classe)
+  if (!_brk) { _brk = {}; for (const r of RECIPES) { try { const o = r.out('guerreiro'); if (o && o.k === 'eq') _brk[o.slot + '|' + o.ilvl + '|' + o.rar] = r; } catch (e) {} } }
+  return _brk[it.slot + '|' + it.ilvl + '|' + it.rar] || null;
+}
+const BRK_BR = [{ to: 30, m: ['ferro', 'couro', 'osso'], r: 'essencia' }, { to: 68, m: ['ferrao', 'linho', 'veneno'], r: 'cristalsol' }, { to: 9999, m: ['pelepolar', 'runabar', 'ossogelo'], r: 'fiocristal' }];
+/** O que sai ao quebrar: lista [{k:'mat',id,n}] já somada. src: 'receita' | 'estimado' */
+function breakReturn(it) {
+  const acc = {}, add = (id, n) => { if (n > 0 && MATS[id]) acc[id] = (acc[id] || 0) + n; };
+  const rc = brkRecipe(it);
+  if (rc) { for (const id in rc.ing) add(id, rc.ing[id]); }
+  else {
+    const b = BRK_BR.find(x => it.ilvl < x.to), base = (it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * .5 * .38;
+    add(b.m[0], Math.max(1, Math.round(base * .6 / MATS[b.m[0]].v)));
+    add(b.m[1], Math.max(1, Math.round(base * .4 / MATS[b.m[1]].v)));
+    if (it.rar >= 2) add(b.r, it.rar - 1);
+    if (it.rar >= 3) add(b.m[2], 1);
+  }
+  for (const g of (it.gm || [])) if (g && GEMD[g] && MATS['g_' + g]) add('g_' + g, 1);   // gemas engastadas voltam como pergaminho
+  let fe = 0, es = 0;
+  for (let p = 0; p < (it.plus || 0); p++) { const u = upCost({ plus: p }); fe += u.ferro; es += u.essencia; }
+  if (it.plus > 0) { add('ferro', Math.max(1, Math.floor(fe / 2))); add('essencia', Math.floor(es / 2)); }   // 50% do material de aprimoramento
+  return Object.keys(acc).map(id => ({ k: 'mat', id, n: Math.min(99, acc[id]) }));
+}
 function act(sess, m, ctx) {
   const c = sess.c, stash = sess.stash, out = [], spawn = [];
   const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), F = s => out.push({ sfx: s });
@@ -1349,6 +1374,24 @@ function act(sess, m, ctx) {
   const t = m && m.t;
   const DW = ev => { const o = dwEv(c, ev); if (o.length) out.push(...o); };
 
+  if (t === 'break') {
+    if (!npcFor('quebrar')) return fail('Procure um ferreiro para quebrar itens.');
+    const ii = Array.isArray(m.inv) ? [...new Set(m.inv)].filter(i => intIn(i, 0, c.inv.length)) : [];
+    const si = Array.isArray(m.st) ? [...new Set(m.st)].filter(i => intIn(i, 0, stash.length)) : [];
+    const inv2 = c.inv.map(x => x && { ...x }), ret = [], rm = [];
+    for (const i of ii) { const it = c.inv[i]; if (it && it.k === 'eq') { rm.push(['i', i]); ret.push(...breakReturn(it)); } }
+    for (const i of si) { const it = stash[i]; if (it && it.k === 'eq') { rm.push(['s', i]); ret.push(...breakReturn(it)); } }
+    if (!rm.length) return fail('Nenhum equipamento válido selecionado (só mochila e baú).');
+    if (rm.length > 300) return fail('Itens demais de uma vez.');
+    for (const [w, i] of rm) if (w === 'i') inv2[i] = null;
+    const tot = {}; for (const r of ret) tot[r.id] = (tot[r.id] || 0) + r.n;
+    for (const id in tot) { let n = tot[id]; while (n > 0) { const q = Math.min(99, n); if (!addItem(inv2, { k: 'mat', id, n: q })) return fail('Mochila cheia: libere espaço para os materiais.'); n -= q; } }
+    for (let i = 0; i < c.inv.length; i++) c.inv[i] = inv2[i];
+    for (const [w, i] of rm) if (w === 's') stash[i] = null;
+    const txt = Object.keys(tot).map(id => `${MATS[id].i} ${MATS[id].n} ×${tot[id]}`).join(', ');
+    L(`🔨 Você quebrou <b>${rm.length}</b> item(ns) e recebeu: ${txt}.`); T('Quebrado: ' + rm.length + ' item(ns)'); F('forge');
+    return done();
+  }
   if (t === 'equip') {
     if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'eq') return fail();
     if (c.level < it.req) return fail('Nível ' + it.req + ' necessário');
@@ -1555,7 +1598,7 @@ const arenaPrize = (c, i) => {
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, breakReturn, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

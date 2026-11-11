@@ -796,7 +796,7 @@ const RULES=window.RULES;   // regras e dados compartilhados com o servidor (rul
 const {RAR,SLOTS,STN,WN,AN,HN,BN,RN,SHN,XN,SUF,MATS,POTS,MAXRANK,CLASSES,MT,ZONES,OG,DUNGEONS,QUESTS,QNAME,RECIPES,NPCS,SHOPS,xpNeed,upRate,upCost,sellPrice,nm}=RULES;
 const SLOT_ICON={shield:'🛡️',weapon:'⚔️',helmet:'🪖',armor:'🥋',boots:'👢',ring:'💍',ring2:'💍',bracelet:'📿',bracelet2:'📿',earring:'🧿',earring2:'🧿',cape:'🧥'};
 const BUFFN={dmg:'⚔️ Dano',crit:'🎯 Crítico',shield:'🛡️ Escudo',haste:'💨 Rapidez',defdmg:'🛡️→⚔️ Bastião',evade:'🌑 Evasão',combo:'🔥 Combo',luck:'🍀 Sorte',clone:'👥 Clones',aspd:'🐾 Vel. de ataque',flat:'🔥 Dano base'};
-const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',comprar:'🛒 Comprar',vender:'💰 Vender',missoes:'📜 Missões',bau:'📦 Baú',engastar:'💎 Engastar',guilda:'🏰 Guilda',caminhos:'🌟 Caminhos',arena:'🏟️ Arena PK'};
+const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',quebrar:'⚒️ Quebrar',comprar:'🛒 Comprar',vender:'💰 Vender',missoes:'📜 Missões',bau:'📦 Baú',engastar:'💎 Engastar',guilda:'🏰 Guilda',caminhos:'🌟 Caminhos',arena:'🏟️ Arena PK'};
 /* =================== ESTADO =================== */
 let S=null;            // dados do personagem (salvos)
 let dcache=null;
@@ -4463,6 +4463,23 @@ function sellSelected(){
 }
 function updInvSell(){const box=$('invSell'),on=sellMode();box.style.display=on?'block':'none';if(!on)return;const{n,t}=selTotal();$('invSellInfo').innerHTML='💱 <b>Modo venda</b> — clique nos itens para selecionar.<br>Selecionados: <b>'+n+'</b> • Total: <b class="ok">'+t+' 💰</b>';}
 function sellBarHtml(){const{n,t}=selTotal();return `<div class="sellbar"><span>Selecionados: <b>${n}</b> • <b class="ok">${fmt(t)} 💰</b></span><button data-act="sellsel" ${n?'':'disabled'}>Vender selecionados</button><button data-act="selcommon">Equip. comuns</button><button data-act="selmats">Materiais</button><button data-act="selclear">Limpar</button></div>`;}
+const BRK=new Set();   // itens marcados para quebrar: 'i<idx>' (mochila) / 's<idx>' (baú)
+const brkMode=()=>!!(dlg&&dlg.tab==='quebrar');
+const brkItem=k=>k[0]==='i'?S.inv[+k.slice(1)]:(ACC.stash||[])[+k.slice(1)];
+const brkOk=it=>it&&it.k==='eq';
+function brkPrune(){for(const k of [...BRK])if(!brkOk(brkItem(k)))BRK.delete(k);}
+function brkToggle(k){if(!brkOk(brkItem(k)))return;BRK.has(k)?BRK.delete(k):BRK.add(k);refreshUI();}
+function brkWhere(fn){for(let i=0;i<S.inv.length;i++)if(brkOk(S.inv[i])&&fn(S.inv[i]))BRK.add('i'+i);(ACC.stash||[]).forEach((it,i)=>{if(brkOk(it)&&fn(it))BRK.add('s'+i);});refreshUI();}
+function brkSum(keys){const tot={};let n=0;for(const k of keys){const it=brkItem(k);if(!brkOk(it))continue;n++;for(const r of RULES.breakReturn(it))tot[r.id]=(tot[r.id]||0)+r.n;}return{n,tot};}
+const brkTxt=tot=>Object.keys(tot).map(id=>`${MATS[id].i} ${MATS[id].n} ×${tot[id]}`).join(' • ')||'—';
+const brkRisky=it=>it.rar>=2||it.plus>0||(it.gm&&it.gm.some(Boolean))||it.wb;
+function brkRun(keys){
+ keys=keys.filter(k=>brkOk(brkItem(k)));if(!keys.length){toast('Nada para quebrar.');return;}
+ const {n,tot}=brkSum(keys);
+ if(keys.some(k=>brkRisky(brkItem(k)))&&!confirm('Entre os itens há raros/épicos, aprimorados ou com gemas. Quebrar '+n+' item(ns)? Eles somem para sempre.\nVocê recebe: '+brkTxt(tot).replace(/<[^>]*>/g,'')))return;
+ BRK.clear();ACT({t:'break',npc:dlg.npc.id,inv:keys.filter(k=>k[0]==='i').map(k=>+k.slice(1)),st:keys.filter(k=>k[0]==='s').map(k=>+k.slice(1))});
+}
+function brkBarHtml(){brkPrune();const {n,tot}=brkSum(BRK);return `<div class="sellbar"><span>Selecionados: <b>${n}</b><br><small>Recebe: ${brkTxt(tot)}</small></span><button data-act="brksel" ${n?'':'disabled'}>Quebrar selecionados</button><button data-act="brkall">Quebrar todos</button><button data-act="brkcommon">Equip. comuns</button><button data-act="brkclear">Limpar</button></div>`;}
 function organizeInv(){
  if(!S||P.dead)return;
  SELL.clear();ACT({t:'org'});
@@ -4474,10 +4491,10 @@ $('invSell').addEventListener('click',e=>{const b=e.target.closest('[data-sellac
 
 function renderInv(){
  for(const i of [...SELL])if(!S.inv[i])SELL.delete(i);
- $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${Array.from({length:it.sl},(_,i)=>it.gm&&it.gm[i]?'◆':'◇').join('')}</span>`:''):''}</div>`).join('')+Object.entries(S.tix||{}).filter(([k,v])=>v>0).map(([k,v])=>{const dg=DUNGEONS.find(x=>x.id===k);return `<div class="slot" data-tix="${k}" title="Ingresso: ${dg?dg.name:k} — é consumido ao entrar" style="border-color:#d4a62a">🎟️<span class="cnt">${v}</span></div>`;}).join('');
+ $('invGrid').innerHTML=S.inv.map((it,i)=>`<div class="slot${SELL.has(i)||BRK.has('i'+i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${Array.from({length:it.sl},(_,i)=>it.gm&&it.gm[i]?'◆':'◇').join('')}</span>`:''):''}</div>`).join('')+Object.entries(S.tix||{}).filter(([k,v])=>v>0).map(([k,v])=>{const dg=DUNGEONS.find(x=>x.id===k);return `<div class="slot" data-tix="${k}" title="Ingresso: ${dg?dg.name:k} — é consumido ao entrar" style="border-color:#d4a62a">🎟️<span class="cnt">${v}</span></div>`;}).join('');
  $('invGold').textContent='💰 '+(S.gm?'∞':fmt(S.gold));updInvSell();
 }
-$('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
+$('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(brkMode()){brkToggle('i'+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
 $('invGrid').addEventListener('contextmenu',e=>{e.preventDefault();const s=e.target.closest('[data-inv]');if(s)dropItem(+s.dataset.inv);});
 const DROP_LIFE=30000;   // itens largados pelo jogador somem em 30 s
 function dropItem(i){
@@ -4946,7 +4963,7 @@ $('trWin').addEventListener('click',e=>{
  if(a==='rm'){TR.mine.items=TR.mine.items.filter((_,k)=>k!==+b.dataset.i);trOffer();}});
 $('trOk').onclick=()=>{$('trInv').style.display='none';trSend({op:'accept',ok:true});};
 $('trNo').onclick=()=>{$('trInv').style.display='none';trSend({op:'accept',ok:false});};
-function closeDialog(){const was=!!dlg;dlg=null;SELL.clear();{const a=document.activeElement;if(a&&a.tagName==='INPUT'&&$('dialog').contains(a))a.blur();}$('dialog').style.display='none';if(was&&S)refreshUI();}
+function closeDialog(){const was=!!dlg;dlg=null;SELL.clear();BRK.clear();{const a=document.activeElement;if(a&&a.tagName==='INPUT'&&$('dialog').contains(a))a.blur();}$('dialog').style.display='none';if(was&&S)refreshUI();}
 let portalAt=0;
 function usePortal(n){
  const now=performance.now();if(P.dead||now<portalAt)return;const g=n.portal;
@@ -5020,6 +5037,11 @@ function renderDialog(){
   h+=L.map(s=>`<div class="row2"><div class="ri" style="border-color:${s.c}">${s.i}</div><div class="rt"><b style="color:${s.c}">${s.n}</b> <small style="display:inline">— título "${s.t}"</small><small>${s.d}</small></div><div class="rb">${sp&&sp.id===s.id?'<span class="ok">✔ Seu Caminho</span>':can?`<button data-act="sppick" data-id="${s.id}" ${S.gm||S.gold>=RULES.SPEC_COST?'':'disabled'}>Escolher</button>`:''}</div></div>`).join('');
  }else if(dlg.tab==='arena'){h+=arenaTabHtml();}else if(dlg.tab==='dungeon'){
   h+=DUNGEONS.filter(d=>(d.reg||300)===(dlg.npc.x<-150?-300:dlg.npc.x>150?300:0)).map(d=>{const hv=(S.tix&&S.tix[d.id])||0,okL=S.level>=d.minLevel,okG=S.gold>=d.price;return `<div class="row2"><div class="ri">${d.icon}</div><div class="rt"><b>${d.name}</b> <small style="display:inline">(Nv ${d.minLevel}+ • ⏱ ${Math.round(d.time/60)} min • até 6 jogadores)</small><small>${d.desc}</small><small>🎟️ Você tem: <b>${hv}</b> ingresso(s)</small></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${d.price}</div><button data-act="buyticket" data-id="${d.id}" ${okL&&okG?'':'disabled'}>Comprar</button></div></div>`;}).join('')+'<p class="muted">O ingresso é gasto ao entrar. Se você sair (ou a conexão cair), tem <b>5 minutos</b> para voltar sem pagar de novo. Em grupo, o líder entra primeiro e os outros entram em seguida, cada um com seu ingresso. Depois, vá até o portal da dungeon e fale com ele.</p>';
+ }else if(dlg.tab==='quebrar'){
+  brkPrune();
+  const row=(it,k,where)=>{const r=RULES.breakReturn(it);const tot={};r.forEach(x=>tot[x.id]=x.n);return `<div class="row2${BRK.has(k)?' sel':''}" data-act="brkt" data-id="${k}"><div class="ri"${k[0]==='i'?' data-inv="'+k.slice(1)+'"':''} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}</b><small>${where} → ${brkTxt(tot)}</small></div><div class="rb"><button data-act="brk1" data-id="${k}">Quebrar</button></div></div>`;};
+  const a=S.inv.map((it,i)=>brkOk(it)?row(it,'i'+i,'🎒 Mochila'):'').join(''),b=(ACC.stash||[]).map((it,i)=>brkOk(it)?row(it,'s'+i,'📦 Baú'):'').join('');
+  h+='<p class="muted">Quebrar faz o item sumir e devolve os materiais da receita (ou equivalentes), as gemas engastadas e metade do material de aprimoramento. Só mochila e baú — itens equipados não entram. Clique nas linhas (ou na mochila) para selecionar vários.</p>'+(a||b?a+b:'<p class="muted">Nenhum equipamento na mochila ou no baú.</p>')+brkBarHtml();
  }else if(dlg.tab==='vender'){
   const rows=S.inv.map((it,i)=>it?`<div class="row2${SELL.has(i)?' sel':''}" data-act="selsell" data-id="${i}"><div class="ri" data-inv="${i}" style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}${it.n>1?' ×'+it.n:''}</b></div><div class="rb"><div class="ok">💰 ${fmt(sellPrice(it))}</div><button data-act="sell" data-id="${i}">Vender</button>${it.n>1?`<button data-act="sellall" data-id="${i}">Tudo</button>`:''}</div></div>`:'').join('');
   h+='<p class="muted">Clique nas linhas (ou nos itens da mochila) para selecionar vários e vender de uma vez.</p>'+(rows||'<p class="muted">Mochila vazia.</p>')+sellBarHtml();
@@ -5035,7 +5057,7 @@ function renderDialog(){
 $('dialog').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled||!S)return;const a=b.dataset.act,id=b.dataset.id;
  if(a==='close')return closeDialog();
- if(a==='tab'){dlg.tab=id;if(id==='vender')setWin('inv',true);return renderDialog();}
+ if(a==='tab'){dlg.tab=id;if(id==='vender'||id==='quebrar')setWin('inv',true);BRK.clear();return renderDialog();}
  const npc=dlg.npc.id;
  if(a==='dep'){ACT({t:'dep',npc,i:+id});return;}
  if(a==='wd'){ACT({t:'wd',npc,i:+id});return;}
@@ -5055,6 +5077,9 @@ $('dialog').addEventListener('click',e=>{
  if(a==='spstart'){ACT({t:'sp_start',npc});return;}
  if(a==='sppick'){ACT({t:'sp_pick',npc,id});return;}
  if(a==='spreset'){if(confirm('Reconsagrar custa '+fmt(RULES.SPEC_RESET)+' 💰 e remove o seu Caminho atual. Continuar?'))ACT({t:'sp_reset',npc});return;}
+ if(a==='brkt'){brkToggle(id);return;}if(a==='brk1'){brkRun([id]);return;}if(a==='brksel'){brkRun([...BRK]);return;}if(a==='brkclear'){BRK.clear();refreshUI();return;}
+ if(a==='brkcommon'){brkWhere(it=>it.rar===0&&!(it.plus>0));return;}
+ if(a==='brkall'){const ks=[];S.inv.forEach((it,i)=>brkOk(it)&&ks.push('i'+i));(ACC.stash||[]).forEach((it,i)=>brkOk(it)&&ks.push('s'+i));if(ks.length&&confirm('Quebrar TODOS os '+ks.length+' equipamentos da mochila e do baú?'))brkRun(ks);else if(!ks.length)toast('Nada para quebrar.');return;}
  if(a==='selsell'){toggleSel(+id);return;}if(a==='sellsel'){sellSelected();return;}if(a==='selclear'){SELL.clear();refreshUI();return;}
  if(a==='selcommon'){selectWhere(it=>it.k==='eq'&&it.rar===0&&!(it.plus>0));return;}if(a==='selmats'){selectWhere(it=>it.k==='mat'&&!MATS[it.id].gem&&!MATS[it.id].ext);return;}
  if(a==='sell'||a==='sellall'){ACT({t:'sell',npc,i:+id,all:a==='sellall'});return;}
