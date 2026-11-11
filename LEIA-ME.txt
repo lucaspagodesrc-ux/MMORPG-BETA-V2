@@ -1,31 +1,31 @@
-ATUALIZAÇÃO 1.33 — CASA DE LEILÃO
+ATUALIZAÇÃO 1.34 — CORREIO, TAXA/EXPIRAÇÃO NO LEILÃO E TROCA ENTRE JOGADORES
 
-ONDE FICA
-Vila Aurora, ao lado leste da praça, junto à borda da zona segura: prédio "Casa de Leilão" e o NPC
-"Valter, o Leiloeiro". Clique no Valter (precisa estar perto dele) para abrir o Leilão.
-O Leilão só funciona jogando online.
+1) CORREIO (botão 📬 no menu da direita, funciona em qualquer lugar do mapa; vale para todos os personagens da conta)
+- Recebe os ganhos das vendas do Leilão, os itens de anúncios vencidos e (no futuro) recompensas de eventos.
+- Um número vermelho no 📬 mostra quantas cartas novas existem; quem está online recebe aviso no chat.
+- "Receber" pega ouro e itens da carta. Se a mochila estiver cheia, a carta NÃO é perdida: fica esperando
+  até você liberar espaço. Também há "Receber tudo" e "Marcar como lidas". Cartas sem anexos podem ser apagadas.
+- Os ganhos que já estavam guardados no Leilão (versão 1.33) viram uma carta automaticamente.
 
-COMO FUNCIONA
-- Cada jogador (conta) pode ter até 10 anúncios ao mesmo tempo (10 vagas).
-- Itens idênticos pelo MESMO preço ficam na mesma vaga e mostram a quantidade (ex.: Poção de Vida ×30).
-- Aba "Vender": escolha o item da mochila, a quantidade e o PREÇO POR UNIDADE, e clique em Anunciar.
-- Aba "Comprar": mostra tudo que está à venda. Sem filtro, aparece tudo.
-  Filtros: nome, tipo (equipamento/materiais/poções), categoria (arma, elmo, armadura...), classe,
-  raridade, atributo (Força, Agilidade, Inteligência, Vitalidade, Ataque, Defesa, Vida), nível mín./máx.,
-  refino mínimo, engastes, faixa de preço, "só o que posso pagar", "só o que posso usar" e "só os meus".
-  Ordenar: mais barato → mais caro, mais caro → mais barato, mais recentes ou maior nível.
-- Só compra quem tem ouro suficiente (o botão Comprar fica desabilitado e o preço em vermelho). Dá para
-  comprar parte de uma pilha escolhendo a quantidade. É preciso ter espaço na mochila.
-- O ouro das vendas fica guardado e é recebido no botão "Receber ganhos" do Leilão. Quem vende e está
-  online recebe um aviso no chat quando um item é comprado.
-- Aba "Meus anúncios": mostra seus anúncios e permite retirá-los (os itens voltam para a mochila).
-- Não dá para comprar o próprio anúncio. O servidor valida tudo (ouro, preço, quantidade, distância do NPC).
+2) LEILÃO
+- Taxa de 5% sobre cada venda (o vendedor recebe 95% por carta; a carta mostra a taxa cobrada). Só paga quem vende.
+- Anúncios duram 3 dias. Se não venderem, o item volta para o dono por carta, com todos os anexos.
+- Se você adicionar mais itens idênticos pelo mesmo preço num anúncio existente, o prazo de 3 dias recomeça.
+- Em "Meus anúncios" aparece quanto tempo falta para expirar.
+
+3) TROCA ENTRE JOGADORES
+- Clique em outro jogador (ou no nome dele na barra do grupo) e escolha "🔁 Propor troca". Precisam estar perto.
+- O outro jogador aceita ou recusa. Na janela, cada um escolhe até 10 itens da mochila e uma quantia de ouro.
+- Mudou a oferta? As confirmações dos dois são zeradas. Quando AMBOS clicam em "Confirmar troca", o
+  servidor confere tudo de novo (itens, ouro, espaço na mochila dos dois) e troca de uma vez só.
+  Se algo estiver errado, a troca é cancelada e ninguém perde nada.
+- A troca também é cancelada se alguém sair do jogo, se afastar demais ou cancelar.
 
 COMO INSTALAR
-1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub (auction.ts é um arquivo NOVO):
-   index.html, auction.ts, db.ts, rules.js, WorldRoom.ts
-2. Aguarde o Render terminar o deploy (as tabelas do leilão são criadas sozinhas na subida do servidor).
+1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub (mail.ts, trade.ts e itemutil.ts são NOVOS):
+   index.html, auction.ts, mail.ts, trade.ts, itemutil.ts, db.ts, WorldRoom.ts
+2. Aguarde o Render terminar o deploy (a tabela do correio é criada sozinha).
 3. No navegador, aperte Ctrl+F5.
 
 OBSERVAÇÃO
-- Não foi cobrada taxa de venda nem há prazo de expiração dos anúncios; dá para adicionar depois.
+- Cartas já lidas e vazias são removidas sozinhas após 14 dias; cartas com anexos nunca expiram.

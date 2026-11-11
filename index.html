@@ -95,6 +95,24 @@
   #ahWin .sellrow input{width:84px}
   #ahWin .msg{min-height:16px;font-size:12px;color:#ffb36b;margin:4px 0}
   #ahWin .msg.ok{color:#7be08a}
+  #mailWin,#trWin{display:none;left:50%;top:50%;transform:translate(-50%,-50%);max-width:97vw;max-height:90vh;padding:12px;z-index:9;overflow:hidden;flex-direction:column;font-size:12.5px}
+  #mailWin{width:620px}#trWin{width:780px}
+  #mailWin .dh,#trWin .dh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:16px;margin-bottom:8px}
+  #mailWin .lst{overflow:auto;max-height:62vh;border-top:1px solid #202c3a}
+  #mailWin .ml{padding:8px 4px;border-bottom:1px solid #202c3a}#mailWin .ml.new{background:#14231b}
+  #mailWin .ml .at{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:5px}
+  #mailWin .ml .ri{width:34px;height:34px;font-size:18px}
+  #btnMail{position:relative}.bdg{position:absolute;right:-4px;top:-4px;background:#e0483f;color:#fff;border-radius:9px;font-size:10px;line-height:15px;min-width:15px;text-align:center;padding:0 3px;display:none}
+  #trWin .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #trWin .col{border:1px solid var(--line);border-radius:8px;padding:6px;min-height:150px;background:#0f1822}
+  #trWin .col.ok{border-color:#6fdc7f}
+  #trWin .col h4{margin:0 0 4px;font-size:13px}
+  #trWin .bag{display:grid;grid-template-columns:repeat(auto-fill,44px);gap:4px;margin:8px 0;max-height:24vh;overflow:auto}
+  #trWin .bag .ri{width:40px;height:40px;cursor:pointer}
+  #trWin .bag .ri{position:relative}#trWin .bag .cnt{position:absolute;right:2px;bottom:0;font-size:10px;font-weight:800;text-shadow:0 1px 2px #000}
+  #trWin input{background:#0f1822;color:#e6edf5;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px;width:70px}
+  #trWin .bar{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  #trInv{display:none;top:140px;left:50%;transform:translateX(-50%);padding:10px 14px;z-index:8;gap:12px;align-items:center;font-size:13px}
   #dialog .dh{display:flex;justify-content:space-between;align-items:center;font-size:16px}
   .greet{color:var(--mut);font-size:12px;margin:4px 0 8px}
   .tabs{display:flex;gap:6px;margin-bottom:8px}
@@ -223,6 +241,7 @@
     <button data-win="quest" title="Missões (Q)">📜</button>
     <button data-win="party" title="Grupo (G)">👥</button>
     <button data-win="friends" title="Amigos (F)">🤝</button>
+    <button id="btnMail" title="Correio">📬<span class="bdg" id="mailBdg"></span></button>
     <button data-win="gm" id="mnuGm" title="Painel do GM (Y)" style="display:none">✨</button>
     <button data-win="titles" title="Títulos (T)">🏅</button>
     <button data-win="help" title="Ajuda (H)">❔</button>
@@ -237,6 +256,9 @@
 
 <div id="dialog" class="panel"></div>
 <div id="ahWin" class="panel"></div>
+<div id="mailWin" class="panel"></div>
+<div id="trWin" class="panel"></div>
+<div id="trInv" class="panel"><span id="trInvTxt"></span><button id="trOk">Aceitar</button><button id="trNo">Recusar</button></div>
 <div id="death"><div>💀 Você morreu</div><button id="reviveBtn">Voltar à cidade</button></div>
 <div id="help" class="panel">
   <b style="color:#ffe28a">CONTROLES</b> <button class="x" data-close="help" style="float:right">✕</button><br>
@@ -3451,16 +3473,17 @@ $('partybar').addEventListener('click',e=>{
  let b='';
  if(me)b=`<button data-pleave2="1">🚪 Sair do grupo</button>`;
  else{b=isFriend(n)?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`;
-  {const w=wallBtn(sidOf(n));if(w)b+=w;}
+  b+=`<button data-ptr="${esc(n)}">🔁 Propor troca</button>`;{const w=wallBtn(sidOf(n));if(w)b+=w;}
   if(S.gm){let sid='';const st=NET.room&&NET.room.state;if(st&&st.players)st.players.forEach((p,id)=>{if(p.name===n)sid=id;});if(sid)b+=`<button data-pgm="${esc(sid)}" style="color:#ffe28a">✨ Buff do GM</button>`;}}
  m.innerHTML=`<b>${esc(n)}</b>${b}<button data-pcl="1">Cancelar</button>`;
  m.style.display='block';m.style.left=Math.min(e.clientX+8,innerWidth-190)+'px';m.style.top=Math.min(e.clientY+8,innerHeight-150)+'px';});
 function showPMenu(o,x,y){
  const m=$('pmenu'),n=o.name||'?';const fr=isFriend(n);
- m.innerHTML=`<b>${esc(n)}${o.lv>0?' <small style="color:#ffd27a">Nv '+o.lv+'</small>':''}</b>${fr?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`}<button data-pinv2="${esc(n)}">👥 Convidar para o grupo</button>${wallBtn(o.id||sidOf(n))}${S&&S.gm&&o.id?`<button data-pgm="${esc(o.id)}" style="color:#ffe28a">✨ Buff do GM</button>`:''}<button data-pcl="1">Cancelar</button>`;
+ m.innerHTML=`<b>${esc(n)}${o.lv>0?' <small style="color:#ffd27a">Nv '+o.lv+'</small>':''}</b>${fr?`<button data-pdel="${esc(n)}">💔 Remover amigo</button>`:`<button data-padd="${esc(n)}">🤝 Adicionar amigo</button>`}<button data-pinv2="${esc(n)}">👥 Convidar para o grupo</button><button data-ptr="${esc(n)}">🔁 Propor troca</button>${wallBtn(o.id||sidOf(n))}${S&&S.gm&&o.id?`<button data-pgm="${esc(o.id)}" style="color:#ffe28a">✨ Buff do GM</button>`:''}<button data-pcl="1">Cancelar</button>`;
  m.style.display='block';m.style.left=Math.min(x+8,innerWidth-190)+'px';m.style.top=Math.min(y+8,innerHeight-150)+'px';}
 $('pmenu').addEventListener('pointerdown',e=>e.stopPropagation());
 $('pmenu').addEventListener('click',e=>{
+ const tr=e.target.closest('[data-ptr]');if(tr)trInvite(tr.dataset.ptr);
  const a=e.target.closest('[data-padd]'),d=e.target.closest('[data-pdel]'),i=e.target.closest('[data-pinv2]'),gm=e.target.closest('[data-pgm]'),wl=e.target.closest('[data-pwall]');
  if(wl)wallAlly(wl.dataset.pwall);
  if(e.target.closest('[data-pleave2]')&&NET.room)NET.room.send('pleave');
@@ -4082,17 +4105,18 @@ function ahSoon(){clearTimeout(AH.timer);AH.timer=setTimeout(()=>ahSearch(0),350
 function ahReply(m){
  AH.busy=false;if(!m)return;
  if(m.msg){AH.msg=m.msg;AH.ok=!!m.ok;}
- if(m.gold!==undefined)AH.gold=m.gold;if(m.used!==undefined)AH.used=m.used;
+ if(m.used!==undefined)AH.used=m.used;
  if(m.op==='search'&&m.ok){AH.list=m.list;AH.page=m.page;AH.pages=m.pages;AH.total=m.total;}
  if(m.op==='mine'&&m.ok){AH.list=m.list;AH.total=m.list.length;}
- if((m.op==='buy'||m.op==='cancel'||m.op==='sell'||m.op==='collect')&&m.ok||m.gone){ahRefresh();}
+ if((m.op==='buy'||m.op==='cancel'||m.op==='sell')&&m.ok||m.gone){ahRefresh();}
  if(AH.open)ahRender(true);
 }
+function ahLeft(t){const ms=Math.max(0,t-Date.now()),h=Math.floor(ms/3600000);return h>=24?Math.floor(h/24)+'d '+(h%24)+'h':h>0?h+'h '+Math.floor(ms%3600000/60000)+'min':Math.max(1,Math.floor(ms/60000))+' min';}
 function ahRefresh(){if(AH.tab==='buy')ahSearch(AH.page);else if(AH.tab==='mine')ahSend({op:'mine'});else ahSend({op:'mine'});}
 const ahOpt=(arr,cur)=>arr.map(([v,t])=>`<option value="${v}"${String(v)===String(cur)?' selected':''}>${t}</option>`).join('');
 function ahRender(onlyList){
  if(!AH.open)return;const f=AH.f;
- const head=`<div class="dh"><b>⚖️ Casa de Leilão</b><div class="gr"><span class="muted">💰 ${fmt(S.gold)}</span><span class="muted">Anúncios: ${AH.used}/${AH_SLOTS}</span><button data-ah="collect" ${AH.gold>0?'':'disabled'}>💵 Receber ganhos${AH.gold>0?' ('+fmt(AH.gold)+')':''}</button><button data-ah="close">✕</button></div></div>
+ const head=`<div class="dh"><b>⚖️ Casa de Leilão</b><div class="gr"><span class="muted">💰 ${fmt(S.gold)}</span><span class="muted">Anúncios: ${AH.used}/${AH_SLOTS}</span><button data-ah="mail">📬 Correio</button><button data-ah="close">✕</button></div></div>
  <div class="tabs"><button class="tab ${AH.tab==='buy'?'on':''}" data-ah="tab" data-v="buy">🔎 Comprar</button><button class="tab ${AH.tab==='sell'?'on':''}" data-ah="tab" data-v="sell">➕ Vender</button><button class="tab ${AH.tab==='mine'?'on':''}" data-ah="tab" data-v="mine">📋 Meus anúncios</button></div>`;
  if(!onlyList||!$('ahBody')){
   let body='';
@@ -4120,7 +4144,7 @@ function ahRender(onlyList){
   }
   $('ahWin').innerHTML=head+body+`<div class="msg" id="ahMsg"></div><div class="lst" id="ahBody"></div><div class="pg" id="ahPg"></div>`;
  }else{ // só atualiza o cabeçalho (ouro/ganhos) sem perder o foco dos filtros
-  const gr=$('ahWin').querySelector('.dh .gr');if(gr)gr.innerHTML=`<span class="muted">💰 ${fmt(S.gold)}</span><span class="muted">Anúncios: ${AH.used}/${AH_SLOTS}</span><button data-ah="collect" ${AH.gold>0?'':'disabled'}>💵 Receber ganhos${AH.gold>0?' ('+fmt(AH.gold)+')':''}</button><button data-ah="close">✕</button>`;
+  const gr=$('ahWin').querySelector('.dh .gr');if(gr)gr.innerHTML=`<span class="muted">💰 ${fmt(S.gold)}</span><span class="muted">Anúncios: ${AH.used}/${AH_SLOTS}</span><button data-ah="mail">📬 Correio</button><button data-ah="close">✕</button>`;
  }
  const msg=$('ahMsg');if(msg){msg.textContent=AH.msg||'';msg.className='msg'+(AH.ok?' ok':'');}
  const bd=$('ahBody'),pg=$('ahPg');if(!bd)return;pg.innerHTML='';
@@ -4129,12 +4153,12 @@ function ahRender(onlyList){
   const rows=[...seen.values()].map(g=>`<div class="row2"><div class="ri" data-inv="${g.i}" style="border-color:${col(g.it)}">${ico(g.it)}</div><div class="rt"><b style="color:${col(g.it)==='#455568'?'#fff':col(g.it)}">${nm(g.it)}${g.n>1?' ×'+g.n:''}</b><small>Valor de loja: ${fmt(sellPrice(g.it))} 💰 (cada)</small></div>
    <div class="sellrow">${g.n>1?`<input type="number" min="1" max="${g.n}" value="${g.n}" data-q="${g.i}" title="Quantidade">`:''}<input type="number" min="1" placeholder="Preço cada" data-p="${g.i}"><button data-ah="sell" data-i="${g.i}">Anunciar</button></div></div>`).join('');
   bd.innerHTML=(rows||'<p class="muted" style="padding:10px">Mochila sem itens que possam ser leiloados.</p>');
-  pg.innerHTML='<span class="muted">Itens idênticos pelo mesmo preço dividem uma única vaga. O preço é por unidade.</span>';return;
+  pg.innerHTML='<span class="muted">Itens idênticos pelo mesmo preço dividem uma única vaga. O preço é por unidade. Taxa de 5% sobre a venda; o anúncio dura 3 dias e, se não vender, o item volta por Correio. Os ganhos também chegam por Correio.</span>';return;
  }
  const L=AH.list;
  bd.innerHTML=L.length?L.map((a,i)=>{const it=a.item,tot=a.price*a.qty,can=S.gm||S.gold>=a.price;
   return `<div class="row2"><div class="ri" data-ah="${i}" style="border-color:${col(it)}">${ico(it)}</div>
-  <div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}${a.qty>1?' ×'+a.qty:''}</b><small>${a.mine?'Seu anúncio':'Vendedor: '+esc(a.seller||'')}${it.k==='eq'?' • Nv '+it.req:''}</small></div>
+  <div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}${a.qty>1?' ×'+a.qty:''}</b><small>${a.mine?'Seu anúncio':'Vendedor: '+esc(a.seller||'')}${it.k==='eq'?' • Nv '+it.req:''}${a.mine&&a.exp?' • expira em '+ahLeft(a.exp):''}</small></div>
   <div class="rb"><div class="pr${can?'':' no'}">💰 ${fmt(a.price)}${a.qty>1?' <small class="muted">cada</small>':''}</div>${a.qty>1?`<small class="muted">Total ${fmt(tot)}</small>`:''}</div>
   <div class="sellrow">${AH.tab==='mine'?`<button data-ah="cancel" data-id="${a.id}">Retirar</button>`:(a.mine?'<button data-ah="cancel" data-id="'+a.id+'">Retirar</button>':`${a.qty>1?`<input type="number" min="1" max="${a.qty}" value="1" data-bq="${i}" title="Quantidade">`:''}<button data-ah="buy" data-i="${i}" ${can?'':'disabled'}>Comprar</button>`)}</div></div>`;}).join(''):'<p class="muted" style="padding:10px">Nenhum item encontrado.</p>';
  if(AH.tab==='buy')pg.innerHTML=`<button data-ah="pg" data-v="-1" ${AH.page>0?'':'disabled'}>◀</button><span class="muted">Página ${AH.page+1}/${AH.pages} • ${fmt(AH.total)} anúncio(s)</span><button data-ah="pg" data-v="1" ${AH.page<AH.pages-1?'':'disabled'}>▶</button>`;
@@ -4148,7 +4172,7 @@ $('ahWin').addEventListener('click',e=>{
  if(a==='tab'){AH.tab=b.dataset.v;AH.msg='';AH.list=[];ahRender();if(AH.tab==='buy')ahSearch(0);else ahSend({op:'mine'});return;}
  if(a==='clear'){Object.assign(AH.f,{q:'',cat:'',slot:'',cls:'',rar:-1,attr:'',lvMin:'',lvMax:'',plusMin:0,slMin:0,pMin:'',pMax:'',afford:false,usable:false,mine:false,sort:'asc'});ahRender();ahSearch(0);return;}
  if(a==='pg')return ahSearch(Math.max(0,AH.page+ +b.dataset.v));
- if(a==='collect')return ahSend({op:'collect'});
+ if(a==='mail')return mailOpen();
  if(a==='cancel')return ahSend({op:'cancel',id:+b.dataset.id});
  if(a==='buy'){const x=AH.list[+b.dataset.i];if(!x)return;const qi=$('ahWin').querySelector(`[data-bq="${b.dataset.i}"]`),qty=Math.max(1,Math.min(x.qty,Math.floor(+(qi&&qi.value)||1)));return ahSend({op:'buy',id:x.id,qty,price:x.price});}
  if(a==='sell'){const i=+b.dataset.i,pi=$('ahWin').querySelector(`[data-p="${i}"]`),qi=$('ahWin').querySelector(`[data-q="${i}"]`);
@@ -4156,6 +4180,67 @@ $('ahWin').addEventListener('click',e=>{
   if(!(price>=1)){AH.msg='Digite o valor do item (preço por unidade).';AH.ok=false;ahRender(true);return;}
   return ahSend({op:'sell',i,qty:Math.max(1,qty),price});}
 });
+
+/* =================== CORREIO =================== */
+const MAIL={open:false,list:[],n:0,msg:'',ok:false};
+function tipMail(k){const[a,b]=k.split(',').map(Number),L=MAIL.list[a];return L&&L.items[b]&&L.items[b].item;}
+function mailBadge(){const b=$('mailBdg');if(!b)return;b.textContent=MAIL.n>99?'99+':MAIL.n;b.style.display=MAIL.n>0?'block':'none';}
+function mailOpen(){if(!NET.room){toast('📬 O Correio só funciona jogando online.');return;}MAIL.open=true;MAIL.msg='';$('mailWin').style.display='flex';mailRender();NET.room.send('mail',{op:'list'});}
+function mailClose(){MAIL.open=false;$('mailWin').style.display='none';}
+function mailReply(m){if(!m)return;if(m.msg){MAIL.msg=m.msg;MAIL.ok=!!m.ok;}if(m.list){MAIL.list=m.list;MAIL.n=m.n;mailBadge();}if(MAIL.open)mailRender();}
+function mailRender(){
+ const dt=t=>new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+ const rows=MAIL.list.map((l,i)=>{const has=l.gold>0||l.items.length;
+  return `<div class="ml${l.read?'':' new'}" data-mid="${l.id}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${l.read?'':'● '}${esc(l.title)}</b><small class="muted">${dt(l.t)}</small></div>${l.body?`<div class="muted">${esc(l.body)}</div>`:''}
+  ${has?`<div class="at">${l.gold>0?`<span class="pr" style="font-weight:700;color:#ffe28a">💰 ${fmt(l.gold)}</span>`:''}${l.items.map((x,j)=>`<div class="ri" data-mi="${i},${j}" style="border-color:${col(x.item)}">${ico(x.item)}</div>${x.qty>1?`<small>×${x.qty}</small>`:''}`).join('')}<button data-ml="claim" data-id="${l.id}">Receber</button>`:`<div class="at"><button data-ml="del" data-id="${l.id}">Apagar</button></div>`}</div>`;}).join('');
+ $('mailWin').innerHTML=`<div class="dh"><b>📬 Correio</b><span style="display:flex;gap:6px"><button data-ml="claimall">Receber tudo</button><button data-ml="readall">Marcar como lidas</button><button data-ml="close">✕</button></span></div><div class="msg" style="min-height:16px;font-size:12px;color:${MAIL.ok?'#7be08a':'#ffb36b'}">${esc(MAIL.msg||'')}</div><div class="lst">${rows||'<p class="muted" style="padding:10px">Nenhuma carta. Ganhos do Leilão, itens de anúncios vencidos e recompensas chegam aqui.</p>'}</div>`;
+}
+$('btnMail').addEventListener('click',()=>{AUD.sfx('ui');MAIL.open?mailClose():mailOpen();});
+$('mailWin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')mailClose();});
+$('mailWin').addEventListener('click',e=>{
+ const b=e.target.closest('button[data-ml]');if(!b||!NET.room)return;const a=b.dataset.ml;
+ if(a==='close')return mailClose();
+ if(a==='claimall'||a==='readall')return NET.room.send('mail',{op:a});
+ NET.room.send('mail',{op:a,id:+b.dataset.id});});
+
+/* =================== TROCA ENTRE JOGADORES =================== */
+const TR={open:false,who:'',mine:{items:[],gold:0},theirs:{items:[],gold:0},okMine:false,okTheirs:false,msg:''};
+function tipTrade(k){const[w,i]=k.split(','),o=w==='m'?TR.mine:TR.theirs,x=o.items[+i];return x&&x.item;}
+const trSend=o=>{if(NET.room)NET.room.send('tr',o);};
+function trInvite(name){if(NET.room){trSend({op:'invite',name});toast('🤝 Convite de troca enviado para '+name);}}
+function trOffer(){trSend({op:'offer',items:TR.mine.items.map(x=>({i:x.i,qty:x.qty})),gold:TR.mine.gold});}
+function trReply(m){
+ if(!m)return;
+ if(m.op==='inv'){$('trInvTxt').innerHTML='🤝 <b>'+esc(m.from)+'</b> quer trocar itens com você.';$('trInv').style.display='flex';AUD.sfx('questAccept');clearTimeout(TR.it);TR.it=setTimeout(()=>$('trInv').style.display='none',30000);return;}
+ if(m.op==='wait'){return;}
+ if(m.op==='open'){TR.open=true;TR.who=m.with;TR.mine={items:[],gold:0};TR.theirs={items:[],gold:0};TR.okMine=TR.okTheirs=false;TR.msg='';$('trInv').style.display='none';$('trWin').style.display='flex';setWin('inv',false);trRender();return;}
+ if(m.op==='st'){TR.mine=m.mine;TR.theirs=m.theirs;TR.okMine=m.okMine;TR.okTheirs=m.okTheirs;if(TR.open)trRender();return;}
+ if(m.op==='end'){TR.open=false;$('trWin').style.display='none';$('trInv').style.display='none';if(m.msg)toast((m.done?'🤝 ':'')+m.msg);if(m.msg)logMsg(`<span style="color:${m.done?'#7be08a':'#ffb36b'}">🤝 ${esc(m.msg)}</span>`);}
+}
+function trRender(onlyStatus){
+ if(!TR.open||!S)return;
+ const line=(x,i,w,mine)=>`<div class="row2"><div class="ri" data-ti="${w},${i}" style="border-color:${col(x.item)}">${ico(x.item)}</div><div class="rt"><b style="color:${col(x.item)==='#455568'?'#fff':col(x.item)}">${nm(x.item)}${x.qty>1?' ×'+x.qty:''}</b></div>${mine?`<div class="sellrow">${x.item.k!=='eq'?`<input type="number" min="1" value="${x.qty}" data-tq="${i}">`:''}<button data-tr="rm" data-i="${i}">✕</button></div>`:''}</div>`;
+ const bag=S.inv.map((it,i)=>it&&['eq','mat','pot'].includes(it.k)&&!TR.mine.items.some(x=>x.i===i)?`<div class="ri" data-inv="${i}" data-tadd="${i}" style="border-color:${col(it)}">${ico(it)}${it.n>1?`<span class="cnt">${it.n}</span>`:''}</div>`:'').join('');
+ const st=TR.okMine&&TR.okTheirs?'Concluindo…':TR.okMine?'Você confirmou. Aguardando '+esc(TR.who)+'…':TR.okTheirs?esc(TR.who)+' já confirmou!':'Monte a oferta e confirme.';
+ $('trWin').innerHTML=`<div class="dh"><b>🤝 Troca com ${esc(TR.who)}</b><span class="muted">💰 ${fmt(S.gold)}</span></div>
+ <div class="cols"><div class="col${TR.okMine?' ok':''}"><h4>Você oferece ${TR.okMine?'✔':''}</h4>${TR.mine.items.map((x,i)=>line(x,i,'m',true)).join('')||'<p class="muted">Clique nos itens abaixo para adicionar.</p>'}<div style="margin-top:6px">💰 Ouro: <input type="number" min="0" value="${TR.mine.gold}" data-tg="1"></div></div>
+ <div class="col${TR.okTheirs?' ok':''}"><h4>${esc(TR.who)} oferece ${TR.okTheirs?'✔':''}</h4>${TR.theirs.items.map((x,i)=>line(x,i,'t',false)).join('')||'<p class="muted">Nada ainda.</p>'}<div style="margin-top:6px">💰 Ouro: <b class="pr" style="color:#ffe28a">${fmt(TR.theirs.gold)}</b></div></div></div>
+ <div class="muted" style="margin-top:6px">Sua mochila (clique para oferecer):</div><div class="bag">${bag||'<span class="muted">Sem itens.</span>'}</div>
+ <div class="bar"><span class="muted">${st}</span><span style="display:flex;gap:8px"><button data-tr="ok" ${TR.okMine?'disabled':''}>✔ Confirmar troca</button><button data-tr="cancel">✕ Cancelar</button></span></div>`;
+}
+$('trWin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.tagName==='INPUT')e.target.blur();});
+$('trWin').addEventListener('change',e=>{
+ if(e.target.dataset.tg!==undefined){TR.mine.gold=Math.max(0,Math.floor(+e.target.value)||0);trOffer();return;}
+ if(e.target.dataset.tq!==undefined){const x=TR.mine.items[+e.target.dataset.tq];if(x){x.qty=Math.max(1,Math.floor(+e.target.value)||1);trOffer();}}});
+$('trWin').addEventListener('click',e=>{
+ const add=e.target.closest('[data-tadd]');
+ if(add&&TR.mine.items.length<10){const i=+add.dataset.tadd,it=S.inv[i];if(it){TR.mine.items=[...TR.mine.items,{i,qty:it.k==='eq'?1:it.n}];trOffer();}return;}
+ const b=e.target.closest('button[data-tr]');if(!b)return;const a=b.dataset.tr;
+ if(a==='cancel')return trSend({op:'cancel'});
+ if(a==='ok')return trSend({op:'confirm'});
+ if(a==='rm'){TR.mine.items=TR.mine.items.filter((_,k)=>k!==+b.dataset.i);trOffer();}});
+$('trOk').onclick=()=>{$('trInv').style.display='none';trSend({op:'accept',ok:true});};
+$('trNo').onclick=()=>{$('trInv').style.display='none';trSend({op:'accept',ok:false});};
 function closeDialog(){const was=!!dlg;dlg=null;SELL.clear();$('dialog').style.display='none';if(was&&S)refreshUI();}
 let portalAt=0;
 function usePortal(n){
@@ -4321,9 +4406,9 @@ function cmpOf(it){
 // tooltip
 const tip=$('tip');
 document.addEventListener('mousemove',e=>{
- const t=S&&e.target.closest?e.target.closest('[data-inv],[data-eq],[data-st],[data-ah]'):null;
+ const t=S&&e.target.closest?e.target.closest('[data-inv],[data-eq],[data-st],[data-ah],[data-mi],[data-ti]'):null;
  if(!t){tip.style.display='none';return;}
- const it=t.dataset.ah!==undefined?(AH.list[+t.dataset.ah]||{}).item:t.dataset.st!==undefined?ACC.stash[+t.dataset.st]:t.dataset.inv!==undefined?S.inv[+t.dataset.inv]:S.eq[t.dataset.eq];
+ const it=t.dataset.mi!==undefined?tipMail(t.dataset.mi):t.dataset.ti!==undefined?tipTrade(t.dataset.ti):t.dataset.ah!==undefined?(AH.list[+t.dataset.ah]||{}).item:t.dataset.st!==undefined?ACC.stash[+t.dataset.st]:t.dataset.inv!==undefined?S.inv[+t.dataset.inv]:S.eq[t.dataset.eq];
  if(!it){tip.style.display='none';return;}
  tip.innerHTML=tipOf(it)+(t.dataset.eq===undefined?cmpOf(it):'');tip.style.display='block';const w=tip.offsetWidth,h=tip.offsetHeight;
  tip.style.left=Math.min(e.clientX+14,innerWidth-w-8)+'px';tip.style.top=Math.min(e.clientY+14,innerHeight-h-8)+'px';
@@ -4460,6 +4545,9 @@ async function netJoin(){
    if(S) refreshUI();});
   room.onMessage('res',m=>applyRes(m));
   room.onMessage('ahr',m=>ahReply(m));
+  room.onMessage('mailr',m=>mailReply(m));room.onMessage('mailn',m=>{MAIL.n=m.n|0;mailBadge();if(MAIL.open)NET.room.send('mail',{op:'list'});});
+  room.onMessage('trr',m=>trReply(m));
+  setTimeout(()=>{if(NET.room===room)room.send('mail',{op:'list'});},1500);
   room.onMessage('abuff',m=>{const sk=CLASSES[m.cls]&&CLASSES[m.cls].skills[m.i];if(!sk)return;for(const k in m.buffs)addBuff(k,m.buffs[k],m.dur,sk);ring(P.pos.x,P.pos.z,2.6,sk.color,700);toast(`${sk.i} ${m.by} protegeu você com ${sk.n}!`);logMsg(`<span style="color:${sk.color}">${sk.i} ${esc(m.by)} lançou ${sk.n} em você.</span>`);});
   room.onMessage('gmb',m=>{dirty();if(m&&m.on){const d=D();P.hp=d.maxHp;P.mp=d.maxMp;AUD.sfx('levelUp');ring(P.pos.x,P.pos.z,5,'#ffe28a',900);toast('✨ Você recebeu o Buff do GM por 5 minutos!');logMsg('<span style="color:#ffe28a">✨ <b>Buff do GM</b> ativo por 5 minutos'+(m.by?' (de '+esc(m.by)+')':'')+'</span>');}else{afterChange();logMsg('<span style="color:#cbd6e2">✨ O Buff do GM terminou.</span>');}});
   room.onMessage('drop',m=>{spawnDrop(m.item,{x:m.x,z:m.z},m.life);const d=drops[drops.length-1];if(d){d.sid=m.id;d.lockUntil=m.lock?performance.now()+m.lock:0;}if((m.item.k==='eq'&&m.item.rar>=2)||m.item.k==='tix')setTimeout(()=>AUD.sfx('rare'),300);else setTimeout(()=>AUD.sfx('drop'),200);});

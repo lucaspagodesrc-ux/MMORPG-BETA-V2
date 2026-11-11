@@ -36,7 +36,23 @@ export async function migrate() {
       created_at timestamptz not null default now());
     create index if not exists auction_account on auction(account_id);
     create index if not exists auction_price on auction(price);
+    create table if not exists mail(
+      id serial primary key,
+      account_id int not null references accounts(id) on delete cascade,
+      kind text not null default 'sys',
+      title text not null,
+      body text not null default '',
+      gold bigint not null default 0,
+      items jsonb not null default '[]',
+      read boolean not null default false,
+      created_at timestamptz not null default now());
+    create index if not exists mail_account on mail(account_id, id desc);
   `);
+  // v1.34: ganhos antigos do leilão (accounts.ah_gold) viram uma carta no correio.
+  try {
+    await pool.query(`with o as (update accounts set ah_gold=0 where ah_gold>0 returning id, ah_gold)
+      insert into mail(account_id,kind,title,body,gold) select id,'ah','💰 Ganhos do Leilão','Ganhos de vendas feitas antes do Correio.',ah_gold from o`);
+  } catch (e) { console.error("[correio] migração de ganhos falhou", e); }
   // Nomes padrão ("Mago 1", "Assassino 2"...) viram vazios: o jogador escolhe o nome na primeira entrada. Nenhum personagem é apagado.
   // Só mexe em quem ainda não escolheu nome (data.nmOk ausente); nomes já escolhidos ficam como estão.
   try {

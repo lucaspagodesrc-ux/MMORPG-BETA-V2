@@ -1,6 +1,8 @@
 import { Room, Client, ServerError } from "colyseus";
 import { WorldState, Player } from "./schema";
-import { auctionMsg } from "./auction";
+import { auctionMsg, auctionSweep } from "./auction";
+import { mailMsg, mailNotify, mailSweep } from "./mail";
+import { tradeMsg, tradeLeave } from "./trade";
 import { verifyToken, loadCharacter, loadStash, saveChar, saveStash, AuthUser } from "./auth";
 import { MonsterSim, Sim } from "./monsters";
 import { Dungeons } from "./dungeon";
@@ -102,7 +104,7 @@ export class WorldRoom extends Room<WorldState> {
     for (const m of pt.members) this.sysTo(this.sess.get(m), note || `${nm} saiu do grupo.`);
     this.sendParty(pt);
   }
-  private findByName(name: string) { for (const [sid, s] of this.sess) if (this.state.players.get(sid)?.name.toLowerCase() === String(name).toLowerCase()) return s; return undefined; }
+  findByName(name: string) { for (const [sid, s] of this.sess) if (this.state.players.get(sid)?.name.toLowerCase() === String(name).toLowerCase()) return s; return undefined; }
 
   private playerOf(s: Sess) { return this.state.players.get(s.client.sessionId)!; }
 
@@ -356,8 +358,11 @@ export class WorldRoom extends Room<WorldState> {
   }
 
   /* ---------- mensagens ---------- */
+  private maintT?: NodeJS.Timeout;
   onCreate() {
     this.setState(new WorldState());
+    // a cada minuto: anúncios vencidos do leilão voltam por correio; limpa cartas velhas
+    this.maintT = setInterval(() => { auctionSweep(this); mailSweep(); }, 60_000); auctionSweep(this);
     this.setPatchRate(50);
     this.sim = new MonsterSim(this.state, {
       hit: (sid, dmg, mid) => this.sess.get(sid)?.client.send("mhit", { raw: dmg, id: mid }),
@@ -410,6 +415,8 @@ export class WorldRoom extends Room<WorldState> {
       this.sync(s); this.res(s, r.out, r.ok);
     });
     this.onMessage("ah", (client, m) => { const s = this.S(client); if (s && m && typeof m.op === "string" && this.okRate(s, 2)) auctionMsg(this, s, m); });
+    this.onMessage("mail", (client, m) => { const s = this.S(client); if (s && m && typeof m.op === "string" && this.okRate(s, 2)) mailMsg(this, s, m); });
+    this.onMessage("tr", (client, m) => { const s = this.S(client); if (s && m && typeof m.op === "string" && this.okRate(s, 1)) tradeMsg(this, s, m); });
     this.onMessage("cast", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.cast(s, m); });
     this.onMessage("atk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.basic(s, m); });
     this.onMessage("pick", (client, m) => {
@@ -617,6 +624,7 @@ export class WorldRoom extends Room<WorldState> {
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,
       dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(8).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, seen: new Set(), busyUntil: 0, partyId: 0 };
     this.sess.set(client.sessionId, s);
+    mailNotify(this, s.acc.id);
     if (p.x > 450) {                                            // estava numa dungeon: volta para a instância se ainda estiver no prazo
       const I = c.run ? this.dg.insts.get(c.run.inst) : undefined;
       if (I && !I.closed && !I.paused && (!c.run.until || Date.now() < c.run.until || (I.grp && I.members.size > 0))) {
@@ -635,6 +643,7 @@ export class WorldRoom extends Room<WorldState> {
   }
 
   async onLeave(client: Client) {
+    tradeLeave(this, client.sessionId);
     const p = this.state.players.get(client.sessionId), s = this.sess.get(client.sessionId);
     if (p) this.broadcast("chat", { kind: "sys", text: `${p.name} saiu do mundo.` }, { except: client });
     if (s) { this.dg.leave(s, false); for (const dd of this.wd.values()) if (dd.owner === client.sessionId) dd.owner = ""; this.partyLeave(client.sessionId); this.invites.delete(client.sessionId); s.saving = false; await this.save(s); }
@@ -643,5 +652,6 @@ export class WorldRoom extends Room<WorldState> {
     for (const sim of this.sim.list) sim.contrib.delete(client.sessionId);
   }
 
-  async onDispose() { await this.saveAll(); }
+  async onDispose() {
+    if (this.maintT) clearInterval(this.maintT); await this.saveAll(); }
 }
