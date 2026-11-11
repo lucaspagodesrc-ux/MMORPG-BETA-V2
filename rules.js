@@ -749,25 +749,43 @@ const GEMS = [
   { id: 'w_cdmg', cat: 'w', g: 3, n: 'Gema da Fúria Rubra',        o: 'Dano Crítico',                    k: 'cdmg', v: 15,  u: '%',  d: 'Aumenta o dano dos acertos críticos.' },
   { id: 'w_atk',  cat: 'w', g: 1, n: 'Gema da Presa Afiada',       o: 'Ataque',                          k: 'atkE', v: .38, sc: 1,  d: 'Soma ataque ao seu dano base (classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro). Cresce com o nível do equipamento.' },
   { id: 'w_matk', cat: 'w', g: 1, n: 'Gema da Chama Mística',      o: 'Ataque Mágico',                   k: 'atkM', v: .38, sc: 1,  d: 'Soma ataque mágico ao seu dano base (classes mágicas: Mago e Pierrot). Cresce com o nível do equipamento.' },
-  { id: 'w_acc',  cat: 'w', g: 2, n: 'Gema da Pontaria Certeira',  o: 'Taxa de Ataque',                  k: 'pen',  v: 5,   u: '%',  d: 'Seus golpes ignoram parte da defesa do alvo.' },
+  { id: 'w_acc',  cat: 'w', g: 2, n: 'Gema da Pontaria Certeira',  o: 'Perfuração',                    k: 'pen',  v: 5,   u: '%',  d: 'Seus golpes ignoram parte da defesa do alvo (reduzida pelo "Ignorar Perfuração" do adversário).' },
   { id: 'w_add',  cat: 'w', g: 2, n: 'Gema do Golpe Sombrio',      o: 'Dano Adicional',                  k: 'add',  v: .17, sc: 1,  d: 'Soma dano fixo a CADA golpe, depois da defesa do alvo. Cresce com o nível do equipamento.' },
-  { id: 'w_cmax', cat: 'w', g: 3, n: 'Gema do Limite Supremo',     o: 'Aumento de Taxa Crítica Máxima',  k: 'cmax', v: 4,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 75%, no máximo 95%).' },
+  { id: 'w_cmax', cat: 'w', g: 3, n: 'Gema do Limite Supremo',     o: 'Aumento de Taxa Crítica Máxima',  k: 'cmax', v: 4,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 52%, no máximo 95%).' },
   // ---------- ARMADURA (armadura, elmo, botas, escudo, anéis, braceletes e brincos) ----------
   { id: 'a_ampe', cat: 'a', g: 4, n: 'Gema do Guardião Eterno',    o: 'Técnica de Amp. Espada',          k: 'ampE', v: 3,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro.' },
   { id: 'a_ampm', cat: 'a', g: 4, n: 'Gema do Sábio Eterno',       o: 'Técnica de Amp. Mágica',          k: 'ampM', v: 3,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes mágicas: Mago e Pierrot.' },
-  { id: 'a_cmax', cat: 'a', g: 3, n: 'Gema do Horizonte Infinito', o: 'Taxa Crítica Máxima',             k: 'cmax', v: 2,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 75%, no máximo 95%).' },
+  { id: 'a_cmax', cat: 'a', g: 3, n: 'Gema do Horizonte Infinito', o: 'Taxa Crítica Máxima',             k: 'cmax', v: 2,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 52%, no máximo 95%).' },
   { id: 'a_crit', cat: 'a', g: 4, n: 'Gema da Visão Aguçada',      o: 'Taxa Crítica',                    k: 'crit', v: 2,   u: '%',  d: 'Aumenta a chance de acerto crítico.' },
   { id: 'a_hp',   cat: 'a', g: 0, n: 'Gema da Vida Plena',         o: 'HP',                              k: 'hp',   v: 2,   sc: 1,  d: 'Aumenta a vida máxima. Cresce com o nível do equipamento.' },
   { id: 'a_mp',   cat: 'a', g: 0, n: 'Gema da Mente Clara',        o: 'MP',                              k: 'mp',   v: 1.5, sc: 1,  d: 'Aumenta a mana máxima. Cresce com o nível do equipamento.' },
   { id: 'a_def',  cat: 'a', g: 1, n: 'Gema da Muralha',            o: 'Defesa',                          k: 'def',  v: .5,  sc: 1,  d: 'Aumenta a defesa. Cresce com o nível do equipamento.' },
-  { id: 'a_drate',cat: 'a', g: 2, n: 'Gema do Baluarte',           o: 'Taxa de Defesa',                  k: 'drate',v: 1.5, u: '%',  d: 'Reduz TODO o dano que você recebe.' },
-  { id: 'a_eva',  cat: 'a', g: 2, n: 'Gema do Vento Ligeiro',      o: 'Evasão',                          k: 'eva',  v: .8,  u: '%',  d: 'Aumenta a chance de esquivar de ataques.' },
-  { id: 'a_lhp',  cat: 'a', g: 2, n: 'Gema Sanguínea',             o: 'Absorção de HP',                  k: 'lhp',  v: .5,  u: '%',  d: 'Você recupera vida igual a uma parte do dano que causa.' },
+  { id: 'a_drate',cat: 'a', g: 2, n: 'Gema do Baluarte',           o: 'Taxa de Defesa',                  k: 'drate',v: 1.5, u: '%',  d: 'Chance de bloquear por completo um ataque (reduzida pelo "Ignorar Bloqueio" do adversário).' },
+  { id: 'a_eva',  cat: 'a', g: 2, n: 'Gema do Vento Ligeiro',      o: 'Evasão',                          k: 'eva',  v: .8,  u: '%',  d: 'Aumenta a chance de esquivar de ataques (reduzida pelo Acerto do adversário).' },
+  { id: 'a_lhp',  cat: 'a', g: 2, n: 'Gema Sanguínea',             o: 'Absorção de HP',                  k: 'lhp',  v: .5,  u: '%',  d: 'Você recupera vida igual a uma parte do dano que causa a cada golpe.' },
   { id: 'a_lmp',  cat: 'a', g: 1, n: 'Gema Lunar',                 o: 'Absorção de MP',                  k: 'lmp',  v: .3,  u: '%',  d: 'Você recupera mana igual a uma parte do dano que causa.' },
-  { id: 'a_rhp',  cat: 'a', g: 1, n: 'Gema da Seiva Viva',         o: 'Regeneração de HP',               k: 'rhp',  v: .15, u: '%/s', d: 'Recupera vida a cada segundo, inclusive em combate.' }];
+  { id: 'a_rhp',  cat: 'a', g: 1, n: 'Gema da Seiva Viva',         o: 'Regeneração de HP',               k: 'rhp',  v: .15, u: '%/s', d: 'Recupera vida a cada segundo, inclusive em combate.' },
+  // ---------- NOVOS: ARMA ----------
+  { id: 'w_hit',   cat: 'w', g: 2, n: 'Gema da Mira Perfeita',          o: 'Acerto',                                  k: 'acc',      v: 2,   u: '%', d: 'Reduz a Evasão do adversário em PvP (cada 1% de Acerto tira 1% da Evasão dele).' },
+  { id: 'w_ircr',  cat: 'w', g: 3, n: 'Gema do Caçador Implacável',     o: 'Ignorar Resistência à Taxa Crítica',      k: 'ignRcrit', v: 2,   u: '%', d: 'Diminui a Resistência à Taxa Crítica do adversário (PvP).' },
+  { id: 'w_ircd',  cat: 'w', g: 3, n: 'Gema do Golpe Devastador',       o: 'Ignorar Resistência ao Dano Crítico',     k: 'ignRcdmg', v: 3,   u: '%', d: 'Diminui a Resistência ao Dano Crítico do adversário (PvP).' },
+  { id: 'w_irdm',  cat: 'w', g: 2, n: 'Gema do Rompe-Escudo',           o: 'Ignorar Redução de Danos',                k: 'ignRdmg',  v: .25, sc: 1, d: 'Diminui a Redução de Danos do adversário (PvP). Cresce com o nível do equipamento.' },
+  { id: 'w_irbl',  cat: 'w', g: 2, n: 'Gema do Quebra-Guarda',          o: 'Ignorar Bloqueio',                        k: 'ignBlock', v: 2,   u: '%', d: 'Diminui a Taxa de Defesa (bloqueio) do adversário (PvP).' },
+  // ---------- NOVOS: ARMADURA ----------
+  { id: 'a_irpe',  cat: 'a', g: 3, n: 'Gema da Pele de Pedra',          o: 'Ignorar Perfuração',                      k: 'ignPen',   v: 2,   u: '%', d: 'Reduz a Perfuração do adversário contra você (PvP).' },
+  { id: 'a_irac',  cat: 'a', g: 2, n: 'Gema do Olhar Turvo',            o: 'Ignorar Acerto',                          k: 'ignAcc',   v: 2,   u: '%', d: 'Reduz o Acerto do adversário contra você (PvP).' },
+  { id: 'a_rdmg',  cat: 'a', g: 1, n: 'Gema da Pele Grossa',            o: 'Redução de Danos',                        k: 'rdmg',     v: .25, sc: 1, d: 'Diminui uma quantidade fixa do dano de cada golpe recebido (mínimo 1). Cresce com o nível do equipamento.' },
+  { id: 'a_rcrt',  cat: 'a', g: 3, n: 'Gema do Escudo Firme',           o: 'Resistência à Taxa Crítica',              k: 'rcrit',    v: 1.5, u: '%', d: 'Reduz a chance de o adversário acertar críticos em você (PvP).' },
+  { id: 'a_rcdm',  cat: 'a', g: 3, n: 'Gema da Couraça Rubra',          o: 'Resistência ao Dano Crítico',             k: 'rcdmg',    v: 3,   u: '%', d: 'Reduz o dano extra dos críticos que você recebe (PvP).' },
+  { id: 'a_ramp',  cat: 'a', g: 3, n: 'Gema do Véu Arcano',             o: 'Resistência à Técnica Amp.',              k: 'ramp',     v: 3,   u: '%', d: 'Reduz a Técnica de Amp. das habilidades do adversário contra você (PvP).' },
+  { id: 'a_lhpu',  cat: 'a', g: 3, n: 'Gema da Sede Rubra',             o: 'Aumento de Absorção de HP',               k: 'lhpUp',    v: 1,   u: '%', d: 'Soma % à Absorção de HP. Com pelo menos 2% aqui, o Limite de Absorção de HP passa a funcionar.' },
+  { id: 'a_lmpu',  cat: 'a', g: 2, n: 'Gema da Sede Azul',              o: 'Aumento de Absorção de MP',               k: 'lmpUp',    v: .5,  u: '%', d: 'Soma % à Absorção de MP. Com pelo menos 2% aqui, o Limite de Absorção de MP passa a funcionar.' },
+  { id: 'a_lhpl',  cat: 'a', g: 2, n: 'Gema do Cálice Vital',           o: 'Aumento do Limite de Absorção de HP',     k: 'lhpLim',   v: .2,  sc: 1, d: 'A cada golpe, recupera esse tanto de HP por monstro atingido. Só funciona com pelo menos 2% de Aumento de Absorção de HP.' },
+  { id: 'a_lmpl',  cat: 'a', g: 1, n: 'Gema do Cálice Arcano',          o: 'Aumento do Limite de Absorção de MP',     k: 'lmpLim',   v: .15, sc: 1, d: 'A cada golpe, recupera esse tanto de MP por monstro atingido. Só funciona com pelo menos 2% de Aumento de Absorção de MP.' }];
 /** Teto da SOMA de cada bônus (todas as gemas equipadas) • GCAPL = teto por nível do personagem */
-const GCAP = { ampE: 45, ampM: 45, crit: 30, cdmg: 60, cmax: 20, pen: 30, drate: 25, eva: 12, lhp: 10, lmp: 6, rhp: 3 };
-const GCAPL = { hp: 20, mp: 15, def: 4 };
+const GCAP = { ampE: 45, ampM: 45, crit: 30, cdmg: 60, cmax: 20, pen: 30, drate: 25, eva: 12, lhp: 10, lmp: 6, rhp: 3, acc: 30, ignPen: 30, ignAcc: 30, ignRcrit: 30, ignRcdmg: 40, ignBlock: 25, rcrit: 30, rcdmg: 40, ramp: 40, lhpUp: 6, lmpUp: 3 };
+const GCAPL = { hp: 20, mp: 15, def: 4, rdmg: 1.5, ignRdmg: 1.5, lhpLim: 1.2, lmpLim: .9 };
+const CRIT_CAP = 52;   // taxa crítica máxima base (%) — sobe com "Taxa Crítica Máxima", no máximo 95%
 const GEMD = {};
 for (const g of GEMS) { GEMD[g.id] = g; MATS['g_' + g.id] = { n: g.n, i: '📜', v: Math.round(GRADES[g.g].p * .1), gem: g.id }; }
 MATS.g_ext = { n: 'Extensor de Slot', i: '🔳', v: Math.round(EXT_PRICE * .1), ext: 1 };
@@ -778,7 +796,7 @@ const gemCat = it => it && it.slot === 'weapon' ? 'w' : 'a';
 const schoolOf = cls => (cls === 'mago' || cls === 'pierrot') ? 'M' : 'E';
 /** soma dos bônus das gemas dos itens EQUIPADOS (já com os tetos) */
 function gemTotals(c) {
-  const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0 };
+  const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0, acc: 0, ignPen: 0, ignAcc: 0, ignRcrit: 0, ignRcdmg: 0, ignBlock: 0, ignRdmg: 0, rdmg: 0, rcrit: 0, rcdmg: 0, ramp: 0, lhpUp: 0, lmpUp: 0, lhpLim: 0, lmpLim: 0 };
   for (const k in c.eq) { const it = c.eq[k]; if (!it || !Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g) t[g.k] += gemVal(g, it.ilvl); } }
   for (const k in GCAP) t[k] = Math.min(t[k], GCAP[k]);
   for (const k in GCAPL) t[k] = Math.min(t[k], GCAPL[k] * Math.max(1, c.level || 1));
@@ -806,7 +824,7 @@ const SETB = {
   soul:      [{ n: 2, b: { mpP: 6 } },             { n: 4, b: { lmp: 1, rhp: .2 } },       { n: 6, b: { ampX: 6, lhp: 1.5 } }],
   shadow:    [{ n: 2, b: { crit: 3 } },            { n: 4, b: { cdmg: 15, eva: 2 } },      { n: 6, b: { dmgP: 6, pen: 5 } }]};
 /** rótulo e unidade de cada bônus de conjunto */
-const BLAB = { dmgP: ['Dano', '%'], hpP: ['Vida máxima', '%'], mpP: ['Mana máxima', '%'], defP: ['Defesa', '%'], aspd: ['Velocidade de ataque', '%'], gf: ['Ouro obtido', '%'], crit: ['Taxa Crítica', '%'], cdmg: ['Dano Crítico', '%'], ampX: ['Amp. de habilidades', '%'], pen: ['Taxa de Ataque', '%'], eva: ['Evasão', '%'], drate: ['Taxa de Defesa', '%'], rhp: ['Regeneração de HP', '%/s'], lhp: ['Absorção de HP', '%'], lmp: ['Absorção de MP', '%'] };
+const BLAB = { dmgP: ['Dano', '%'], hpP: ['Vida máxima', '%'], mpP: ['Mana máxima', '%'], defP: ['Defesa', '%'], aspd: ['Velocidade de ataque', '%'], gf: ['Ouro obtido', '%'], crit: ['Taxa Crítica', '%'], cdmg: ['Dano Crítico', '%'], ampX: ['Amp. de habilidades', '%'], pen: ['Perfuração', '%'], eva: ['Evasão', '%'], drate: ['Taxa de Defesa', '%'], rhp: ['Regeneração de HP', '%/s'], lhp: ['Absorção de HP', '%'], lmp: ['Absorção de MP', '%'] };
 /** quanto o conjunto vale: origens de monstros mais fortes dão bônus maiores (0,5× a 1,6×) */
 const setTf = key => { const m = MT[key]; const L = m && m.lv ? m.lv[0] : 30; return Math.max(.5, Math.min(1.6, .5 + L / 90)); };
 const setVal = (v, tf) => Math.round(v * tf * 10) / 10;
@@ -900,7 +918,10 @@ function stats(c) {
     atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) * (1 + sb('aspd') / 100),
     // novos (gemas/conjuntos): amp de habilidades, penetração, dano adicional, teto de crítico, redução de dano, absorção e regeneração
     amp: ((sch === 'M' ? G.ampM : G.ampE) + sb('ampX')) / 100, pen: Math.min(.6, (G.pen + sb('pen')) / 100), add: G.add, cmax: G.cmax,
-    drate: Math.min(.5, (G.drate + sb('drate')) / 100), lhp: (G.lhp + sb('lhp')) / 100, lmp: (G.lmp + sb('lmp')) / 100, rhp: (G.rhp + sb('rhp')) / 100, gf: sb('gf') / 100 };
+    drate: Math.min(.5, (G.drate + sb('drate')) / 100), lhp: (G.lhp + G.lhpUp + sb('lhp')) / 100, lmp: (G.lmp + G.lmpUp + sb('lmp')) / 100, rhp: (G.rhp + sb('rhp')) / 100, gf: sb('gf') / 100,
+    // atributos de pergaminho (v1.40)
+    critCap: Math.min(95, CRIT_CAP + G.cmax), acc: G.acc, ignPen: G.ignPen, ignAcc: G.ignAcc, ignRcrit: G.ignRcrit, ignRcdmg: G.ignRcdmg, ignBlock: G.ignBlock, ignRdmg: Math.round(G.ignRdmg),
+    rdmg: Math.round(G.rdmg), rcrit: G.rcrit, rcdmg: G.rcdmg, ramp: G.ramp, lhpUp: G.lhpUp, lmpUp: G.lmpUp, lhpLim: G.lhpUp >= 2 ? Math.round(G.lhpLim) : 0, lmpLim: G.lmpUp >= 2 ? Math.round(G.lmpLim) : 0, lhpLimRaw: Math.round(G.lhpLim), lmpLimRaw: Math.round(G.lmpLim) };
 }
 
 /* ---------- TÍTULOS ---------- */
@@ -954,15 +975,32 @@ function skStat(cls, i, rank) {
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
 function hitDamage(d, o, mon) {
-  const b = o.buffs || {};
-  const crit = o.forceCrit || Math.random() < Math.min(Math.min(.95, .75 + (d.cmax || 0) / 100), (d.crit + (b.crit || 0) * 100) / 100);
+  const b = o.buffs || {}, V = mon.v || null;                         // V = atributos do DEFENSOR (só em PvP)
+  const cres = V ? Math.max(0, (V.rcrit || 0) - (d.ignRcrit || 0)) : 0;   // Resistência à Taxa Crítica (menos o que o atacante ignora)
+  const ccap = Math.min(.95, (d.critCap || (CRIT_CAP + (d.cmax || 0))) / 100);
+  const crit = o.forceCrit || Math.random() < Math.min(ccap, (d.crit + (b.crit || 0) * 100 - cres) / 100);
   const base = d.dmg + (b.flat || 0) + (o.defMult ? d.def * o.defMult : 0) + (b.defdmg || 0) * d.def;
   let dmg = base * (1 + (b.dmg || 0)) * o.mult * rnd(.9, 1.1);
-  if (crit) dmg *= (d.critMul || 1.7); if (o.marked) dmg *= 1.35; if (o.exec && mon.hp < mon.maxHp * .4) dmg *= 2; dmg *= (1 + (b.combo || 0));
-  if (!o.basic && d.amp) dmg *= (1 + d.amp);                         // Técnica de Amp.: só habilidades, não o ataque básico
-  const mdef = mon.def * (1 - (d.pen || 0));                          // Taxa de Ataque: ignora parte da defesa
+  const cmul = V ? 1 + ((d.critMul || 1.7) - 1) * (1 - Math.min(90, Math.max(0, (V.rcdmg || 0) - (d.ignRcdmg || 0))) / 100) : (d.critMul || 1.7);   // Resistência ao Dano Crítico
+  if (crit) dmg *= cmul; if (o.marked) dmg *= 1.35; if (o.exec && mon.hp < mon.maxHp * .4) dmg *= 2; dmg *= (1 + (b.combo || 0));
+  const amp = Math.max(0, (d.amp || 0) - (V ? (V.ramp || 0) / 100 : 0));   // Resistência à Técnica Amp.
+  if (!o.basic && amp) dmg *= (1 + amp);                              // Técnica de Amp.: só habilidades, não o ataque básico
+  const pen = Math.max(0, (d.pen || 0) - (V ? (V.ignPen || 0) / 100 : 0));   // Perfuração (menos o "Ignorar Perfuração" do defensor)
+  const mdef = mon.def * (1 - pen);
   return { dmg: Math.max(1, Math.round(dmg * 100 / (100 + mdef * 2) + (d.add || 0))), crit };   // Dano Adicional: fixo, depois da defesa
 }
+/** Defesa contra UM ataque. V = atributos de quem recebe • A = atributos de quem ataca (null = monstro) • evB = buff de esquiva (0..1).
+ *  Devolve 'dodge' (Evasão, reduzida pelo Acerto do atacante), 'block' (Taxa de Defesa, reduzida por "Ignorar Bloqueio") ou null. */
+function defRoll(V, A, evB) {
+  const acc = Math.max(0, ((A && A.acc) || 0) - (V.ignAcc || 0));
+  if (Math.random() * 100 < Math.max(0, (V.dodge || 0) + (evB || 0) * 100 - acc)) return 'dodge';
+  if (Math.random() * 100 < Math.max(0, (V.drate || 0) * 100 - ((A && A.ignBlock) || 0))) return 'block';
+  return null;
+}
+/** Redução de Danos: tira um valor fixo do golpe recebido (menos o "Ignorar Redução de Danos" do atacante). Mínimo 1. */
+const flatRed = (V, A, dmg) => Math.max(1, Math.round(dmg - Math.max(0, (V.rdmg || 0) - ((A && A.ignRdmg) || 0))));
+/** Absorção por golpe em UM monstro atingido: % do dano + o limite fixo (que só existe com ≥2% de Aumento de Absorção). */
+const leech = (d, dmg) => ({ hp: dmg * (d.lhp || 0) + (d.lhpLim || 0), mp: dmg * (d.lmp || 0) + (d.lmpLim || 0) });
 
 /* ---------- recompensas de combate ---------- */
 /** XP de um monstro para um jogador (reduz se o jogador é muito mais forte que o monstro). */
@@ -1598,7 +1636,7 @@ const arenaPrize = (c, i) => {
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, breakReturn, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, breakReturn, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -108,15 +108,16 @@ export class Pvp {
     const A = this.P(sidA), B = this.P(sidB); if (!A || !B || A.dead || B.dead || R.inTown(A.x, A.z) || R.inTown(B.x, B.z)) return;
     const V = room.stats(ts), vm = this.pv(ts), t = now();
     vm.at = t; s.pv.at = t;
-    if (Math.random() * 100 < V.dodge + room.buff(ts, "evade") * 100) { this.near(sidB, "pdmg", { t: sidB, by: sidA, d: 0, dg: 1 }, sidA); return; }
+    const SA = room.stats(s), av = R.defRoll(V, SA, room.buff(ts, "evade"));        // Evasão (vs Acerto) e Taxa de Defesa/bloqueio (vs Ignorar Bloqueio)
+    if (av) { this.near(sidB, "pdmg", { t: sidB, by: sidA, d: 0, dg: av === "block" ? 2 : 1 }, sidA); return; }
     const buffs = { dmg: room.buff(s, "dmg"), defdmg: room.buff(s, "defdmg"), crit: room.buff(s, "crit"), combo: room.buff(s, "combo"), flat: room.buff(s, "flat") };
     const defv = V.def * (1 - room.buff(ts, "defloss")) * PV.def * (1 - (o.pierce || 0));
-    const r = R.hitDamage(room.stats(s), { mult, basic: o.basic, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: t < q.markUntil, buffs }, { def: defv, hp: vm.hp, maxHp: vm.max });
+    const r = R.hitDamage(SA, { mult, basic: o.basic, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: t < q.markUntil, buffs }, { def: defv, hp: vm.hp, maxHp: vm.max, v: V });
     let d = r.dmg * R.pvpK(s.c.cls, s.c.level);
-    d *= 1 - Math.min(0.85, room.buff(ts, "shield")); d *= 1 - (V.drate || 0);
-    d = Math.max(1, Math.round(d));
+    d *= 1 - Math.min(0.85, room.buff(ts, "shield"));
+    d = R.flatRed(V, SA, d);                                                              // Redução de Danos (menos o "Ignorar" do atacante)
     this.damage(s, ts, d, !!r.crit);
-    const lh = room.stats(s).lhp || 0; if (lh > 0) this.heal(s, d * lh);                 // Absorção de HP (gema)
+    const lc = R.leech(SA, d); if (lc.hp > 0) this.heal(s, lc.hp);                          // Absorção de HP (% do dano + limite fixo)
     this.cc(ts, o);
     const cl = s.clone;                                                                   // Pierrot: os clones atacam junto
     if (!o.noClone && cl && cl.until > t) for (let n = 0; n < cl.n; n++) room.later(110 + n * 80, () => this.hit(s, q, mult * cl.mult, { noClone: true, basic: o.basic }));
