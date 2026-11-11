@@ -9,10 +9,12 @@
 'use strict';
 const R = {};
 const rnd = (a, b) => a + Math.random() * (b - a), ri = (a, b) => Math.floor(rnd(a, b + 1)), pick = a => a[Math.floor(Math.random() * a.length)];
+const fmtN = n => Number(n).toLocaleString('pt-BR');
 
 /* ---------- BALANCEAMENTO (versão 0.8) ---------- */
 const PTS_PER_LEVEL = 3;                    // pontos de atributo por nível (antes: 5)
-const GOLD_CAP_PER_LEVEL = 3000;            // teto de ouro aceito ao migrar personagens antigos
+const GOLD_CAP_PER_LEVEL = 3000;            // (legado) não limita mais o ouro
+const GOLD_MAX = 1e12;                      // teto técnico de ouro por personagem
 const MAX_LEVEL = 170;
 const xpNeed = l => Math.floor(24 * Math.pow(l, 2.3));   // XP para sair do nível l (antes: 50·l^1.45)
 R.PTS_PER_LEVEL = PTS_PER_LEVEL; R.MAX_LEVEL = MAX_LEVEL; R.xpNeed = xpNeed; R.VERSION = 4;
@@ -166,7 +168,7 @@ Object.assign(MT, {
   dg_chest:{n:'Baú da Cripta',lv:[1,1],hp:30,atk:0,def:0,spd:0,xp:0,gold:[0,0],aggro:0,rng:0,atkInt:999999,resp:0,leash:0,h:1.4,mats:{},eq:0,pot:0,chest:true,model:'chest',dg:true},
 });
 const DUNGEONS=[{
-  id:'cripta', name:'Cripta das Areias Esquecidas', icon:'🏺', minLevel:50, price:50000, time:2400, ilvl:[52,58], cx:600, grace:300,
+  id:'cripta', name:'Cripta das Areias Esquecidas', icon:'🏺', reg:300, minLevel:50, price:50000, time:2400, ilvl:[52,58], cx:600, grace:300,
   desc:'Um corredor de tumbas habitado por guardiões amaldiçoados. 2 sub-chefes, 1 chefe final e 3 baús de tesouro. Itens com SLOTS caem aqui. Tempo limite: 40 min.',
   start:{x:600,z:-72}, exitZ:78,
   titles:{1:'Desbravador da Cripta',10:'Saqueador de Tumbas',50:'Senhor das Areias Eternas',100:'Lenda da Cripta Esquecida'},
@@ -218,6 +220,9 @@ Object.assign(OG,{
  golem_gelo:{sf:'do Golem Eterno',col:'#9fd8ff',col2:'#3a6a90',el:'ice',ft:'rock'},
  yeti_rei:{sf:'do Yeti Rei',col:'#e0f0ff',col2:'#78a8d8',el:'ice',ft:'crown'},
  dragao_gelo:{sf:'do Dragão Glacial',col:'#7fd0ff',col2:'#1f4a80',el:'ice',ft:'spikes'}});
+OG.wb_a={sf:'da Rainha Gosma',col:'#7be58f',col2:'#2f8f4a',el:'poison',ft:'crown'};
+OG.wb_s={sf:'do Escorpião-Rei',col:'#ffcf6a',col2:'#a8741a',el:'gold',ft:'stinger'};
+OG.wb_n={sf:'do Wendigo',col:'#bfe6ff',col2:'#5a8ab8',el:'ice',ft:'horns'};
 OG.dg_a=OG.mumia;OG.dg_b=OG.escorpiao;OG.dg_c=OG.chacal;OG.dg_d=OG.cobra;OG.dg_s1=OG.colosso;OG.dg_s2=OG.sacerdote;OG.dg_boss=OG.farao;
 for(const k in MT)MT[k].id=k;
 const DUPKEY={ring:1,bracelet:1,earring:1};
@@ -238,7 +243,222 @@ Object.assign(MT,{
  yeti_rei:snBoss('yeti',{n:'Yeti Rei',lv:[95,95],tint:'#cfe8ff',sc:1.6,rng:4,atkInt:1700,mats:{coracaogelo:1,cristalpuro:1,essencia:1}}),
  dragao_gelo:snBoss('dragao',{n:'Dragão Glacial',lv:[100,100],tint:'#8fd0ff',mats:{escamagelo:1,nucleogelo:1,cristalpuro:1,essencia:1}})
 });
+/* ===== CHEFES DE MUNDO: um por região, nascem em horários fixos numa arena marcada no mapa =====
+   hp = vida-base (piso); o servidor soma a "cota" de cada jogador que entra na luta (ver worldboss.ts) */
+const wbMob=(base,o)=>Object.assign({},MT[base],{model:base,boss:true,wb:true,eva:0,aggro:45,leash:95,resp:0,rb:3,eq:0,pot:0,matMax:4,spd:2.3},o);
+Object.assign(MT,{
+ wb_a:wbMob('slime',{n:'Rainha Gosma, a Colossal',lv:[34,34],hp:150000,atk:235,def:105,rng:4.6,atkInt:1900,h:7,tint:'#7be58f',sc:2.7,xp:Math.round(xpNeed(34)*.22),gold:[0,0],mats:{gosma:1,nucleo:1,essencia:1}}),
+ wb_s:wbMob('escorpiao',{n:'Escorpião-Rei das Dunas',lv:[76,76],hp:300000,atk:1000,def:190,rng:4.8,atkInt:1800,h:7,tint:'#ffcf6a',sc:3.0,xp:Math.round(xpNeed(76)*.2),gold:[0,0],mats:{obsidiana:1,selo:1,essencia:1}}),
+ wb_n:wbMob('yeti',{n:'Wendigo Primordial',lv:[100,100],hp:450000,atk:1500,def:280,rng:5.2,atkInt:1700,h:11,tint:'#bfe6ff',sc:2.3,xp:Math.round(xpNeed(100)*.15),gold:[0,0],mats:{escamagelo:1,nucleogelo:1,cristalpuro:1,essencia:1}})});
 for(const k in MT)MT[k].id=k;
+/* ====================== CALABOUÇOS v2: várias salas, etapas e mecânicas próprias ======================
+   Layout em GRADE de 2 m: rooms = retângulos [x0,z0,x1,z1] relativos ao centro cx; open = etapa em que a sala passa a ser acessível.
+   Servidor e navegador usam o MESMO mapa (dgWalk) para decidir onde dá para andar; portões aparecem sozinhos onde duas salas de
+   etapas diferentes se tocam. Etapas: kill • statue • boss • runes (ordem sorteada) • defend (altar) • waves (ondas) • crystals.
+   Cada etapa pode ter perigos do ambiente: hz (círculos de aviso no chão) e cold (frio: só as fogueiras protegem).
+   Chefes: mech = { rain, big, adds, shield, blink, nova, enrage } (ver dungeon.ts).                                            */
+const DGCS = 2;
+function dgGrid(def) {
+  if (def._g) return def._g;
+  let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9;
+  for (const r of def.rooms) { x0 = Math.min(x0, r.b[0]); z0 = Math.min(z0, r.b[1]); x1 = Math.max(x1, r.b[2]); z1 = Math.max(z1, r.b[3]); }
+  x0 -= DGCS * 2; z0 -= DGCS * 2; x1 += DGCS * 2; z1 += DGCS * 2;
+  const w = Math.ceil((x1 - x0) / DGCS), h = Math.ceil((z1 - z0) / DGCS), a = new Uint8Array(w * h);
+  for (const r of def.rooms) {
+    const i0 = Math.round((r.b[0] - x0) / DGCS), i1 = Math.round((r.b[2] - x0) / DGCS), j0 = Math.round((r.b[1] - z0) / DGCS), j1 = Math.round((r.b[3] - z0) / DGCS);
+    for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) { const k = j * w + i, v = r.open + 1; if (!a[k] || v < a[k]) a[k] = v; }
+  }
+  Object.defineProperty(def, '_g', { value: { cs: DGCS, x0, z0, w, h, a }, enumerable: false, writable: true });
+  return def._g;
+}
+/** código da célula no ponto local (lx,lz): 0 = parede/vazio • n>0 = sala que abre na etapa n-1 */
+function dgCell(def, lx, lz) { const g = dgGrid(def), i = Math.floor((lx - g.x0) / g.cs), j = Math.floor((lz - g.z0) / g.cs); return (i < 0 || j < 0 || i >= g.w || j >= g.h) ? 0 : g.a[j * g.w + i]; }
+/** dá para pisar em (x,z) absolutos com a instância na etapa `stage`? m = folga (metade do corpo) */
+function dgWalk(def, stage, x, z, m) {
+  const lx = x - def.cx, ok = (a, b) => { const k = dgCell(def, a, b); return k > 0 && stage >= k - 1; };
+  m = m || 0; return ok(lx, z) && (!m || (ok(lx - m, z - m) && ok(lx + m, z - m) && ok(lx - m, z + m) && ok(lx + m, z + m)));
+}
+/** sala (índice em def.rooms) que contém o ponto local, ou -1 */
+const dgRoomAt = (def, lx, lz) => def.rooms.findIndex(r => lx >= r.b[0] && lx < r.b[2] && lz >= r.b[1] && lz < r.b[3]);
+/** portais de entrada/saída (início) e de saída final, em coordenadas absolutas */
+function dgPorts(def) { return def.rooms ? { a: { x: def.cx + def.pa[0], z: def.pa[1] }, b: { x: def.cx + def.pb[0], z: def.pb[1] } } : { a: { x: def.cx, z: def.start.z - 5 }, b: { x: def.cx, z: def.exitZ } }; }
+
+/* ---- monstros: escala por nível (calibrada na Cripta: Nv 53 → vida 6100 / ataque 460 / defesa 94) ---- */
+const dgS = L => ({ hp: 6100 + (L - 53) * 420, atk: 460 + (L - 53) * 16, def: 94 + (L - 53) * 3.6 });
+const dg2m = (base, lv, f, o) => { const B0 = MT[base], L = (lv[0] + lv[1]) / 2, S = dgS(L); f = Object.assign({ h: 1, a: 1, d: 1, x: 1 }, f);
+  return Object.assign({}, B0, { model: B0.model || base, dg: true, resp: 0, eq: .02, pot: .02, mats: {}, eva: B0.eva || 0, boss: false, lv, hp: Math.round(S.hp * f.h), atk: Math.round(S.atk * f.a), def: Math.round(S.def * f.d),
+    xp: Math.round(xpNeed(L) / 35 * f.x), gold: [Math.round(L * 8 * f.x), Math.round(L * 13.8 * f.x)], aggro: B0.aggro || 9, leash: 32 }, o); };
+const dg2b = (base, L, f, o) => { const S = dgS(L); f = Object.assign({ h: 10, a: 1.55, d: 1.6, xd: 7 }, f);
+  return Object.assign({}, MT[base], { model: MT[base].model || base, dg: true, resp: 0, eq: .02, pot: .02, mats: {}, eva: 0, boss: true, lv: [L, L], hp: Math.round(S.hp * f.h), atk: Math.round(S.atk * f.a), def: Math.round(S.def * f.d),
+    xp: Math.round(xpNeed(L) / f.xd), gold: [Math.round(L * 105), Math.round(L * 160)], aggro: 12, leash: 44 }, o); };
+Object.assign(MT, {
+  /* Santuário do Sol Poente (Solara, Nv 62–70) */
+  dg_sa: dg2m('chacal', [62, 64], { h: 1, a: 1, d: 1.1 }, { n: 'Soldado Solar', tint: '#ffd36a' }),
+  dg_sb: dg2m('elemental', [63, 65], { h: .85, a: 1.15, d: .8 }, { n: 'Chama Viva', tint: '#ff8a3a', rng: 5.5, atkInt: 1700 }),
+  dg_sc: dg2m('escorpiao', [64, 66], { h: .7, a: .9, d: .9 }, { n: 'Escaravelho Real', tint: '#3ad0c0', spd: 3.9 }),
+  dg_sd: dg2m('cobra', [65, 67], { h: 1, a: 1.1, d: .9 }, { n: 'Naja de Ouro', tint: '#ffe27a' }),
+  dg_sm1: dg2b('colosso', 66, { h: 10, a: 1.5, d: 1.5, xd: 8 }, { n: 'Guardião Prismático', tint: '#9fe8ff', sc: 1.3, rng: 3.8, atkInt: 1800 }),
+  dg_sm2: dg2b('sacerdote', 68, { h: 13, a: 1.55, d: 1.4, xd: 6.5 }, { n: 'Escriba do Sol', tint: '#ffcf5a', sc: 1.5, rng: 5.5, atkInt: 1700 }),
+  dg_sboss: dg2b('farao', 70, { h: 24, a: 1.9, d: 1.7, xd: 4.2 }, { n: 'Sumo-Sacerdote Ra-Tehen', tint: '#fff0a0', sc: 1.4, rng: 5.2, atkInt: 1700 }),
+  /* Cidadela Congelada (Nevasca, Nv 80–88) */
+  dg_na: dg2m('barbaro', [80, 82], { h: 1, a: 1, d: 1.1 }, { n: 'Guarda Gélido', tint: '#9fc4e8' }),
+  dg_nb: dg2m('esq_gelo', [81, 83], { h: .9, a: 1.1, d: 1 }, { n: 'Lanceiro Congelado', tint: '#8fd8ff', rng: 2.6 }),
+  dg_nc: dg2m('lobo_polar', [82, 84], { h: .8, a: 1, d: .9 }, { n: 'Fera da Geada', tint: '#eef6ff', spd: 4 }),
+  dg_nd: dg2m('espectro', [83, 85], { h: .85, a: 1.2, d: .8 }, { n: 'Mago do Inverno', tint: '#8fe0ff', rng: 5.5, atkInt: 1700 }),
+  dg_ne: dg2m('yeti_anciao', [84, 86], { h: 1.7, a: 1.15, d: 1.4, x: 1.5 }, { n: 'Gigante Congelado', tint: '#dff2ff' }),
+  dg_nm1: dg2b('yeti_rei', 84, { h: 10, a: 1.4, d: 1.5, xd: 8 }, { n: 'Capitão Gélido', tint: '#a0c8ff', sc: 1.5, rng: 4, atkInt: 1700 }),
+  dg_nm2: dg2b('espectro', 86, { h: 12, a: 1.5, d: 1.4, xd: 6.5 }, { n: 'Feiticeira da Nevasca', tint: '#e0f6ff', sc: 1.8, rng: 5.5, atkInt: 1700 }),
+  dg_nboss: dg2b('golem_gelo', 88, { h: 22, a: 1.8, d: 1.6, xd: 4.2 }, { n: 'Rei do Inverno', tint: '#d0f0ff', sc: 1.9, rng: 4.2, atkInt: 1800 }),
+  /* Abismo do Vazio (Nevasca, Nv 92–100) */
+  dg_va: dg2m('espectro', [92, 94], { h: 1, a: 1, d: 1 }, { n: 'Sombra do Vazio', tint: '#b07aff' }),
+  dg_vb: dg2m('aranha_cristal', [93, 95], { h: .9, a: 1.05, d: .9 }, { n: 'Aberração Rastejante', tint: '#7a3aff', spd: 3.8 }),
+  dg_vc: dg2m('sacerdote', [94, 96], { h: .85, a: 1.2, d: .85 }, { n: 'Cultista do Vazio', tint: '#a04dff', rng: 5.5, atkInt: 1700 }),
+  dg_vd: dg2m('demonio', [95, 97], { h: 1.6, a: 1.15, d: 1.3, x: 1.4 }, { n: 'Devorador Menor', tint: '#5a2aa8' }),
+  dg_vclone: dg2m('espectro', [96, 96], { h: .6, a: .9, d: .8, x: .5 }, { n: 'Reflexo Sombrio', tint: '#6a3ab8', sc: 1.1 }),
+  dg_vcrys: dg2m('golem', [94, 94], { h: 2.2, a: 0, d: 1.2, x: 1.2 }, { n: 'Âncora do Vazio', model: 'crystal', tint: '#c070ff', node: true, rng: 0, atkInt: 999999, spd: 0, aggro: 0, h: 3.4 }),
+  dg_vm1: dg2b('demonio', 96, { h: 10, a: 1.4, d: 1.5, xd: 8 }, { n: 'Duplo Sombrio', tint: '#6a2aa8', sc: 1.6, rng: 3.2, atkInt: 1600 }),
+  dg_vm2: dg2b('dragao', 98, { h: 12, a: 1.5, d: 1.4, xd: 6.5 }, { n: 'Devorador de Estrelas', tint: '#3a2a6a', sc: 1.2, rng: 5, atkInt: 1800 }),
+  dg_vboss: dg2b('espectro', 100, { h: 22, a: 1.8, d: 1.6, xd: 4.2 }, { n: 'Arauto do Vazio', tint: '#d09aff', sc: 2.4, rng: 5.2, atkInt: 1700 })
+});
+MT.dg_vcrys.hp = Math.round(dgS(94).hp * 2.6); MT.dg_vcrys.atk = 0; MT.dg_vcrys.dg = true;
+for (const k in MT) MT[k].id = k;
+
+/* ---- origem dos itens (conjuntos): cada monstro novo tem sua marca ---- */
+Object.assign(OG, {
+  dg_sa: { sf: 'do Soldado Solar', col: '#ffd36a', col2: '#a8741a', el: 'gold', ft: 'crown' },
+  dg_sb: { sf: 'da Chama Viva', col: '#ff9a4a', col2: '#a02a1a', el: 'fire', ft: 'crystals' },
+  dg_sc: { sf: 'do Escaravelho', col: '#3ad0c0', col2: '#1a6a64', el: 'lightning', ft: 'stinger' },
+  dg_sd: { sf: 'da Naja Dourada', col: '#ffe27a', col2: '#a88a2a', el: 'poison', ft: 'hood' },
+  dg_sm1: { sf: 'do Prisma', col: '#9fe8ff', col2: '#3a7a9a', el: 'lightning', ft: 'crystals' },
+  dg_sm2: { sf: 'do Escriba Solar', col: '#ffcf5a', col2: '#9a6a1a', el: 'gold', ft: 'wraps' },
+  dg_sboss: { sf: 'de Ra-Tehen', col: '#fff0a0', col2: '#c9962a', el: 'fire', ft: 'crown' },
+  dg_na: { sf: 'do Guarda Gélido', col: '#9fc4e8', col2: '#4a6a8a', el: 'ice', ft: 'tusks' },
+  dg_nb: { sf: 'do Lanceiro', col: '#8fd8ff', col2: '#3a7a9a', el: 'ice', ft: 'skull' },
+  dg_nc: { sf: 'da Geada', col: '#eef6ff', col2: '#9ab4d0', el: 'ice', ft: 'ears' },
+  dg_nd: { sf: 'do Inverno', col: '#8fe0ff', col2: '#3a78b8', el: 'soul', ft: 'horns' },
+  dg_ne: { sf: 'do Gigante Gélido', col: '#dff2ff', col2: '#7fb6e0', el: 'ice', ft: 'fur' },
+  dg_nm1: { sf: 'do Capitão Gélido', col: '#a0c8ff', col2: '#4a78b8', el: 'ice', ft: 'fur' },
+  dg_nm2: { sf: 'da Feiticeira', col: '#e0f6ff', col2: '#6aa8d0', el: 'soul', ft: 'horns' },
+  dg_nboss: { sf: 'do Rei do Inverno', col: '#d0f0ff', col2: '#5a8ab8', el: 'ice', ft: 'crown' },
+  dg_va: { sf: 'da Sombra', col: '#b07aff', col2: '#4a2a8a', el: 'shadow', ft: 'eyes' },
+  dg_vb: { sf: 'da Aberração', col: '#7a3aff', col2: '#3a1a8a', el: 'shadow', ft: 'eyes' },
+  dg_vc: { sf: 'do Cultista', col: '#a04dff', col2: '#4a1f7a', el: 'soul', ft: 'crown' },
+  dg_vd: { sf: 'do Devorador', col: '#8a4ad8', col2: '#3a1a6a', el: 'shadow', ft: 'horns' },
+  dg_vclone: { sf: 'do Reflexo', col: '#6a3ab8', col2: '#2a1a5a', el: 'shadow', ft: 'eyes' },
+  dg_vcrys: { sf: 'da Âncora', col: '#c070ff', col2: '#5a2a8a', el: 'soul', ft: 'crystals' },
+  dg_vm1: { sf: 'do Duplo Sombrio', col: '#8a4ad8', col2: '#3a1a6a', el: 'shadow', ft: 'horns' },
+  dg_vm2: { sf: 'do Devorador de Estrelas', col: '#5a4a9a', col2: '#1f1a3a', el: 'soul', ft: 'spikes' },
+  dg_vboss: { sf: 'do Arauto', col: '#d09aff', col2: '#5a2a8a', el: 'shadow', ft: 'crown' }
+});
+
+const rm = (x0, z0, x1, z1, open) => ({ b: [x0, z0, x1, z1], open });
+const RAIN = (n, per, every, r, mult, c, name) => ({ n, per, every, r, mult, delay: 2000, c, name });
+const BIG = (at, r, mult, c, name) => ({ at, r, mult, delay: 2600, c, name });
+DUNGEONS.push({
+  id: 'solar', name: 'Santuário do Sol Poente', icon: '☀️', reg: 300, minLevel: 62, price: 120000, time: 2700, ilvl: [64, 72], cx: 900, grace: 300, theme: 'sun',
+  desc: 'Um templo onde o sol nunca se põe: 8 salas, runas que mudam de ordem a cada visita, um altar para defender e três guardiões com poderes próprios. Itens com SLOTS caem aqui. Tempo limite: 45 min.',
+  start: { x: 900, z: -74 }, pa: [0, -78], pb: [0, 174],
+  titles: { 1: 'Peregrino do Sol', 10: 'Guardião do Amanhecer', 50: 'Senhor do Zênite', 100: 'Lenda do Sol Poente' },
+  cm: ['dg_sm1', 'dg_sm2', 'dg_sboss'], mm: ['dg_sa', 'dg_sb', 'dg_sc', 'dg_sd'],
+  rooms: [rm(-12, -80, 12, -56, 0),
+    rm(-6, -56, 6, -26, 1), rm(-14, -50, -6, -42, 1), rm(6, -50, 14, -42, 1), rm(-14, -36, -6, -30, 1), rm(6, -36, 14, -30, 1),
+    rm(-8, -26, 8, 6, 2), rm(-24, -18, -8, -4, 2), rm(8, -18, 24, -4, 2),
+    rm(-18, 6, 18, 40, 3),
+    rm(-10, 40, 10, 60, 4), rm(-4, 60, 4, 66, 4),
+    rm(-14, 66, 14, 94, 5),
+    rm(-4, 94, 4, 100, 6), rm(-16, 100, 16, 128, 6),
+    rm(-4, 128, 4, 134, 7), rm(-20, 134, 20, 178, 7)],
+  objs: [
+    { id: 'ru1', kind: 'rune', at: [-20, -11], name: 'Runa do Alvorecer', sym: '🌅', col: '#ffb36b' },
+    { id: 'ru2', kind: 'rune', at: [20, -11], name: 'Runa do Zênite', sym: '☀️', col: '#ffe36b' },
+    { id: 'ru3', kind: 'rune', at: [0, 2], name: 'Runa do Poente', sym: '🌇', col: '#ff7a4a' },
+    { id: 'ru4', kind: 'rune', at: [0, -22], name: 'Runa da Noite', sym: '🌙', col: '#8fa8ff' },
+    { id: 'ste1', kind: 'stele', at: [0, -12], name: 'Estela do Ciclo Solar', sym: '📜' },
+    { id: 'altar', kind: 'altar', at: [0, 22], name: 'Altar do Sol Poente', sym: '☀️', col: '#ffd24a' }],
+  stages: [
+    { k: 'kill', t: 'dg_sa', n: 24, need: 20, room: [-10, -78, 10, -58], text: 'Elimine os Soldados Solares' },
+    { k: 'kill', t: 'dg_sb', n: 20, need: 16, room: [-4, -54, 4, -28], text: 'Atravesse a Galeria: elimine as Chamas Vivas', hz: { every: 4200, n: 2, r: 3.4, mult: 1.1, delay: 1800, c: '#ffd24a', name: 'Raios do Sol' } },
+    { k: 'runes', objs: ['ru1', 'ru2', 'ru3', 'ru4'], stele: 'ste1', text: 'Acenda as runas na ordem da estela', guards: { t: 'dg_sb', n: 3 }, bad: { r: 5, mult: 1.9, delay: 1000, c: '#ffb347' } },
+    { k: 'defend', at: [0, 22], r: 9, secs: 70, text: 'Defenda o Altar do Sol', waves: { every: 10000, t: ['dg_sa', 'dg_sc'], n: [4, 6] } },
+    { k: 'statue', id: 'est1', at: [0, 52], t: 'dg_sd', n: 18, need: 14, room: [-8, 42, 8, 58], text: 'Fale com a Estátua da Serpente Dourada', name: 'Estátua da Serpente Dourada',
+      ask: '"Forasteiro... a serpente dourada guarda o caminho do sol. Silencie 14 najas de ouro e eu abrirei o portão."', wait: '"Ainda ouço o sibilar das najas..."', fin: '"A serpente aceita seu tributo. O Prisma aguarda."' },
+    { k: 'boss', t: 'dg_sm1', at: [0, 82], room: [-12, 70, 12, 92], chest: { slot: 190, tier: 1 }, text: 'Derrote o Guardião Prismático',
+      mech: { rain: RAIN(3, 3, 9000, 3.2, 1.2, '#ffd24a', 'Raios Prismáticos'), big: BIG([.5], 8, 2.4, '#ff9a3a', 'Explosão Prismática') } },
+    { k: 'boss', t: 'dg_sm2', at: [0, 114], room: [-14, 102, 14, 126], chest: { slot: 191, tier: 2 }, text: 'Derrote o Escriba do Sol',
+      mech: { shield: { at: [.65, .3], t: 'dg_sb', n: 4, text: 'O Escriba se cobriu de luz! Destrua as Chamas Vivas para quebrar o escudo!' }, rain: RAIN(3, 3, 10000, 3.2, 1.2, '#ffd24a', 'Chuva de Luz'), enrage: .15 } },
+    { k: 'boss', t: 'dg_sboss', at: [0, 156], room: [-18, 136, 18, 176], chest: { slot: 192, tier: 3 }, final: true, text: 'Derrote o Sumo-Sacerdote Ra-Tehen',
+      mech: { rain: RAIN(4, 3, 9000, 3.4, 1.3, '#ffd24a', 'Lanças de Sol'), big: BIG([.7, .4], 9, 2.6, '#ff7a2a', 'Eclipse Ardente'), adds: { at: [.8, .5, .25], t: 'dg_sa', n: 4 },
+        shield: { at: [.55], t: 'dg_sb', n: 5, text: 'Ra-Tehen invocou um escudo solar! Apague as chamas!' }, nova: { every: 17000, r: 7, mult: 1.9, delay: 1800, c: '#ffd24a', name: 'Nova Solar' }, enrage: .2 } }
+  ]
+});
+DUNGEONS.push({
+  id: 'cidadela', name: 'Cidadela Congelada de Valdrak', icon: '🏰', reg: -300, minLevel: 78, price: 350000, time: 3000, ilvl: [80, 88], cx: 1200, grace: 300, theme: 'ice',
+  desc: 'Uma fortaleza tomada pelo inverno: muralhas onde o frio mata (só as fogueiras protegem), um cerco de ondas, a Feiticeira da Nevasca e o Rei do Inverno. Itens com SLOTS caem aqui. Tempo limite: 50 min.',
+  start: { x: 1200, z: -74 }, pa: [0, -78], pb: [4, 100],
+  titles: { 1: 'Invasor da Cidadela', 10: 'Quebra-Gelo', 50: 'Flagelo de Valdrak', 100: 'Lenda da Cidadela Congelada' },
+  cm: ['dg_nm1', 'dg_nm2', 'dg_nboss'], mm: ['dg_na', 'dg_nb', 'dg_nc', 'dg_nd', 'dg_ne'],
+  rooms: [rm(-12, -80, 12, -60, 0),
+    rm(12, -76, 56, -66, 1),
+    rm(40, -66, 80, -26, 2), rm(80, -58, 88, -50, 2),
+    rm(56, -26, 66, 6, 3),
+    rm(24, 6, 80, 44, 4),
+    rm(-24, 18, 24, 30, 5),
+    rm(-48, 30, -12, 62, 6),
+    rm(-20, 62, 28, 104, 7)],
+  objs: [],
+  stages: [
+    { k: 'kill', t: 'dg_na', n: 24, need: 20, room: [-10, -78, 10, -62], text: 'Elimine os Guardas Gélidos' },
+    { k: 'kill', t: 'dg_nb', n: 20, need: 16, room: [16, -74, 54, -68], text: 'Atravesse as Muralhas: elimine os Lanceiros', cold: { every: 4000, mult: .5, r: 9 }, fires: [[24, -71], [46, -71]] },
+    { k: 'waves', room: [46, -62, 76, -30], text: 'Resista ao Cerco do Pátio', gap: 5000, list: [{ t: 'dg_nc', n: 8 }, { t: 'dg_nb', n: 10 }, { t: 'dg_nd', n: 6 }, { t: 'dg_ne', n: 4 }] },
+    { k: 'statue', id: 'est1', at: [61, -10], t: 'dg_nc', n: 18, need: 14, room: [58, -24, 64, 4], text: 'Fale com a Estátua do Rei Antigo', name: 'Estátua do Rei Antigo', cold: { every: 4000, mult: .5, r: 9 }, fires: [[61, -21], [61, 1]],
+      ask: '"O inverno governa Valdrak. Mostre que ainda há calor em você: derrube 14 feras da geada e a escadaria se abrirá."', wait: '"As feras da geada ainda uivam..."', fin: '"O calor de vocês me convenceu. Sigam para o Grande Salão."' },
+    { k: 'boss', t: 'dg_nm1', at: [52, 26], room: [30, 12, 74, 40], chest: { slot: 190, tier: 1 }, text: 'Derrote o Capitão Gélido',
+      mech: { rain: RAIN(3, 3, 9000, 2.8, 1.2, '#bfe6ff', 'Estalactites'), adds: { at: [.6, .3], t: 'dg_nb', n: 4 }, big: BIG([.4], 8, 2.4, '#9fd8ff', 'Golpe Glacial') } },
+    { k: 'kill', t: 'dg_nd', n: 20, need: 16, room: [-20, 20, 20, 28], text: 'Limpe a Armaria dos Magos do Inverno', hz: { every: 4000, n: 2, r: 3.2, mult: 1.15, delay: 1700, c: '#bfe6ff', name: 'Estalactites' } },
+    { k: 'boss', t: 'dg_nm2', at: [-30, 46], room: [-44, 34, -16, 60], chest: { slot: 191, tier: 2 }, text: 'Derrote a Feiticeira da Nevasca',
+      mech: { shield: { at: [.6], t: 'dg_nd', n: 4, text: 'A Feiticeira se envolveu em gelo! Derrote seus magos para quebrar o escudo!' }, blink: { at: [.75, .5, .25] }, rain: RAIN(3, 3, 10000, 3, 1.2, '#bfe6ff', 'Nevasca') } },
+    { k: 'boss', t: 'dg_nboss', at: [4, 86], room: [-14, 68, 22, 100], chest: { slot: 192, tier: 3 }, final: true, text: 'Derrote o Rei do Inverno',
+      mech: { big: BIG([.66, .33], 9, 2.6, '#7fd0ff', 'Tempestade do Rei'), nova: { every: 16000, r: 7.5, mult: 2, delay: 1800, c: '#bfe6ff', name: 'Nova Gélida' }, adds: { at: [.8, .5], t: 'dg_nc', n: 5 },
+        rain: RAIN(4, 3, 10000, 3.2, 1.3, '#bfe6ff', 'Lanças de Gelo'), enrage: .2 } }
+  ]
+});
+DUNGEONS.push({
+  id: 'abismo', name: 'Abismo do Vazio Sem Fim', icon: '🌌', reg: -300, minLevel: 90, price: 800000, time: 3300, ilvl: [92, 100], cx: 1500, grace: 300, theme: 'void',
+  desc: 'Uma rachadura entre mundos: âncoras de cristal para destruir, runas coloridas que mudam de ordem, uma fenda para fechar e três senhores do Vazio que se teletransportam. Itens com SLOTS caem aqui. Tempo limite: 55 min.',
+  start: { x: 1500, z: -74 }, pa: [0, -78], pb: [0, 208],
+  titles: { 1: 'Viajante do Vazio', 10: 'Caçador de Sombras', 50: 'Ruína das Estrelas', 100: 'Lenda do Abismo' },
+  cm: ['dg_vm1', 'dg_vm2', 'dg_vboss'], mm: ['dg_va', 'dg_vb', 'dg_vc', 'dg_vd'],
+  rooms: [rm(-12, -80, 12, -60, 0),
+    rm(-4, -60, 4, -36, 1),
+    rm(-20, -36, 20, 4, 2),
+    rm(-4, 4, 4, 28, 3), rm(-22, 28, 22, 64, 3),
+    rm(-4, 64, 4, 70, 4), rm(-16, 70, 16, 100, 4),
+    rm(-4, 100, 4, 106, 5), rm(-24, 106, 24, 134, 5),
+    rm(-4, 134, 4, 140, 6), rm(-18, 140, 18, 168, 6),
+    rm(-4, 168, 4, 174, 7), rm(-22, 174, 22, 212, 7)],
+  objs: [
+    { id: 'rv1', kind: 'rune', at: [-16, 38], name: 'Runa Rubra', sym: '🔴', col: '#ff4a6a' },
+    { id: 'rv2', kind: 'rune', at: [16, 38], name: 'Runa Anil', sym: '🔵', col: '#4a7aff' },
+    { id: 'rv3', kind: 'rune', at: [-16, 56], name: 'Runa Jade', sym: '🟢', col: '#3adf8a' },
+    { id: 'rv4', kind: 'rune', at: [16, 56], name: 'Runa Violeta', sym: '🟣', col: '#b06aff' },
+    { id: 'ste2', kind: 'stele', at: [0, 46], name: 'Monólito das Cores', sym: '📜' },
+    { id: 'altar', kind: 'altar', at: [0, 120], name: 'Fenda do Vazio', sym: '🌀', col: '#b06aff' }],
+  stages: [
+    { k: 'kill', t: 'dg_va', n: 24, need: 20, room: [-10, -78, 10, -62], text: 'Elimine as Sombras do Vazio' },
+    { k: 'kill', t: 'dg_vb', n: 18, need: 14, room: [-3, -58, 3, -38], text: 'Cruze a Ponte de Cristal: elimine as Aberrações', hz: { every: 3800, n: 2, r: 3.2, mult: 1.2, delay: 1600, c: '#b06aff', name: 'Fenda do Vazio' } },
+    { k: 'crystals', ct: 'dg_vcrys', at: [[-14, -28], [14, -28], [-14, -4], [14, -4]], text: 'Destrua as Âncoras do Vazio', spawn: { every: 9000, t: ['dg_va', 'dg_vd'], n: [2, 3], cap: 12 } },
+    { k: 'runes', objs: ['rv1', 'rv2', 'rv3', 'rv4'], stele: 'ste2', text: 'Ative as runas na ordem do monólito', guards: { t: 'dg_vc', n: 3 }, bad: { r: 5, mult: 2, delay: 1000, c: '#b06aff' } },
+    { k: 'boss', t: 'dg_vm1', at: [0, 88], room: [-14, 72, 14, 98], chest: { slot: 190, tier: 1 }, text: 'Derrote o Duplo Sombrio',
+      mech: { adds: { at: [.8, .55, .3], t: 'dg_vclone', n: 3 }, rain: RAIN(3, 3, 9000, 3.2, 1.25, '#b06aff', 'Lâminas de Sombra'), big: BIG([.45], 8, 2.5, '#8a4ad8', 'Implosão Sombria') } },
+    { k: 'defend', at: [0, 120], r: 10, secs: 80, text: 'Feche a Fenda do Vazio', waves: { every: 9000, t: ['dg_vc', 'dg_vb'], n: [4, 6] } },
+    { k: 'boss', t: 'dg_vm2', at: [0, 154], room: [-16, 142, 16, 166], chest: { slot: 191, tier: 2 }, text: 'Derrote o Devorador de Estrelas',
+      mech: { shield: { at: [.7, .35], t: 'dg_vc', n: 4, text: 'O Devorador absorveu energia do Vazio! Derrote os Cultistas para quebrar o escudo!' }, blink: { at: [.5] }, big: BIG([.6], 9, 2.6, '#5a4a9a', 'Buraco Negro') } },
+    { k: 'boss', t: 'dg_vboss', at: [0, 194], room: [-20, 178, 20, 210], chest: { slot: 192, tier: 3 }, final: true, text: 'Derrote o Arauto do Vazio',
+      mech: { nova: { every: 15000, r: 8, mult: 2.1, delay: 1800, c: '#d09aff', name: 'Nova do Vazio' }, blink: { at: [.75, .5, .25] }, adds: { at: [.8, .5], t: 'dg_vclone', n: 4 },
+        big: BIG([.66, .33], 9, 2.7, '#b06aff', 'Colapso'), rain: RAIN(4, 3, 9000, 3.2, 1.3, '#d09aff', 'Estrelas Cadentes'), enrage: .2 } }
+  ]
+});
+
 const ZONES=[
  {t:'slime',x:-18,z:-10,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
  {t:'lobo',x:18,z:-20,r:9,n:10,col:'#4b5a45',name:'Floresta dos Lobos'},
@@ -270,7 +490,11 @@ const ZONES=[
  {t:'golem_gelo',x:-352,z:-50,r:4,n:1,col:'#4a6a88',name:'Geleira do Golem Eterno'},
  {t:'yeti_rei',x:-356,z:38,r:4,n:1,col:'#c8dcee',name:'Trono do Yeti Rei'},
  {t:'dragao_gelo',x:-296,z:60,r:5,n:1,col:'#3a5a7a',name:'Pico do Dragão Glacial'},
- {t:'espantalho',x:-300,z:28,r:7,n:9,grid:4,col:'#a8c0d8',name:'🌾 Campo de Treino de Nevasca'}];
+ {t:'espantalho',x:-300,z:28,r:7,n:9,grid:4,col:'#a8c0d8',name:'🌾 Campo de Treino de Nevasca'},
+ // ===== Arenas dos Chefes de Mundo (o chefe só aparece nos horários marcados) =====
+ {t:'wb_a',x:64,z:6,r:11,n:1,wb:1,col:'#5a2a5a',name:'☠️ Arena da Rainha Gosma'},
+ {t:'wb_s',x:236,z:4,r:11,n:1,wb:1,col:'#6a4a1a',name:'☠️ Arena do Escorpião-Rei'},
+ {t:'wb_n',x:-236,z:2,r:11,n:1,wb:1,col:'#3a5a8a',name:'☠️ Arena do Wendigo'}];
 
 const Q=(id,npc,t,d,tg,qty,rec,xp,gold,x)=>({id,npc,t,d,tg,qty,rec,rw:{xp:Math.max(20,Math.round(xpNeed(rec)*(qty===1?1:.025*qty+.05))),gold:Math.round(gold*.6),...(x||{})}});
 const E=(slot,ilvl,rar)=>({eq:{slot,ilvl,rar}});
@@ -414,9 +638,13 @@ const NPCS=[
  {id:'anuket',name:'Sacerdotisa Anuket',icon:'☥',x:322,z:-42,col:'#4a3a8a',tabs:SHOPT,greet:'Os guardiões de Anúbis já não descansam.',hat:'#d4a62a',camp:true,shop:'solara'},
  {id:'guarda_cripta',name:'Guardião das Criptas',icon:'🗝️',x:309,z:6,col:'#5a4a7a',tabs:['dungeon'],greet:'Há criptas esquecidas nos cantos mais distantes do deserto. Compre o ingresso comigo e fale com o portal da cripta. Quem tem ingresso e está no seu grupo entra junto!',hat:'#d4a62a'},
  {id:'dg_cripta',name:'🏺 Cripta das Areias (Nv 50+)',icon:'🏺',x:366,z:66,col:'#d4a62a',tabs:[],greet:'',dungeon:'cripta'},
+ {id:'dg_solar',name:'☀️ Santuário do Sol Poente (Nv 62+)',icon:'☀️',x:366,z:-70,col:'#ffd24a',tabs:[],greet:'',dungeon:'solar'},
  // ===== Nevasca (neve) =====
  {id:'portal_c',name:'🌀 Portal da Nevasca (Nv 75+)',icon:'🌀',x:-32,z:-45,col:'#8fd8ff',tabs:[],greet:'',portal:{name:'Vila da Nevasca',lvl:75,to:{x:-300,z:-7}}},
  {id:'portal_d',name:'🌀 Portal para a Vila Aurora',icon:'🌀',x:-300,z:-11,col:'#ffcf6b',tabs:[],greet:'',portal:{name:'Vila Aurora',lvl:0,to:{x:-32,z:-41}}},
+ {id:'guarda_gelo',name:'Vigia das Cidadelas',icon:'🗝️',x:-309,z:6,col:'#5a7aa0',tabs:['dungeon'],greet:'Dois lugares malditos esperam por heróis na Nevasca: a Cidadela Congelada, a noroeste, e o Abismo do Vazio, a sudeste. Compre o ingresso comigo e fale com o portal. Quem tem ingresso e está no seu grupo entra junto!',hat:'#cfe8ff'},
+ {id:'dg_cidadela',name:'🏰 Cidadela Congelada (Nv 78+)',icon:'🏰',x:-368,z:-70,col:'#8fd8ff',tabs:[],greet:'',dungeon:'cidadela'},
+ {id:'dg_abismo',name:'🌌 Abismo do Vazio (Nv 90+)',icon:'🌌',x:-232,z:68,col:'#a070ff',tabs:[],greet:'',dungeon:'abismo'},
  {id:'bau3',name:'Baú do Aventureiro',icon:'📦',x:-295.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'O mesmo baú da Vila Aurora: seus itens guardados aqui são compartilhados com todos os seus personagens.',chest:true},
  {id:'ferreiro_gelo',name:'Ragnar, o Ferreiro do Gelo',icon:'🔨',x:-307,z:-2,col:'#6a8aa8',tabs:['forja','aprimorar'],greet:'O aço temperado na neve nunca quebra. Também aprimoro equipamentos — mas há risco!',hat:'#3a5a78',smith:true},
  {id:'mercador3',name:'Frida, a Mercadora Polar',icon:'💰',x:-293,z:-2,col:'#5a9ab8',tabs:['comprar','vender'],greet:'Poções, caixas e capas para o frio! Tudo caro, mas vale cada moeda.',hat:'#e8f2ff',shop:'gelo'},
@@ -428,7 +656,23 @@ const NPCS=[
  {id:'leif',name:'Explorador Leif',icon:'🧭',x:-300,z:-34,col:'#a8b8c8',tabs:SHOPT,greet:'Vi pegadas do tamanho de uma carroça. Cuidado nos cumes!',hat:'#6a7a8a',camp:true,shop:'gelo'},
  {id:'solveig',name:'Vidente Solveig',icon:'🔮',x:-262,z:-34,col:'#5a8ad0',tabs:SHOPT,greet:'Os espectros me contaram seu nome antes de você chegar.',hat:'#2a4a8a',camp:true,shop:'gelo'},
  {id:'odin',name:'Sábio Odin',icon:'📖',x:-300,z:44,col:'#9a8ab8',tabs:SHOPT,greet:'O trono de gelo e o pico do dragão guardam o destino deste mundo.',hat:'#4a3a78',camp:true,shop:'gelo'},
- {id:'hamid',name:'Arqueólogo Hamid',icon:'🔭',x:300,z:44,col:'#8a6a4a',tabs:SHOPT,greet:'A grande pirâmide esconde o maior tesouro do mundo... e o maior perigo.',hat:'#a8833a',camp:true,shop:'solara'}];
+ {id:'hamid',name:'Arqueólogo Hamid',icon:'🔭',x:300,z:44,col:'#8a6a4a',tabs:SHOPT,greet:'A grande pirâmide esconde o maior tesouro do mundo... e o maior perigo.',hat:'#a8833a',camp:true,shop:'solara'},
+ // ===== Gemólogos: vendem pergaminhos de opção + extensor de slot e engastam as gemas nos equipamentos =====
+ {id:'gemas_a',name:'Lapidária Gemma',icon:'💎',x:-9.4,z:1.6,col:'#7a4fb0',tabs:['comprar','engastar'],greet:'Pergaminhos de opção, extensores de slot e engaste de gemas! Cada gema dá um bônus fixo ao seu equipamento.',hat:'#4b2f85',shop:'scr',gem:true},
+ {id:'gemas_s',name:'Joalheiro Rashid',icon:'💎',x:295.5,z:4,col:'#2f8a9a',tabs:['comprar','engastar'],greet:'As gemas do deserto guardam o poder do sol. Compre pergaminhos, amplie seus engastes e encaixe as gemas aqui.',hat:'#d8c9a0',shop:'scr',gem:true},
+ {id:'gemas_n',name:'Gemóloga Freya',icon:'💎',x:-304.5,z:4,col:'#5a78d0',tabs:['comprar','engastar'],greet:'Gemas forjadas no gelo eterno. Posso vender pergaminhos, ampliar engastes e encaixar gemas no seu equipamento.',hat:'#c8e8f8',shop:'scr',gem:true},
+ // ===== Guildas (fundação e administração) e Caminhos de Especialização (nível 100) =====
+ {id:'guilda_a',name:'Escrivã Mirela, da Guilda',icon:'🏰',x:-7,z:-6.5,col:'#9a3a3a',tabs:['guilda'],greet:'Fundar uma guilda custa 10.000.000 de ouro. Com ela vêm chat próprio, baú compartilhado e um prêmio semanal coletivo.',hat:'#6a1f1f',banner:'#c23a3a'},
+ {id:'guilda_s',name:'Escriba Tamin, da Guilda',icon:'🏰',x:302,z:-9,col:'#a8832a',tabs:['guilda'],greet:'Reúna seus companheiros sob uma só bandeira. Fundar uma guilda custa 10.000.000 de ouro.',hat:'#c9a227',banner:'#d4a62a'},
+ {id:'guilda_n',name:'Escrivão Torvald, da Guilda',icon:'🏰',x:-298,z:-9,col:'#3a6aa0',tabs:['guilda'],greet:'No frio, só quem anda em grupo sobrevive. Fundar uma guilda custa 10.000.000 de ouro.',hat:'#c8dcee',banner:'#4a8ad0'},
+ {id:'caminhos_a',name:'Mestre Eldrin dos Caminhos',icon:'🧙',x:7.5,z:-6.5,col:'#6b46b5',tabs:['caminhos'],greet:'No nível 100 o herói enfim escolhe quem será. Mas antes é preciso provar que merece.',hat:'#4b2f85',spec:true},
+ {id:'caminhos_s',name:'Sábia Nefertari dos Caminhos',icon:'🧙',x:310,z:-5,col:'#8a5aa8',tabs:['caminhos'],greet:'Os caminhos do poder se abrem para quem alcança o nível 100 e passa pela Provação.',hat:'#d4a62a',spec:true},
+ {id:'caminhos_n',name:'Ancião Rurik dos Caminhos',icon:'🧙',x:-290,z:-6,col:'#5a78d0',tabs:['caminhos'],greet:'Chegar ao nível 100 é só o começo. Prove seu valor e escolha o seu caminho.',hat:'#dfeaf5',spec:true},
+ // ===== Arena PK (zona separada e opcional): um Mestre em cada cidade e o Guardião dentro da arena =====
+ {id:'arena_a',name:'Mestre Brutus, da Arena',icon:'🏟️',x:10.2,z:-3,col:'#b0452a',tabs:['arena'],greet:'A Arena PK é separada da cidade: lá vale tudo, todos contra todos. Entre só se estiver pronto — e dá para sair quando quiser.',hat:'#6a2418',banner:'#d4552a',arena:true},
+ {id:'arena_s',name:'Mestra Kalila, da Arena',icon:'🏟️',x:311,z:1.5,col:'#c0792a',tabs:['arena'],greet:'Na areia da arena os fracos caem e os fortes viram lenda. Quer provar o seu valor?',hat:'#7a4a14',banner:'#e08a2a',arena:true},
+ {id:'arena_n',name:'Mestre Bjarn, da Arena',icon:'🏟️',x:-289.5,z:2.5,col:'#5a78d0',tabs:['arena'],greet:'Aqui no frio a gente resolve as diferenças na arena. Sem rancor: quem cai, volta.',hat:'#2a3e6a',banner:'#5a8ad0',arena:true},
+ {id:'arena_g',name:'Guardião da Arena',icon:'🏟️',x:1800,z:-31,col:'#a03a2a',tabs:['arena'],greet:'Quem cai reaparece em instantes, sem perder nada. Para sair, fale comigo (só fora de combate).',hat:'#5a1c14',banner:'#d4552a',arena:true}];
 
 
 /* ====================== FUNÇÕES DE REGRA ====================== */
@@ -437,14 +681,16 @@ R.TOWN_R = MON_TOWN_R;
 R.TOWNS = [{ x: 0, z: 0, r: 11 }, { x: 300, z: 0, r: 13 }, { x: -300, z: 0, r: 13 }];   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
-const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + '◇'.repeat(it.sl) : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
+const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
+const sellPrice = it => it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
 const MAXPLUS = 10;
+/** chave de "modelo" do item para o histórico de preços do leilão: itens iguais (nome, nível, raridade, refino, engastes) compartilham o histórico */
+const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
 const upRate = p => [1, 1, 1, .85, .7, .55, .4, .3, .2, .12][p] || 0;
 const upCost = it => { const p = it.plus || 0; return { ferro: p + 1, essencia: p >= 4 ? Math.floor(p / 2) : 0, gold: Math.round(40 * Math.pow(p + 1, 1.7)) }; };
 const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon', 'shield', 'shield'] : ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon'];
 /** Origem sorteada para itens sem monstro (caixas, missões): um monstro com nível próximo do item. */
-const originFor = ilvl => { const c = Object.keys(MT).filter(k => OG[k] && !k.startsWith('dg_') && MT[k].lv[0] <= ilvl + 4 && MT[k].lv[1] >= ilvl - 8); return c.length ? pick(c) : undefined; };
+const originFor = ilvl => { const c = Object.keys(MT).filter(k => OG[k] && !k.startsWith('dg_') && !MT[k].wb && MT[k].lv[0] <= ilvl + 4 && MT[k].lv[1] >= ilvl - 8); return c.length ? pick(c) : undefined; };
 
 /** Capas: sem raridade, atributos fixos. 'm' = estola azul (magos), 'p' = capa vermelha (físicos). */
 /** Estilo da capa de cada classe: p = capa vermelha (físico), m = estola azul (mágico), a = manto encapuzado (assassino). */
@@ -455,7 +701,7 @@ function capeStats(it) {
   const m = it.cs === 'm', a = it.cs === 'a', L = it.ilvl;
   it.rar = 0; it.plus = 0; it.atk = 0; it.def = Math.round(1 + L * (m ? .25 : a ? .35 : .5)); it.hp = Math.round(L * (m ? 3 : a ? 3.5 : 4));
   it.bon = a ? { agi: Math.max(1, Math.round(L / 5)), str: Math.max(1, Math.round(L / 9)), vit: Math.max(1, Math.round(L / 10)) } : m ? { int: Math.max(1, Math.round(L / 5)), agi: Math.max(1, Math.round(L / 10)), vit: Math.max(1, Math.round(L / 10)) } : { str: Math.max(1, Math.round(L / 6)), agi: Math.max(1, Math.round(L / 8)), vit: Math.max(1, Math.round(L / 10)) };
-  it.icon = m ? '🧣' : a ? '🥷' : '🧥'; delete it.sl; delete it.mo; return it;
+  it.icon = m ? '🧣' : a ? '🥷' : '🧥'; delete it.sl; delete it.gm; delete it.mo; return it;
 }
 function genCape(ilvl, cls, name) {
   ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(ilvl))); const tier = ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), kind = capeKind(cls), m = kind === 'm';
@@ -481,6 +727,104 @@ function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   if (rar === 3) it.name = '★ ' + it.name;
   if (sl) it.sl = sl;            // encaixes (slots) para gemas — só caem em dungeons
   return it;
+}
+
+/* ====================== GEMAS / PERGAMINHOS DE OPÇÃO (engastes ◇) ======================
+   Cada pergaminho é uma gema que ocupa UM engaste (◇) de um equipamento e dá um bônus fixo (como as "opções" do Cabal).
+   Categoria: 'w' = só em ARMAS • 'a' = armaduras, elmo, botas, escudo e acessórios. O grau define o preço do pergaminho.
+   Regras: 1 opção igual por item; engaste ocupado pode ser trocado (a gema antiga é destruída); capas não têm engastes. */
+const GRADES = [
+  { id: 'low',  n: 'Baixo',     en: 'Low',     p: 2e6,  c: '#8fd07a' },
+  { id: 'med',  n: 'Médio',     en: 'Medium',  p: 5e6,  c: '#5fb4ff' },
+  { id: 'high', n: 'Alto',      en: 'High',    p: 1e7,  c: '#c58bff' },
+  { id: 'hst',  n: 'Altíssimo', en: 'Highest', p: 2e7,  c: '#ffb347' },
+  { id: 'ext',  n: 'Extremo',   en: 'Extreme', p: 4e7,  c: '#ff5a5a' }];
+const EXT_PRICE = 6e7, MAX_SLOTS = 3;
+/** v = valor por gema • u = unidade • sc:1 = o valor é multiplicado pelo nível (ilvl) do equipamento • k = atributo afetado */
+const GEMS = [
+  // ---------- ARMA ----------
+  { id: 'w_ampe', cat: 'w', g: 4, n: 'Gema da Lâmina Eterna',      o: 'Técnica de Amp. Espada',          k: 'ampE', v: 8,   u: '%',  d: 'Aumenta o dano das HABILIDADES (não do ataque básico) das classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro.' },
+  { id: 'w_ampm', cat: 'w', g: 4, n: 'Gema do Arcano Eterno',      o: 'Técnica de Amp. Mágica',          k: 'ampM', v: 8,   u: '%',  d: 'Aumenta o dano das HABILIDADES (não do ataque básico) das classes mágicas: Mago e Pierrot.' },
+  { id: 'w_crit', cat: 'w', g: 4, n: 'Gema do Olho de Águia',      o: 'Taxa Crítica',                    k: 'crit', v: 4,   u: '%',  d: 'Aumenta a chance de acerto crítico.' },
+  { id: 'w_cdmg', cat: 'w', g: 3, n: 'Gema da Fúria Rubra',        o: 'Dano Crítico',                    k: 'cdmg', v: 15,  u: '%',  d: 'Aumenta o dano dos acertos críticos.' },
+  { id: 'w_atk',  cat: 'w', g: 1, n: 'Gema da Presa Afiada',       o: 'Ataque',                          k: 'atkE', v: .38, sc: 1,  d: 'Soma ataque ao seu dano base (classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro). Cresce com o nível do equipamento.' },
+  { id: 'w_matk', cat: 'w', g: 1, n: 'Gema da Chama Mística',      o: 'Ataque Mágico',                   k: 'atkM', v: .38, sc: 1,  d: 'Soma ataque mágico ao seu dano base (classes mágicas: Mago e Pierrot). Cresce com o nível do equipamento.' },
+  { id: 'w_acc',  cat: 'w', g: 2, n: 'Gema da Pontaria Certeira',  o: 'Taxa de Ataque',                  k: 'pen',  v: 5,   u: '%',  d: 'Seus golpes ignoram parte da defesa do alvo.' },
+  { id: 'w_add',  cat: 'w', g: 2, n: 'Gema do Golpe Sombrio',      o: 'Dano Adicional',                  k: 'add',  v: .17, sc: 1,  d: 'Soma dano fixo a CADA golpe, depois da defesa do alvo. Cresce com o nível do equipamento.' },
+  { id: 'w_cmax', cat: 'w', g: 3, n: 'Gema do Limite Supremo',     o: 'Aumento de Taxa Crítica Máxima',  k: 'cmax', v: 4,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 75%, no máximo 95%).' },
+  // ---------- ARMADURA (armadura, elmo, botas, escudo, anéis, braceletes e brincos) ----------
+  { id: 'a_ampe', cat: 'a', g: 4, n: 'Gema do Guardião Eterno',    o: 'Técnica de Amp. Espada',          k: 'ampE', v: 3,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro.' },
+  { id: 'a_ampm', cat: 'a', g: 4, n: 'Gema do Sábio Eterno',       o: 'Técnica de Amp. Mágica',          k: 'ampM', v: 3,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes mágicas: Mago e Pierrot.' },
+  { id: 'a_cmax', cat: 'a', g: 3, n: 'Gema do Horizonte Infinito', o: 'Taxa Crítica Máxima',             k: 'cmax', v: 2,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 75%, no máximo 95%).' },
+  { id: 'a_crit', cat: 'a', g: 4, n: 'Gema da Visão Aguçada',      o: 'Taxa Crítica',                    k: 'crit', v: 2,   u: '%',  d: 'Aumenta a chance de acerto crítico.' },
+  { id: 'a_hp',   cat: 'a', g: 0, n: 'Gema da Vida Plena',         o: 'HP',                              k: 'hp',   v: 2,   sc: 1,  d: 'Aumenta a vida máxima. Cresce com o nível do equipamento.' },
+  { id: 'a_mp',   cat: 'a', g: 0, n: 'Gema da Mente Clara',        o: 'MP',                              k: 'mp',   v: 1.5, sc: 1,  d: 'Aumenta a mana máxima. Cresce com o nível do equipamento.' },
+  { id: 'a_def',  cat: 'a', g: 1, n: 'Gema da Muralha',            o: 'Defesa',                          k: 'def',  v: .5,  sc: 1,  d: 'Aumenta a defesa. Cresce com o nível do equipamento.' },
+  { id: 'a_drate',cat: 'a', g: 2, n: 'Gema do Baluarte',           o: 'Taxa de Defesa',                  k: 'drate',v: 1.5, u: '%',  d: 'Reduz TODO o dano que você recebe.' },
+  { id: 'a_eva',  cat: 'a', g: 2, n: 'Gema do Vento Ligeiro',      o: 'Evasão',                          k: 'eva',  v: .8,  u: '%',  d: 'Aumenta a chance de esquivar de ataques.' },
+  { id: 'a_lhp',  cat: 'a', g: 2, n: 'Gema Sanguínea',             o: 'Absorção de HP',                  k: 'lhp',  v: .5,  u: '%',  d: 'Você recupera vida igual a uma parte do dano que causa.' },
+  { id: 'a_lmp',  cat: 'a', g: 1, n: 'Gema Lunar',                 o: 'Absorção de MP',                  k: 'lmp',  v: .3,  u: '%',  d: 'Você recupera mana igual a uma parte do dano que causa.' },
+  { id: 'a_rhp',  cat: 'a', g: 1, n: 'Gema da Seiva Viva',         o: 'Regeneração de HP',               k: 'rhp',  v: .15, u: '%/s', d: 'Recupera vida a cada segundo, inclusive em combate.' }];
+/** Teto da SOMA de cada bônus (todas as gemas equipadas) • GCAPL = teto por nível do personagem */
+const GCAP = { ampE: 45, ampM: 45, crit: 30, cdmg: 60, cmax: 20, pen: 30, drate: 25, eva: 12, lhp: 10, lmp: 6, rhp: 3 };
+const GCAPL = { hp: 20, mp: 15, def: 4 };
+const GEMD = {};
+for (const g of GEMS) { GEMD[g.id] = g; MATS['g_' + g.id] = { n: g.n, i: '📜', v: Math.round(GRADES[g.g].p * .1), gem: g.id }; }
+MATS.g_ext = { n: 'Extensor de Slot', i: '🔳', v: Math.round(EXT_PRICE * .1), ext: 1 };
+const gemVal = (g, ilvl) => g.sc ? Math.max(1, Math.round(g.v * ilvl)) : g.v;
+const gemTxt = (g, ilvl) => '+' + gemVal(g, ilvl).toLocaleString('pt-BR') + (g.u || '');
+const gemCat = it => it && it.slot === 'weapon' ? 'w' : 'a';
+/** escola de habilidades da classe: 'E' = física (Espada) • 'M' = mágica */
+const schoolOf = cls => (cls === 'mago' || cls === 'pierrot') ? 'M' : 'E';
+/** soma dos bônus das gemas dos itens EQUIPADOS (já com os tetos) */
+function gemTotals(c) {
+  const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0 };
+  for (const k in c.eq) { const it = c.eq[k]; if (!it || !Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g) t[g.k] += gemVal(g, it.ilvl); } }
+  for (const k in GCAP) t[k] = Math.min(t[k], GCAP[k]);
+  for (const k in GCAPL) t[k] = Math.min(t[k], GCAPL[k] * Math.max(1, c.level || 1));
+  return t;
+}
+/** Sorteia um pergaminho (drops raros). Graus altos são muito mais raros; evita gemas que a classe não usa (80%). */
+function rollScroll(cls, mlvl) {
+  const W = mlvl >= 90 ? [24, 28, 22, 16, 10] : mlvl >= 55 ? [34, 30, 20, 11, 5] : [46, 32, 15, 5, 2];
+  let r = Math.random() * W.reduce((a, b) => a + b, 0), g = 0; for (; g < 4; g++) { if (r < W[g]) break; r -= W[g]; }
+  const sc = schoolOf(cls); let pool = GEMS.filter(x => x.g === g && !((sc === 'M' && (x.k === 'ampE' || x.k === 'atkE')) || (sc === 'E' && (x.k === 'ampM' || x.k === 'atkM'))));
+  if (!pool.length || Math.random() < .2) pool = GEMS.filter(x => x.g === g);
+  return { k: 'mat', id: 'g_' + pick(pool).id, n: 1 };
+}
+
+/* ---------- CONJUNTOS (sets): peças com a mesma ORIGEM (mo) somam bônus a cada 2/4/6 peças ---------- */
+const OGK = {};     // chave canônica da origem (dg_a = múmia, dg_boss = faraó ...)
+for (const k in OG) OGK[k] = Object.keys(OG).find(x => OG[x] === OG[k]);
+/** n = peças necessárias • b = bônus (valores em % ou pontos, multiplicados pelo "tier" da origem) */
+const SETB = {
+  fire:      [{ n: 2, b: { dmgP: 4 } },            { n: 4, b: { crit: 4, cdmg: 10 } },     { n: 6, b: { ampX: 8, pen: 5 } }],
+  ice:       [{ n: 2, b: { hpP: 5 } },             { n: 4, b: { defP: 6, eva: 2 } },       { n: 6, b: { drate: 5, rhp: .4 } }],
+  poison:    [{ n: 2, b: { pen: 3 } },             { n: 4, b: { dmgP: 5, lhp: 1 } },       { n: 6, b: { ampX: 6, cdmg: 15 } }],
+  lightning: [{ n: 2, b: { aspd: 4 } },            { n: 4, b: { crit: 4, aspd: 4 } },      { n: 6, b: { ampX: 8, eva: 3 } }],
+  gold:      [{ n: 2, b: { gf: 10 } },             { n: 4, b: { gf: 10, dmgP: 3 } },       { n: 6, b: { gf: 15, hpP: 6 } }],
+  soul:      [{ n: 2, b: { mpP: 6 } },             { n: 4, b: { lmp: 1, rhp: .2 } },       { n: 6, b: { ampX: 6, lhp: 1.5 } }],
+  shadow:    [{ n: 2, b: { crit: 3 } },            { n: 4, b: { cdmg: 15, eva: 2 } },      { n: 6, b: { dmgP: 6, pen: 5 } }]};
+/** rótulo e unidade de cada bônus de conjunto */
+const BLAB = { dmgP: ['Dano', '%'], hpP: ['Vida máxima', '%'], mpP: ['Mana máxima', '%'], defP: ['Defesa', '%'], aspd: ['Velocidade de ataque', '%'], gf: ['Ouro obtido', '%'], crit: ['Taxa Crítica', '%'], cdmg: ['Dano Crítico', '%'], ampX: ['Amp. de habilidades', '%'], pen: ['Taxa de Ataque', '%'], eva: ['Evasão', '%'], drate: ['Taxa de Defesa', '%'], rhp: ['Regeneração de HP', '%/s'], lhp: ['Absorção de HP', '%'], lmp: ['Absorção de MP', '%'] };
+/** quanto o conjunto vale: origens de monstros mais fortes dão bônus maiores (0,5× a 1,6×) */
+const setTf = key => { const m = MT[key]; const L = m && m.lv ? m.lv[0] : 30; return Math.max(.5, Math.min(1.6, .5 + L / 90)); };
+const setVal = (v, tf) => Math.round(v * tf * 10) / 10;
+function setCounts(c) { const n = {}; for (const k in c.eq) { const it = c.eq[k]; if (it && it.mo && OGK[it.mo]) n[OGK[it.mo]] = (n[OGK[it.mo]] || 0) + 1; } return n; }
+/** conjuntos do personagem: tot = soma dos bônus ativos • act = lista de conjuntos com ≥ 2 peças */
+function setBonus(c) {
+  const tot = {}, act = [], cnt = setCounts(c);
+  for (const key in cnt) {
+    const n = cnt[key]; if (n < 2) continue; const og = OG[key], tf = setTf(key), on = [];
+    for (const t of SETB[og.el] || []) if (n >= t.n) { on.push(t.n); for (const k in t.b) tot[k] = (tot[k] || 0) + setVal(t.b[k], tf); }
+    act.push({ key, name: og.sf, el: og.el, n, on, tf });
+  }
+  return { tot, act };
+}
+/** descrição de um conjunto (para a janela de item): cada degrau com o texto do bônus */
+function setInfo(key, have) {
+  const og = OG[OGK[key] || key]; if (!og) return null; const tf = setTf(OGK[key] || key);
+  return { name: 'Conjunto ' + og.sf, col: og.col, tiers: (SETB[og.el] || []).map(t => ({ n: t.n, on: have >= t.n, txt: Object.keys(t.b).map(k => '+' + setVal(t.b[k], tf) + (BLAB[k][1] === '%/s' ? '%/s' : '%') + ' ' + BLAB[k][0]).join(' • ') })) };
 }
 
 /* ---------- lojas (preço e item dependem do personagem c) ---------- */
@@ -517,6 +861,12 @@ const SHOPS = {
     { id: 'boxf', i: '👑', n: 'Caixa Faraônica', d: 'Equipamento de nível 60+ com chance muito alta de raro e épico.', c: () => 45000, box: 1, mk: c => genItem(pick(slotPool(c.cls)), Math.max(60, c.level + 4) + ri(0, 4), rarRoll(4), undefined, c.cls, 0, true) }],
 };
 
+/** Loja dos gemólogos: pergaminhos de opção (por categoria e grau) + extensor de slot. `sec` agrupa na tela. */
+SHOPS.scr = [
+  ...[['w', 'Pergaminhos de ARMA'], ['a', 'Pergaminhos de ARMADURA / ACESSÓRIOS']].flatMap(([cat, title]) =>
+    GRADES.flatMap((gr, gi) => GEMS.filter(g => g.cat === cat && g.g === gi).map(g => ({ id: 'g_' + g.id, i: '📜', n: g.n, sec: title + ' — ' + gr.n + ' (' + gr.en + ')', scr: g.id, d: g.o + ' ' + (g.sc ? '+' + g.v + ' × nível do item' : '+' + g.v + (g.u || '')), c: () => gr.p, mk: () => ({ k: 'mat', id: 'g_' + g.id, n: 1 }) })))),
+  { id: 'g_ext', i: '🔳', n: 'Extensor de Slot', sec: 'Extensor de Slot', d: 'Cria +1 engaste ◇ em um equipamento (até ' + MAX_SLOTS + ' engastes). Use na aba Engastar.', c: () => EXT_PRICE, mk: () => ({ k: 'mat', id: 'g_ext', n: 1 }) }];
+
 /* ---------- inventário ---------- */
 function canAdd(arr, it) { if (it.k === 'mat' || it.k === 'pot') { if (arr.some(s => s && s.k === it.k && s.id === it.id && s.n < 99)) return true; } return arr.includes(null); }
 function addItem(arr, it) {
@@ -536,15 +886,21 @@ function stats(c) {
   if (c.gm) for (const k of ['str', 'agi', 'int', 'vit']) st[k] *= 20;   // GM: atributos ×20
   if (gm) { st.str += 100; st.agi += 100; st.int += 100; st.vit += 100; }
   const kn = c.cls === 'cavaleiro', as = c.cls === 'assassino', tk = c.cls === 'tanque', pr = c.cls === 'pierrot';
-  return { ...st, gm, atk, def: (def + st.vit * .4) * (tk ? 1.75 : kn ? 1.4 : pr ? .8 : 1) + (gm ? 200 : 0), hpBonus: hp,
-    maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1)) + (gm ? 1000 : 0),
-    maxMp: Math.round(30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : tk ? 15 : pr ? 10 : 0)) + (gm ? 1000 : 0),
-    dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1) + (gm ? 200 : 0),
-    luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: pr ? 2.1 : 1.7,
+  // gemas engastadas + bônus de conjunto (peças com a mesma origem)
+  const sch = schoolOf(c.cls), G = gemTotals(c), SB = setBonus(c).tot, sb = k => SB[k] || 0;
+  atk += sch === 'M' ? G.atkM : G.atkE; def += G.def; hp += G.hp;
+  return { ...st, gm, atk, def: (def + st.vit * .4) * (tk ? 1.75 : kn ? 1.4 : pr ? .8 : 1) * (1 + sb('defP') / 100) + (gm ? 200 : 0), hpBonus: hp,
+    maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1) * (1 + sb('hpP') / 100)) + (gm ? 1000 : 0),
+    maxMp: Math.round((30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : tk ? 15 : pr ? 10 : 0) + G.mp) * (1 + sb('mpP') / 100)) + (gm ? 1000 : 0),
+    dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1) * (1 + sb('dmgP') / 100) + (gm ? 200 : 0),
+    luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: (pr ? 2.1 : 1.7) + (G.cdmg + sb('cdmg')) / 100,
     // Retornos decrescentes: crítico/esquiva/velocidade nunca disparam, por mais pontos que se invista.
-    crit: 5 + (as ? 8 : 0) + (pr ? 14 : 0) + 45 * st.agi / (st.agi + 200),
-    dodge: 25 * st.agi / (st.agi + 250),
-    atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) };
+    crit: 5 + (as ? 8 : 0) + (pr ? 14 : 0) + 45 * st.agi / (st.agi + 200) + G.crit + sb('crit'),
+    dodge: 25 * st.agi / (st.agi + 250) + G.eva + sb('eva'),
+    atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) * (1 + sb('aspd') / 100),
+    // novos (gemas/conjuntos): amp de habilidades, penetração, dano adicional, teto de crítico, redução de dano, absorção e regeneração
+    amp: ((sch === 'M' ? G.ampM : G.ampE) + sb('ampX')) / 100, pen: Math.min(.6, (G.pen + sb('pen')) / 100), add: G.add, cmax: G.cmax,
+    drate: Math.min(.5, (G.drate + sb('drate')) / 100), lhp: (G.lhp + sb('lhp')) / 100, lmp: (G.lmp + sb('lmp')) / 100, rhp: (G.rhp + sb('rhp')) / 100, gf: sb('gf') / 100 };
 }
 
 /* ---------- TÍTULOS ---------- */
@@ -560,10 +916,12 @@ function brightProg(c) {
 function titleList(c) {
   const out = [];
   for (const d of DUNGEONS) { const cur = (c.dgc && c.dgc[d.id]) || 0; for (const st of TSTEPS) if (d.titles && d.titles[st]) out.push({ id: d.id + ':' + st, t: d.titles[st], col: TCOL[st], dg: d.name, icon: d.icon, need: st, cur: Math.min(cur, st), have: cur >= st, desc: st === 1 ? 'Conclua ' + d.name + ' 1 vez' : 'Conclua ' + d.name + ' ' + st + ' vezes' }); }
+  { const sp = specOf(c); if (sp) out.push({ id: 'sp:' + sp.id, t: sp.t, col: sp.c, dg: 'Caminho', icon: sp.i, need: 1, cur: 1, have: true, desc: 'Caminho escolhido: ' + sp.n }); }
   const b = brightProg(c); out.push({ id: 'bright', t: 'O mais brilhante', col: TCOL.bright, dg: 'Aprimoramento', icon: '✨', need: b.total, cur: b.n, have: !!c.tb, desc: 'Todas as peças equipadas em +10 (a capa não conta)' });
   return out;
 }
-const titleInfo = id => { if (id === 'bright') return { t: 'O mais brilhante', col: TCOL.bright, bright: 1 }; const [d, st] = String(id).split(':'), dg = DUNGEONS.find(x => x.id === d); return dg && dg.titles && dg.titles[st] ? { t: dg.titles[st], col: TCOL[st] || '#fff' } : null; };
+const titleInfo = id => { if (id === 'bright') return { t: 'O mais brilhante', col: TCOL.bright, bright: 1 };
+  if (String(id).startsWith('sp:')) { for (const k in SPECS) { const sp = SPECS[k].find(x => 'sp:' + x.id === id); if (sp) return { t: sp.t, col: sp.c }; } return null; } const [d, st] = String(id).split(':'), dg = DUNGEONS.find(x => x.id === d); return dg && dg.titles && dg.titles[st] ? { t: dg.titles[st], col: TCOL[st] || '#fff' } : null; };
 const titleHave = (c, id) => titleList(c).some(x => x.id === id && x.have);
 /** Servidor chama ao concluir uma dungeon. Devolve os títulos novos. */
 function dgDone(c, def) {
@@ -597,11 +955,13 @@ function skStat(cls, i, rank) {
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
 function hitDamage(d, o, mon) {
   const b = o.buffs || {};
-  const crit = o.forceCrit || Math.random() < Math.min(.75, (d.crit + (b.crit || 0) * 100) / 100);
+  const crit = o.forceCrit || Math.random() < Math.min(Math.min(.95, .75 + (d.cmax || 0) / 100), (d.crit + (b.crit || 0) * 100) / 100);
   const base = d.dmg + (b.flat || 0) + (o.defMult ? d.def * o.defMult : 0) + (b.defdmg || 0) * d.def;
   let dmg = base * (1 + (b.dmg || 0)) * o.mult * rnd(.9, 1.1);
   if (crit) dmg *= (d.critMul || 1.7); if (o.marked) dmg *= 1.35; if (o.exec && mon.hp < mon.maxHp * .4) dmg *= 2; dmg *= (1 + (b.combo || 0));
-  return { dmg: Math.max(1, Math.round(dmg * 100 / (100 + mon.def * 2))), crit };
+  if (!o.basic && d.amp) dmg *= (1 + d.amp);                         // Técnica de Amp.: só habilidades, não o ataque básico
+  const mdef = mon.def * (1 - (d.pen || 0));                          // Taxa de Ataque: ignora parte da defesa
+  return { dmg: Math.max(1, Math.round(dmg * 100 / (100 + mdef * 2) + (d.add || 0))), crit };   // Dano Adicional: fixo, depois da defesa
 }
 
 /* ---------- recompensas de combate ---------- */
@@ -626,6 +986,7 @@ function rollLoot(T, mlvl, cls, luck) {
   for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
   if (Math.random() < T.eq * (1 + luck / 100)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .015 * lk ? 2 : Math.random() < .08 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); out.push(it); } }
   if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
+  if (T.boss && !T.chest && Math.random() < (T.dg ? .035 : .02) * (1 + luck / 100)) out.push(rollScroll(cls, mlvl));   // pergaminho de opção: chance mínima em chefes
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
   return out;
 }
@@ -638,7 +999,7 @@ function dgChestLoot(dg, tier, cls, luck) {
     const rar = bad ? (Math.random() < .75 ? 0 : 1) : rarRoll([.7, 1.3, 2.4][tier - 1] + luck / 50);
     const p2 = bad ? 0 : [.07, .12, .22][tier - 1] * lk, p1 = bad ? .04 : [.30, .38, .45][tier - 1] * lk, r = Math.random();
     const sl = r < p2 ? 2 : r < p2 + p1 ? 1 : 0;
-    const mo = Math.random() < .7 ? ['dg_s1', 'dg_s2', 'dg_boss'][tier - 1] : pick(['dg_a', 'dg_b', 'dg_c', 'dg_d']);
+    const mo = Math.random() < .7 ? (dg.cm || ['dg_s1', 'dg_s2', 'dg_boss'])[tier - 1] : pick(dg.mm || ['dg_a', 'dg_b', 'dg_c', 'dg_d']);
     const it = genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, mo); if (luck > 0 && rar === 3) it.plus = ri(0, 4); return it;
   };
   out.push(mk(Math.random() < [.30, .22, .12][tier - 1] / (1 + luck / 100)));
@@ -646,6 +1007,7 @@ function dgChestLoot(dg, tier, cls, luck) {
   if (Math.random() < [.02, .04, .1][tier - 1] * (1 + luck / 100)) out.push(genCape(ri(dg.ilvl[0], dg.ilvl[1]), cls));
   out.push({ k: 'gold', n: ri(600, 1100) * tier });
   if (Math.random() < .5) out.push({ k: 'mat', id: 'essencia', n: ri(1, 1 + tier) });
+  if (Math.random() < [.01, .02, .05][tier - 1] * (1 + luck / 100)) out.push(rollScroll(cls, dg.ilvl[1]));   // pergaminho de opção (raro)
   return out;
 }
 function gainXp(c, n) { c.xp += n; let up = 0; while (c.xp >= xpNeed(c.level)) { c.xp -= xpNeed(c.level); c.level++; c.pts += PTS_PER_LEVEL; c.sp++; up++; } return up; }
@@ -655,6 +1017,195 @@ function questKill(c, type) {
   for (const q of QUESTS) { const st = c.quests[q.id]; if (st && !st.done && q.tg === type && st.n < q.qty) { st.n++; if (st.n >= q.qty) out.push({ toast: 'Missão concluída: ' + q.t, sfx: 'questDone', log: `<span style="color:#6fdc7f">📜 Missão "${q.t}" pronta! Fale com ${npcById(q.npc).name}.</span>` }); } }
   return out;
 }
+
+/* ====================== MISSÕES DIÁRIAS E SEMANAIS ======================
+   Reiniciam às 04:00 (horário de Brasília). Cada personagem tem 5 missões por dia e 4 por semana (sorteadas de uma lista;
+   a lista do dia é igual para todos da mesma faixa de nível). Cada missão concluída dá XP e ouro, e enche a barra de baús
+   (Bronze / Prata / Ouro). Os valores acompanham o nível do personagem.
+   c.dq / c.wq = { k: chave do período, q: [{ id, n, need, done, got, xp, gold, reg? }], pts, ch: [baú recebido ×3] }            */
+const RESET_UTC_MS = 7 * 3600e3;                                       // 04:00 em Brasília (UTC−3)
+const dayKey = t => Math.floor((t - RESET_UTC_MS) / 86400e3);
+const weekKey = t => Math.floor((dayKey(t) + 3) / 7);                  // a semana começa na segunda-feira, 04:00
+const dayEnd = t => (dayKey(t) + 1) * 86400e3 + RESET_UTC_MS;
+const weekEnd = t => ((weekKey(t) + 1) * 7 - 3) * 86400e3 + RESET_UTC_MS;
+const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca' };
+const regOf = x => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const bandReg = L => (L < 50 ? 0 : L < 75 ? 300 : -300);
+const dwGold = L => Math.round((4000 + L * L * 45) / 100) * 100;      // ouro-base por nível (nível 100 ≈ 454 mil)
+const DWT = {   // q(L, semanal) = quantidade • rw = peso da recompensa • min = nível mínimo
+  kill:  { i: '⚔️', t: 'Caçada', d: n => `Derrote ${n} monstros em qualquer lugar.`, ev: 'kill', q: (L, w) => w ? 220 + Math.round(L * 3) : 24 + Math.round(L * .36), rw: 1 },
+  reg:   { i: '🗺️', t: 'Patrulha', d: (n, q) => `Derrote ${n} monstros em ${REGN[q.reg]}.`, ev: 'kill', q: (L, w) => w ? 160 + Math.round(L * 2.4) : 18 + Math.round(L * .3), rw: 1.1 },
+  boss:  { i: '👹', t: 'Caçador de Chefes', d: n => `Derrote ${n} chefes (de região ou de calabouço).`, ev: 'kill', q: (L, w) => w ? 10 : L < 30 ? 2 : 3, rw: 1.5 },
+  dg:    { i: '🏺', t: 'Explorador de Calabouços', d: n => `Conclua ${n} calabouço${n > 1 ? 's' : ''}.`, ev: 'dg', q: (L, w) => w ? 3 : 1, rw: 2.2, min: 50 },
+  wb:    { i: '☠️', t: 'Herói do Mundo', d: n => `Participe da derrota de ${n} Chefe${n > 1 ? 's' : ''} de Mundo.`, ev: 'wb', q: (L, w) => w ? 3 : 1, rw: 2.2 },
+  enh:   { i: '⚒️', t: 'Mão de Ferreiro', d: n => `Aprimore equipamentos ${n} vez${n > 1 ? 'es' : ''} (com o Ferreiro).`, ev: 'enh', q: (L, w) => w ? 12 : 3, rw: 1 },
+  craft: { i: '🔨', t: 'Forjador', d: n => `Forje ${n} item${n > 1 ? 'ns' : ''} (com o Ferreiro).`, ev: 'craft', q: (L, w) => w ? 8 : 2, rw: 1 },
+  pot:   { i: '🧪', t: 'Alquimista', d: n => `Use ${n} poções.`, ev: 'pot', q: (L, w) => w ? 70 : 12, rw: .8 },
+  sock:  { i: '💎', t: 'Lapidário', d: n => `Engaste ${n} gema${n > 1 ? 's' : ''} (com um Gemólogo).`, ev: 'sock', q: (L, w) => w ? 2 : 1, rw: 1.4, min: 60 }};
+const DCH = [{ n: 'Bronze', need: 2, g: 2 }, { n: 'Prata', need: 4, g: 4 }, { n: 'Ouro', need: 5, g: 9 }];        // baú do dia: missões concluídas • g = × ouro-base
+const WCH = [{ n: 'Bronze', need: 10, g: 14 }, { n: 'Prata', need: 22, g: 30 }, { n: 'Ouro', need: 36, g: 60 }];      // baú da semana: pontos (diária = 1, semanal = 4)
+const dwHash = (a, b, c) => { let h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 2147483647)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return (h ^ (h >>> 16)) >>> 0; };
+const dwRng = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+function dwGen(c, w, key) {
+  const L = Math.max(1, c.level | 0), rng = dwRng(dwHash(key, Math.floor(L / 25), w ? 7 : 3));
+  const pool = Object.keys(DWT).filter(k => k !== 'kill' && L >= (DWT[k].min || 0)), ids = ['kill'];
+  for (let n = w ? 3 : 4; n > 0 && pool.length; n--) ids.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  const q = ids.map(id => {
+    const T = DWT[id], need = Math.max(1, T.q(L, w)), o = { id, n: 0, need, done: 0, got: 0,
+      xp: Math.max(10, Math.round(xpNeed(L) * (w ? .2 : .025) * T.rw)), gold: Math.round(dwGold(L) * (w ? 8 : 1) * T.rw / 100) * 100 };
+    if (id === 'reg') o.reg = bandReg(L);
+    return o; });
+  return { k: key, q, pts: 0, ch: [0, 0, 0] };
+}
+/** garante que as missões do personagem são do dia/da semana atual (sorteia novas quando passa das 04:00) */
+function dwSync(c, now) {
+  now = now || Date.now(); const dk = dayKey(now), wk = weekKey(now);
+  if (!c.dq || c.dq.k !== dk) c.dq = dwGen(c, 0, dk);
+  if (!c.wq || c.wq.k !== wk) c.wq = dwGen(c, 1, wk);
+  return c;
+}
+/** um evento do jogo (abate, calabouço, aprimorar...) avança as missões do dia e da semana */
+function dwEv(c, ev, a) {
+  const out = []; if (!c) return out; dwSync(c); a = a || {};
+  if (c.spq) out.push(...spEv(c, ev, a));                       // Provação dos Caminhos (nível 100)
+  for (const w of [0, 1]) { const box = w ? c.wq : c.dq;
+    for (const q of box.q) {
+      if (q.done) continue; const T = DWT[q.id]; if (!T || T.ev !== ev) continue;
+      if (q.id === 'reg' && regOf(a.x) !== q.reg) continue;
+      if (q.id === 'boss' && !a.boss) continue;
+      q.n = Math.min(q.need, q.n + 1);
+      if (q.n >= q.need) {
+        q.done = 1; box.pts += w ? 4 : 1; if (!w) c.wq.pts += 1;
+        const tx = DWT[q.id].t;
+        out.push({ gp: w ? GP.wq : GP.dq, toast: `${w ? '🗓️' : '📅'} Missão ${w ? 'semanal' : 'diária'} concluída: ${tx}!`, sfx: 'questDone', log: `<span style="color:#7fe0ff">${w ? '🗓️ Semanal' : '📅 Diária'} "${tx}" concluída! Receba a recompensa na janela de missões (<b>Q</b>).</span>` });
+      }
+    } }
+  return out;
+}
+
+/* ====================== CAMINHOS DE ESPECIALIZAÇÃO (nível 100) ======================
+   Cada classe tem 3 caminhos que vão mudar o ESTILO de luta. Por enquanto só a escolha existe (os estilos virão depois):
+   o caminho vira um selo ao lado do nome e um título. Para liberar a escolha o jogador faz a Provação dos Caminhos.
+   c.spec = id do caminho • c.spq = { on, k: monstros, d: calabouço, w: chefes de mundo, ok: provas cumpridas } */
+const SPEC_LV = 100, SPEC_COST = 5e6, SPEC_RESET = 1e7;
+const SPQ = { kills: 300, kmin: 85, dg: 'abismo', wb: 1 };
+const SPECS = {
+ guerreiro: [
+  { id: 'rubra', n: 'Lâmina Rubra', i: '🩸', c: '#e04848', t: 'O Furioso', d: 'Abre mão de defesa em troca de fúria: golpes brutais, sangramento e velocidade de ataque.' },
+  { id: 'comandante', n: 'Senhor da Guerra', i: '📯', c: '#e0a030', t: 'O General', d: 'Comanda o campo de batalha com gritos de guerra, bônus para o grupo e golpes devastadores em área.' },
+  { id: 'dancarino', n: 'Dançarino de Aço', i: '🌪️', c: '#5fb4ff', t: 'O Duelista', d: 'Giros e investidas encadeados: mobilidade, combos de lâmina e movimentos sem pausa.' }],
+ arqueiro: [
+  { id: 'elite', n: 'Atirador de Elite', i: '🎯', c: '#ffd24a', t: 'O Preciso', d: 'Alcance máximo, crítico altíssimo e tiros que atravessam as defesas.' },
+  { id: 'cacador', n: 'Caçador Selvagem', i: '🌿', c: '#6fcf6a', t: 'O Rastreador', d: 'Armadilhas, venenos e feras companheiras: controle do campo e dano em vários alvos.' },
+  { id: 'elemental', n: 'Arqueiro Elemental', i: '☄️', c: '#b06aff', t: 'O Arcano', d: 'Flechas carregadas de fogo, gelo e raio, com um efeito especial a cada disparo.' }],
+ mago: [
+  { id: 'piromante', n: 'Piromante', i: '🔥', c: '#ff6a3a', t: 'Chama Viva', d: 'Fogo em área e queimaduras: dano explosivo e contínuo.' },
+  { id: 'criomante', n: 'Criomante', i: '❄️', c: '#6fd0ff', t: 'Frio Eterno', d: 'Gelo e controle: lentidão, congelamento e barreiras geladas.' },
+  { id: 'arcanista', n: 'Arcanista', i: '⚡', c: '#c58bff', t: 'Poder Puro', d: 'Arcano e raio: rajadas rápidas, mana abundante e feitiços encadeados.' }],
+ assassino: [
+  { id: 'sombra', n: 'Sombra Mortal', i: '🌑', c: '#8a7aff', t: 'O Silencioso', d: 'Furtividade e golpes críticos fulminantes, surgindo do nada.' },
+  { id: 'veneno', n: 'Mestre dos Venenos', i: '☠️', c: '#5adf6a', t: 'O Peçonhento', d: 'Lâminas envenenadas e armadilhas: dano contínuo que se acumula no alvo.' },
+  { id: 'fantasma', n: 'Lâmina Fantasma', i: '🌀', c: '#7fe0ff', t: 'O Intocável', d: 'Evasão e mobilidade extremas, com clones de sombra que confundem o inimigo.' }],
+ cavaleiro: [
+  { id: 'paladino', n: 'Paladino da Aurora', i: '✨', c: '#ffe28a', t: 'A Luz', d: 'Luz sagrada: proteção, cura de aliados e golpes que queimam os profanos.' },
+  { id: 'lanceiro', n: 'Lanceiro Real', i: '🐎', c: '#ffb347', t: 'A Carga', d: 'Investidas devastadoras e golpes de impacto: o cavaleiro que ataca primeiro.' },
+  { id: 'sombrio', n: 'Cavaleiro Sombrio', i: '🌘', c: '#b07aff', t: 'A Sombra', d: 'Poder sombrio: drena a vida dos inimigos e troca defesa por dano.' }],
+ tanque: [
+  { id: 'bastiao', n: 'Bastião Inabalável', i: '🏰', c: '#9fb2c6', t: 'A Muralha', d: 'Provocação, defesa colossal e proteção do grupo inteiro.' },
+  { id: 'vingador', n: 'Vingador de Ferro', i: '⚖️', c: '#ff7a5a', t: 'O Reflexo', d: 'Devolve o dano recebido: reflexo, contra-ataques e correntes punitivas.' },
+  { id: 'guardiao', n: 'Guardião da Vida', i: '💚', c: '#6fe39a', t: 'O Protetor', d: 'Regeneração e resistência: sustenta o grupo e aguenta qualquer batalha.' }],
+ pierrot: [
+  { id: 'ilusionista', n: 'Ilusionista Sombrio', i: '🎭', c: '#c58bff', t: 'O Enganador', d: 'Ilusões e clones: confunde os inimigos e ataca de todos os lados.' },
+  { id: 'cerimonias', n: 'Mestre de Cerimônias', i: '🎪', c: '#ff8fb1', t: 'O Anfitrião', d: 'Comanda o espetáculo: atrações, encantos de plateia e bônus para os aliados.' },
+  { id: 'curinga', n: 'Curinga do Destino', i: '🃏', c: '#ffd24a', t: 'O Apostador', d: 'Aposta na sorte: críticos devastadores, mais drops e golpes imprevisíveis.' }]};
+const specOf = c => { const l = SPECS[c.cls]; return l && c.spec ? l.find(x => x.id === c.spec) || null : null; };
+/** Provação dos Caminhos: abate monstros de Nevasca (Nv ≥ kmin), conclui o Abismo e ajuda a derrotar um chefe de mundo. */
+function spEv(c, ev, a) {
+  const out = []; if (!c || !c.spq || !c.spq.on || c.spq.ok) return out; const q = c.spq; a = a || {};
+  if (ev === 'kill') { if (regOf(a.x) !== -300 || (a.lvl || 0) < SPQ.kmin || q.k >= SPQ.kills) return out; q.k++; }
+  else if (ev === 'dg') { if (a.id !== SPQ.dg || q.d) return out; q.d = 1; out.push({ toast: '🌌 Provação: o Abismo foi vencido!', sfx: 'questAccept' }); }
+  else if (ev === 'wb') { if (q.w >= SPQ.wb) return out; q.w++; out.push({ toast: '☠️ Provação: chefe de mundo derrotado!', sfx: 'questAccept' }); }
+  else return out;
+  if (q.k >= SPQ.kills && q.d && q.w >= SPQ.wb) { q.ok = 1; out.push({ toast: '🌟 Provação dos Caminhos concluída!', sfx: 'questDone', log: '<span style="color:#ffe28a">🌟 <b>Provação dos Caminhos concluída!</b> Volte a um Mestre dos Caminhos para escolher o seu.</span>' }); }
+  return out;
+}
+
+/* ====================== GUILDAS ======================
+   Fundação no NPC (10 milhões). Cada guilda tem chat próprio, baú compartilhado e um PRÊMIO COLETIVO semanal: tudo que os
+   membros fazem rende Pontos de Guilda (PG); ao atingir cada faixa da semana, quem contribuiu resgata a recompensa (pelo Correio).
+   Cargos: 2 = Líder • 1 = Oficial • 0 = Membro. */
+const GUILD = { cost: 1e7, nmin: 3, nmax: 16, tmin: 2, tmax: 4, cap: 30, capL: 5, chest: 40, chestL: 6, wkMin: 100, maxLv: 10 };
+const GP = { kill: 1, boss: 20, dg: 80, wb: 60, dq: 15, wq: 50 };
+const GTIERS = [
+  { n: 'Bronze',   i: '🥉', c: '#cd8b4a', per: 600,  rw: 'Ouro, poções e minério de ferro' },
+  { n: 'Prata',    i: '🥈', c: '#c8d0d8', per: 1800, rw: 'Mais ouro, essências e 25% de chance de um Pergaminho (Nv 50+)' },
+  { n: 'Ouro',     i: '🥇', c: '#ffd24a', per: 4000, rw: 'Equipamento Incomum+ do seu nível, bom ouro e 60% de chance de Pergaminho' },
+  { n: 'Lendário', i: '👑', c: '#ff7a4a', per: 8000, rw: 'Equipamento Raro+ do seu nível, muito ouro e um Pergaminho garantido (Nv 50+)' }];
+/** nível da guilda pelos PG totais */
+const guildLv = exp => Math.min(GUILD.maxLv, 1 + Math.floor(Math.sqrt(Math.max(0, exp) / 4000)));
+const guildCap = lv => GUILD.cap + GUILD.capL * (lv - 1), guildChest = lv => GUILD.chest + GUILD.chestL * (lv - 1);
+/** PG necessários para cada faixa nesta semana (cresce com o número de membros; mínimo 3) */
+const guildNeed = (tier, members) => Math.round(GTIERS[tier].per * Math.max(3, members));
+const guildNameOk = n => typeof n === 'string' && /^[A-Za-zÀ-ÿ0-9]+( [A-Za-zÀ-ÿ0-9]+)*$/.test(n) && n.length >= GUILD.nmin && n.length <= GUILD.nmax;
+const guildTagOk = t => typeof t === 'string' && /^[A-Za-z0-9]+$/.test(t) && t.length >= GUILD.tmin && t.length <= GUILD.tmax;
+
+/** prêmio do baú (i = 0 Bronze, 1 Prata, 2 Ouro) */
+function dwChestLoot(c, w, i) {
+  const L = Math.max(1, c.level | 0), CH = (w ? WCH : DCH)[i], items = [], k = w ? 2.5 : 1;
+  items.push({ k: 'pot', id: L >= 75 ? 'hp2' : 'hp', n: (i + 1) * (w ? 10 : 5) });
+  if (i >= 1) { items.push({ k: 'mat', id: 'ferro', n: Math.round((6 + L * .25) * i * k) }); items.push({ k: 'mat', id: 'essencia', n: Math.max(1, Math.round((1 + L * .08) * i * k)) }); }
+  if (i === 2 || (w && i === 1)) items.push(genItem(pick(slotPool(c.cls)), Math.max(1, L + ri(0, 2)), w && i === 2 ? Math.max(2, rarRoll(2)) : rarRoll(w ? 2 : 1), c.cls, c.cls, 0, true));
+  if (L >= 50 && Math.random() < (w ? [0, .3, 1][i] : [0, 0, .1][i])) items.push(rollScroll(c.cls, L));       // pergaminho de opção: raro no dia, garantido no baú Ouro da semana
+  return { gold: Math.round(dwGold(L) * CH.g / 100) * 100, items };
+}
+/** prêmio coletivo semanal da guilda (i = 0 Bronze … 3 Lendário) — o servidor entrega pelo Correio */
+function guildPrize(c, i) {
+  const L = Math.max(1, c.level | 0), items = [], g = [8, 16, 30, 55][i];
+  items.push({ k: 'pot', id: L >= 75 ? 'hp2' : 'hp', n: 10 * (i + 1) });
+  items.push({ k: 'mat', id: 'ferro', n: Math.round((8 + L * .3) * (i + 1)) });
+  if (i >= 1) items.push({ k: 'mat', id: 'essencia', n: Math.max(1, Math.round((1 + L * .06) * i)) });
+  if (i >= 2) items.push(genItem(pick(slotPool(c.cls)), Math.max(1, L + ri(0, 3)), i === 3 ? Math.max(2, rarRoll(2)) : Math.max(1, rarRoll(1)), c.cls, c.cls, 0, true));
+  if (L >= 50 && Math.random() < [0, .25, .6, 1][i]) items.push(rollScroll(c.cls, L));
+  return { gold: Math.round(dwGold(L) * g / 100) * 100, items };
+}
+const dwSecs = (c, now) => { now = now || Date.now(); return { d: Math.max(0, Math.floor((dayEnd(now) - now) / 1000)), w: Math.max(0, Math.floor((weekEnd(now) - now) / 1000)) }; };
+
+/* ====================== CHEFES DE MUNDO ======================
+   Um chefe por região, em horários fixos (horário de Brasília). Todos lutam juntos na arena marcada no mapa:
+   a vida do chefe cresce com o poder de quem entra na luta (assim 3 ou 30 jogadores levam um tempo parecido).
+   Prêmio por correio, pelo ranking de dano. Chance pequena de uma RELÍQUIA: item Épico com 2 engastes e atributos muito altos. */
+const WBOSS = [
+  { id: 'wb_a', reg: 0, place: 'Planícies de Aurora (leste)', lv: 34, times: ['12:00', '18:00', '21:00'], life: 20, minLv: 10,
+    intro: 'A gosma ancestral acorda no pântano do leste e engole tudo o que encontra.',
+    mech: { rain: { n: 3, per: 6, every: 13000, r: 3.2, mult: 2.2, delay: 2200, c: '#7dff8f', name: 'Cuspe Ácido' }, big: { at: [.66, .33], r: 9, mult: 3, delay: 3000, c: '#b6ff4a', name: 'Explosão de Gosma' }, enrage: .2 } },
+  { id: 'wb_s', reg: 300, place: 'Solara (extremo oeste do deserto)', lv: 76, times: ['12:30', '18:30', '21:30'], life: 20, minLv: 50,
+    intro: 'O Escorpião-Rei emerge das dunas. O chão treme a cada passo.',
+    mech: { rain: { n: 3, per: 5, every: 12000, r: 3.4, mult: 2.3, delay: 2200, c: '#ffd45a', name: 'Dardos de Areia' }, big: { at: [.75, .5, .25], r: 11, mult: 3.2, delay: 3000, c: '#ff9a3a', name: 'Terremoto' }, enrage: .2 } },
+  { id: 'wb_n', reg: -300, place: 'Nevasca (extremo leste da geleira)', lv: 100, times: ['13:00', '19:00', '22:00'], life: 20, minLv: 75,
+    intro: 'Um uivo gelado corta a nevasca. O Wendigo Primordial caça quem ousar subir a geleira.',
+    mech: { rain: { n: 4, per: 5, every: 11000, r: 3.4, mult: 2.4, delay: 2200, c: '#9fe0ff', name: 'Estilhaços de Gelo' }, big: { at: [.75, .5, .25], r: 13, mult: 3.4, delay: 3000, c: '#7fd0ff', name: 'Uivo Congelante' }, enrage: .2 } }];
+for (const d of WBOSS) { const T = MT[d.id]; d.name = T.n; const z = ZONES.find(q => q.t === d.id); d.x = z.x; d.z = z.z; d.hp = T.hp; }
+const BRT_MS = 3 * 3600e3;
+const wbHM = t => { const a = t.split(':'); return (+a[0] * 60 + +a[1]) * 60e3; };
+/** inícios (ms UTC) dos horários do chefe, de ontem, hoje e amanhã (em ordem) */
+const wbSlots = (d, now) => { const k = Math.floor((now - BRT_MS) / 86400e3), o = []; for (let i = -1; i <= 1; i++) for (const t of d.times) o.push((k + i) * 86400e3 + BRT_MS + wbHM(t)); return o.sort((a, b) => a - b); };
+/** janela aberta agora (começou e ainda não acabou) → início dela; senão 0 */
+const wbCur = (d, now) => { for (const s of wbSlots(d, now)) if (now >= s && now < s + d.life * 60e3) return s; return 0; };
+/** próximo horário (início) depois de agora */
+const wbNext = (d, now) => { for (const s of wbSlots(d, now)) if (s > now) return s; return 0; };
+const wbById = id => WBOSS.find(d => d.id === id);
+/** Relíquia de chefe de mundo: Épico com 2 engastes, valores-base bem acima do Épico comum e 4 bônus de atributo (favorecendo o atributo principal). */
+function genRelic(cls, ilvl, mo, slot) {
+  ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(ilvl)));
+  const it = genItem(slot || pick(slotPool(cls).filter(x => x !== 'cape')), ilvl, 3, cls, cls, 2, mo), k = rnd(1.2, 1.32);
+  for (const f of ['atk', 'def', 'hp']) if (it[f]) it[f] = Math.round(it[f] * k);
+  const main = (CLASSES[cls] || {}).main || 'str', st = ['str', 'agi', 'int', 'vit'], q = Math.max(1, Math.round(ilvl / 3));
+  it.bon = {}; it.bon[main] = Math.round(q * 2);
+  for (let n = 0; n < 3; n++) { const s2 = n === 0 ? 'vit' : pick(st); it.bon[s2] = (it.bon[s2] || 0) + Math.max(1, q); }
+  it.wb = 1; it.name = '✦ ' + it.name.replace(/^★ /, ''); return it;
+}
+/** tabela de cor/nome de raridade (relíquias têm a sua) */
+const rarOf = it => it && it.wb ? { n: 'Relíquia', c: '#ffcf4a', m: RAR[3].m } : RAR[it ? it.rar : 0];
 
 /* ---------- criação / migração de personagens ---------- */
 /** Barras de habilidade: 16 casas (1–8 e Shift+1–8); cada casa guarda o índice da habilidade (0–7) ou -1. */
@@ -712,12 +1263,16 @@ function cleanItem(it) {
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
   it.plus = Math.max(0, Math.min(MAXPLUS, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
-  const mx = itemMax(it.slot, it.ilvl, it.rar);
-  for (const k of ['atk', 'def', 'hp']) { const v = Number(it[k]) || 0; it[k] = Math.max(0, Math.min(Math.round(mx[k] + 1), Math.round(v))); }
-  const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1), nb = {};
+  if (it.wb && it.rar === 3 && it.slot !== 'cape') it.wb = 1; else delete it.wb;       // relíquia de chefe de mundo: limites maiores
+  const mx = itemMax(it.slot, it.ilvl, it.rar), wk = it.wb ? 1.45 : 1;
+  for (const k of ['atk', 'def', 'hp']) { const v = Number(it[k]) || 0; it[k] = Math.max(0, Math.min(Math.round(mx[k] * wk + 1), Math.round(v))); }
+  const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1) * (it.wb ? 3 : 1), nb = {};
   for (const s of ['str', 'agi', 'int', 'vit']) if (it.bon && it.bon[s] > 0) nb[s] = Math.min(bmax, Math.floor(it.bon[s]));
   it.bon = nb;
-  it.sl = Math.max(0, Math.min(2, Math.floor(it.sl || 0))); if (!it.sl) delete it.sl;
+  it.sl = Math.max(0, Math.min(MAX_SLOTS, Math.floor(it.sl || 0))); if (!it.sl || it.slot === 'cape') delete it.sl;
+  { const cat = it.slot === 'weapon' ? 'w' : 'a', gm = [], seen = new Set();   // gemas engastadas: categoria certa, sem repetir a mesma opção
+    for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat && !seen.has(id)) { gm.push(id); seen.add(id); } else gm.push(null); }
+    if (gm.some(Boolean)) it.gm = gm; else delete it.gm; }
   if (!(typeof it.mo === 'string' && OG[it.mo])) delete it.mo;
   if (typeof it.name !== 'string') it.name = SLOTS[it.slot];
   it.name = it.name.slice(0, 60);
@@ -737,8 +1292,15 @@ function migrate(c) {
   }
   c.bar = cleanBar(c.bar);
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
+  for (const k of ['dq', 'wq']) { const b = c[k]; if (!(b && typeof b === 'object' && Array.isArray(b.q))) delete c[k]; else { b.k = Math.floor(b.k) || 0; b.pts = Math.max(0, Math.floor(b.pts) || 0); b.ch = [0, 1, 2].map(i => b.ch && b.ch[i] ? 1 : 0);
+    b.q = b.q.slice(0, 8).filter(q => q && DWT[q.id]).map(q => ({ id: q.id, n: Math.max(0, Math.floor(q.n) || 0), need: Math.max(1, Math.floor(q.need) || 1), done: q.done ? 1 : 0, got: q.got ? 1 : 0, xp: Math.max(0, Math.floor(q.xp) || 0), gold: Math.max(0, Math.floor(q.gold) || 0), ...(q.reg !== undefined ? { reg: Number(q.reg) || 0 } : {}) })); } }
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = typeof c.name === 'string' ? c.name : CLASSES[c.cls].n;   // nome vazio = o jogador ainda vai escolher (não preencher)
   c.kills = Math.max(0, Math.floor(c.kills) || 0);
+  { const sl = SPECS[c.cls]; c.spec = typeof c.spec === 'string' && sl && sl.some(x => x.id === c.spec) ? c.spec : ''; if (!c.spec) delete c.spec;
+    const q = c.spq; if (q && typeof q === 'object' && q.on) c.spq = { on: 1, k: Math.max(0, Math.min(SPQ.kills, Math.floor(q.k) || 0)), d: q.d ? 1 : 0, w: Math.max(0, Math.min(SPQ.wb, Math.floor(q.w) || 0)), ok: q.ok ? 1 : 0 }; else delete c.spq; }
+  { const n0 = v => Math.max(0, Math.min(99999999, Math.floor(v) || 0));
+    if (c.dl && typeof c.dl === 'object') c.dl = { w: n0(c.dl.w), l: n0(c.dl.l) }; else delete c.dl;                                          // duelos: vitórias e derrotas
+    if (c.pk && typeof c.pk === 'object') c.pk = { k: n0(c.pk.k), d: n0(c.pk.d), p: n0(c.pk.p), bs: n0(c.pk.bs) }; else delete c.pk; }        // Arena PK: abates, mortes, pontos e maior sequência
   c.gm = c.gm ? 1 : 0; c.gmu = (Number(c.gmu) || 0) > Date.now() ? Number(c.gmu) : 0;
   { const dc = {}; if (c.dgc && typeof c.dgc === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.dgc[d.id]); if (n > 0) dc[d.id] = Math.min(9999, n); } c.dgc = dc; c.tb = c.tb ? 1 : 0; if (!c.tb && brightProg(c).ok) c.tb = 1; if (typeof c.title !== 'string' || (c.title && !titleHave(c, c.title))) c.title = ''; }
   { const fr = []; if (Array.isArray(c.fr)) for (const n of c.fr) { if (typeof n === 'string') { const t = n.trim().slice(0, 16); if (t && !fr.some(x => x.toLowerCase() === t.toLowerCase())) fr.push(t); } if (fr.length >= 50) break; } c.fr = fr; }
@@ -749,7 +1311,7 @@ function migrate(c) {
     // novo equilíbrio: os pontos de atributo são devolvidos conforme a NOVA regra (você redistribui)
     c.alloc = { str: 0, agi: 0, int: 0, vit: 0 }; c.pts = PTS_PER_LEVEL * (c.level - 1);
     c.xp = Math.max(0, Math.min(Math.floor(c.xp) || 0, xpNeed(c.level) - 1));
-    c.gold = Math.max(0, Math.min(Math.floor(c.gold) || 0, c.level * GOLD_CAP_PER_LEVEL));
+    c.gold = Math.max(0, Math.min(Math.floor(c.gold) || 0, GOLD_MAX));
     c.sk = c.sk.map(r => Math.max(0, Math.min(MAXRANK, Math.floor(r) || 0))); c.sp = Math.max(0, Math.min(c.level + 10, Math.floor(c.sp) || 0));
     for (const k of Object.keys(c.eq || {})) { c.eq[k] = cleanItem(c.eq[k]); if (c.eq[k] && (!validKey(k) || c.eq[k].slot !== keyBase(k))) c.eq[k] = null; }
     c.inv = c.inv.map(cleanItem);
@@ -785,6 +1347,7 @@ function act(sess, m, ctx) {
   const colOf = it => it.k === 'eq' ? RAR[it.rar].c : '#fff';
   const npcFor = tab => { const n = npcById(m.npc); if (!n || !n.tabs.includes(tab)) return null; if (ctx && ctx.near && !ctx.near(n)) return null; return n; };
   const t = m && m.t;
+  const DW = ev => { const o = dwEv(c, ev); if (o.length) out.push(...o); };
 
   if (t === 'equip') {
     if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'eq') return fail();
@@ -809,9 +1372,9 @@ function act(sess, m, ctx) {
   }
   if (t === 'pot') {
     const kind = m.kind; if (!POTS[kind]) return fail(); const now = (ctx && ctx.now) || 0;
-    if (now && sess.potAt && now < sess.potAt + 2500) return fail();
+    if (now && sess.potAt && now < sess.potAt + ((ctx && ctx.potCd) || 2500)) return fail();
     const idx = c.inv.findIndex(s => s && s.k === 'pot' && s.id === kind); if (idx < 0) return fail('Sem ' + POTS[kind].n);
-    const s = c.inv[idx]; s.n--; if (s.n <= 0) c.inv[idx] = null; if (now) sess.potAt = now; out.push({ heal: kind }); return done();
+    const s = c.inv[idx]; s.n--; if (s.n <= 0) c.inv[idx] = null; if (now) sess.potAt = now; out.push({ heal: kind }); DW('pot'); return done();
   }
   if (t === 'dropi') {
     if (!intIn(m.i, 0, c.inv.length) || !c.inv[m.i]) return fail(); const it = c.inv[m.i]; c.inv[m.i] = null; spawn.push({ item: it, life: 30000 });
@@ -849,6 +1412,7 @@ function act(sess, m, ctx) {
   if (t === 'buyticket') {
     const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');
     const dg = DUNGEONS.find(x => x.id === m.id); if (!dg) return fail();
+    if ((dg.reg || 300) !== regOf(n.x)) return fail('Esse ingresso é vendido em ' + REGN[dg.reg || 300] + '.');
     if (c.level < dg.minLevel) return fail('Nível ' + dg.minLevel + ' necessário.');
     c.tix = c.tix || {}; if ((c.tix[dg.id] || 0) >= 5) return fail('Você já tem 5 ingressos.');
     if (c.gold < dg.price) return fail('Ouro insuficiente');
@@ -861,7 +1425,7 @@ function act(sess, m, ctx) {
     if (!Object.keys(r.ing).every(k => have(c, k) >= r.ing[k]) || c.gold < r.gold) return fail('Materiais ou ouro insuficientes');
     const o = r.out(c.cls); if (!canAdd(c.inv, o)) return fail('Mochila cheia!');
     for (const k in r.ing) take(c, k, r.ing[k]); c.gold -= r.gold; addItem(c.inv, o); F('forge'); T('Forjado: ' + nm(o) + (o.n > 1 ? ' ×' + o.n : ''));
-    L(`🔨 Você forjou <b style="color:${colOf(o)}">${nm(o)}</b>`); return done();
+    L(`🔨 Você forjou <b style="color:${colOf(o)}">${nm(o)}</b>`); DW('craft'); return done();
   }
   if (t === 'up') {
     if (!npcFor('aprimorar')) return fail('Chegue perto do Ferreiro.');
@@ -872,7 +1436,7 @@ function act(sess, m, ctx) {
     take(c, 'ferro', k.ferro); if (k.essencia) take(c, 'essencia', k.essencia); c.gold -= k.gold; const p = it.plus || 0;
     if (Math.random() < upRate(p)) { F('upOk'); it.plus = p + 1; T('✨ Sucesso! ' + nm(it)); L(`<span style="color:#6fdc7f">⬆️ ${it.name} aprimorado para +${it.plus}!</span>`); }
     else { F('upFail'); if (p >= 5) { it.plus = p - 1; T('💥 Falhou! O item perdeu 1 nível'); L(`<span style="color:#ff6b6b">💥 Falha no aprimoramento! ${it.name} caiu para +${it.plus}.</span>`); } else { T('Falhou, mas o item está intacto'); L('<span style="color:#ffb86b">Falha no aprimoramento (item intacto).</span>'); } }
-    return done();
+    DW('enh'); return done();
   }
   if (t === 'dep' || t === 'wd') {
     if (!npcFor('bau')) return fail('Chegue perto do Baú.');
@@ -892,6 +1456,67 @@ function act(sess, m, ctx) {
     L(`<span style="color:#6fdc7f">📜 Missão "${q.t}" concluída! Recompensa recebida.</span>`); T('Missão entregue!');
     if (gainXp(c, q.rw.xp)) out.push({ lvl: c.level }); return done();
   }
+  if (t === 'socket' || t === 'extend') {
+    if (!npcFor('engastar')) return fail('Chegue perto de um Gemólogo.');
+    const ref = String(m.ref || ''); let it = null;
+    if (ref.startsWith('eq:')) it = validKey(ref.slice(3)) && c.eq[ref.slice(3)]; else if (ref.startsWith('inv:')) { const i = +ref.slice(4); it = intIn(i, 0, c.inv.length) ? c.inv[i] : null; }
+    if (!it || it.k !== 'eq') return fail('Escolha um equipamento.');
+    if (it.slot === 'cape') return fail('Capas não têm engastes.');
+    if (t === 'extend') {
+      if ((it.sl || 0) >= MAX_SLOTS) return fail('Este item já tem o máximo de ' + MAX_SLOTS + ' engastes.');
+      const ei = c.inv.findIndex(s => s && s.k === 'mat' && s.id === 'g_ext'); if (ei < 0) return fail('Você precisa de um Extensor de Slot (60.000.000).');
+      c.inv[ei].n--; if (c.inv[ei].n <= 0) c.inv[ei] = null;
+      it.sl = (it.sl || 0) + 1; it.gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl - 1) : []; while (it.gm.length < it.sl) it.gm.push(null); if (!it.gm.some(Boolean)) delete it.gm;
+      F('upOk'); T('🔳 Novo engaste! ' + nm(it)); L(`<span style="color:#c9a8ff">🔳 ${it.name} ganhou um engaste: agora tem <b>${it.sl}</b>.</span>`); return done();
+    }
+    const si = m.si; if (!intIn(si, 0, it.sl || 0)) return fail('Escolha um engaste.');
+    const gi = m.gi; if (!intIn(gi, 0, c.inv.length)) return fail(); const sc = c.inv[gi];
+    if (!sc || sc.k !== 'mat' || !MATS[sc.id] || !MATS[sc.id].gem) return fail('Escolha um pergaminho de opção.');
+    const g = GEMD[MATS[sc.id].gem], cat = gemCat(it);
+    if (g.cat !== cat) return fail(cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas.' : 'Esta gema é de ARMA: só serve em armas.');
+    const gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl) : []; while (gm.length < it.sl) gm.push(null);
+    if (gm.some((x, j) => x === g.id && j !== si)) return fail('Este item já tem a opção "' + g.o + '" em outro engaste.');
+    if (gm[si] === g.id) return fail('Este engaste já tem essa mesma gema.');
+    if (gm[si] && !m.rep) return fail('O engaste já está ocupado: confirme para substituir (a gema antiga é destruída).');
+    sc.n--; if (sc.n <= 0) c.inv[gi] = null; gm[si] = g.id; it.gm = gm;
+    F('upOk'); T('💎 Gema engastada: ' + g.o); L(`<span style="color:${GRADES[g.g].c}">💎 ${g.n} engastada em ${it.name}: <b>${g.o} ${gemTxt(g, it.ilvl)}</b></span>`); DW('sock'); return done();
+  }
+  if (t === 'sp_start' || t === 'sp_pick' || t === 'sp_reset') {            // Mestre dos Caminhos (nível 100)
+    if (!npcFor('caminhos')) return fail('Chegue perto do Mestre dos Caminhos.');
+    if (c.level < SPEC_LV) return fail('Os Caminhos abrem no nível ' + SPEC_LV + '.');
+    if (t === 'sp_start') {
+      if (c.spq || c.spec) return fail();
+      c.spq = { on: 1, k: 0, d: 0, w: 0, ok: 0 }; F('questAccept'); T('📜 Provação dos Caminhos aceita!');
+      L(`<span style="color:#c9a8ff">📜 <b>Provação dos Caminhos</b>: derrote ${SPQ.kills} monstros de Nevasca (Nv ${SPQ.kmin}+), conclua o ${(DUNGEONS.find(d => d.id === SPQ.dg) || {}).name || SPQ.dg} e ajude a derrotar ${SPQ.wb} Chefe de Mundo.</span>`); return done();
+    }
+    if (t === 'sp_pick') {
+      const sp = (SPECS[c.cls] || []).find(x => x.id === m.id); if (!sp) return fail();
+      if (c.spec) return fail('Você já trilha um Caminho. Use a Reconsagração para trocar.');
+      if (!(c.spq && c.spq.ok)) return fail('Conclua a Provação dos Caminhos primeiro.');
+      if (!c.gm && c.gold < SPEC_COST) return fail('São necessários ' + fmtN(SPEC_COST) + ' 💰.');
+      c.gold -= SPEC_COST; c.spec = sp.id; F('levelUp'); T(sp.i + ' Caminho escolhido: ' + sp.n + '!');
+      L(`<span style="color:${sp.c}">${sp.i} Você trilha o Caminho <b>${sp.n}</b> — título <b>${sp.t}</b> liberado. (Os estilos de luta de cada Caminho chegam em breve.)</span>`); return done();
+    }
+    if (!c.spec) return fail('Você ainda não escolheu um Caminho.');
+    if (!c.gm && c.gold < SPEC_RESET) return fail('São necessários ' + fmtN(SPEC_RESET) + ' 💰.');
+    c.gold -= SPEC_RESET; const was = specOf(c); delete c.spec; if (c.title && /^sp:/.test(c.title)) c.title = '';
+    T('Caminho reconsagrado.'); L(`<span style="color:#c9a8ff">🔄 Você deixou o Caminho ${was ? was.n : ''}. Escolha outro com o Mestre dos Caminhos.</span>`); return done();
+  }
+  if (t === 'dwsync') { dwSync(c); return done(); }
+  if (t === 'dwclaim' || t === 'dwchest') {
+    dwSync(c); const w = m.w ? 1 : 0, box = w ? c.wq : c.dq, i = m.i, give = it => { if (!addItem(c.inv, it)) spawn.push({ item: it, life: 0 }); };
+    if (t === 'dwclaim') {
+      const q = Number.isInteger(i) && box.q[i]; if (!q || !q.done || q.got) return fail();
+      q.got = 1; c.gold = Math.min(GOLD_MAX, c.gold + q.gold); F('questDone'); T(`Recompensa recebida: ${fmtN(q.gold)} 💰 + ${fmtN(q.xp)} XP`);
+      L(`<span style="color:#6fdc7f">${w ? '🗓️' : '📅'} "${DWT[q.id].t}" — recompensa: <b>${fmtN(q.gold)}</b> 💰 e <b>${fmtN(q.xp)}</b> XP.</span>`);
+      if (gainXp(c, q.xp)) out.push({ lvl: c.level }); return done();
+    }
+    const CH = (w ? WCH : DCH)[i]; if (!CH || box.ch[i]) return fail();
+    if ((w ? box.pts : box.q.filter(x => x.done).length) < CH.need) return fail('Ainda não alcançou os pontos deste baú.');
+    box.ch[i] = 1; const loot = dwChestLoot(c, w, i); c.gold = Math.min(GOLD_MAX, c.gold + loot.gold); for (const it of loot.items) give(it);
+    F('rare'); T(`🎁 Baú ${CH.n} aberto!`); L(`<span style="color:#ffd27a">🎁 Baú ${w ? 'da semana' : 'do dia'} <b>${CH.n}</b>: <b>${fmtN(loot.gold)}</b> 💰${loot.items.map(it => ' • ' + nm(it) + (it.n > 1 ? ' ×' + it.n : '')).join('')}</span>`);
+    return done();
+  }
   if (t === 'died') {
     const loss = Math.floor(xpNeed(c.level) * .05); c.xp = Math.max(0, c.xp - loss);
     L(`<span style="color:#ff6b6b">Você morreu e perdeu ${loss} XP.</span>`); return done();
@@ -899,9 +1524,37 @@ function act(sess, m, ctx) {
   return fail();
 }
 
+/* ====================== PvP: DUELOS E ARENA PK ======================
+   Dano entre jogadores = a MESMA fórmula das habilidades (hitDamage), só que com defesa suavizada e um fator por nível do
+   atacante e por classe — calibrado por simulação para que lutas entre jogadores de nível/equipamento parecidos durem algo
+   como 30 a 60 s em qualquer faixa de nível. Valores em um só lugar, fáceis de ajustar. */
+const PVP = {
+  def: .3,                                                   // só 30% da defesa do alvo entra na conta contra jogadores
+  kL: [[1, .09], [10, .098], [20, .12], [30, .135], [40, .17], [50, .19], [60, .22], [70, .255], [80, .32], [90, .375], [100, .39]],   // fator por nível do atacante
+  cm: { guerreiro: 1, arqueiro: .26, mago: .32, assassino: .47, cavaleiro: .93, tanque: 2.15, pierrot: .21 },                       // fator por classe (equilibra o dano total)
+  potCd: 15000, potK: .5,                                    // poções em duelo/arena: recarga de 15 s e metade do efeito
+  cc: { stun: 1000, root: 1500, slow: 2500, imm: 3000 },     // atordoar/prender/lentidão em jogadores (máx. em ms) e imunidade depois de um controle
+  slack: 1.3                                                 // folga do verificador de vida do servidor (nunca pune um jogador honesto)
+};
+const pvpK = (cls, lv) => {
+  const a = PVP.kL, L = Math.max(1, Math.min(MAX_LEVEL, Math.floor(lv) || 1)); let k = a[a.length - 1][1];
+  for (let i = 1; i < a.length; i++) if (L <= a[i][0]) { const f = (L - a[i - 1][0]) / (a[i][0] - a[i - 1][0]); k = a[i - 1][1] + (a[i][1] - a[i - 1][1]) * f; break; }
+  return k * (PVP.cm[cls] || 1);
+};
+const DUEL = { ask: 20000, count: 5000, limit: 300000, r: 32, maxDist: 45, out: 6000, spam: 1500, decl: 20000 };   // pedido vale 20 s • contagem 5 s • luta até 5 min • área de 32 m • 45 m para pedir • 6 s fora da área = derrota
+const ARENA = { x: 1800, z: 0, r: 36, minLv: 20, prot: 5000, resp: 5000, leave: 8000, spawnR: 27, exit: { x: 1800, z: -31 },
+  pts: { kill: 10, streak: 2, cap: 10, same: 3, sameMs: 600000 },    // 10 pts por abate + 2 por abate seguido (até 10) • no máximo 3 abates da mesma vítima a cada 10 min
+  minPts: 50, prize: [6e6, 3e6, 1.5e6] };                            // prêmio semanal do ranking (ouro, por correio) — mínimo de 50 pontos
+const arenaIn = x => x > 1650;
+const arenaPrize = (c, i) => {
+  const L = Math.max(1, c.level | 0), items = [{ k: 'pot', id: L >= 75 ? 'hp2' : 'hp', n: 10 * (3 - i) }];
+  if (i === 0 && L >= 50) items.push(rollScroll(c.cls, L));
+  return { gold: ARENA.prize[i] || 0, items };
+};
+
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

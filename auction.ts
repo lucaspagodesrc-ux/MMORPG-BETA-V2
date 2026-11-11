@@ -7,7 +7,7 @@ import { sendMail, mailNotify } from "./mail";
 const R: any = require("./rules.js");
 
 export const AH_SLOTS = 10, AH_FEE = 5, AH_DAYS = 3;
-const MAX_PRICE = 100_000_000;   // por unidade
+const MAX_PRICE = 2_000_000_000;   // por unidade (cabe no bigint; pergaminhos custam milhões)
 const PAGE = 30;
 const NEAR = 8;
 
@@ -38,6 +38,11 @@ function give(room: any, s: any, p: any, qty: number) {
 export async function auctionMsg(room: any, s: any, m: any) {
   const reply = (o: any) => s.client.send("ahr", o);
   const fail = (msg: string, extra: any = {}) => reply({ op: m.op, ok: false, msg, ...extra });
+  if (m.op === "hs") {                                    // só leitura: resumo de preços de vários modelos (dicas da mochila, aba Vender) — de qualquer lugar
+    const now = Date.now(); if (s.hsT && now - s.hsT < 500) return; s.hsT = now;
+    const ks = (Array.isArray(m.ks) ? m.ks : []).map((x: any) => String(x || "").slice(0, 200)).filter(Boolean).slice(0, 30);
+    try { return reply({ op: "hs", ok: true, ks, hs: await histOf(ks) }); } catch { return; }
+  }
   const p = room.state.players.get(s.client.sessionId);
   const npc = R.NPCS.find((n: any) => n.id === "leilao");
   if (!p || !npc || Math.hypot(npc.x - p.x, npc.z - p.z) > NEAR) return fail("Chegue perto do Leiloeiro.");
@@ -51,12 +56,13 @@ export async function auctionMsg(room: any, s: any, m: any) {
       const f = m.f || {};
       const num = (v: any, d: number, a: number, b: number) => { if (v === "" || v == null) return d; v = Number(v); return Number.isFinite(v) ? Math.max(a, Math.min(b, Math.floor(v))) : d; };
       const q = fold(String(f.q || "").slice(0, 40));
-      const cat = ["eq", "mat", "pot"].includes(f.cat) ? f.cat : "";
+      const cat = ["eq", "mat", "gem", "pot"].includes(f.cat) ? f.cat : "";
+      const gopt = R.GEMD[f.gopt] ? f.gopt : "", gr = num(f.gr, -1, -1, 4);
       const slot = R.SLOTS[f.slot] ? f.slot : "";
       const cls = R.CLASSES[f.cls] ? f.cls : "";
       const rar = num(f.rar, -1, -1, 3);
       const lvMin = num(f.lvMin, 0, 0, 999), lvMax = num(f.lvMax, 999, 0, 999);
-      const plusMin = num(f.plusMin, 0, 0, 10), slMin = num(f.slMin, 0, 0, 2);
+      const plusMin = num(f.plusMin, 0, 0, 10), slMin = num(f.slMin, 0, 0, 3);
       const attr = ["str", "agi", "int", "vit", "atk", "def", "hp"].includes(f.attr) ? f.attr : "";
       const pMin = num(f.pMin, 0, 0, MAX_PRICE), pMax = num(f.pMax, MAX_PRICE, 0, MAX_PRICE);
       const afford = !!f.afford, mineOnly = !!f.mine, usable = !!f.usable;
@@ -67,7 +73,10 @@ export async function auctionMsg(room: any, s: any, m: any) {
       for (const r of rows) {
         const it = r.item;
         if (mineOnly && r.account_id !== accId) continue;
-        if (cat && it.k !== cat) continue;
+        const gemId = it.k === "mat" && R.MATS[it.id] ? R.MATS[it.id].gem : undefined, isGem = !!gemId || (it.k === "mat" && !!(R.MATS[it.id] && R.MATS[it.id].ext));
+        if (cat === "gem" ? !isGem : cat === "mat" ? (it.k !== "mat" || isGem) : cat && it.k !== cat) continue;
+        if (gopt && gemId !== gopt) continue;
+        if (gr >= 0 && !(gemId && R.GEMD[gemId].g === gr)) continue;
         if (slot && (it.k !== "eq" || it.slot !== slot)) continue;
         if (cls && !fitsClass(it, cls)) continue;
         if (usable && !(it.k !== "eq" || (c.level >= it.req && fitsClass(it, c.cls)))) continue;
@@ -87,13 +96,16 @@ export async function auctionMsg(room: any, s: any, m: any) {
       else if (sort === "lvl") out.sort((a, b) => ((b.item.req || 0) - (a.item.req || 0)) || a.price - b.price);
       else out.sort((a, b) => a.price - b.price || a.id - b.id);
       const pages = Math.max(1, Math.ceil(out.length / PAGE)); page = Math.min(page, pages - 1);
-      const list = out.slice(page * PAGE, page * PAGE + PAGE).map((r) => ({ id: r.id, item: itemOut(r.item, r.qty), qty: r.qty, price: r.price, seller: r.seller, mine: r.account_id === accId, exp: expOf(r) }));
-      return reply({ op, ok: true, list, total: out.length, page, pages, used: await slotsUsed(accId), all: rows.length, fee: AH_FEE });
+      const pageRows = out.slice(page * PAGE, page * PAGE + PAGE);
+      const list = pageRows.map((r) => ({ id: r.id, item: itemOut(r.item, r.qty), qty: r.qty, price: r.price, seller: r.seller, mine: r.account_id === accId, exp: expOf(r), hk: R.hkeyOf(r.item) }));
+      const hs = await histOf(list.map((x) => x.hk));
+      return reply({ op, ok: true, list, hs, total: out.length, page, pages, used: await slotsUsed(accId), all: rows.length, fee: AH_FEE });
     }
 
     if (op === "mine") {
       const rows = (await pool.query("select id,seller,item,qty,price,created_at from auction where account_id=$1 order by id", [accId])).rows;
-      return reply({ op, ok: true, list: rows.map((r: any) => ({ id: r.id, item: itemOut(r.item, r.qty), qty: r.qty, price: r.price, mine: true, exp: expOf(r) })), used: rows.length, fee: AH_FEE });
+      const mine = rows.map((r: any) => ({ id: r.id, item: itemOut(r.item, r.qty), qty: r.qty, price: r.price, mine: true, exp: expOf(r), hk: R.hkeyOf(r.item) }));
+      return reply({ op, ok: true, list: mine, hs: await histOf(mine.map((x: any) => x.hk)), used: rows.length, fee: AH_FEE });
     }
 
     if (op === "sell") {
@@ -120,7 +132,7 @@ export async function auctionMsg(room: any, s: any, m: any) {
           } else {
             const n = await cl.query("select count(*)::int as n from auction where account_id=$1", [accId]);
             if (n.rows[0].n >= AH_SLOTS) { await cl.query("rollback"); cl.release(); give(room, s, p0, qty); room.touch(s); room.sync(s); return fail(`Limite de ${AH_SLOTS} anúncios atingido.`); }
-            await cl.query("insert into auction(account_id,seller,ikey,item,qty,price) values($1,$2,$3,$4,$5,$6)", [accId, c.name, key, JSON.stringify(p0), qty, price]);
+            await cl.query("insert into auction(account_id,seller,ikey,item,qty,price,hkey) values($1,$2,$3,$4,$5,$6,$7)", [accId, c.name, key, JSON.stringify(p0), qty, price, R.hkeyOf(p0)]);
           }
           await cl.query("commit"); okDb = true;
         } catch (e) { try { await cl.query("rollback"); } catch {} throw e; } finally { try { cl.release(); } catch {} }
@@ -129,6 +141,14 @@ export async function auctionMsg(room: any, s: any, m: any) {
       room.touch(s); room.sync(s);
       room.res(s, [{ sfx: "ui" }, { toast: `⚖️ Anunciado: ${R.nm(itemOut(p0))}${qty > 1 ? " ×" + qty : ""}` }]);
       return reply({ op, ok: true, msg: `Anunciado: ${R.nm(itemOut(p0))}${qty > 1 ? " ×" + qty : ""} por ${price} cada. Dura ${AH_DAYS} dias; taxa de ${AH_FEE}% só se vender.` });
+    }
+
+    if (op === "hist") {                                  // histórico de preços de um modelo de item (para tooltips e tela de venda)
+      const k = String(m.k || "").slice(0, 200); if (!k) return fail("Item inválido.");
+      const h = (await histOf([k]))[k] || null;
+      const rows = h ? (await pool.query("select price,qty,sold_at from auction_sales where hkey=$1 order by id desc limit 12", [k])).rows : [];
+      const cur = (await pool.query("select min(price)::bigint as lo, count(*)::int as n from auction where hkey=$1", [k])).rows[0];
+      return reply({ op, ok: true, k, h, pts: rows.map((r: any) => ({ p: r.price, q: r.qty, t: new Date(r.sold_at).getTime() })), now: cur && cur.n ? { lo: cur.lo, n: cur.n } : null });
     }
 
     if (op === "cancel") {
@@ -160,9 +180,11 @@ export async function auctionMsg(room: any, s: any, m: any) {
       const cl = await pool.connect();
       try {
         await cl.query("begin");
-        const u = await cl.query("update auction set qty=qty-$2 where id=$1 and qty>=$2 and price=$3 returning qty", [id, qty, exp]);
-        if (u.rowCount) {
-          if (u.rows[0].qty <= 0) await cl.query("delete from auction where id=$1", [id]);
+        const u = await cl.query("select qty from auction where id=$1 and price=$2 for update", [id, exp]);   // trava a linha: dois compradores não levam o mesmo item
+        if (u.rowCount && u.rows[0].qty >= qty) {
+          if (u.rows[0].qty === qty) await cl.query("delete from auction where id=$1", [id]);              // comprou tudo: o anúncio some (a coluna não aceita qtd 0)
+          else await cl.query("update auction set qty=qty-$2 where id=$1", [id, qty]);
+          await cl.query("insert into auction_sales(hkey,price,qty) values($1,$2,$3)", [R.hkeyOf(L.item), exp, qty]);   // histórico de preços
           const lbl = R.nm(itemOut(L.item)) + (qty > 1 ? " ×" + qty : "");
           await sendMail(L.account_id, { kind: "ah", title: "💰 Venda no Leilão", body: `${lbl} vendido por ${fmtN(total)} ouro. Taxa de ${AH_FEE}%: ${fmtN(fee)}.`, gold: net }, cl);
           ok = true;
@@ -183,6 +205,15 @@ export async function auctionMsg(room: any, s: any, m: any) {
     console.error("leilão", e);
     return fail("Erro no leilão. Tente de novo.");
   } finally { s.ah = 0; }
+}
+
+/** resumo do histórico (últimas 20 vendas de cada modelo): n, média, mínimo, máximo, último preço */
+async function histOf(keys: string[]): Promise<Record<string, any>> {
+  const ks = [...new Set(keys.filter(Boolean))]; if (!ks.length) return {};
+  const r = await pool.query(`select hkey, count(*)::int as n, round(avg(price))::bigint as avg, min(price)::bigint as lo, max(price)::bigint as hi, (array_agg(price order by id desc))[1]::bigint as last
+    from (select hkey, price, id, row_number() over (partition by hkey order by id desc) rn from auction_sales where hkey = any($1)) t where rn <= 20 group by hkey`, [ks]);
+  const o: Record<string, any> = {}; for (const x of r.rows) o[x.hkey] = { n: x.n, avg: Number(x.avg), lo: Number(x.lo), hi: Number(x.hi), last: Number(x.last) };
+  return o;
 }
 
 /** anúncios vencidos: o item volta para o dono por correio */

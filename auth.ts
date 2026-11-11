@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Router, Request, Response, NextFunction } from "express";
 import { pool } from "./db";
+import { guildCharDeleted } from "./guild";
 const R: any = require("./rules.js");
 
 const SECRET =
@@ -154,7 +155,9 @@ authRouter.post("/chars/:id/name", authed, async (req, res) => {
 
 authRouter.delete("/chars/:id", authed, async (req, res) => {
   const u = (req as any).user as AuthUser;
-  await pool.query("delete from characters where id=$1 and account_id=$2", [String(req.params.id), u.id]);
+  const cid = String(req.params.id);
+  if ((await pool.query("select 1 from characters where id=$1 and account_id=$2", [cid, u.id])).rowCount) await guildCharDeleted(cid);   // sai da guilda antes (o líder passa o cargo)
+  await pool.query("delete from characters where id=$1 and account_id=$2", [cid, u.id]);
   res.json({ ok: true });
 });
 

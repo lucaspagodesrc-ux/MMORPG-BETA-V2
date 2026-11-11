@@ -1,13 +1,55 @@
-ATUALIZAÇÃO 1.35 — BARRA DA DIREITA AJUSTADA E JANELAS ARRASTÁVEIS (somente o index.html mudou)
+ATUALIZAÇÃO 1.38 — DUELOS E ARENA PK  (Etapa 5 do plano: Social / PvP)
+Pacote CUMULATIVO: já contém tudo da 1.37 (gemas, conjuntos, missões diárias/semanais, chefes de mundo, novos
+calabouços, caminhos de especialização e guildas) mais os duelos e a Arena PK. Se a 1.37 já está instalada, basta
+enviar este pacote por cima.
 
-- A barra de botões da direita (mochila, personagem, ... trocar personagem) agora cabe em qualquer altura
-  de tela: os botões diminuem em telas baixas e, se ainda faltar espaço, formam uma segunda coluna ao lado.
-- TODAS as janelas do jogo podem ser arrastadas pelo título: mochila, personagem, habilidades, missões, grupo,
-  amigos, títulos, painel do GM, diálogos de NPC (loja, forja, baú...), Leilão, Correio, Troca e Áudio.
-  A janela de Ajuda (controles) pode ser arrastada por qualquer ponto.
-- Clicar numa janela a traz para a frente. Ela não sai totalmente da tela, e a posição é mantida ao
-  fechar e abrir de novo (até recarregar a página).
+1) DUELOS — PvP em qualquer lugar do mapa, só se o outro aceitar
+- Clique no personagem de outro jogador e escolha "⚔️ Desafiar para duelo" (também aparece no menu dos membros do grupo).
+- O desafiado recebe um aviso no alto da tela com Aceitar / Recusar (vale por 20 s). Sem aceite, nada acontece.
+- Ao aceitar começa uma CONTAGEM REGRESSIVA GRANDE de 5 s no meio da tela (5… 4… 3… 2… 1… "LUTEM!"). Ninguém consegue
+  atacar antes do "LUTEM!".
+- Durante o duelo: vida e mana ficam cheias; ao terminar voltam para o que eram antes. Perder um duelo NÃO custa nada
+  (sem perda de XP, ouro ou itens). Poções funcionam com recarga de 15 s e metade do efeito.
+- Um círculo laranja de 32 m marca a área; ficar mais de 6 s fora dele conta como derrota. Tempo máximo: 5 min (empate).
+- Botão "Desistir" no painel do duelo (2 cliques, para não desistir sem querer). Aparece o resultado grande na tela
+  (🏆 VITÓRIA / 💀 DERROTA / 🤝 EMPATE) e o seu placar de vitórias e derrotas.
+- Regras: não vale na cidade (zona segura), em calabouços nem dentro da Arena; os dois precisam estar a até 45 m e na
+  mesma região do mapa; quem recusa fica 20 s sem receber novo pedido do mesmo jogador.
+- DURANTE O DUELO OS MONSTROS IGNORAM OS DUELISTAS (e os duelistas não ferem monstros), para a luta ser justa.
+- Comandos de chat: /duelo off (não receber desafios), /duelo on (voltar a receber) e /desistir.
+
+2) ARENA PK — zona separada e opcional (a cidade continua segura)
+- Um Mestre da Arena por cidade: Mestre Brutus (Aurora), Kalila (Solara) e Bjarn (Nevasca). Nível mínimo: 20.
+- É um coliseu circular (36 m de raio) numa região própria do mapa, com pilares de cobertura. TODOS CONTRA TODOS
+  (quem está no mesmo grupo não se fere). O minimapa mostra todos os jogadores que estão lá dentro.
+- Ao entrar: 5 s de proteção e vida/mana cheias. Quem cai reaparece em 5 s, com 3 s de proteção, SEM perder nada.
+- Para sair: botão "Sair" no painel da Arena (ou no Guardião do portão), depois de 8 s sem combate. Você volta para a
+  cidade de onde entrou, com a vida e a mana que tinha. O retorno à cidade comum não funciona lá dentro.
+- Equilíbrio PvP: o dano entre jogadores é calibrado por classe e nível; defesa vale 30%; atordoamento, enraizamento e
+  lentidão têm duração máxima (1 s / 1,5 s / 2,5 s) e depois dão 3 s de imunidade.
+- Pontos do ranking: 10 por abate + 2 por cada abate seguido sem cair (até +20). Depois de 3 abates da mesma vítima em
+  10 min, o abate não pontua mais.
+- RANKING SEMANAL (reinicia na segunda-feira às 04:00, horário de Brasília), no diálogo dos Mestres da Arena.
+  Prêmio do top 3 (mínimo de 50 pontos), enviado pelo CORREIO na semana seguinte:
+    1º lugar  6.000.000 de ouro + 30 poções   (Nv 50+: também 1 pergaminho de opção)
+    2º lugar  3.000.000 de ouro + 20 poções
+    3º lugar  1.500.000 de ouro + 10 poções   (poções de vida grandes para Nv 75+)
+- Um mural de abates aparece na tela e o diálogo da Arena mostra o seu histórico (abates, quedas, maior sequência).
+
+AJUSTES: tudo está em rules.js — R.PVP (equilíbrio por classe, recargas), R.DUEL (tempos e distâncias do duelo) e
+R.ARENA (raio, nível mínimo, pontos e prêmios).
 
 COMO INSTALAR
-1. Envie o index.html deste zip para a raiz do repositório no GitHub (substituindo o existente).
-2. Aguarde o Render terminar o deploy e aperte Ctrl+F5 no navegador.
+1. Envie TODOS os arquivos deste zip para a raiz do repositório no GitHub, substituindo os existentes
+   (pvp.ts é NOVO): index.html, rules.js, WorldRoom.ts, pvp.ts, monsters.ts, db.ts, guild.ts, worldboss.ts,
+   dungeon.ts, auction.ts, schema.ts, auth.ts
+   (Se a 1.37 JÁ está instalada, só precisam ser reenviados: index.html, rules.js, WorldRoom.ts, monsters.ts, db.ts
+   e o novo pvp.ts — os demais são idênticos aos da 1.37.)
+2. Aguarde o Render terminar o deploy (a tabela arena_rank é criada sozinha; não há dependências novas).
+3. No navegador, aperte Ctrl+F5.
+
+OBSERVAÇÕES
+- O servidor calcula todo o dano PvP e confere cada "queda" por uma vida-sombra, então não dá para trapacear dizendo
+  que o outro caiu; a vida do jogador em si continua sendo mantida pelo navegador, como no resto do jogo.
+- Limite conhecido: dois amigos combinados podem trocar abates na Arena para pontuar; a regra de "3 abates por vítima
+  a cada 10 min" limita isso, mas colegas de guilda não são bloqueados.

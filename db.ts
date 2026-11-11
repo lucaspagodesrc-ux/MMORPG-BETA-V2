@@ -1,4 +1,7 @@
-import { Pool } from "pg";
+import { Pool, types } from "pg";
+
+// bigint (ouro, preços de milhões) vem do banco como número, não como texto.
+types.setTypeParser(20, (v: string) => Number(v));
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -48,6 +51,75 @@ export async function migrate() {
       created_at timestamptz not null default now());
     create index if not exists mail_account on mail(account_id, id desc);
   `);
+  // v1.36: pergaminhos custam milhões, então o preço do leilão vira bigint; e cada venda entra no histórico de preços (por modelo de item).
+  try { await pool.query("alter table auction alter column price type bigint"); } catch (e) { console.error("[leilão] price→bigint falhou", e); }
+  try {
+    await pool.query(`
+      create table if not exists auction_sales(
+        id serial primary key,
+        hkey text not null,
+        price bigint not null,
+        qty int not null default 1,
+        sold_at timestamptz not null default now());
+      create index if not exists auction_sales_key on auction_sales(hkey, id desc);`);
+  } catch (e) { console.error("[leilão] tabela de histórico falhou", e); }
+  try {
+    await pool.query(`alter table auction add column if not exists hkey text; create index if not exists auction_hkey on auction(hkey);`);
+    const R: any = require("./rules.js");
+    const rows = (await pool.query("select id,item from auction where hkey is null limit 5000")).rows;
+    for (const r of rows) await pool.query("update auction set hkey=$2 where id=$1", [r.id, R.hkeyOf(r.item)]);
+  } catch (e) { console.error("[leilão] coluna hkey falhou", e); }
+  // v1.37: chefes de mundo — guarda o último horário já atendido de cada chefe (reiniciar o servidor não faz o chefe nascer de novo)
+  try { await pool.query(`create table if not exists wb_state(id text primary key, slot bigint not null default 0, kills int not null default 0, updated_at timestamptz not null default now())`); }
+  catch (e) { console.error("[chefes] tabela falhou", e); }
+  // v1.37: guildas (chat, baú compartilhado, cofre de ouro, prêmio coletivo semanal)
+  try {
+    await pool.query(`
+      create table if not exists guilds(
+        id serial primary key,
+        name text not null,
+        tag text not null,
+        notice text not null default '',
+        exp bigint not null default 0,
+        gold bigint not null default 0,
+        chest jsonb not null default '[]',
+        wk int not null default 0,
+        wpts bigint not null default 0,
+        log jsonb not null default '[]',
+        created_at timestamptz not null default now());
+      create unique index if not exists guilds_name_lower on guilds(lower(name));
+      create unique index if not exists guilds_tag_lower on guilds(lower(tag));
+      create table if not exists guild_members(
+        char_id text primary key,
+        guild_id int not null references guilds(id) on delete cascade,
+        account_id int not null,
+        name text not null,
+        cls text not null,
+        level int not null default 1,
+        role int not null default 0,
+        wpts bigint not null default 0,
+        tpts bigint not null default 0,
+        claimed int not null default 0,
+        seen bigint not null default 0,
+        joined_at timestamptz not null default now());
+      create index if not exists guild_members_guild on guild_members(guild_id);`);
+  } catch (e) { console.error("[guildas] tabelas falharam", e); }
+  // v1.38: Arena PK — ranking semanal (pontos, abates e mortes por personagem; o prêmio do top 3 é resgatado uma vez por semana)
+  try {
+    await pool.query(`
+      create table if not exists arena_rank(
+        wk int not null,
+        cid text not null,
+        name text not null,
+        cls text not null default '',
+        level int not null default 1,
+        pts int not null default 0,
+        k int not null default 0,
+        d int not null default 0,
+        claimed boolean not null default false,
+        primary key (wk, cid));
+      create index if not exists arena_rank_pts on arena_rank(wk, pts desc);`);
+  } catch (e) { console.error("[arena] tabela falhou", e); }
   // v1.34: ganhos antigos do leilão (accounts.ah_gold) viram uma carta no correio.
   try {
     await pool.query(`with o as (update accounts set ah_gold=0 where ah_gold>0 returning id, ah_gold)
