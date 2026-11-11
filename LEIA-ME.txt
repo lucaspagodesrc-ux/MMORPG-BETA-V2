@@ -1,17 +1,17 @@
-ATUALIZAÇÃO 1.43 — MESMA GEMA EM VÁRIOS ENGASTES
-Pacote CUMULATIVO: contém tudo da 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.42 já está instalada, só rules.js e index.html mudam.
+ATUALIZAÇÃO 1.44 — GM ESCOLHE E RETIRA CAMINHOS LIVREMENTE
+Pacote CUMULATIVO: contém tudo da 1.43, 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.43 já está instalada, só rules.js e index.html mudam.
 
-O QUE MUDOU
-- Removida a regra "cada opção só pode aparecer uma vez por item".
-- Agora o mesmo pergaminho pode ser engastado em quantos engastes o item tiver (até 3, o máximo de engastes).
-  Ex.: 3× "Dano Crítico" em uma arma de 3 engastes soma os 3 valores.
-- Continua valendo: a gema precisa ser da categoria certa para o equipamento, e não dá para engastar a mesma gema
-  num engaste que já a tem (use outro engaste ou outra gema). Trocar uma gema destrói a antiga.
-- Os tetos TOTAIS de cada atributo (ex.: Taxa Crítica, Amp.) continuam valendo; o excedente é desperdiçado.
-- Itens já existentes não são alterados.
+O QUE MUDOU (apenas para contas/personagens GM)
+- Nos Mestres dos Caminhos (Eldrin, Nefertari, Rurik), a conta GM pode:
+  • ESCOLHER qualquer um dos 3 Caminhos da sua classe a qualquer hora, em qualquer nível, sem fazer a Provação e sem pagar;
+  • TROCAR direto de um Caminho para outro (sem precisar retirar antes);
+  • RETIRAR o Caminho atual (botão "Retirar Caminho"), sem custo e sem confirmação.
+- Ao trocar/retirar, se o título equipado era o do Caminho antigo, ele é desequipado.
+- Jogadores comuns continuam como antes: nível 100, Provação concluída, 5 mi para escolher e 10 mi para reconsagrar.
+- Precisa estar perto de um Mestre dos Caminhos, como nas outras ações de NPC.
 
 INSTALAÇÃO
 1) Envie rules.js e index.html para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
-   à 1.42, envie todos os arquivos do pacote.
+   à 1.43, envie todos os arquivos do pacote.
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.

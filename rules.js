@@ -1596,7 +1596,7 @@ function act(sess, m, ctx) {
   }
   if (t === 'sp_start' || t === 'sp_pick' || t === 'sp_reset') {            // Mestre dos Caminhos (nível 100)
     if (!npcFor('caminhos')) return fail('Chegue perto do Mestre dos Caminhos.');
-    if (c.level < SPEC_LV) return fail('Os Caminhos abrem no nível ' + SPEC_LV + '.');
+    if (c.level < SPEC_LV && !c.gm) return fail('Os Caminhos abrem no nível ' + SPEC_LV + '.');   // GM: qualquer nível
     if (t === 'sp_start') {
       if (c.spq || c.spec) return fail();
       c.spq = { on: 1, k: 0, d: 0, w: 0, ok: 0 }; F('questAccept'); T('📜 Provação dos Caminhos aceita!');
@@ -1604,10 +1604,15 @@ function act(sess, m, ctx) {
     }
     if (t === 'sp_pick') {
       const sp = (SPECS[c.cls] || []).find(x => x.id === m.id); if (!sp) return fail();
-      if (c.spec) return fail('Você já trilha um Caminho. Use a Reconsagração para trocar.');
-      if (!(c.spq && c.spq.ok)) return fail('Conclua a Provação dos Caminhos primeiro.');
-      if (!c.gm && c.gold < SPEC_COST) return fail('São necessários ' + fmtN(SPEC_COST) + ' 💰.');
-      c.gold -= SPEC_COST; c.spec = sp.id; F('levelUp'); T(sp.i + ' Caminho escolhido: ' + sp.n + '!');
+      // GM: escolhe (ou troca) o Caminho a qualquer hora, sem Provação e sem custo
+      if (!c.gm) {
+        if (c.spec) return fail('Você já trilha um Caminho. Use a Reconsagração para trocar.');
+        if (!(c.spq && c.spq.ok)) return fail('Conclua a Provação dos Caminhos primeiro.');
+        if (c.gold < SPEC_COST) return fail('São necessários ' + fmtN(SPEC_COST) + ' 💰.');
+        c.gold -= SPEC_COST;
+      } else if (c.spec === sp.id) return fail('Você já trilha esse Caminho.');
+      else if (c.title && /^sp:/.test(c.title)) c.title = '';
+      c.spec = sp.id; F('levelUp'); T(sp.i + ' Caminho escolhido: ' + sp.n + '!');
       L(`<span style="color:${sp.c}">${sp.i} Você trilha o Caminho <b>${sp.n}</b> — título <b>${sp.t}</b> liberado. (Os estilos de luta de cada Caminho chegam em breve.)</span>`); return done();
     }
     if (!c.spec) return fail('Você ainda não escolheu um Caminho.');

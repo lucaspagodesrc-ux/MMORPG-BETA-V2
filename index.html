@@ -5075,13 +5075,14 @@ function renderDialog(){
   }
   if(GU.msg)h+=`<p class="${GU.ok?'ok':'no'}">${esc(GU.msg)}</p>`;
  }else if(dlg.tab==='caminhos'){
-  const L=RULES.SPECS[S.cls]||[],sp=RULES.specOf(S),q=S.spq,qq=RULES.SPQ,lv=S.level>=RULES.SPEC_LV;
+  const L=RULES.SPECS[S.cls]||[],sp=RULES.specOf(S),q=S.spq,qq=RULES.SPQ,lv=S.gm||S.level>=RULES.SPEC_LV;
   if(!lv)h+=`<p class="muted">Os <b>Caminhos</b> se abrem no <b>nível ${RULES.SPEC_LV}</b> (você está no ${S.level}). Cada classe tem 3 caminhos que mudam o estilo de luta. Veja o que o seu herói poderá se tornar:</p>`;
+  else if(S.gm){h+=`<p class="ok">🛠️ <b>Modo GM</b>: escolha, troque ou retire o Caminho a qualquer hora, de graça e sem Provação.</p>`+(sp?`<p>Seu Caminho: <b style="color:${sp.c}">${sp.i} ${sp.n}</b> — título <b>${sp.t}</b>. <button data-act="spreset">Retirar Caminho</button></p>`:'<p class="muted">Você não tem nenhum Caminho agora.</p>');}
   else if(sp)h+=`<p>Seu Caminho: <b style="color:${sp.c}">${sp.i} ${sp.n}</b> — título <b>${sp.t}</b>. Os estilos de luta de cada Caminho chegam em breve. Trocar custa <b>${fmt(RULES.SPEC_RESET)}</b> 💰: <button data-act="spreset" ${S.gm||S.gold>=RULES.SPEC_RESET?'':'disabled'}>Reconsagrar</button></p>`;
   else if(!q||!q.on)h+=`<p class="muted">Para escolher um Caminho você precisa provar o seu valor na <b>Provação dos Caminhos</b>: derrote <b>${qq.kills}</b> monstros de Nevasca (Nv ${qq.kmin}+), conclua o <b>${(DUNGEONS.find(d=>d.id===qq.dg)||{}).name||qq.dg}</b> e ajude a derrotar <b>${qq.wb}</b> Chefe de Mundo.</p><button data-act="spstart">📜 Aceitar a Provação</button>`;
   else if(!q.ok)h+=`<p><b>Provação dos Caminhos</b></p><div class="ing"><span class="${q.k>=qq.kills?'ok':'no'}">⚔️ Monstros de Nevasca (Nv ${qq.kmin}+): ${q.k}/${qq.kills}</span></div><div class="ing"><span class="${q.d?'ok':'no'}">🌌 ${(DUNGEONS.find(d=>d.id===qq.dg)||{}).name||qq.dg}: ${q.d?'concluído':'pendente'}</span></div><div class="ing"><span class="${q.w>=qq.wb?'ok':'no'}">☠️ Chefe de Mundo: ${q.w}/${qq.wb}</span></div>`;
   else h+=`<p class="ok">🌟 Provação cumprida! Escolha o seu Caminho por <b>${fmt(RULES.SPEC_COST)}</b> 💰 — depois dá para trocar pagando ${fmt(RULES.SPEC_RESET)} 💰.</p>`;
-  const can=lv&&!sp&&q&&q.ok;
+  const can=S.gm?true:lv&&!sp&&q&&q.ok;
   h+=L.map(s=>`<div class="row2"><div class="ri" style="border-color:${s.c}">${s.i}</div><div class="rt"><b style="color:${s.c}">${s.n}</b> <small style="display:inline">— título "${s.t}"</small><small>${s.d}</small></div><div class="rb">${sp&&sp.id===s.id?'<span class="ok">✔ Seu Caminho</span>':can?`<button data-act="sppick" data-id="${s.id}" ${S.gm||S.gold>=RULES.SPEC_COST?'':'disabled'}>Escolher</button>`:''}</div></div>`).join('');
  }else if(dlg.tab==='arena'){h+=arenaTabHtml();}else if(dlg.tab==='dungeon'){
   h+=DUNGEONS.filter(d=>(d.reg||300)===(dlg.npc.x<-150?-300:dlg.npc.x>150?300:0)).map(d=>{const hv=(S.tix&&S.tix[d.id])||0,okL=S.level>=d.minLevel,okG=S.gold>=d.price;return `<div class="row2"><div class="ri">${d.icon}</div><div class="rt"><b>${d.name}</b> <small style="display:inline">(Nv ${d.minLevel}+ • ⏱ ${Math.round(d.time/60)} min • até 6 jogadores)</small><small>${d.desc}</small><small>🎟️ Você tem: <b>${hv}</b> ingresso(s)</small></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${d.price}</div><button data-act="buyticket" data-id="${d.id}" ${okL&&okG?'':'disabled'}>Comprar</button></div></div>`;}).join('')+'<p class="muted">O ingresso é gasto ao entrar. Se você sair (ou a conexão cair), tem <b>5 minutos</b> para voltar sem pagar de novo. Em grupo, o líder entra primeiro e os outros entram em seguida, cada um com seu ingresso. Depois, vá até o portal da dungeon e fale com ele.</p>';
@@ -5126,7 +5127,7 @@ $('dialog').addEventListener('click',e=>{
  if(a==='guform'){const nm=($('gdName').value||'').trim(),tg=($('gdTag').value||'').trim();if(document.activeElement)document.activeElement.blur();if(NET.room)guSend({op:'create',name:nm,tag:tg});else toast('Sem conexão com o servidor.');return;}
  if(a==='spstart'){ACT({t:'sp_start',npc});return;}
  if(a==='sppick'){ACT({t:'sp_pick',npc,id});return;}
- if(a==='spreset'){if(confirm('Reconsagrar custa '+fmt(RULES.SPEC_RESET)+' 💰 e remove o seu Caminho atual. Continuar?'))ACT({t:'sp_reset',npc});return;}
+ if(a==='spreset'){if(S.gm||confirm('Reconsagrar custa '+fmt(RULES.SPEC_RESET)+' 💰 e remove o seu Caminho atual. Continuar?'))ACT({t:'sp_reset',npc});return;}
  if(a==='brkt'){brkToggle(id);return;}if(a==='brk1'){brkRun([id]);return;}if(a==='brksel'){brkRun([...BRK]);return;}if(a==='brkclear'){BRK.clear();refreshUI();return;}
  if(a==='brkcommon'){brkWhere(it=>it.rar===0&&!(it.plus>0));return;}
  if(a==='brkall'){const ks=[];S.inv.forEach((it,i)=>brkOk(it)&&ks.push('i'+i));(ACC.stash||[]).forEach((it,i)=>brkOk(it)&&ks.push('s'+i));if(ks.length&&confirm('Quebrar TODOS os '+ks.length+' equipamentos da mochila e do baú?'))brkRun(ks);else if(!ks.length)toast('Nada para quebrar.');return;}
