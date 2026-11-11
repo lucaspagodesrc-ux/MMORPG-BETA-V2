@@ -1269,13 +1269,13 @@ function lodUpdate(now){
  if(now<LOD.t)return;LOD.t=now+(LOD.back?30:250);LOD.back=0;
  const R=lodR(),px=P.pos.x,pz=P.pos.z,T0=performance.now();
  for(const e of LOD.list){const L=e.lod;if(!L.root.isEnabled())continue;const p=L.root.position,d=Math.hypot(p.x-px,p.z-pz);
-  let want=d<R*L.rm*(L.st===0?1.25:1)?0:d<64?1:2;
+  let want=d<R*L.rm*(L.st===0?1.25:1)?0:d<110?1:2;
   if(want===L.st)continue;
   if(want===1&&!L.px){
-   if(L.fail>1){continue;}
-   if(performance.now()-T0>5){LOD.back=1;continue;}      // no máximo ~5 ms de "assar" por rodada
-   const en=PX.bake(L.grp,e);if(!en){L.fail++;continue;}
-   en.uses=0;L.px=PX.spawn(en,L.root,L.meta,L.pick);
+   let ok=false;
+   if(L.fail<=1&&performance.now()-T0<=5){const en=PX.bake(L.grp,e);if(en){en.uses=0;L.px=PX.spawn(en,L.root,L.meta,L.pick);ok=true;}else L.fail++;}
+   else if(L.fail<=1)LOD.back=1;
+   if(!ok){if(L.st===0)continue;want=0;}   // sem versão leve: nunca deixa o monstro invisível, mostra o completo
   }
   if(want===0){L.grp.setEnabled(true);if(L.px)L.px.show(false);}
   else if(want===1){L.grp.setEnabled(false);L.px.show(true);}

@@ -17,6 +17,9 @@ MEDIÇÕES (teste local, mesmo cenário antes/depois, chamadas de desenho por qu
 - 20 jogadores com equipamento máximo na praça: ~4130 -> ~1870 (agora cada jogador extra custa poucas chamadas)
 - 40 jogadores: ~1270 (antes passava de 6000)
 
+CORREÇÃO (v1.31b)
+- Monstros/NPCs nunca somem por distância: se a versão leve de algum ainda não estiver pronta, o modelo completo continua visível (antes podia ficar só a sombra). Só é desligado o que está a mais de 110 unidades (fora da tela).
+
 OBSERVAÇÕES
 - Jogadores/NPCs distantes ficam em pose fixa (com leve balanço ao andar); ao chegar perto voltam ao modelo completo animado.
 - Efeitos especiais que usam a mão/escudo de um jogador distante (gancho, escudo arremessado etc.) só aparecem quando ele está perto.
