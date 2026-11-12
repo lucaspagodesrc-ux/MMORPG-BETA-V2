@@ -111,7 +111,7 @@ export async function auctionMsg(room: any, s: any, m: any) {
     if (op === "sell") {
       const i = m.i;
       if (!Number.isInteger(i) || i < 0 || i >= c.inv.length || !c.inv[i]) return fail("Item inválido.");
-      const it = c.inv[i]; if (!["eq", "mat", "pot"].includes(it.k)) return fail("Este item não pode ser leiloado.");
+      const it = c.inv[i]; if (!["eq", "mat", "pot"].includes(it.k)) return fail("Este item não pode ser leiloado."); if (it.bd) return fail("Itens de evento são vinculados: não podem ser leiloados.");
       const price = Number(m.price);
       if (!Number.isInteger(price) || price < 1 || price > MAX_PRICE) return fail(`Informe o valor (por unidade) entre 1 e ${MAX_PRICE}.`);
       const key = invKey(it), have = invCount(c, key);

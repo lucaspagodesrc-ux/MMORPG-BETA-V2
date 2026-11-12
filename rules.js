@@ -614,6 +614,7 @@ const NPCS=[
  {id:'capitao',name:'Capitão Aldric',icon:'🛡️',x:0,z:-7,col:'#3f6fb5',tabs:['missoes'],greet:'A vila precisa de heróis. Cumpra as missões principais e será recompensado.'},
  {id:'mestre',name:'Mestre Kaelen',icon:'📖',x:-4.5,z:4,col:'#6b46b5',tabs:[],greet:'',hat:'#4b2f85'},
  {id:'leilao',name:'Valter, o Leiloeiro',icon:'⚖️',x:9.4,z:1.8,col:'#a8782e',tabs:['leilao'],greet:'Bem-vindo à Casa de Leilão! Aqui você anuncia seus itens e compra o que outros aventureiros estão vendendo.',hat:'#5a3a1a'},
+ {id:'evento',name:'Noel, Guardião dos Presentes',icon:'🎁',x:0,z:7.5,col:'#c0392b',tabs:['evento'],greet:'Ho ho ho! Evento de Boas-vindas, Inauguração e Natal: suba de nível e venha buscar seus pacotes de presentes!',hat:'#d4a62a'},
  {id:'bau',name:'Baú do Aventureiro',icon:'📦',x:4.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'Seus itens guardados aqui são compartilhados com todos os seus personagens.'},
  {id:'elda',name:'Vovó Elda',icon:'🌿',x:-19.5,z:4.5,col:'#5a8a4a',tabs:SHOPT,greet:'As gosmas estragam minha horta... e eu tenho poções para vender, querido.',hat:'#7a5a3a',camp:true},
  {id:'lyra',name:'Patrulheira Lyra',icon:'🏹',x:12,z:-13,col:'#3f7a55',tabs:SHOPT,greet:'Os lobos andam inquietos. Fique alerta!',hat:'#2f5a2c',camp:true},
@@ -687,7 +688,7 @@ R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r:
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
+const sellPrice = it => it.bd ? 0 : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
 const MAXPLUS = 10;
 /** chave de "modelo" do item para o histórico de preços do leilão: itens iguais (nome, nível, raridade, refino, engastes) compartilham o histórico */
 const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
@@ -919,6 +920,7 @@ function take(c, id, n) { for (let i = 0; i < c.inv.length && n > 0; i++) { cons
 
 /* ---------- atributos derivados ---------- */
 function stats(c) {
+  purgeExp(c);
   const C = CLASSES[c.cls];
   const st = { str: C.base.str + c.alloc.str, agi: C.base.agi + c.alloc.agi, int: C.base.int + c.alloc.int, vit: C.base.vit + c.alloc.vit };
   const gm = (c.gmu || 0) > Date.now();   // Buff do GM: +100 atributos, +1000 vida/mana, +200 dano/defesa
@@ -1338,6 +1340,7 @@ function cleanItem(it) {
     for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat) gm.push(id); else gm.push(null); }
     if (gm.some(Boolean)) it.gm = gm; else delete it.gm; }
   if (!(typeof it.mo === 'string' && OG[it.mo])) delete it.mo;
+  if (it.bd) { it.bd = 1; it.exp = EVT.end; } else { delete it.bd; delete it.exp; }   // item de evento: vinculado + validade
   if (typeof it.name !== 'string') it.name = SLOTS[it.slot];
   it.name = it.name.slice(0, 60);
   if (it.slot === 'weapon' && !CLASSES[it.cls]) return null;
@@ -1382,10 +1385,36 @@ function migrate(c) {
     for (const id in c.quests) if (!QUESTS.some(q => q.id === id)) delete c.quests[id];
     c.v = R.VERSION; c._respec = true;
   }
+  if (!c.evt || typeof c.evt !== 'object' || typeof c.evt.got !== 'object') c.evt = { got: {} };
+  purgeExp(c);
   return c;
 }
 function migrateStash(st) { st = Array.isArray(st) ? st : []; st = st.slice(0, 40).map(cleanItem); while (st.length < 40) st.push(null); return st; }
 
+
+/* ====================== EVENTO: BÔNUS DE BOAS-VINDAS, INAUGURAÇÃO E NATAL ======================
+   Até 25/12/2026 23:59:59 (horário de Brasília) o NPC de eventos da Vila Aurora entrega um pacote de presentes a cada 10 níveis (10, 20 ... 100).
+   Pacote = conjunto completo +8 do nível, épico, com atributos e 2 engastes com gemas. Vinculado ao personagem, vence no fim do evento. */
+const EVT = { end: Date.UTC(2026, 11, 26, 2, 59, 59), lvs: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] };
+const evtOn = () => Date.now() <= EVT.end;
+function evtPack(cls, L) {
+  const C = CLASSES[cls], r = Math.max(1, Math.round(L / 3)), amp = schoolOf(cls) === 'M' ? 'a_ampm' : 'a_ampe';
+  const slots = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'ring', 'bracelet', 'bracelet', 'earring', 'earring'].concat(cls === 'cavaleiro' ? ['shield'] : []);
+  return slots.map(sl => {
+    const it = genItem(sl, L, 3, cls, cls, 2, undefined);
+    it.plus = 8; it.bon = C.main === 'vit' ? { vit: r, str: r } : { [C.main]: r, vit: r };
+    const g = sl === 'weapon' || sl === 'ring' ? 'w_cdmg' : sl === 'bracelet' ? 'a_lhpl' : sl === 'earring' ? 'a_lhpu' : amp;
+    it.sl = 2; it.gm = [g, g]; it.bd = 1; it.exp = EVT.end; it.name = '🎄 ' + it.name;
+    return it;
+  });
+}
+/** Fim do evento: os itens vinculados vencem (somem da mochila e do equipamento). Devolve quantos sumiram. */
+function purgeExp(c) {
+  if (Date.now() <= EVT.end) return 0; let n = 0;
+  for (const k in c.eq) if (c.eq[k] && c.eq[k].bd) { c.eq[k] = null; n++; }
+  if (Array.isArray(c.inv)) for (let i = 0; i < c.inv.length; i++) if (c.inv[i] && c.inv[i].bd) { c.inv[i] = null; n++; }
+  return n;
+}
 /* ====================== AÇÕES DE ECONOMIA ======================
    sess = { c: personagem, stash: baú da conta }; m = ação {t, ...}; ctx = { near(npc)->bool, now }.
    Devolve { ok, out:[{toast|log|sfx|lvl|heal}], spawn:[{item,life}] } e altera sess diretamente.
@@ -1428,7 +1457,7 @@ function breakReturn(it) {
 }
 function act(sess, m, ctx) {
   const c = sess.c, stash = sess.stash, out = [], spawn = [];
-  const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), F = s => out.push({ sfx: s });
+  const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), L2 = L, F = s => out.push({ sfx: s });
   if (c.gm) c.gold = GM_GOLD;   // GM: dinheiro infinito
   const fail = s => { if (s) T(s); if (c.gm) c.gold = GM_GOLD; return { ok: false, out, spawn }; };
   const done = () => { if (c.gm) c.gold = GM_GOLD; chkTitles(c, out); return { ok: true, out, spawn }; };
@@ -1436,6 +1465,7 @@ function act(sess, m, ctx) {
   const colOf = it => it.k === 'eq' ? RAR[it.rar].c : '#fff';
   const npcFor = tab => { const n = npcById(m.npc); if (!n || !n.tabs.includes(tab)) return null; if (ctx && ctx.near && !ctx.near(n)) return null; return n; };
   const t = m && m.t;
+  { const pn = purgeExp(c); if (pn) L('<span style="color:#ff9a6a">🎄 O evento terminou: ' + pn + ' item(ns) do evento venceram.</span>'); }
   const DW = ev => { const o = dwEv(c, ev); if (o.length) out.push(...o); };
 
   if (t === 'break') {
@@ -1443,6 +1473,7 @@ function act(sess, m, ctx) {
     const ii = Array.isArray(m.inv) ? [...new Set(m.inv)].filter(i => intIn(i, 0, c.inv.length)) : [];
     const si = Array.isArray(m.st) ? [...new Set(m.st)].filter(i => intIn(i, 0, stash.length)) : [];
     const inv2 = c.inv.map(x => x && { ...x }), ret = [], rm = [];
+    if (ii.some(i => c.inv[i] && c.inv[i].bd)) return fail('🎄 Itens do evento não podem ser quebrados.');
     for (const i of ii) { const it = c.inv[i]; if (it && it.k === 'eq') { rm.push(['i', i]); ret.push(...breakReturn(it)); } }
     for (const i of si) { const it = stash[i]; if (it && it.k === 'eq') { rm.push(['s', i]); ret.push(...breakReturn(it)); } }
     if (!rm.length) return fail('Nenhum equipamento válido selecionado (só mochila e baú).');
@@ -1454,6 +1485,20 @@ function act(sess, m, ctx) {
     for (const [w, i] of rm) if (w === 's') stash[i] = null;
     const txt = Object.keys(tot).map(id => `${MATS[id].i} ${MATS[id].n} ×${tot[id]}`).join(', ');
     L(`🔨 Você quebrou <b>${rm.length}</b> item(ns) e recebeu: ${txt}.`); T('Quebrado: ' + rm.length + ' item(ns)'); F('forge');
+    return done();
+  }
+  if (t === 'evclaim') {
+    if (!npcFor('evento')) return fail('Chegue perto do NPC de eventos.');
+    if (!evtOn()) return fail('O evento terminou.');
+    const L = Number(m.lv); if (!EVT.lvs.includes(L)) return fail();
+    if (c.level < L) return fail('Você precisa estar no nível ' + L + ' para pegar este pacote.');
+    if (!c.evt || typeof c.evt !== 'object' || typeof c.evt.got !== 'object') c.evt = { got: {} };
+    if (c.evt.got[L]) return fail('Você já pegou este pacote.');
+    const pack = evtPack(c.cls, L), inv2 = c.inv.map(x => x && { ...x });
+    for (const it of pack) if (!addItem(inv2, it)) return fail('Mochila cheia: libere pelo menos ' + pack.length + ' espaços para o pacote.');
+    for (const it of pack) addItem(c.inv, it);
+    c.evt.got[L] = 1; F('upOk'); T('🎁 Pacote do nível ' + L + ' recebido!');
+    L2('<span style="color:#ffd27a">🎁 Você recebeu o <b>Pacote de Presente do nível ' + L + '</b> (' + pack.length + ' itens +8 com engastes). Vencem em 25/12/2026 às 23:59.</span>');
     return done();
   }
   if (t === 'equip') {
@@ -1484,7 +1529,7 @@ function act(sess, m, ctx) {
     const s = c.inv[idx]; s.n--; if (s.n <= 0) c.inv[idx] = null; if (now) sess.potAt = now; out.push({ heal: kind }); DW('pot'); return done();
   }
   if (t === 'dropi') {
-    if (!intIn(m.i, 0, c.inv.length) || !c.inv[m.i]) return fail(); const it = c.inv[m.i]; c.inv[m.i] = null; spawn.push({ item: it, life: 30000 });
+    if (!intIn(m.i, 0, c.inv.length) || !c.inv[m.i]) return fail(); const it = c.inv[m.i]; if (it.bd) return fail('🎄 Itens do evento são vinculados: não podem ser derrubados.'); c.inv[m.i] = null; spawn.push({ item: it, life: 30000 });
     L(`Você largou <b style="color:${colOf(it)}">${nm(it)}${it.n > 1 ? ' ×' + it.n : ''}</b> no chão — some em 30 s (E para pegar de volta).`); return done();
   }
   if (t === 'fadd') {
@@ -1547,7 +1592,7 @@ function act(sess, m, ctx) {
   }
   if (t === 'dep' || t === 'wd') {
     if (!npcFor('bau')) return fail('Chegue perto do Baú.');
-    if (t === 'dep') { if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it) return fail(); if (!canAdd(stash, it)) return fail('Baú cheio!'); c.inv[m.i] = null; if (!addItem(stash, it)) { c.inv[m.i] = it; return fail('Baú cheio!'); } return done(); }
+    if (t === 'dep') { if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it) return fail(); if (it.bd) return fail('🎄 Itens do evento são vinculados: não podem ir para o baú.'); if (!canAdd(stash, it)) return fail('Baú cheio!'); c.inv[m.i] = null; if (!addItem(stash, it)) { c.inv[m.i] = it; return fail('Baú cheio!'); } return done(); }
     if (!intIn(m.i, 0, stash.length)) return fail(); const it = stash[m.i]; if (!it) return fail(); stash[m.i] = null; if (!addItem(c.inv, it)) { stash[m.i] = it; return fail('Mochila cheia!'); } return done();
   }
   if (t === 'qa' || t === 'qt') {
@@ -1583,6 +1628,7 @@ function act(sess, m, ctx) {
     if (g.cat !== cat) return fail(cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas nem em anéis.' : 'Esta gema é de ARMA: só serve em armas e anéis.');
     const gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl) : []; while (gm.length < it.sl) gm.push(null);
     if (gm[si] === g.id) return fail('Este engaste já tem essa mesma gema.');
+    if (it.bd && gm[si]) return fail('🎄 As gemas dos itens do evento não podem ser trocadas.');
     if (gm[si] && !m.rep) return fail('O engaste já está ocupado: confirme para substituir (a gema antiga é destruída).');
     sc.n--; if (sc.n <= 0) c.inv[gi] = null; gm[si] = g.id; it.gm = gm;
     F('upOk'); T('💎 Gema engastada: ' + g.o); L(`<span style="color:${GRADES[g.g].c}">💎 ${g.n} engastada em ${it.name}: <b>${g.o} ${gemTxt(g, it.ilvl)}</b></span>`); DW('sock'); return done();
@@ -1679,7 +1725,7 @@ const arenaPrize = (c, i) => {
 
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

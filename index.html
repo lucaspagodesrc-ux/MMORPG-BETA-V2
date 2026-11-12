@@ -166,6 +166,26 @@
   .tab{padding:6px 12px;border-radius:7px;border:1px solid var(--line);background:#16212d;color:#cbd6e2;cursor:pointer;font-weight:600;font-size:12px}
   .tab.on{background:#3b3014;border-color:var(--gold);color:#ffe28a}
   .dbody{overflow:auto;max-height:52vh;padding-right:4px}
+  #evtIntro{position:fixed;inset:0;z-index:100000;background:radial-gradient(ellipse at top,#3a0d12ee,#05140bf2);display:flex;align-items:center;justify-content:center;padding:12px}
+  #evtIntro .evtbox{width:min(640px,100%);max-height:96vh;display:flex;flex-direction:column;border-radius:16px;border:3px solid #ffd24a;background:linear-gradient(#10261a,#0b1620);box-shadow:0 0 0 3px #b3202a,0 0 40px #ffd24a88,0 10px 50px #000}
+  #evtIntro .evthead{text-align:center;padding:12px 14px 10px;border-radius:12px 12px 0 0;background:linear-gradient(90deg,#8e1b22,#c0392b,#8e1b22)}
+  #evtIntro .evthead h2{margin:2px 0 4px;font-size:21px;color:#fff;text-shadow:0 2px 0 #5a0d12,0 0 14px #ffd24a;animation:evtp 1.6s ease-in-out infinite}
+  #evtIntro .evtsnow{letter-spacing:8px;color:#fff;font-size:13px;opacity:.85}
+  #evtIntro .evtsub{color:#ffe9a8;font-size:13px}
+  #evtIntro .evtbody{overflow:auto;padding:12px 16px;font-size:13.5px;line-height:1.5;color:#e6eef7}
+  #evtIntro .evtsec{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:#ffffff0d;border:1px solid #ffffff22}
+  #evtIntro .evtsec h3{margin:0 0 6px;font-size:14.5px;color:#ffd24a}
+  #evtIntro .evtsec p{margin:4px 0}#evtIntro .evtsec ul{margin:4px 0 0 18px;padding:0}#evtIntro .evtsec li{margin:3px 0}
+  #evtIntro .evtwarn{border-color:#ff9a6a88;background:#ff9a6a14}
+  #evtIntro .evtchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  #evtIntro .evtchip{background:#c0392b;border:1px solid #ffd24a;color:#fff;border-radius:14px;padding:2px 10px;font-weight:700;font-size:12.5px}
+  #evtIntro .evtsm{font-size:12px;color:#aab8c8}
+  #evtIntro .evtfoot{padding:10px 14px;text-align:center;border-top:1px solid #ffffff22}
+  #evtIntro #evtHint{color:#ffd24a;font-size:12px;margin-bottom:6px;animation:evtp 1.2s ease-in-out infinite}
+  #evtIntro #evtOk{font-size:17px;font-weight:800;padding:9px 34px;border-radius:10px;border:2px solid #ffd24a;background:linear-gradient(#2fa84f,#1d7a37);color:#fff;cursor:pointer}
+  #evtIntro #evtOk:disabled{filter:grayscale(1) brightness(.6);cursor:not-allowed}
+  .evtbanner{padding:8px 10px;border-radius:8px;background:linear-gradient(90deg,#8e1b22,#c0392b);border:1px solid #ffd24a;color:#fff;margin-bottom:6px;font-size:12.5px;text-align:center}
+  @keyframes evtp{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
   #dgHud{display:none;top:12px;right:172px;left:auto;transform:none;width:300px;padding:7px 12px;z-index:5;font-size:12px;text-align:center}
   #dgHud .dgt{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
   #dgBar{height:5px;background:#0b1522;border-radius:4px;margin-top:5px;overflow:hidden}#dgFill{display:block;height:100%;width:0;background:#d4a62a}
@@ -796,7 +816,7 @@ const RULES=window.RULES;   // regras e dados compartilhados com o servidor (rul
 const {RAR,SLOTS,STN,WN,AN,HN,BN,RN,SHN,XN,SUF,MATS,POTS,MAXRANK,CLASSES,MT,ZONES,OG,DUNGEONS,QUESTS,QNAME,RECIPES,NPCS,SHOPS,xpNeed,upRate,upCost,sellPrice,nm}=RULES;
 const SLOT_ICON={shield:'🛡️',weapon:'⚔️',helmet:'🪖',armor:'🥋',boots:'👢',ring:'💍',ring2:'💍',bracelet:'📿',bracelet2:'📿',earring:'🧿',earring2:'🧿',cape:'🧥'};
 const BUFFN={dmg:'⚔️ Dano',crit:'🎯 Crítico',shield:'🛡️ Escudo',haste:'💨 Rapidez',defdmg:'🛡️→⚔️ Bastião',evade:'🌑 Evasão',combo:'🔥 Combo',luck:'🍀 Sorte',clone:'👥 Clones',aspd:'🐾 Vel. de ataque',flat:'🔥 Dano base'};
-const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',quebrar:'⚒️ Quebrar',comprar:'🛒 Comprar',vender:'💰 Vender',missoes:'📜 Missões',bau:'📦 Baú',engastar:'💎 Engastar',guilda:'🏰 Guilda',caminhos:'🌟 Caminhos',arena:'🏟️ Arena PK'};
+const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',quebrar:'⚒️ Quebrar',comprar:'🛒 Comprar',vender:'💰 Vender',missoes:'📜 Missões',bau:'📦 Baú',engastar:'💎 Engastar',guilda:'🏰 Guilda',caminhos:'🌟 Caminhos',arena:'🏟️ Arena PK',evento:'🎁 Presentes'};
 /* =================== ESTADO =================== */
 let S=null;            // dados do personagem (salvos)
 let dcache=null;
@@ -871,6 +891,38 @@ const socksH=it=>it.sl?Array.from({length:it.sl},(_,i)=>sockH(it,i)).join(''):''
 const gemOfMat=m=>m&&m.k==='mat'&&MATS[m.id]&&MATS[m.id].gem?GEMD[MATS[m.id].gem]:null;
 const ico=it=>it.k==='tix'?'🎟️':it.k==='eq'?(it.plus||it.wb?`<span class="ig${it.plus>=7||it.wb?' hi':''}" style="--gp:${it.plus||8};--gc:${it.wb?'#ffcf4a':(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?(MATS[it.id].gem?gemSvg(MATS[it.id].gem):MATS[it.id].i):it.k==='pot'?POTS[it.id].i:'💰';
 const col=it=>it.k==='mat'&&MATS[it.id].gem?GRADES[GEMD[MATS[it.id].gem].g].c:it.k==='mat'&&MATS[it.id].ext?'#c9a8ff':it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):it.wb?'#ffcf4a':RAR[it.rar].c):'#455568';
+/* =================== EVENTO: BOAS-VINDAS, INAUGURAÇÃO E NATAL =================== */
+const evtEndTxt=()=>'25/12/2026 às 23:59';
+function evtLeft(){let ms=RULES.EVT.end-Date.now();if(ms<=0)return 'encerrado';const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);return d>0?`restam ${d}d ${h}h`:h>0?`restam ${h}h ${m}min`:`restam ${m}min`;}
+function packLine(L){const sch=RULES.schoolOf(S.cls)==='M'?'mágica':'de ataque';return `Conjunto completo <b>+8</b> nível <b>${L}</b>`;}
+function evtIntroShow(){
+ if(!RULES.evtOn()||$('evtIntro'))return;
+ const lv=RULES.EVT.lvs.map(L=>`<span class="evtchip">Nv ${L}</span>`).join('');
+ const sch=RULES.schoolOf(S.cls)==='M'?'Amp. Mágica':'Amp. de Ataque';
+ const el=document.createElement('div');el.id='evtIntro';
+ el.innerHTML=`<div class="evtbox"><div class="evthead"><div class="evtsnow">❄ ✦ ❄ ✦ ❄</div><h2>🎄 EVENTO DE BOAS-VINDAS, INAUGURAÇÃO E NATAL 🎁</h2><div class="evtsub">Presentes para quem sobe de nível! Até <b>${evtEndTxt()}</b> (horário de Brasília) — <b>${evtLeft()}</b></div></div>
+ <div class="evtbody" id="evtBody">
+ <div class="evtsec"><h3>📍 ONDE PEGAR OS PRESENTES</h3><p>Fale com <b>🎁 Noel, Guardião dos Presentes</b>, na <b>praça da Vila Aurora</b> (a cidade inicial), na parte de baixo da praça, perto do Baú do Aventureiro e do Mestre Kaelen. Ele aparece como um ponto amarelo no minimapa e ganha o símbolo 🎁 sobre a cabeça quando você tem pacote para pegar.</p></div>
+ <div class="evtsec"><h3>🎁 COMO FUNCIONA</h3><p>A cada <b>10 níveis</b> que você alcançar, libera-se um <b>Pacote de Presente</b>. Cada pacote só pode ser coletado <b>uma vez por personagem</b>:</p><div class="evtchips">${lv}</div><p class="evtsm">Alcançou o nível 10? Pegue o 1º pacote. Nível 20? O 2º. E assim por diante, até o pacote do nível 100. Se subir vários níveis de uma vez, pode pegar todos os pacotes liberados.</p></div>
+ <div class="evtsec"><h3>⚔️ O QUE TEM EM CADA PACOTE</h3><p>O <b>conjunto completo +8</b> do nível do pacote, da sua classe e de raridade épica ★, com atributos: <b>arma, armadura, elmo, botas, 2 anéis, 2 braceletes e 2 brincos</b> (Cavaleiro Pesado também recebe o escudo). Libere <b>10 espaços</b> na mochila antes de pegar (11 para o Cavaleiro).</p>
+ <p>Todos vêm com <b>2 engastes já com gemas</b>:</p><ul><li>⚔️ <b>Arma e anéis:</b> 2× gema de <b>Dano Crítico</b></li><li>📿 <b>Braceletes:</b> 2× gema de <b>Aumento do Limite de Absorção de HP</b></li><li>🧿 <b>Brincos:</b> 2× gema de <b>Aumento de Absorção de HP (%)</b></li><li>🛡️ <b>Armadura, elmo, botas (e escudo):</b> 2× gema de <b>Técnica de ${sch} 8%</b> (a da sua classe)</li></ul></div>
+ <div class="evtsec evtwarn"><h3>⚠️ REGRAS DOS ITENS DO EVENTO</h3><ul><li>São <b>vinculados</b> ao personagem que coletou.</li><li><b>Não podem</b> ser quebrados, derrubados no chão, guardados no baú (nem da guilda), leiloados ou negociados.</li><li><b>Vencem</b> em <b>${evtEndTxt()}</b>: depois disso desaparecem da mochila e do equipamento. Passe o mouse sobre o item para ver o vencimento e os atributos.</li><li>Para tirar um deles da mochila, é possível <b>vendê-lo</b> a um comerciante, mas o valor é <b>0</b>.</li></ul></div>
+ <div class="evtsec"><p style="text-align:center;font-size:15px">Aproveite, suba de nível e boas festas! 🎅</p></div></div>
+ <div class="evtfoot"><div id="evtHint">⬇ Role até o final para liberar o botão</div><button id="evtOk" disabled>✔ Entendido</button></div></div>`;
+ document.body.appendChild(el);
+ const b=$('evtBody'),ok=$('evtOk'),chk=()=>{if(b.scrollTop+b.clientHeight>=b.scrollHeight-6){ok.disabled=false;$('evtHint').style.display='none';}};
+ b.addEventListener('scroll',chk);setTimeout(chk,60);
+ const kb=e=>{if(e.target&&e.target.id==='evtOk'&&(e.key==='Enter'||e.key===' '))return;e.stopPropagation();if(e.key==='Tab'||e.key==='Escape')e.preventDefault();};
+ document.addEventListener('keydown',kb,true);document.addEventListener('keyup',kb,true);
+ ok.onclick=()=>{if(ok.disabled)return;document.removeEventListener('keydown',kb,true);document.removeEventListener('keyup',kb,true);el.remove();};
+}
+function evtTabHtml(){
+ const got=(S.evt&&S.evt.got)||{};
+ let h=`<div class="evtbanner">🎄 Evento de Boas-vindas, Inauguração e Natal • até <b>${evtEndTxt()}</b> • ${evtLeft()}</div><p class="muted">Cada pacote traz o conjunto completo +8 (${S.cls==='cavaleiro'?'11':'10'} itens, 2 engastes com gemas) do nível. Vinculado ao personagem e vence ao fim do evento. Libere espaço na mochila.</p>`;
+ if(!RULES.evtOn())return h+'<p class="no">O evento terminou.</p>';
+ h+=RULES.EVT.lvs.map((L,i)=>{const g=got[L],ok=S.level>=L;return `<div class="row2"><div class="ri" style="border-color:${g?'#6fdc7f':ok?'#ffd27a':'#556'}">${g?'✅':'🎁'}</div><div class="rt"><b>Pacote ${i+1} — nível ${L}+</b><small>${packLine(L)}: arma, armadura, elmo, botas, 2 anéis, 2 braceletes, 2 brincos${S.cls==='cavaleiro'?', escudo':''}</small></div><div class="rb">${g?'<span class="ok">✔ Coletado</span>':ok?`<button data-act="evclaim" data-id="${L}">🎁 Pegar</button>`:`<span class="muted">Nível ${L} necessário</span>`}</div></div>`;}).join('');
+ return h;
+}
 function tipOf(it){
  if(it.k==='eq'){const cape=it.slot==='cape',r=cape?{c:col(it),n:it.cs==='m'?'Estola mágica':it.cs==='a'?'Manto encapuzado':'Capa física'}:RULES.rarOf(it);let h=`<b style="color:${r.c}">${nm(it)}</b><br><span class="muted">${r.n}${cape?' • sem raridade':' • '+SLOTS[it.slot]}${it.cls?' • '+CLASSES[it.cls].n:''}</span><br>`;
   h+=`<span class="${S.level>=it.req?'':'no'}">Nível necessário: ${it.req}</span><br>`;
@@ -882,6 +934,7 @@ function tipOf(it){
   for(const s in it.bon)h+=`<span class="ok">+${it.bon[s]} ${STN[s]}</span><br>`;
   if(it.cls&&it.cls!==S.cls)h+='<span class="no">Classe incompatível</span><br>';
   if(it.slot==='cape'){h+='<span style="color:#ffd27a">✨ Brilha junto com a sua armadura</span><br>';if(it.cs!==RULES.capeKind(S.cls))h+=`<span class="no">Só para: ${RULES.CAPEWHO[it.cs]}</span><br>`;}
+  if(it.bd)h+=`<span style="color:#ff9a6a">🎄 Item de evento • vinculado a <b>${esc(S.name)}</b></span><br><span style="color:#ffb35a">⏳ Vence em <b>${evtEndTxt()}</b> (${evtLeft()})</span><br><span class="muted" style="font-size:11px">Não pode ser quebrado, derrubado, guardado no baú, leiloado ou negociado.</span><br>`;
   return h+`<span class="muted">Venda: ${fmt(sellPrice(it))} 💰</span>`;}
  if(it.k==='mat'&&MATS[it.id].gem){const g=GEMD[MATS[it.id].gem],gr=GRADES[g.g],sch=RULES.schoolOf(S.cls),bad=((g.k==='ampE'||g.k==='atkE')&&sch==='M')||((g.k==='ampM'||g.k==='atkM')&&sch==='E');
   const cap=RULES.GCAP[g.k]?`Limite total de todas as gemas: ${RULES.GCAP[g.k]}${g.u==='%/s'?'%/s':'%'}`:RULES.GCAPL[g.k]?`Limite total: ${RULES.GCAPL[g.k]} × seu nível`:'';
@@ -5085,7 +5138,7 @@ function renderDialog(){
   else h+=`<p class="ok">🌟 Provação cumprida! Escolha o seu Caminho por <b>${fmt(RULES.SPEC_COST)}</b> 💰 — depois dá para trocar pagando ${fmt(RULES.SPEC_RESET)} 💰.</p>`;
   const can=S.gm?true:lv&&!sp&&q&&q.ok;
   h+=L.map(s=>`<div class="row2"><div class="ri" style="border-color:${s.c}">${s.i}</div><div class="rt"><b style="color:${s.c}">${s.n}</b> <small style="display:inline">— título "${s.t}"</small><small>${s.d}</small></div><div class="rb">${sp&&sp.id===s.id?'<span class="ok">✔ Seu Caminho</span>':can?`<button data-act="sppick" data-id="${s.id}" ${S.gm||S.gold>=RULES.SPEC_COST?'':'disabled'}>Escolher</button>`:''}</div></div>`).join('');
- }else if(dlg.tab==='arena'){h+=arenaTabHtml();}else if(dlg.tab==='dungeon'){
+ }else if(dlg.tab==='evento'){h+=evtTabHtml();}else if(dlg.tab==='arena'){h+=arenaTabHtml();}else if(dlg.tab==='dungeon'){
   h+=DUNGEONS.filter(d=>(d.reg||300)===(dlg.npc.x<-150?-300:dlg.npc.x>150?300:0)).map(d=>{const hv=(S.tix&&S.tix[d.id])||0,okL=S.level>=d.minLevel,okG=S.gold>=d.price;return `<div class="row2"><div class="ri">${d.icon}</div><div class="rt"><b>${d.name}</b> <small style="display:inline">(Nv ${d.minLevel}+ • ⏱ ${Math.round(d.time/60)} min • até 6 jogadores)</small><small>${d.desc}</small><small>🎟️ Você tem: <b>${hv}</b> ingresso(s)</small></div><div class="rb"><div class="${okG?'ok':'no'}">💰 ${d.price}</div><button data-act="buyticket" data-id="${d.id}" ${okL&&okG?'':'disabled'}>Comprar</button></div></div>`;}).join('')+'<p class="muted">O ingresso é gasto ao entrar. Se você sair (ou a conexão cair), tem <b>5 minutos</b> para voltar sem pagar de novo. Em grupo, o líder entra primeiro e os outros entram em seguida, cada um com seu ingresso. Depois, vá até o portal da dungeon e fale com ele.</p>';
  }else if(dlg.tab==='quebrar'){
   brkPrune();
@@ -5113,6 +5166,7 @@ $('dialog').addEventListener('click',e=>{
  if(a==='wd'){ACT({t:'wd',npc,i:+id});return;}
  if(a==='orgs'){ACT({t:'orgs',npc});return;}
  if(a==='craft'){ACT({t:'craft',npc,id});return;}
+ if(a==='evclaim'){ACT({t:'evclaim',npc,lv:+id});return;}
  if(a==='up'){ACT({t:'up',npc,ref:id});return;}
  if(a==='buy'){ACT({t:'buy',npc,id});return;}
   if(a==='gsel'){dlg.gsel=id;dlg.gsi=0;dlg.rep=null;return renderDialog();}
@@ -5222,6 +5276,7 @@ function updateNpcMarkers(){
  for(const n of NPCS){let mark='';const l=npcQuests(n.id);
   for(const q of l){if(!S.quests[q.id]&&questUnlocked(q)&&!mark)mark='❗';}
   for(const q of l){const st=S.quests[q.id];if(st&&!st.done&&st.n>=q.qty)mark='❓';}
+  if(n.id==='evento'&&RULES.evtOn()&&RULES.EVT.lvs.some(L=>S.level>=L&&!((S.evt&&S.evt.got)||{})[L]))mark='🎁';   // pacote de presente disponível
   n.mark=mark;}
 }
 let LBL_ME=null,LBL_SIG='';
@@ -5345,6 +5400,7 @@ function play(c){if(!c||!c.name){alert("Escolha um nome para o personagem antes 
  updateNpcMarkers();refreshUI();save();
  logMsg('Bem-vindo, <b>'+esc(S.name)+'</b>! Fale com o <b>Capitão Aldric</b> para começar. Guarde itens no <b>Baú</b> da cidade.','#ffe28a');
  toast('Clique no chão para andar • H para ajuda');netJoin();
+ try{evtIntroShow();}catch(e){}
 }
 /* ---- prévia 3D da seleção: um palco longe do mundo, com o mesmo modelo/equipamento do jogo ---- */
 const PV={x:1000,z:1000,o:null,stage:null,rot:0,drag:false,on:false};

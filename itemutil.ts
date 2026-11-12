@@ -4,7 +4,7 @@ const R: any = require("./rules.js");
 const sortObj = (o: any): any => Array.isArray(o) ? o.map(sortObj) : o && typeof o === "object" ? Object.keys(o).sort().reduce((a: any, k) => { a[k] = sortObj(o[k]); return a; }, {}) : o;
 export const ikeyOf = (it: any) => it.k === "eq" ? JSON.stringify(sortObj(it)) : it.k + ":" + it.id;
 export const proto = (it: any) => it.k === "eq" ? JSON.parse(JSON.stringify(it)) : { k: it.k, id: it.id };
-export const tradeable = (it: any) => !!it && (it.k === "eq" || it.k === "mat" || it.k === "pot");
+export const tradeable = (it: any) => !!it && !it.bd && (it.k === "eq" || it.k === "mat" || it.k === "pot");   // itens de evento (bd) são vinculados ao personagem
 export const invKey = (it: any) => tradeable(it) ? ikeyOf(it) : "";
 export const itemOut = (p: any, n = 1) => p.k === "eq" ? p : { k: p.k, id: p.id, n };
 /** divide em itens colocáveis na mochila (pilhas de até 99) */
