@@ -1,15 +1,19 @@
-ATUALIZAÇÃO 1.50 — MINIMAPA FIEL AO MAPA
-Pacote CUMULATIVO: contém tudo da 1.49 e anteriores. Se a 1.49 já está instalada, só o index.html muda.
+ATUALIZAÇÃO 1.51 — MINIMAPA GIRADO, GRUPO COM EMOJI E MAPA EXPANDIDO
+Pacote CUMULATIVO: contém tudo da 1.50 e anteriores. Se a 1.50 já está instalada, só o index.html muda.
 
 O QUE MUDOU
-- O minimapa agora é uma "foto aérea" do mapa real: o jogo tira uma vista de cima do mundo (uma vez por região: Vila Aurora,
-  Solara, Nevasca e Arena) e usa essa imagem de fundo. Rio, lago, pontes, casas, árvores, pedras, deserto, neve, muros e
-  estradas aparecem exatamente onde estão no mapa. (Personagens e monstros não entram na foto.)
-- Por cima da foto continuam os pontos: você, grupo, NPCs, monstros, itens no chão, chefes, PK, aviso de chefe de mundo.
-  As zonas de monstros agora são círculos tracejados (não cobrem mais o terreno) e as cidades têm o contorno verde.
-- A foto é feita no primeiro uso de cada região (leva menos de 1 segundo); enquanto isso aparece o fundo antigo.
-- Dentro de calabouços o minimapa continua mostrando as salas (já era fiel).
-- Correção: erro de console ao fechar a janela do evento (sem efeito no jogo).
+1) Minimapa girado 90° no sentido horário (o norte agora aponta para a direita). Vale para o mapa do mundo e para o minimapa de calabouço.
+2) Os membros do grupo no minimapa agora aparecem com o emoji da classe deles (⚔️ 🪄 🏹 ...) dentro de um círculo azul, em vez de um pontinho.
+3) Clique no minimapa para abrir o MAPA EXPANDIDO no centro da tela (clique de novo, no ✕, fora da janela ou Esc para fechar).
+   Mostra a região onde você está (foto aérea) com:
+   • ❗/❓/📜 Missões: NPCs com missão disponível, em andamento ou pronta para entregar (com o nome e o progresso). Zonas de monstros
+     que são alvo das suas missões ativas ganham contorno dourado.
+   • 🏰 Entradas de calabouço (nível mínimo, ingresso, tempo) e 🌀 portais (destino e nível mínimo).
+   • 👹 Locais dos monstros: círculos tracejados com nome da zona, monstro e nível; pontos vermelhos dos monstros vivos; 👑 chefes de mundo.
+   • 🧑 NPCs e serviços (ferreiro, mercador, baú, leilão, guilda, etc.) com o que oferecem.
+   • 👥 Grupo (emoji da classe, nível, lugar e distância) e ★ você.
+   Passe o mouse sobre qualquer ponto ou zona para ver a informação. Há filtros no topo para ligar/desligar cada tipo.
+   (O mapa expandido não abre dentro de calabouços.)
 
 INSTALAÇÃO
 1) Envie o index.html para a raiz do repositório no GitHub (substituindo).
