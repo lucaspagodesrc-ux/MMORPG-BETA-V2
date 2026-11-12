@@ -3180,7 +3180,8 @@ function ring(x,z,r,c,dur,y){
  for(const m of[t,d]){m.material=fxMat(c);m.position.set(x,y||.1,z);}
  fx.push({t0:performance.now(),dur:dur||500,upd:p=>{const s=.25+.75*p;t.scaling.set(r*s,1,r*s);d.scaling.set(r*s,r*s,1);t.visibility=1-p;d.visibility=(1-p)*.25;},done:()=>{t.dispose();d.dispose();}});
 }
-function shoot(from,m,c,kind,cb){
+function shoot(from,m,c,kind,cb,opt){
+ if(kind==='arrow'){opt=opt||{};const d=Math.max(.3,Math.hypot(m.pos.x-from.x,m.pos.z-from.z));arrowFly({from:new V3(from.x,1.3,from.z),to:()=>new V3(m.pos.x,1,m.pos.z),dur:d/24*1000,arch:Math.min(.5,d*.035),c,sc:opt.sc||1,streak:opt.streak||1.3,onHit:()=>{spark(m.pos.x,1,m.pos.z,c,opt.sc?1:.6);if(cb)cb();}});return;}
  const mesh=staticMesh(kind==='arrow'?B.CreateBox('pr',{width:.07,height:.07,depth:.7},scene):B.CreateSphere('pr',{diameter:kind==='big'?.7:.35,segments:6},scene));mesh.material=fxMat(c);
  const s=new V3(from.x,1.3,from.z);mesh.position.copyFrom(s);const d=Math.max(.2,Math.hypot(m.pos.x-s.x,m.pos.z-s.z));
  fx.push({t0:performance.now(),dur:d/24*1000,upd:t=>{const e=new V3(m.pos.x,1,m.pos.z);mesh.position=V3.Lerp(s,e,t);if(kind==='arrow')mesh.lookAt(e);},done:()=>{mesh.dispose();if(cb)cb();}});
@@ -3188,6 +3189,140 @@ function shoot(from,m,c,kind,cb){
 function fall(x,z,c,size,dur,height,cb){
  const m=staticMesh(B.CreateSphere('fl',{diameter:size,segments:6},scene));m.material=fxMat(c);m.position.set(x+3,height+.3,z-3);
  fx.push({t0:performance.now(),dur,upd:t=>m.position.set(x+(1-t)*3,.3+(1-t)*height,z-(1-t)*3),done:()=>{m.dispose();if(cb)cb();}});
+}
+/* =================== v1.52 — FLECHAS DO ARQUEIRO: modelo (haste, ponta, penas), brilho e habilidades =================== */
+const ARW={},STK={},GLW={};
+function streakMat(c,a){const k=c+a;if(!STK[k]){const m=new BABYLON.StandardMaterial('stk'+k,scene);m.diffuseColor=C3.FromHexString(c);m.emissiveColor=C3.FromHexString(c);m.disableLighting=true;m.alpha=a;STK[k]=m;}return STK[k];}
+function glowMat(c,a){const k=c+a;if(!GLW[k]){const m=new BABYLON.StandardMaterial('glw'+k,scene);m.diffuseColor=C3.FromHexString(c);m.emissiveColor=C3.FromHexString(c);m.disableLighting=true;m.alpha=a;m.backFaceCulling=false;GLW[k]=m;}return GLW[k];}
+/** modelo da flecha (eixo +Z = direção do voo): haste de madeira, ponta de metal, colar e 3 penas na cor da habilidade */
+function arrowTpl(c){
+ if(ARW[c])return ARW[c];
+ const wood=fxMat('#c9a468'),metal=fxMat('#f1f5fa'),dark=fxMat('#7a5a30'),col=fxMat(c),ps=[];
+ const along=(m,z,mat)=>{m.rotation.x=Math.PI/2;m.position.set(0,0,z);m.bakeCurrentTransformIntoVertices();m.material=mat;ps.push(m);return m;};
+ along(B.CreateCylinder('as',{height:1.0,diameter:.05,tessellation:6},scene),0,wood);
+ along(B.CreateCylinder('ah',{height:.28,diameterTop:0,diameterBottom:.16,tessellation:6},scene),.62,metal);
+ along(B.CreateCylinder('ac',{height:.07,diameter:.075,tessellation:6},scene),.44,col);
+ for(let k=0;k<3;k++){const v=B.CreateBox('av',{width:.014,height:.22,depth:.3},scene);v.rotation.z=k*Math.PI/3;v.position.z=-.4;v.bakeCurrentTransformIntoVertices();v.material=col;ps.push(v);}
+ const nk=B.CreateSphere('an',{diameter:.07,segments:4},scene);nk.position.z=-.55;nk.bakeCurrentTransformIntoVertices();nk.material=dark;ps.push(nk);
+ const t=BABYLON.Mesh.MergeMeshes(ps,true,true,undefined,false,true);t.isVisible=false;t.isPickable=false;ARW[c]=t;return t;
+}
+/** cria uma flecha (nó com o modelo + rastro brilhante opcional) */
+function mkArrow(c,sc,streak,rings){
+ const root=new BABYLON.TransformNode('arw',scene),m=arrowTpl(c).createInstance('ai');m.parent=root;m.isPickable=false;root.scaling.setAll(sc||1);
+ if(streak){
+  const a=B.CreateBox('as1',{width:.13,height:.13,depth:streak},scene);a.material=streakMat(c,.3);a.parent=root;a.position.z=-.5-streak/2;a.isPickable=false;
+  const b=B.CreateBox('as2',{width:.05,height:.05,depth:streak*.8},scene);b.material=streakMat('#ffffff',.55);b.parent=root;b.position.z=-.5-streak*.4;b.isPickable=false;
+ }
+ if(rings){root.__rg=[];for(let k=0;k<2;k++){const t=B.CreateTorus('arg',{diameter:.7+k*.35,thickness:.035,tessellation:20},scene);t.rotation.x=Math.PI/2;t.material=glowMat(c,.6);t.parent=root;t.position.z=-.1-k*.45;t.isPickable=false;root.__rg.push(t);}}
+ return root;
+}
+function spark(x,y,z,c,sz){
+ const m=staticMesh(B.CreateSphere('sp',{diameter:1,segments:5},scene));m.material=fxMat(c);m.position.set(x,y,z);m.scaling.setAll(sz*.3);
+ fx.push({t0:performance.now(),dur:240,upd:p=>{m.scaling.setAll(sz*(.3+p*.9));m.visibility=.9*(1-p);},done:()=>m.dispose()});
+}
+/** voo de uma flecha: o.from → o.to() em o.dur ms, com arco (arch), curva lateral (side), chega a acertar em hitAt (fração) */
+function arrowFly(o){
+ const a=mkArrow(o.c,o.sc,o.streak,o.rings),A=o.from.clone();let last=A.clone(),fired=false;
+ a.position.copyFrom(A);{const T0=o.to();if(Math.hypot(T0.x-A.x,T0.z-A.z)+Math.abs(T0.y-A.y)>.01)a.lookAt(T0);}
+ const hit=()=>{if(fired)return;fired=true;if(o.onHit)o.onHit();};
+ fx.push({t0:performance.now(),dur:Math.max(60,o.dur),upd:t=>{
+  const T=o.to(),p=V3.Lerp(A,T,t);if(o.arch)p.y+=o.arch*4*t*(1-t);
+  if(o.side){const dx=T.x-A.x,dz=T.z-A.z,l=Math.hypot(dx,dz)||1,sn=o.side*Math.sin(Math.PI*t);p.x+=-dz/l*sn;p.z+=dx/l*sn;p.y+=(o.lift||0)*Math.sin(Math.PI*t);}
+  a.position.copyFrom(p);const dv=p.subtract(last);if(dv.lengthSquared()>1e-6)a.lookAt(p.add(dv));last.copyFrom(p);
+  if(a.__rg)for(const r of a.__rg)r.rotation.z+=.5;
+  if(o.hitAt!=null&&t>=o.hitAt)hit();
+ },done:()=>{if(o.onEnd)o.onEnd(a.position.clone());a.dispose();hit();}});
+}
+/** flecha que cai do alto, crava no chão e some */
+function arrowFall(x,z,c,dur,h,sc,stay){
+ const s0=new V3(x+h*.3,h,z-h*.3),e=new V3(x,.1,z),dir=e.subtract(s0).normalize();
+ arrowFly({from:s0,to:()=>e,dur,c,sc,streak:2.2,onEnd:()=>{
+  spark(x,.25,z,c,.55);
+  const st=mkArrow(c,sc,0),pc=e.subtract(dir.scale(.3*sc));st.position.copyFrom(pc);st.lookAt(pc.add(dir));
+  fx.push({t0:performance.now(),dur:stay||900,upd:t=>{const k=t<.75?1:Math.max(.01,(1-t)/.25);st.scaling.setAll(sc*k);},done:()=>st.dispose()});
+ }});
+}
+/** tiro simples reforçado (Tiro Preciso): flecha maior com rastro, e Flecha Dilacerante (perfurante) */
+function bigShot(from,m,c,cb,o){
+ o=o||{};const A=new V3(from.x,1.4,from.z),d=Math.max(.5,Math.hypot(m.pos.x-from.x,m.pos.z-from.z)),th=o.through||0;
+ const dx=(m.pos.x-from.x)/d,dz=(m.pos.z-from.z)/d,total=d+th;
+ arrowFly({from:A,to:()=>new V3(from.x+dx*total,1,from.z+dz*total),dur:total/24*1000,c,sc:o.sc||2,streak:o.streak||3.4,rings:o.rings,hitAt:th?d/total:null,
+  onHit:()=>{spark(m.pos.x,1.1,m.pos.z,c,o.spk||2.2);ring(m.pos.x,m.pos.z,o.rg||3,c,500);burst(m.pos.x,m.pos.z,o.el||'shadow');if(cb)cb();}});
+}
+/** Flecha Dilacerante: concentra energia no arco (orbe + faíscas convergindo) */
+function chargeFx(o,m,c,ms){
+ const orb=staticMesh(B.CreateSphere('cho',{diameter:1,segments:8},scene));orb.material=glowMat(c,.85);
+ const core=staticMesh(B.CreateSphere('chc',{diameter:1,segments:6},scene));core.material=fxMat('#ffffff');
+ const sp=[];for(let k=0;k<12;k++){const b=staticMesh(B.CreateBox('chs',{size:.09},scene));b.material=fxMat(c);sp.push({b,a:k/12*6.283,y:rnd(-.5,.5)});}
+ const rp=o.root.position;ring(rp.x,rp.z,1.8,c,ms);
+ fx.push({t0:performance.now(),dur:ms,upd:p=>{
+  const q=o.root.position,ux=m.pos.x-q.x,uz=m.pos.z-q.z,l=Math.hypot(ux,uz)||1,bx=q.x+ux/l*.8,bz=q.z+uz/l*.8;
+  orb.position.set(bx,1.45,bz);core.position.set(bx,1.45,bz);orb.scaling.setAll(.15+.6*p);core.scaling.setAll(.08+.22*p);
+  for(const s of sp){const a=s.a+p*3.2,r=1.7*(1-p)+.1;s.b.position.set(bx+Math.cos(a)*r,1.45+s.y*(1-p),bz+Math.sin(a)*r);s.b.rotation.y=a;}
+ },done:()=>{const q=o.root.position;spark(q.x,1.45,q.z,c,1.6);orb.dispose();core.dispose();for(const s of sp)s.b.dispose();}});
+}
+/** Vontade do Vento: leque de flechas que se abrem e convergem no alvo (onHit(h) a cada flecha que acerta) */
+function fanFx(from,m,s,onHit){
+ const N=s.hits,col=s.color,A=new V3(from.x,1.35,from.z),d=Math.max(1,Math.hypot(m.pos.x-from.x,m.pos.z-from.z)),dur=d/24*1000;
+ ring(from.x,from.z,1.8,col,380);
+ for(let h=0;h<N+4;h++){
+  const real=h<N,side=real?(h-(N-1)/2)*.9:(h%2?1:-1)*(N*.45+1.1+(h-N)*.35);
+  later(h*28,()=>arrowFly({from:A,to:()=>new V3(m.pos.x,1,m.pos.z),dur,c:col,sc:real?1.2:.95,streak:1.9,side,lift:real?.15:.5,
+   onHit:()=>{spark(m.pos.x,1,m.pos.z,col,real?.8:.5);if(real&&onHit)onHit(h);}}));
+ }
+}
+/** Chuva (arr=1) e Tempestade (arr=2) de Flechas: leque sobe ao céu e as flechas caem cravando no chão */
+function rainFx(from,c,s){
+ const big=s.arr===2,n=big?30:14,col=s.color,ang=Math.atan2(c.x-from.x,c.z-from.z),up=big?7:5;
+ ring(c.x,c.z,s.radius,col,900);if(big)ring(c.x,c.z,s.radius*.6,'#ffffff',700);
+ for(let k=0;k<up;k++){const a=(k/(up-1)-.5)*.9;later(k*25,()=>arrowFly({from:new V3(from.x,1.5,from.z),to:()=>new V3(from.x+Math.sin(ang+a)*1.8,13,from.z+Math.cos(ang+a)*1.8),dur:320,c:col,sc:big?1.35:1.05,streak:1.8}));}
+ for(let j=0;j<n;j++)later(260+j*(big?14:22),()=>{const a=rnd(0,6.28),rr=Math.sqrt(Math.random())*s.radius;arrowFall(c.x+Math.cos(a)*rr,c.z+Math.sin(a)*rr,col,280,big?11:9,big?1.5:1.1,big?1300:900);});
+}
+/** Tiro Explosivo Evasivo: flecha no chão, explosão, o arqueiro desliza para trás. bx,bz = direção do recuo (unitária) */
+function blastDash(o,bx,bz,s,me){
+ const pos=me?P.pos:o.root.position,x0=pos.x,z0=pos.z,gx=x0-bx*1.1,gz=z0-bz*1.1,c=s.color;
+ arrowFly({from:new V3(x0,1.3,z0),to:()=>new V3(gx,.1,gz),dur:110,c:'#ffd27a',sc:1.3,streak:1.5,onEnd:()=>{
+  spark(gx,.7,gz,'#ffe9a8',3.4);spark(gx,.5,gz,'#ff8a3a',2.4);
+  ring(gx,gz,3.6,'#ffd27a',480);ring(gx,gz,2.1,c,380);burst(gx,gz,'earth');burst(gx,gz,'fire');
+  const db=[];for(let k=0;k<12;k++){const b=staticMesh(B.CreateBox('db',{size:rnd(.1,.22)},scene));b.material=fxMat(k%3?'#8a6a45':'#ffd27a');b.position.set(gx,.3,gz);db.push({b,vx:rnd(-4,4),vz:rnd(-4,4),vy:rnd(3,6)});}
+  fx.push({t0:performance.now(),dur:520,upd:p=>{const t=p*.52;for(const d of db){d.b.position.set(gx+d.vx*t,Math.max(.05,.3+d.vy*t-9*t*t),gz+d.vz*t);d.b.rotation.x+=.3;d.b.rotation.z+=.25;}},done:()=>{for(const d of db)d.b.dispose();}});
+  if(me){
+   const dist=s.dist;let le=0;
+   fx.push({t0:performance.now(),dur:300,upd:p=>{const e=1-Math.pow(1-p,2.2),st=(e-le)*dist;le=e;P.pos.x+=bx*st;P.pos.z+=bz*st;collide(P.pos,.4);clampMap(P.pos);},done:()=>ring(P.pos.x,P.pos.z,1.6,c,350)});
+   for(const f of[.2,.5,.8])later(f*300,()=>ring(P.pos.x,P.pos.z,1.3,c,320));
+  }
+ }});
+}
+/** Foco Mortal: arco espiritual e flechas de energia sobem em espiral em volta do arqueiro */
+function spiritFx(o,s){
+ const c=s.color,n=7,arrows=[];for(let k=0;k<n;k++)arrows.push(mkArrow(c,.8,.9));
+ const pts=[];for(let i=0;i<=14;i++){const t=i/7-1;pts.push(new V3(0,t*.75,.22*(1-t*t)));}
+ const root=new BABYLON.TransformNode('sbw',scene),bow=B.CreateTube('sbow',{path:pts,radius:.05,tessellation:6},scene),str=B.CreateBox('sstr',{width:.02,height:1.5,depth:.02},scene);
+ bow.material=glowMat(c,.8);str.material=fxMat('#ffffff');bow.parent=root;str.parent=root;bow.isPickable=false;str.isPickable=false;
+ const rp=o.root.position;ring(rp.x,rp.z,2.4,c,800);
+ fx.push({t0:performance.now(),dur:1500,upd:p=>{
+  const q=o.root.position,a=p*6.283*1.5,k=Math.min(1,p*6)*(p>.85?Math.max(.01,(1-p)/.15):1);
+  root.position.set(q.x+Math.sin(a)*1.05,1.45+.12*Math.sin(p*20),q.z+Math.cos(a)*1.05);root.rotation.y=a+Math.PI/2;root.scaling.setAll(k);
+  arrows.forEach((r,i)=>{const b=a+i/n*6.283+1,rr=1.25*(1-p*.4),y=.15+p*2.0+i*.05,nx=q.x+Math.sin(b)*rr,nz=q.z+Math.cos(b)*rr;
+   const pp=new V3(nx,y,nz);r.position.copyFrom(pp);r.lookAt(new V3(q.x+Math.sin(b+.25)*rr,y+.45,q.z+Math.cos(b+.25)*rr));r.scaling.setAll(.8*k);});
+ },done:()=>{const q=o.root.position;spark(q.x,1.3,q.z,c,2);ring(q.x,q.z,1.6,'#ffffff',400);root.dispose();for(const r of arrows)r.dispose();}});
+}
+/** Rajada Reunidora: flecha de vento + redemoinho que junta os monstros */
+function gustFx(o,list,s){
+ if(!list.length)return;
+ const from=o.root.position;let cx=0,cz=0;for(const m of list){cx+=m.pos.x;cz+=m.pos.z;}cx/=list.length;cz/=list.length;
+ const c=s.color,d=Math.hypot(cx-from.x,cz-from.z);
+ arrowFly({from:new V3(from.x,1.4,from.z),to:()=>new V3(cx,1,cz),dur:Math.min(300,d/24*1000+80),c,sc:1.5,streak:2.6,rings:true,onEnd:()=>vortexFx(cx,cz,c)});
+}
+function vortexFx(cx,cz,c){
+ groundFx(cx,cz,3.2,'wind',1700);spark(cx,1,cz,c,2.2);
+ const rs=[];for(let k=0;k<4;k++){const t=staticMesh(B.CreateTorus('vt',{diameter:2,thickness:.07,tessellation:28},scene));t.material=glowMat(c,.55);rs.push(t);}
+ const ar=[];for(let k=0;k<10;k++)ar.push({a:mkArrow(c,.75,.8),b:rnd(0,6.283),h:rnd(.3,2.1),r:rnd(3.6,5)});
+ fx.push({t0:performance.now(),dur:900,upd:p=>{
+  rs.forEach((t,i)=>{const u=i/3,r=(2.3-u*1.1)*(1-p*.35);t.scaling.set(r,1,r);t.position.set(cx,.2+u*2.1,cz);t.rotation.y=p*18+i;t.rotation.x=.18*Math.sin(p*9+i);t.visibility=.7*(p<.8?1:(1-p)/.2);});
+  for(const q of ar){const e=Math.min(1,p/.75),r=q.r*(1-e)+.15,b=q.b+e*8.8,y=q.h*(1-e*.4),px=cx+Math.sin(b)*r,pz=cz+Math.cos(b)*r;
+   q.a.position.set(px,y,pz);q.a.lookAt(new V3(cx+Math.sin(b+.2)*r,y,cz+Math.cos(b+.2)*r));q.a.scaling.setAll(.75*(p>.75?Math.max(.01,(1-p)/.25):1));}
+ },done:()=>{for(const t of rs)t.dispose();for(const q of ar)q.a.dispose();}});
 }
 let toastT=null;function toast(s){const el=$('toast');el.textContent=s;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,1700);}
 function logMsg(s,c){const el=$('log');const d=document.createElement('div');d.style.color=c||'#cbd6e2';d.innerHTML=s;el.appendChild(d);while(el.children.length>40)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;}
@@ -4005,7 +4140,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(location.search==='?dbg')window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
+if(location.search==='?dbg')window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -4215,7 +4350,7 @@ function castSkill(i){
  if(PKS.mode){const bl=pkCastBlock(off);if(bl){toast(bl);return;}}
  if(off&&inTown(P.pos)){toast('Combate proibido na zona segura');return;}
  let tgt=null;
- if(['single','dash','aoeTarget','multi','barrage','mark','thunder','arcRay'].includes(s.type)){
+ if(['single','dash','aoeTarget','multi','barrage','mark','thunder','arcRay','chainPull'].includes(s.type)){
   tgt=curTgt()||nearestMonster(s.range);
   if(!tgt){toast('Sem alvo próximo');return;}
   if(hyp(P.pos,tgt.pos)>s.range){toast('Alvo fora de alcance');return;}
@@ -4240,8 +4375,9 @@ function castSkill(i){
  const pr=s.proj||(C.ranged?C.proj:null),so={slow:s.slow,defMult:s.defMult,exec:s.exec,forceCrit:s.forceCrit};
  switch(s.type){
   case 'single':
-   if(pr==='hook')hookFx(P,tgt,s.color,()=>playerHit(tgt,s.mult,so));else if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult,so));else{ring(tgt.pos.x,tgt.pos.z,1.5,s.color,300);later(150,()=>playerHit(tgt,s.mult,so));}break;
+   if(pr==='hook')hookFx(P,tgt,s.color,()=>playerHit(tgt,s.mult,so));else if(s.charge){chargeFx(P,tgt,s.color,s.pre);later(s.pre,()=>{if(!tgt.alive||P.dead)return;bigShot(P.pos,tgt,s.color,()=>playerHit(tgt,s.mult,so),{through:3,rings:true,sc:2.1,streak:3.6});});}else if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult,so),{sc:1.3,streak:2.4});else{ring(tgt.pos.x,tgt.pos.z,1.5,s.color,300);later(150,()=>playerHit(tgt,s.mult,so));}break;
   case 'multi':
+   if(s.fan){fanFx(P.pos,tgt,s,()=>{if(tgt.alive&&!P.dead)playerHit(tgt,s.mult);});break;}
    for(let h=0;h<s.hits;h++)later(h*190,()=>{if(!tgt.alive||P.dead)return;if(pr)shoot(P.pos,tgt,s.color,pr,()=>playerHit(tgt,s.mult));else playerHit(tgt,s.mult);});break;
   case 'transform':for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);barbFx(P,s.dur);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}!</span>`);break;
   case 'stab3':[0,1,2].forEach(n=>later(120+n*180,()=>{if(P.dead)return;P.pos.x+=dirx*.35;P.pos.z+=dirz*.35;collide(P.pos,.4);}));break;
@@ -4261,7 +4397,7 @@ function castSkill(i){
   case 'mark':markFx(tgt,s.mark,s.color);break;
   case 'cloak':for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);cloakFx(P,s.dur);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
   case 'starJump':starFx(P,stars,s,true);break;
-  case 'chainPull':chainPullFx(P,stars,s);break;
+  case 'chainPull':if(s.gust)gustFx(P,stars,s);else chainPullFx(P,stars,s);break;
   case 'thunder':thunderFx(tgt,s.radius,s.dotDur,s.color);offlineRay(tgt,s,700,so);break;
   case 'arcRay':arcRayFx(P.pos,tgt,s.radius,s.dotDur,s.color);offlineRay(tgt,s,350,so);break;
   case 'roll':startRoll(s,dirx,dirz);break;
@@ -4275,6 +4411,7 @@ function castSkill(i){
    const c={x:tgt.pos.x,z:tgt.pos.z};
    if(s.balls)apoBalls(c,s,(gx,gz)=>hitArea(c,s.radius,s.mult/s.balls,so));
    else if(s.meteor){fall(c.x,c.z,s.color,1.7,600,16,()=>{ring(c.x,c.z,s.radius,s.color,600);hitArea(c,s.radius,s.mult,so);});}
+   else if(s.arr){rainFx(P.pos,c,s);later(650,()=>hitArea(c,s.radius,s.mult,so));}
    else{ring(c.x,c.z,s.radius,s.color,900);for(let j=0;j<10;j++)later(j*60,()=>{const a=rnd(0,6.28),rr=Math.sqrt(Math.random())*s.radius;fall(c.x+Math.cos(a)*rr,c.z+Math.sin(a)*rr,s.color,.22,300,9);});later(650,()=>{if(s.ice)for(const m of nearMonsters(c,s.radius))iceCage(m,1500);hitArea(c,s.radius,s.mult,so);});}
    break;}
   case 'barrage':{
@@ -4289,10 +4426,10 @@ function castSkill(i){
   case 'dashBack':{
    const n=nearestMonster(12);let dx,dz;
    if(n){dx=P.pos.x-n.pos.x;dz=P.pos.z-n.pos.z;}else{dx=-Math.sin(P.root.rotation.y);dz=-Math.cos(P.root.rotation.y);}
-   const d=Math.hypot(dx,dz)||1;ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*s.dist;P.pos.z+=dz/d*s.dist;collide(P.pos,.4);clampMap(P.pos);ring(P.pos.x,P.pos.z,1.6,s.color,350);
+   const d=Math.hypot(dx,dz)||1;if(s.blast){blastDash(P,dx/d,dz/d,s,true);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*s.dist;P.pos.z+=dz/d*s.dist;collide(P.pos,.4);clampMap(P.pos);ring(P.pos.x,P.pos.z,1.6,s.color,350);
    for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}
   case 'buff':
-   for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
+   if(s.spirit)spiritFx(P,s);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
  }
 }
 function learnSkill(i){
@@ -5711,8 +5848,8 @@ function remoteSkill(m){
  AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon)))skillFx(s,from,mo?mo.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null);
  switch(s.type){
-  case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
-  case 'multi':if(mo)for(let h=0;h<s.hits;h++)later(h*190,()=>{if(mo.alive){if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1,s.color,200);}});break;
+  case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(s.charge){chargeFx(o,mo,s.color,s.pre);later(s.pre,()=>{if(mo.alive)bigShot(from,mo,s.color,null,{through:3,rings:true,sc:2.1,streak:3.6});});}else if(pr)shoot(from,mo,s.color,pr,null,{sc:1.3,streak:2.4});else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
+  case 'multi':if(mo&&s.fan)fanFx(from,mo,s,null);else if(mo)for(let h=0;h<s.hits;h++)later(h*190,()=>{if(mo.alive){if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1,s.color,200);}});break;
   case 'heal':ring(from.x,from.z,2.2,s.color,600);if(s.hot)for(let k=1;k<=s.hotDur;k++)later(k*1000,()=>ring(o.root.position.x,o.root.position.z,1.3,s.color,400));break;
   case 'aoeSelf':if(s.fxMon){later(200,()=>{for(const m of nearMonsters(from,s.radius))frostMon(m,s.color);});break;}aoeAnimFx(s,from);if(s.delay)later(s.delay,()=>{ring(from.x,from.z,s.radius,s.color,550);skillFx(s,from,null);});else ring(from.x,from.z,s.radius,s.color,550);break;
   case 'shieldThrow':later(250,()=>{if(o.shieldN)o.shieldN.setEnabled(false);});later(300,()=>shieldFlyFx(o,m.dx||0,m.dz||1,s.range,s.color));break;
@@ -5721,7 +5858,7 @@ function remoteSkill(m){
   case 'mark':if(mo)markFx(mo,s.mark,s.color);break;
   case 'cloak':cloakFx(o,s.dur);break;
   case 'starJump':starFx(o,[...(m.ptid?[ptOf(m.ptid)].filter(Boolean):[]),...(m.tids||[]).map(id=>monsters.find(x=>x.id===id)).filter(Boolean)],s,false);break;
-  case 'chainPull':chainPullFx(o,[...(m.ptid?[ptOf(m.ptid)].filter(Boolean):[]),...(m.tids||[]).map(id=>monsters.find(x=>x.id===id)).filter(Boolean)],s);break;
+  case 'chainPull':(s.gust?gustFx:chainPullFx)(o,[...(m.ptid?[ptOf(m.ptid)].filter(Boolean):[]),...(m.tids||[]).map(id=>monsters.find(x=>x.id===id)).filter(Boolean)],s);break;
   case 'thunder':if(mo)thunderFx(mo,s.radius,s.dotDur,s.color);break;
   case 'arcRay':if(mo)arcRayFx(from,mo,s.radius,s.dotDur,s.color);break;
   case 'roll':rollRemote(o,s.dur);break;
@@ -5731,10 +5868,11 @@ function remoteSkill(m){
   case 'aoeTarget':if(mo){const c={x:mo.pos.x,z:mo.pos.z};
    if(s.balls)apoBalls(c,s,null);
    else if(s.meteor)fall(c.x,c.z,s.color,1.7,600,16,()=>ring(c.x,c.z,s.radius,s.color,600));
+   else if(s.arr)rainFx(from,c,s);
    else{ring(c.x,c.z,s.radius,s.color,900);for(let j=0;j<10;j++)later(j*60,()=>{const a=rnd(0,6.28),rr=Math.sqrt(Math.random())*s.radius;fall(c.x+Math.cos(a)*rr,c.z+Math.sin(a)*rr,s.color,.22,300,9);});later(650,()=>{if(s.ice)for(const m of nearMonsters(c,s.radius))iceCage(m,1500);});}}break;
   case 'barrage':case 'dash':ring(from.x,from.z,1.4,s.color,300);if(mo)ring(mo.pos.x,mo.pos.z,1.8,s.color,350);break;
-  case 'dashBack':ring(from.x,from.z,1.2,s.color,300);break;
-  case 'buff':ring(from.x,from.z,2.6,s.color,700);break;
+  case 'dashBack':if(s.blast){const an=o.root.rotation.y;blastDash(o,-Math.sin(an),-Math.cos(an),s,false);}else ring(from.x,from.z,1.2,s.color,300);break;
+  case 'buff':if(s.spirit)spiritFx(o,s);ring(from.x,from.z,2.6,s.color,700);break;
  }
 }
 function remoteBasic(m){

@@ -64,13 +64,13 @@ const CLASSES={
   d:'Ataque à distância. Crítico alto e mobilidade.',
   skills:[
    {n:'Tiro Preciso',i:'🎯',lv:1,cd:3,mp:8,type:'single',mult:2.3,range:11,proj:'arrow',color:'#fff2a8',d:'Disparo certeiro em um alvo.'},
-   {n:'Chuva de Flechas',i:'🌧️',lv:3,cd:7,mp:16,type:'aoeTarget',mult:1.3,radius:3.4,range:11,color:'#e8e0b0',d:'Chuva de flechas na área do alvo.'},
-   {n:'Salto Evasivo',i:'🦘',lv:5,cd:8,mp:10,type:'dashBack',dist:7,buffs:{haste:.5},dur:4,color:'#9fe7b0',d:'Salta para trás e ganha rapidez.'},
-   {n:'Foco Mortal',i:'👁️',lv:8,cd:22,mp:18,type:'buff',buffs:{crit:.35,dmg:.2},dur:10,color:'#ff7a7a',d:'+35% crítico e +20% dano.'},
-   {n:'Tiro Triplo',i:'🏹',lv:12,cd:9,mp:24,type:'multi',hits:3,mult:1.2,range:11,proj:'arrow',color:'#fff2a8',d:'Três flechas seguidas no alvo.'},
-   {n:'Flecha Gélida',i:'🧊',lv:15,cd:10,mp:22,type:'single',mult:2.8,range:11,proj:'arrow',slow:4000,color:'#8fe3ff',d:'Flecha congelante que retarda o alvo.'},
-   {n:'Tempestade de Flechas',i:'⛈️',lv:20,cd:18,mp:40,type:'aoeTarget',mult:2.3,radius:5.2,range:11,color:'#e8e0b0',d:'Uma tempestade de flechas em grande área.'},
-   {n:'Tiro Letal',i:'☠️',lv:25,cd:22,mp:45,type:'single',mult:6.5,range:13,proj:'arrow',color:'#ff7a7a',d:'Disparo mortal de altíssimo dano.'}]},
+   {n:'Chuva de Flechas',i:'🌧️',lv:3,cd:7,mp:16,type:'aoeTarget',arr:1,mult:1.3,radius:3.4,range:11,color:'#e8e0b0',d:'Chuva de flechas na área do alvo.'},
+   {n:'Tiro Explosivo Evasivo',i:'💥',lv:5,cd:8,mp:10,type:'dashBack',blast:1,anim:'blast',dist:7,buffs:{haste:.5},dur:4,color:'#9fe7b0',d:'Crava uma flecha explosiva no chão e é lançado para trás pela explosão, ganhando rapidez.',fx:'wind'},
+   {n:'Foco Mortal',i:'👁️',lv:8,cd:22,mp:18,type:'buff',spirit:1,buffs:{crit:.35,dmg:.2},dur:10,color:'#ff7a7a',d:'+35% crítico e +20% dano.'},
+   {n:'Vontade do Vento',i:'🍃',lv:12,cd:9,mp:24,type:'multi',fan:1,hits:3,mult:1.2,range:11,proj:'arrow',color:'#bff5c8',d:'Um leque de flechas de vento atinge o alvo de uma vez (mais flechas a cada poucos ranks).',fx:'wind'},
+   {n:'Rajada Reunidora',i:'🌪️',lv:15,cd:10,mp:22,type:'chainPull',gust:1,mult:1.4,range:11,radius:5,cnt:5,stun:1500,pvpStun:700,color:'#9fe7d0',d:'Uma flecha de vento abre um redemoinho que junta até 5 monstros no centro e os atordoa por 1,5s.',fx:'wind'},
+   {n:'Tempestade de Flechas',i:'⛈️',lv:20,cd:18,mp:40,type:'aoeTarget',arr:2,mult:2.3,radius:5.2,range:11,color:'#e8e0b0',d:'Uma tempestade de flechas em grande área.'},
+   {n:'Flecha Dilacerante',i:'🗡️',lv:25,cd:22,mp:45,type:'single',charge:1,pre:300,anim:'charge',mult:6.5,range:13,proj:'arrow',color:'#ff7a7a',d:'Concentra energia no arco e solta uma flecha perfurante de altíssimo dano.',fx:'shadow'}]},
  mago:{n:'Mago',i:'🪄',wi:'🪄',main:'int',base:{str:2,agi:4,int:11,vit:5},range:9,ranged:true,proj:'orb',pcol:'#9fc4ff',
   d:'Magia devastadora. Frágil, mas com enorme dano.',
   skills:[
@@ -1723,7 +1723,7 @@ const arenaPrize = (c, i) => {
   return { gold: ARENA.prize[i] || 0, items };
 };
 
-const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700 };
+const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700, charge: 700, blast: 420 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });

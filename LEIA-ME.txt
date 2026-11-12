@@ -1,21 +1,28 @@
-ATUALIZAÇÃO 1.51 — MINIMAPA GIRADO, GRUPO COM EMOJI E MAPA EXPANDIDO
-Pacote CUMULATIVO: contém tudo da 1.50 e anteriores. Se a 1.50 já está instalada, só o index.html muda.
+ATUALIZAÇÃO 1.52 — ARQUEIRO: FLECHAS NOVAS E 4 HABILIDADES TROCADAS
+Pacote CUMULATIVO: contém tudo da 1.51 e anteriores. Se a 1.51 já está instalada, mudam só index.html, rules.js e WorldRoom.ts.
 
 O QUE MUDOU
-1) Minimapa girado 90° no sentido horário (o norte agora aponta para a direita). Vale para o mapa do mundo e para o minimapa de calabouço.
-2) Os membros do grupo no minimapa agora aparecem com o emoji da classe deles (⚔️ 🪄 🏹 ...) dentro de um círculo azul, em vez de um pontinho.
-3) Clique no minimapa para abrir o MAPA EXPANDIDO no centro da tela (clique de novo, no ✕, fora da janela ou Esc para fechar).
-   Mostra a região onde você está (foto aérea) com:
-   • ❗/❓/📜 Missões: NPCs com missão disponível, em andamento ou pronta para entregar (com o nome e o progresso). Zonas de monstros
-     que são alvo das suas missões ativas ganham contorno dourado.
-   • 🏰 Entradas de calabouço (nível mínimo, ingresso, tempo) e 🌀 portais (destino e nível mínimo).
-   • 👹 Locais dos monstros: círculos tracejados com nome da zona, monstro e nível; pontos vermelhos dos monstros vivos; 👑 chefes de mundo.
-   • 🧑 NPCs e serviços (ferreiro, mercador, baú, leilão, guilda, etc.) com o que oferecem.
-   • 👥 Grupo (emoji da classe, nível, lugar e distância) e ★ você.
-   Passe o mouse sobre qualquer ponto ou zona para ver a informação. Há filtros no topo para ligar/desligar cada tipo.
-   (O mapa expandido não abre dentro de calabouços.)
+FLECHA NOVA (ataque básico e habilidades): agora tem haste de madeira, ponta de metal, colar e 3 penas na cor da habilidade, voa em arco leve e deixa um rastro brilhante. Ao acertar, solta um clarão.
+
+HABILIDADES TROCADAS (mesmos slots, mesmas teclas, mesmos níveis e ranks)
+• Salto Evasivo → TIRO EXPLOSIVO EVASIVO: o arqueiro crava uma flecha explosiva no chão à frente; a explosão levanta poeira, faíscas e pedaços de terra e ele desliza para trás (7 de distância) ganhando rapidez, como antes.
+• Tiro Triplo → VONTADE DO VENTO: um leque de flechas de vento se abre e converge no alvo ao mesmo tempo (3 flechas no rank 1, até 6 no rank 20), com flechas extras só visuais.
+• Flecha Gélida → RAJADA REUNIDORA: uma flecha de vento com anéis giratórios abre um redemoinho que junta até 5 monstros no centro e os atordoa (1,5 s no rank 1, até 2,4 s no rank 20). Funciona como as Correntes do Tanque (precisa de servidor).
+• Tiro Letal → FLECHA DILACERANTE: 0,3 s de carga (orbe de energia e faíscas convergindo no arco) e depois uma flecha grande e perfurante que atravessa o alvo. O dano chega junto com a flecha (o servidor espera a carga).
+
+HABILIDADES MANTIDAS, COM ANIMAÇÃO NOVA
+• Tiro Preciso: flecha maior, com rastro longo.
+• Chuva de Flechas: um leque de flechas sobe ao céu e 14 flechas caem na área e ficam cravadas no chão por um instante.
+• Tempestade de Flechas: o mesmo, em escala maior (7 flechas sobem, 30 caem, maiores e cravadas por mais tempo).
+• Foco Mortal: um arco espiritual brilhante e 7 flechas de energia giram em espiral em volta do arqueiro.
+
+OBSERVAÇÕES
+• Os personagens que já tinham ranks nessas habilidades mantêm os ranks (as habilidades continuam nos mesmos slots).
+• A Flecha Gélida perdeu a lentidão; a Rajada Reunidora a substitui com atordoamento em área.
+• Correção: a habilidade Correntes de Aço do Tanque (e a Rajada Reunidora) agora escolhem o alvo no cliente; antes a lista de habilidades com alvo não incluía esse tipo.
+• Outros jogadores veem as animações novas.
 
 INSTALAÇÃO
-1) Envie o index.html para a raiz do repositório no GitHub (substituindo).
-2) Aguarde o Render terminar o deploy.
+1) Envie index.html, rules.js e WorldRoom.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo, se preferir.
+2) Aguarde o Render terminar o deploy (o servidor precisa reiniciar por causa do WorldRoom.ts e do rules.js).
 3) No navegador, Ctrl+F5.

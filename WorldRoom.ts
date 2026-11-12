@@ -320,8 +320,8 @@ export class WorldRoom extends Room<WorldState> {
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
     switch (sk.type) {
-      case "single": this.later(pr ? flight : 150, () => tgt && this.hit(s, tgt, mult, so)); break;
-      case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * 190 + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); break;
+      case "single": this.later((pr ? flight : 150) + (sk.pre || 0), () => tgt && this.hit(s, tgt, mult, so)); break;
+      case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * (sk.fan ? 60 : 190) + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); break;
       case "aoeSelf": this.later(sk.delay || 200, () => { const q = this.playerOf(s); this.hitArea(s, sk.delay && q ? q.x : px, sk.delay && q ? q.z : pz, sk.radius, mult, so); }); break;
       case "shieldThrow": {                 // escudo voa (perfura), gira 2s no alcance máximo (área) e volta
         const SPD = 16, tOut = (sk.range / SPD) * 1000, sx = p.x, sz = p.z, ex = sx + ux * sk.range, ez = sz + uz * sk.range;
