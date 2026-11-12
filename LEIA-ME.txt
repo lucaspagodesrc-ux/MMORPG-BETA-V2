@@ -1,22 +1,16 @@
-ATUALIZAÇÃO 1.45 — CIDADES MAIS ESPAÇADAS E MENOS ALDEÕES
-Pacote CUMULATIVO: contém tudo da 1.44, 1.43, 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.44 já está instalada, só rules.js e index.html mudam.
+ATUALIZAÇÃO 1.46 — PAINEL DO CALABOUÇO AO LADO DO MINIMAPA
+Pacote CUMULATIVO: contém tudo da 1.45, 1.44, 1.43, 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.45 já está instalada, só o index.html muda.
 
 O QUE MUDOU
-- Zonas seguras maiores (valem no cliente e no servidor):
-  • Vila Aurora: raio 11 → 15 m
-  • Oásis de Solara e Vila da Nevasca: raio 13 → 17,5 m
-- Os NPCs que ficavam dentro das cidades foram afastados do centro na mesma proporção (cerca de 35% mais espaço entre eles),
-  e o cenário (casas, postes/tochas, barris, caixotes, bancos, estandartes, poço, boneco de neve, placas) acompanhou o novo tamanho.
-  A praça central ficou um pouco maior na Vila Aurora.
-- Menos "bots" andando nas zonas seguras: aldeões passeando 7 → 4 na Vila Aurora e 6 → 3 em Solara e na Nevasca.
-  Os guardas que patrulham o contorno continuam (2 por cidade), agora no contorno da zona maior.
-- Ajustes para não sobrepor a zona segura nova:
-  • Vovó Elda (Vila Aurora) foi um pouco para fora do círculo, perto de onde estava.
-  • O Pântano das Gosmas (monstros) foi deslocado ~7 m para fora, para o nascimento de monstros não cair dentro da cidade.
-- NPCs de missão fora das cidades e os portais de calabouço não mudaram de lugar.
+- O painel do calabouço (nome, tempo, etapa, barra de progresso e botões Pausar / Sair) saiu do centro da tela
+  e foi para o canto superior direito, logo à esquerda do minimapa. Assim não cobre mais a barra do alvo
+  (nome do monstro) nem o aviso de chefe do mundo, que ficam no topo central.
+- Em telas pequenas (celular), o painel fica logo abaixo do quadro do personagem, sem cobrir o minimapa,
+  o rastreador de missões ou os botões do menu.
+- Nenhuma regra de jogo mudou (rules.js e servidor iguais à 1.45).
 
 INSTALAÇÃO
-1) Envie rules.js e index.html para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
-   à 1.44, envie todos os arquivos do pacote.
+1) Envie o index.html para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
+   à 1.45, envie todos os arquivos do pacote.
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.
