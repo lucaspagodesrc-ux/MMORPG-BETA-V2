@@ -1,19 +1,15 @@
-ATUALIZAÇÃO 1.49 — GRUPO NO MINIMAPA / LOCALIZAÇÃO E EFEITOS DOS ITENS APRIMORADOS
-Pacote CUMULATIVO: contém tudo da 1.48 e anteriores. Se a 1.48 já está instalada, só o index.html muda.
+ATUALIZAÇÃO 1.50 — MINIMAPA FIEL AO MAPA
+Pacote CUMULATIVO: contém tudo da 1.49 e anteriores. Se a 1.49 já está instalada, só o index.html muda.
 
 O QUE MUDOU
-1) Grupo no minimapa: cada membro do grupo (menos você) aparece como um ponto azul-claro com contorno branco no minimapa
-   (no mundo aberto, quando está no mesmo mapa/região que você; dentro de calabouço, quando está na mesma instância).
-2) Localização do membro: passe o mouse sobre o nome dele na barra de grupo (embaixo do HP/MP, no canto superior esquerdo).
-   Aparece o nome do lugar (cidade, zona de monstros, deserto/gelo, calabouço ou Arena PK), a distância em metros quando está no mesmo mapa,
-   "em outro mapa" quando está em outra região, e o nível. Funciona mesmo que ele esteja longe.
-3) Efeitos dos itens aprimorados (+7 a +10):
-   - As partículas (chamas, raios, gelo, veneno, almas, sombras, brilho dourado) agora ficam mais fortes a cada nível acima de +7:
-     mais partículas, maiores, mais vivas e mais brilhantes. Antes +9 e +10 só aumentavam um pouco a quantidade e quase não se notava.
-   - Os elementos que eram quase invisíveis (Raios, Gelo e Sombras) foram ampliados e clareados.
-   - Anéis, braceletes e brincos também escalam com o aprimoramento.
-   - Ícones dos itens (mochila/equipamento): +7 faísca ✦ subindo, +8 mais rápida, +9 e +10 ainda mais rápidas e maiores
-     (+10 com contorno branco forte).
+- O minimapa agora é uma "foto aérea" do mapa real: o jogo tira uma vista de cima do mundo (uma vez por região: Vila Aurora,
+  Solara, Nevasca e Arena) e usa essa imagem de fundo. Rio, lago, pontes, casas, árvores, pedras, deserto, neve, muros e
+  estradas aparecem exatamente onde estão no mapa. (Personagens e monstros não entram na foto.)
+- Por cima da foto continuam os pontos: você, grupo, NPCs, monstros, itens no chão, chefes, PK, aviso de chefe de mundo.
+  As zonas de monstros agora são círculos tracejados (não cobrem mais o terreno) e as cidades têm o contorno verde.
+- A foto é feita no primeiro uso de cada região (leva menos de 1 segundo); enquanto isso aparece o fundo antigo.
+- Dentro de calabouços o minimapa continua mostrando as salas (já era fiel).
+- Correção: erro de console ao fechar a janela do evento (sem efeito no jogo).
 
 INSTALAÇÃO
 1) Envie o index.html para a raiz do repositório no GitHub (substituindo).
