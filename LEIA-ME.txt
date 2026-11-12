@@ -1,17 +1,22 @@
-ATUALIZAÇÃO 1.44 — GM ESCOLHE E RETIRA CAMINHOS LIVREMENTE
-Pacote CUMULATIVO: contém tudo da 1.43, 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.43 já está instalada, só rules.js e index.html mudam.
+ATUALIZAÇÃO 1.45 — CIDADES MAIS ESPAÇADAS E MENOS ALDEÕES
+Pacote CUMULATIVO: contém tudo da 1.44, 1.43, 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.44 já está instalada, só rules.js e index.html mudam.
 
-O QUE MUDOU (apenas para contas/personagens GM)
-- Nos Mestres dos Caminhos (Eldrin, Nefertari, Rurik), a conta GM pode:
-  • ESCOLHER qualquer um dos 3 Caminhos da sua classe a qualquer hora, em qualquer nível, sem fazer a Provação e sem pagar;
-  • TROCAR direto de um Caminho para outro (sem precisar retirar antes);
-  • RETIRAR o Caminho atual (botão "Retirar Caminho"), sem custo e sem confirmação.
-- Ao trocar/retirar, se o título equipado era o do Caminho antigo, ele é desequipado.
-- Jogadores comuns continuam como antes: nível 100, Provação concluída, 5 mi para escolher e 10 mi para reconsagrar.
-- Precisa estar perto de um Mestre dos Caminhos, como nas outras ações de NPC.
+O QUE MUDOU
+- Zonas seguras maiores (valem no cliente e no servidor):
+  • Vila Aurora: raio 11 → 15 m
+  • Oásis de Solara e Vila da Nevasca: raio 13 → 17,5 m
+- Os NPCs que ficavam dentro das cidades foram afastados do centro na mesma proporção (cerca de 35% mais espaço entre eles),
+  e o cenário (casas, postes/tochas, barris, caixotes, bancos, estandartes, poço, boneco de neve, placas) acompanhou o novo tamanho.
+  A praça central ficou um pouco maior na Vila Aurora.
+- Menos "bots" andando nas zonas seguras: aldeões passeando 7 → 4 na Vila Aurora e 6 → 3 em Solara e na Nevasca.
+  Os guardas que patrulham o contorno continuam (2 por cidade), agora no contorno da zona maior.
+- Ajustes para não sobrepor a zona segura nova:
+  • Vovó Elda (Vila Aurora) foi um pouco para fora do círculo, perto de onde estava.
+  • O Pântano das Gosmas (monstros) foi deslocado ~7 m para fora, para o nascimento de monstros não cair dentro da cidade.
+- NPCs de missão fora das cidades e os portais de calabouço não mudaram de lugar.
 
 INSTALAÇÃO
 1) Envie rules.js e index.html para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
-   à 1.43, envie todos os arquivos do pacote.
+   à 1.44, envie todos os arquivos do pacote.
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.

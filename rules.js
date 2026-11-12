@@ -460,7 +460,7 @@ DUNGEONS.push({
 });
 
 const ZONES=[
- {t:'slime',x:-18,z:-10,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
+ {t:'slime',x:-24,z:-14,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
  {t:'lobo',x:18,z:-20,r:9,n:10,col:'#4b5a45',name:'Floresta dos Lobos'},
  {t:'goblin',x:26,z:14,r:9,n:10,col:'#7a5f3a',name:'Acampamento Goblin'},
  {t:'esqueleto',x:-26,z:22,r:9,n:10,col:'#4a4d5a',name:'Cemitério Maldito'},
@@ -615,7 +615,7 @@ const NPCS=[
  {id:'mestre',name:'Mestre Kaelen',icon:'📖',x:-4.5,z:4,col:'#6b46b5',tabs:[],greet:'',hat:'#4b2f85'},
  {id:'leilao',name:'Valter, o Leiloeiro',icon:'⚖️',x:9.4,z:1.8,col:'#a8782e',tabs:['leilao'],greet:'Bem-vindo à Casa de Leilão! Aqui você anuncia seus itens e compra o que outros aventureiros estão vendendo.',hat:'#5a3a1a'},
  {id:'bau',name:'Baú do Aventureiro',icon:'📦',x:4.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'Seus itens guardados aqui são compartilhados com todos os seus personagens.'},
- {id:'elda',name:'Vovó Elda',icon:'🌿',x:-14,z:2,col:'#5a8a4a',tabs:SHOPT,greet:'As gosmas estragam minha horta... e eu tenho poções para vender, querido.',hat:'#7a5a3a',camp:true},
+ {id:'elda',name:'Vovó Elda',icon:'🌿',x:-19.5,z:4.5,col:'#5a8a4a',tabs:SHOPT,greet:'As gosmas estragam minha horta... e eu tenho poções para vender, querido.',hat:'#7a5a3a',camp:true},
  {id:'lyra',name:'Patrulheira Lyra',icon:'🏹',x:12,z:-13,col:'#3f7a55',tabs:SHOPT,greet:'Os lobos andam inquietos. Fique alerta!',hat:'#2f5a2c',camp:true},
  {id:'brum',name:'Sargento Brum',icon:'⚔️',x:20,z:7,col:'#8a3a3a',tabs:SHOPT,greet:'Esses goblins não têm fim. Precisamos de reforços!',hat:'#9aa7b3',camp:true},
  {id:'anselmo',name:'Padre Anselmo',icon:'✝️',x:-20,z:14,col:'#d8d0c0',tabs:SHOPT,greet:'Que as almas descansem em paz... com a sua ajuda.',hat:'#d8d0c0',camp:true},
@@ -673,12 +673,17 @@ const NPCS=[
  {id:'arena_s',name:'Mestra Kalila, da Arena',icon:'🏟️',x:311,z:1.5,col:'#c0792a',tabs:['arena'],greet:'Na areia da arena os fracos caem e os fortes viram lenda. Quer provar o seu valor?',hat:'#7a4a14',banner:'#e08a2a',arena:true},
  {id:'arena_n',name:'Mestre Bjarn, da Arena',icon:'🏟️',x:-289.5,z:2.5,col:'#5a78d0',tabs:['arena'],greet:'Aqui no frio a gente resolve as diferenças na arena. Sem rancor: quem cai, volta.',hat:'#2a3e6a',banner:'#5a8ad0',arena:true},
  {id:'arena_g',name:'Guardião da Arena',icon:'🏟️',x:1800,z:-31,col:'#a03a2a',tabs:['arena'],greet:'Quem cai reaparece em instantes, sem perder nada. Para sair, fale comigo (só fora de combate).',hat:'#5a1c14',banner:'#d4552a',arena:true}];
+// Cidades mais espaçadas: os NPCs que ficavam dentro das zonas seguras antigas (raio 11 / 13) são afastados do centro na mesma proporção
+// em que a zona segura cresceu (Aurora 11→15; Solara e Nevasca 13→17,5). NPCs de fora (missões, portais de calabouço) não mudam.
+{ const OLD = [{ x: 0, r: 11, k: 15 / 11 }, { x: 300, r: 13, k: 17.5 / 13 }, { x: -300, r: 13, k: 17.5 / 13 }];
+  for (const n of NPCS) { if (n.id === 'arena_g') continue; const t = OLD.find(q => Math.hypot(n.x - q.x, n.z) < q.r + .5); if (!t) continue;
+    n.x = Math.round((t.x + (n.x - t.x) * t.k) * 10) / 10; n.z = Math.round(n.z * t.k * 10) / 10; } }
 
 
 /* ====================== FUNÇÕES DE REGRA ====================== */
-const MON_TOWN_R = 11;
+const MON_TOWN_R = 15;
 R.TOWN_R = MON_TOWN_R;
-R.TOWNS = [{ x: 0, z: 0, r: 11 }, { x: 300, z: 0, r: 13 }, { x: -300, z: 0, r: 13 }];   // zonas seguras (Vila Aurora e Solara)
+R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');

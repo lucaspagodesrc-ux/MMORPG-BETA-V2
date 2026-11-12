@@ -789,9 +789,9 @@ scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
 scene.skipPointerMovePicking=true;
 
 /* =================== DADOS =================== */
-const SN={x:-300,z:0}, TOWN3_R=13;   // Nevasca: quarta região (centro em x=-300)
-const SC={x:300,z:0}, TOWN2_R=13;   // Solara: segunda região do mundo (centro em x=300)
-const MAP=80, TOWN_R=11, SAVE_KEY='mmorpg_proto_v3', OLD_KEY='mmorpg_proto_v2';
+const SN={x:-300,z:0}, TOWN3_R=17.5;   // Nevasca: quarta região (centro em x=-300)
+const SC={x:300,z:0}, TOWN2_R=17.5;   // Solara: segunda região do mundo (centro em x=300)
+const MAP=80, TOWN_R=15, SAVE_KEY='mmorpg_proto_v3', OLD_KEY='mmorpg_proto_v2';
 const RULES=window.RULES;   // regras e dados compartilhados com o servidor (rules.js)
 const {RAR,SLOTS,STN,WN,AN,HN,BN,RN,SHN,XN,SUF,MATS,POTS,MAXRANK,CLASSES,MT,ZONES,OG,DUNGEONS,QUESTS,QNAME,RECIPES,NPCS,SHOPS,xpNeed,upRate,upCost,sellPrice,nm}=RULES;
 const SLOT_ICON={shield:'🛡️',weapon:'⚔️',helmet:'🪖',armor:'🥋',boots:'👢',ring:'💍',ring2:'💍',bracelet:'📿',bracelet2:'📿',earring:'🧿',earring2:'🧿',cape:'🧥'};
@@ -809,6 +809,7 @@ const dirty=()=>{dcache=null;tipEp++;};
 const fmt=n=>Number(n).toLocaleString('pt-BR');
 const eff=(it,k)=>(it[k]||0)*(1+.12*(it.plus||0));
 function D(){if(dcache&&S&&!!dcache.gm!==((S.gmu||0)>Date.now()))dcache=null;return dcache||(dcache=RULES.stats(S));}
+const TK=15/11,TK2=17.5/13;   // fator de espaçamento do cenário das cidades (NPCs e decoração acompanham o novo raio da zona segura)
 const TOWNZ=[{x:0,z:0,r:TOWN_R,name:'🏰 Vila Aurora (Zona Segura)'},{x:SC.x,z:SC.z,r:TOWN2_R,name:'🏜️ Oásis de Solara (Zona Segura)'},{x:SN.x,z:SN.z,r:TOWN3_R,name:'❄️ Vila da Nevasca (Zona Segura)'}];
 const townAt=(p,pad)=>TOWNZ.find(t=>Math.hypot(p.x-t.x,p.z-t.z)<t.r+(pad||0));
 const inTown=p=>!!townAt(p);const regionOf=p=>p.x>1650?4:p.x<-150?3:p.x>450?2:p.x>150?1:0;
@@ -1544,14 +1545,14 @@ function srcWell(){return MERGE('well',[cyl(.9,2.0,2.2,14,0,.45,0,AM.stone),tor(
 {const tm=new BABYLON.StandardMaterial('townm',scene);tm.diffuseColor=new C3(1,1,1);tm.specularColor=C3.Black();tm.diffuseTexture=PAINT.tex('g_cobble');
  const t=staticMesh(B.CreateDisc('town',{radius:TOWN_R,tessellation:64,noFit:1},scene));PAINT.uvk(t,TOWN_R*2/6);t.rotation.x=Math.PI/2;t.position.y=.03;t.material=tm;
  const pmt=new BABYLON.StandardMaterial('plz',scene);pmt.diffuseColor=new C3(1,1,1);pmt.specularColor=C3.Black();pmt.diffuseTexture=PAINT.tex('g_plaza');
- const t2=staticMesh(B.CreateDisc('plaza',{radius:4.6,tessellation:40,noFit:1},scene));PAINT.uvk(t2,9.2/4.8);t2.rotation.x=Math.PI/2;t2.position.y=.04;t2.material=pmt;
- const pr=staticMesh(B.CreateTorus('plr',{diameter:9.2,thickness:.16,tessellation:48},scene));pr.position.y=.06;pr.scaling.y=.5;pr.material=AM.gold;
+ const t2=staticMesh(B.CreateDisc('plaza',{radius:5.7,tessellation:40,noFit:1},scene));PAINT.uvk(t2,11.4/4.8);t2.rotation.x=Math.PI/2;t2.position.y=.04;t2.material=pmt;
+ const pr=staticMesh(B.CreateTorus('plr',{diameter:11.4,thickness:.16,tessellation:48},scene));pr.position.y=.06;pr.scaling.y=.5;pr.material=AM.gold;
  const ring=staticMesh(B.CreateTorus('safe',{diameter:TOWN_R*2,thickness:.14,tessellation:80},scene));ring.position.y=.07;ring.material=fxMat('#4be0a0');ring.visibility=.7;
  const cb=staticMesh(B.CreateTorus('curb',{diameter:TOWN_R*2+.7,thickness:.42,tessellation:80},scene));cb.position.y=.05;cb.scaling.y=.55;cb.material=AM.stoneD;ink(cb,.03);
  put('fount',srcFountain,0,0);obstacles.push({x:0,z:0,r:2.2});SHS.a.add(0,0,2.6);
- for(let i=0;i<7;i++){const a=i*Math.PI*2/7+.3,x=Math.cos(a)*8.6,z=Math.sin(a)*8.6;put('lamp',srcLamp,x,z);obstacles.push({x,z,r:.3});SHS.a.add(x,z,.45);}
- for(const hx of [-7,7]){const hz=6.2;put('houseA',srcHouseA,hx,hz);obstacles.push({x:hx,z:hz,r:2.1});SHS.a.add(hx,hz,2.7);}
- const deco=(key,fac,x,z,ry,r,sr)=>{put(key,fac,x,z,1,ry);obstacles.push({x,z,r});SHS.a.add(x,z,sr||r);};
+ for(let i=0;i<7;i++){const a=i*Math.PI*2/7+.3,x=Math.cos(a)*8.6*TK,z=Math.sin(a)*8.6*TK;put('lamp',srcLamp,x,z);obstacles.push({x,z,r:.3});SHS.a.add(x,z,.45);}
+ for(const hx of [-7*TK,7*TK]){const hz=6.2*TK;put('houseA',srcHouseA,hx,hz);obstacles.push({x:hx,z:hz,r:2.1});SHS.a.add(hx,hz,2.7);}
+ const deco=(key,fac,x,z,ry,r,sr)=>{x*=TK;z*=TK;put(key,fac,x,z,1,ry);obstacles.push({x,z,r});SHS.a.add(x,z,sr||r);};
  deco('barrel',srcBarrel,-8.2,-3.8,0,.5);deco('barrel',srcBarrel,-7.4,-4.8,0,.5);deco('crate',srcCrate,-8.5,-2.2,.3,.55);
  deco('crate',srcCrate,8.3,-4.2,.2,.55);deco('crate',srcCrate,9.0,-3.1,-.3,.55);deco('barrel',srcBarrel,7.5,-5.1,0,.5);
  deco('bench',srcBench,-3.4,-5.4,.35,.8,1);deco('bench',srcBench,3.4,-5.4,-.35,.8,1);
@@ -1588,8 +1589,8 @@ for(const b of BRIDGES){const z=riverZ(b),g=new BABYLON.TransformNode('br',scene
  RES.push({x:b,z,r:7});sign(b+3,z-5.5,'🌉 Ponte do Rio Cristalino');
  for(const sd of[-1,1])for(const k of[-1,1]){const xa=b+k*2.4,xb=b+k*7;fence(xa,riverZ(xa)+sd*3.3,xb,riverZ(xb)+sd*3.3);}}
 fence(-40,-28,-28,-28);fence(-40,-28,-40,-20);fence(-28,-28,-28,-20);fence(-40,-20,-35,-20);fence(-33,-20,-28,-20);RES.push({x:-34,z:-24,r:10});sign(-31.5,-18.5,'🐑 Pasto da Aldeia');
-sign(3.4,12.2,'🏰 Vila Aurora • Zona Segura');sign(12.4,-0.6,'⚖️ Casa de Leilão');
-for(const Z of ZONES){const H=Z.x<-150?SN:Z.x>150?SC:{x:0,z:0},rx=Z.x-H.x,rz=Z.z-H.z,d=Math.hypot(rx,rz),k=Math.max(15,d-Z.r-4)/d,T=MT[Z.t],a=T.lv[0],b=T.lv[1]||a;sign(H.x+rx*k,H.z+rz*k,T.dummy?Z.name:`${Z.name} • Nv ${a}${b>a?'–'+b:''}`);}
+sign(4.6,16.6,'🏰 Vila Aurora • Zona Segura');sign(16.9,-0.9,'⚖️ Casa de Leilão');
+for(const Z of ZONES){const H=Z.x<-150?SN:Z.x>150?SC:{x:0,z:0},rx=Z.x-H.x,rz=Z.z-H.z,d=Math.hypot(rx,rz),k=Math.max((Z.x<-150||Z.x>150?TOWN2_R:TOWN_R)+3,d-Z.r-4)/d,T=MT[Z.t],a=T.lv[0],b=T.lv[1]||a;sign(H.x+rx*k,H.z+rz*k,T.dummy?Z.name:`${Z.name} • Nv ${a}${b>a?'–'+b:''}`);}
 const nearNpc=(x,z,r)=>NPCS.some(n=>Math.hypot(x-n.x,z-n.z)<r)||RES.some(q=>Math.hypot(x-q.x,z-q.z)<q.r);
 for(let i=0;i<620;i++){const x=rnd(-MAP+1,MAP-1),z=rnd(-MAP+1,MAP-1);if(Math.hypot(x,z)<TOWN_R+2||nearZone(x,z,1)||nearNpc(x,z,4.5))continue;addTree(x,z);}
 for(let i=0;i<220;i++){const x=rnd(-MAP,MAP),z=rnd(-MAP,MAP);if(Math.hypot(x,z)<TOWN_R+1.5||nearZone(x,z,0)||nearNpc(x,z,4))continue;if(Math.random()<.4)addRock(x,z);}
@@ -1679,11 +1680,11 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
   put('fountS',srcFountainS,cx,cz);{const o=getInst('obelisk',srcObelisk);o.position.set(cx,0,cz);o.isPickable=false;}
   obstacles.push({x:cx,z:cz,r:2.3});SHS.c.add(cx,cz,2.7);
   for(let i=0;i<4;i++){const a=i*Math.PI/2+.8;addPalm(cx+Math.cos(a)*3.9,cz+Math.sin(a)*3.9);}
-  for(let i=0;i<8;i++){const a=i*Math.PI/4+.2,x=cx+Math.cos(a)*10.4,z=cz+Math.sin(a)*10.4;put('torchS',srcTorch,x,z);obstacles.push({x,z,r:.3});SHS.c.add(x,z,.45);}
-  for(const [hx,hz] of [[-10,6],[10,6],[-10,-7.5],[10,-7.5]]){const x=cx+hx,z=cz+hz;put('houseS',srcHouseS,x,z);obstacles.push({x,z,r:2.2});SHS.c.add(x,z,2.8);}
+  for(let i=0;i<8;i++){const a=i*Math.PI/4+.2,x=cx+Math.cos(a)*10.4*TK2,z=cz+Math.sin(a)*10.4*TK2;put('torchS',srcTorch,x,z);obstacles.push({x,z,r:.3});SHS.c.add(x,z,.45);}
+  for(const [hx,hz] of [[-10,6],[10,6],[-10,-7.5],[10,-7.5]]){const x=cx+hx*TK2,z=cz+hz*TK2;put('houseS',srcHouseS,x,z);obstacles.push({x,z,r:2.2});SHS.c.add(x,z,2.8);}
   // faixas decorativas (estandartes) nas entradas
-  for(const sx of[-1,1]){const x=cx+sx*7.2,z=cz-2;const p=staticMesh(B.CreateCylinder('bp2',{height:3,diameter:.1,tessellation:6},scene));p.position.set(x,1.5,z);p.material=M.wood;const f=staticMesh(B.CreateBox('bf2',{width:.8,height:1.1,depth:.04},scene));f.position.set(x+.45,2.4,z);f.material=SM.cloth;const f2=staticMesh(B.CreateBox('bf2b',{width:.8,height:.14,depth:.05},scene));f2.position.set(x+.45,1.9,z);f2.material=SM.gold;obstacles.push({x,z,r:.3});}
-  {const dc=(key,fac,x,z,ry,r)=>{put(key,fac,cx+x,cz+z,1,ry);obstacles.push({x:cx+x,z:cz+z,r});SHS.c.add(cx+x,cz+z,r);};
+  for(const sx of[-1,1]){const x=cx+sx*7.2*TK2,z=cz-2*TK2;const p=staticMesh(B.CreateCylinder('bp2',{height:3,diameter:.1,tessellation:6},scene));p.position.set(x,1.5,z);p.material=M.wood;const f=staticMesh(B.CreateBox('bf2',{width:.8,height:1.1,depth:.04},scene));f.position.set(x+.45,2.4,z);f.material=SM.cloth;const f2=staticMesh(B.CreateBox('bf2b',{width:.8,height:.14,depth:.05},scene));f2.position.set(x+.45,1.9,z);f2.material=SM.gold;obstacles.push({x,z,r:.3});}
+  {const dc=(key,fac,x,z,ry,r)=>{x*=TK2;z*=TK2;put(key,fac,cx+x,cz+z,1,ry);obstacles.push({x:cx+x,z:cz+z,r});SHS.c.add(cx+x,cz+z,r);};
    dc('barrel',srcBarrel,-8.2,-3.8,0,.5);dc('crate',srcCrate,-8.4,-2.4,.3,.55);dc('crate',srcCrate,8.3,-4.2,.2,.55);dc('barrel',srcBarrel,7.6,-5.1,0,.5);dc('bench',srcBench,-3.6,-5.6,.35,.8);dc('bench',srcBench,3.6,-5.6,-.35,.8);}
  }
  // decorações das zonas de caça
@@ -1762,12 +1763,12 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
   const rg=staticMesh(B.CreateTorus('safe3',{diameter:TOWN3_R*2,thickness:.14,tessellation:80},scene));rg.position.set(cx,.07,cz);rg.material=fxMat('#4be0a0');rg.visibility=.7;
   const cb=staticMesh(B.CreateTorus('curb3',{diameter:TOWN3_R*2+.7,thickness:.42,tessellation:80},scene));cb.position.set(cx,.05,cz);cb.scaling.y=.55;cb.material=NM.stone2;ink(cb,.03,INKN);
   put('fountN',srcFountainN,cx,cz);obstacles.push({x:cx,z:cz,r:2.3});SHS.n.add(cx,cz,2.7);
-  for(let i=0;i<8;i++){const a=i*Math.PI/4+.2,x=cx+Math.cos(a)*10.4,z=cz+Math.sin(a)*10.4;put('lampN',srcLampN,x,z);obstacles.push({x,z,r:.3});SHS.n.add(x,z,.45);}
-  for(const [hx,hz] of [[-10,6],[10,6],[-10,-7.5],[10,-7.5]]){const x=cx+hx,z=cz+hz;put('houseN',srcHouseN,x,z);obstacles.push({x,z,r:2.3});SHS.n.add(x,z,2.9);}
-  for(const sx of[-1,1]){const x=cx+sx*7.2,z=cz-2;const p=staticMesh(B.CreateCylinder('bp3',{height:3,diameter:.1,tessellation:6},scene));p.position.set(x,1.5,z);p.material=M.wood;const f=staticMesh(B.CreateBox('bf3',{width:.8,height:1.1,depth:.04},scene));f.position.set(x+.45,2.4,z);f.material=NM.cloth2;const f2=staticMesh(B.CreateBox('bf3b',{width:.8,height:.14,depth:.05},scene));f2.position.set(x+.45,1.9,z);f2.material=NM.snow;obstacles.push({x,z,r:.3});}
-  {const dc=(key,fac,x,z,ry,r)=>{put(key,fac,cx+x,cz+z,1,ry);obstacles.push({x:cx+x,z:cz+z,r});SHS.n.add(cx+x,cz+z,r);};
+  for(let i=0;i<8;i++){const a=i*Math.PI/4+.2,x=cx+Math.cos(a)*10.4*TK2,z=cz+Math.sin(a)*10.4*TK2;put('lampN',srcLampN,x,z);obstacles.push({x,z,r:.3});SHS.n.add(x,z,.45);}
+  for(const [hx,hz] of [[-10,6],[10,6],[-10,-7.5],[10,-7.5]]){const x=cx+hx*TK2,z=cz+hz*TK2;put('houseN',srcHouseN,x,z);obstacles.push({x,z,r:2.3});SHS.n.add(x,z,2.9);}
+  for(const sx of[-1,1]){const x=cx+sx*7.2*TK2,z=cz-2*TK2;const p=staticMesh(B.CreateCylinder('bp3',{height:3,diameter:.1,tessellation:6},scene));p.position.set(x,1.5,z);p.material=M.wood;const f=staticMesh(B.CreateBox('bf3',{width:.8,height:1.1,depth:.04},scene));f.position.set(x+.45,2.4,z);f.material=NM.cloth2;const f2=staticMesh(B.CreateBox('bf3b',{width:.8,height:.14,depth:.05},scene));f2.position.set(x+.45,1.9,z);f2.material=NM.snow;obstacles.push({x,z,r:.3});}
+  {const dc=(key,fac,x,z,ry,r)=>{x*=TK2;z*=TK2;put(key,fac,cx+x,cz+z,1,ry);obstacles.push({x:cx+x,z:cz+z,r});SHS.n.add(cx+x,cz+z,r);};
    dc('barrel',srcBarrel,-8.2,-3.8,0,.5);dc('crate',srcCrate,-8.4,-2.4,.3,.55);dc('crate',srcCrate,8.3,-4.2,.2,.55);dc('barrel',srcBarrel,7.6,-5.1,0,.5);dc('bench',srcBench,-3.6,-5.6,.35,.8);dc('bench',srcBench,3.6,-5.6,-.35,.8);
-   const sm=getInst('snowman',srcSnowman);sm.position.set(cx+6.8,0,cz-8);sm.rotation.y=.6;sm.isPickable=false;obstacles.push({x:cx+6.8,z:cz-8,r:.55});}
+   const sm=getInst('snowman',srcSnowman);sm.position.set(cx+6.8*TK2,0,cz-8*TK2);sm.rotation.y=.6;sm.isPickable=false;obstacles.push({x:cx+6.8*TK2,z:cz-8*TK2,r:.55});}
  }
  {const rp=(Z,rr)=>{const a=rnd(0,6.283),r=Math.sqrt(Math.random())*rr;return {x:Z.x+Math.cos(a)*r,z:Z.z+Math.sin(a)*r};};
   const spire=(x,z,h,w)=>{const c=staticMesh(B.CreateCylinder('sp3',{height:h,diameterTop:0,diameterBottom:w||1.1,tessellation:5},scene));c.position.set(x,h/2,z);c.material=NM.iceS;ink(c,.03,INKN);obstacles.push({x,z,r:(w||1.1)*.5});};
@@ -2301,25 +2302,25 @@ const animal=c=>add=>{
   for(const sx of[-1,1])for(const sz of[-1,1]){P_.push(cyl(.8,.16,.12,6,sx*.34,.4,sz*.62,sand),sph(.2,sx*.34,.42,sz*.62,dkc,null,4),sph(.2,sx*.34,.04,sz*.62,hoof,{s:[1,.5,1.3]},4));}}
  CH.det(add.r,'an',P_,.02,fin);
 };
-const ringPath=(rev,off,cx,cz,rr)=>{const a=[];for(let i=0;i<18;i++){const t=off+(rev?-1:1)*i*Math.PI/9;a.push([(cx||0)+Math.cos(t)*(rr||12.4),(cz||0)+Math.sin(t)*(rr||12.4)]);}return a;};
+const ringPath=(rev,off,cx,cz,rr)=>{const a=[];for(let i=0;i<18;i++){const t=off+(rev?-1:1)*i*Math.PI/9;a.push([(cx||0)+Math.cos(t)*(rr||16.4),(cz||0)+Math.sin(t)*(rr||16.4)]);}return a;};
 const CCOL=['#b5654a','#4a7ab5','#7aa05a','#a05a8a','#c9a45a','#5a8f8f','#8a6a4a'],HATS=[null,'#6b4a2a','#3a3a5a',null,'#8a2a2a'];
-for(let i=0;i<7;i++){const a=rnd(0,6.28),r=rnd(4,9);mkWalker({x:Math.cos(a)*r,z:Math.sin(a)*r,spd:1.4,home:{x:0,z:0},hr:9.5,cr:.45,build:person(CCOL[i],HATS[i%5],0,i)});}
-mkWalker({x:12.4,z:0,spd:2.2,cr:.45,path:ringPath(0,0),name:'Guarda da Vila',build:person('#3f5f8f',null,1)});
-mkWalker({x:-12.4,z:0,spd:2.2,cr:.45,path:ringPath(1,Math.PI),name:'Guarda da Vila',build:person('#3f5f8f',null,1)});
+for(let i=0;i<4;i++){const a=rnd(0,6.28),r=rnd(6,12);mkWalker({x:Math.cos(a)*r,z:Math.sin(a)*r,spd:1.4,home:{x:0,z:0},hr:13,cr:.45,build:person(CCOL[i],HATS[i%5],0,i)});}
+mkWalker({x:16.4,z:0,spd:2.2,cr:.45,path:ringPath(0,0),name:'Guarda da Vila',build:person('#3f5f8f',null,1)});
+mkWalker({x:-16.4,z:0,spd:2.2,cr:.45,path:ringPath(1,Math.PI),name:'Guarda da Vila',build:person('#3f5f8f',null,1)});
 {const zb=x=>riverZ(x);mkWalker({x:-8,z:zb(-8)-6,spd:2.2,cr:.45,path:[[-8,zb(-8)+6],[18,zb(18)+6],[18,zb(18)-6],[-8,zb(-8)-6]],name:'Guarda da Ponte',build:person('#3f5f8f',null,1)});}
 const ANI={sheep:{b:[.7,.6,1],lg:.25,m:mat('shp','#eeeeee'),hm:mat('shh','#2b2b2b'),spd:.9,hop:.03},cow:{b:[.9,.8,1.5],lg:.45,m:mat('cwm','#efe9dc'),hm:mat('cwh','#3a2a22'),spd:.8,hop:.03,sr:.9},
  deer:{b:[.55,.65,1.2],lg:.7,m:mat('drm','#9a6b3f'),hm:mat('drh','#5a3d22'),ear:.45,spd:2,flee:9,hop:.1,sr:.7},rabbit:{b:[.3,.3,.5],lg:.1,m:mat('rbm','#cdbca0'),ear:.3,spd:2,flee:6,hop:.22,sr:.3}};
 ANI.camel={b:[.9,1.1,1.9],lg:.8,m:mat('cmm','#c9a45a'),hm:mat('cmh','#8a6a3a'),spd:.9,hop:.03,sr:.9};
 ANI.sheep.kind='sheep';ANI.cow.kind='cow';ANI.deer.kind='deer';ANI.rabbit.kind='rabbit';ANI.camel.kind='camel';ANI.reindeer={...ANI.deer,kind:'deer',rein:1,m:mat('rnm','#cfc6bc'),hm:mat('rnh','#8a8078'),spd:1.6};
 const herd=(t,n,hx,hz,hr)=>{for(let i=0;i<n;i++){const a=rnd(0,6.28),r=Math.sqrt(Math.random())*hr;mkWalker({...ANI[t],x:hx+Math.cos(a)*r,z:hz+Math.sin(a)*r,home:{x:hx,z:hz},hr,cr:.5,build:animal(ANI[t])});}};
-for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(4,9);mkWalker({x:SC.x+Math.cos(a)*r,z:SC.z+Math.sin(a)*r,spd:1.4,home:{x:SC.x,z:SC.z},hr:10,cr:.45,build:person(['#c9a45a','#a05a3a','#5a8f8f','#8a4a6a','#4a6aa8','#b58a3a'][i],['#d8c9a0',null,'#a63a2a'][i%3],0,i+10)});}
-mkWalker({x:SC.x+14.6,z:SC.z,spd:2.2,cr:.45,path:ringPath(0,0,SC.x,SC.z,14.6),name:'Guarda de Solara',build:person('#a8832a',null,1)});
-mkWalker({x:SC.x-14.6,z:SC.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,SC.x,SC.z,14.6),name:'Guarda de Solara',build:person('#a8832a',null,1)});
+for(let i=0;i<3;i++){const a=rnd(0,6.28),r=rnd(6,13);mkWalker({x:SC.x+Math.cos(a)*r,z:SC.z+Math.sin(a)*r,spd:1.4,home:{x:SC.x,z:SC.z},hr:14,cr:.45,build:person(['#c9a45a','#a05a3a','#5a8f8f','#8a4a6a','#4a6aa8','#b58a3a'][i],['#d8c9a0',null,'#a63a2a'][i%3],0,i+10)});}
+mkWalker({x:SC.x+18.9,z:SC.z,spd:2.2,cr:.45,path:ringPath(0,0,SC.x,SC.z,18.9),name:'Guarda de Solara',build:person('#a8832a',null,1)});
+mkWalker({x:SC.x-18.9,z:SC.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,SC.x,SC.z,18.9),name:'Guarda de Solara',build:person('#a8832a',null,1)});
 herd('camel',4,SC.x+26,SC.z+8,4);
 herd('sheep',6,-34,-24,3.2);herd('cow',3,-34,-24,3.2);herd('deer',4,-24,-40,7);herd('rabbit',6,34,-6,5);
-for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(4,9);mkWalker({x:SN.x+Math.cos(a)*r,z:SN.z+Math.sin(a)*r,spd:1.4,home:{x:SN.x,z:SN.z},hr:10,cr:.45,build:person(['#4a78a8','#a85a4a','#5a9a8a','#7a5a9a','#c8a45a','#8a9ab0'][i],['#e8f2ff','#6a4a2a',null][i%3],0,i+20)});}
-mkWalker({x:SN.x+14.6,z:SN.z,spd:2.2,cr:.45,path:ringPath(0,0,SN.x,SN.z,14.6),name:'Guarda da Nevasca',build:person('#3a68a0',null,1,3)});
-mkWalker({x:SN.x-14.6,z:SN.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,SN.x,SN.z,14.6),name:'Guarda da Nevasca',build:person('#3a68a0',null,1,4)});
+for(let i=0;i<3;i++){const a=rnd(0,6.28),r=rnd(6,13);mkWalker({x:SN.x+Math.cos(a)*r,z:SN.z+Math.sin(a)*r,spd:1.4,home:{x:SN.x,z:SN.z},hr:14,cr:.45,build:person(['#4a78a8','#a85a4a','#5a9a8a','#7a5a9a','#c8a45a','#8a9ab0'][i],['#e8f2ff','#6a4a2a',null][i%3],0,i+20)});}
+mkWalker({x:SN.x+18.9,z:SN.z,spd:2.2,cr:.45,path:ringPath(0,0,SN.x,SN.z,18.9),name:'Guarda da Nevasca',build:person('#3a68a0',null,1,3)});
+mkWalker({x:SN.x-18.9,z:SN.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,SN.x,SN.z,18.9),name:'Guarda da Nevasca',build:person('#3a68a0',null,1,4)});
 herd('reindeer',4,SN.x+26,SN.z+8,4);herd('sheep',5,SN.x-26,SN.z-8,3.5);
 Math.random=__rW;
 function updateLife(dt,now){
