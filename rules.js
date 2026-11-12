@@ -673,7 +673,7 @@ const NPCS=[
  {id:'arena_a',name:'Mestre Brutus, da Arena',icon:'🏟️',x:10.2,z:-3,col:'#b0452a',tabs:['arena'],greet:'A Arena PK é separada da cidade: lá vale tudo, todos contra todos. Entre só se estiver pronto — e dá para sair quando quiser.',hat:'#6a2418',banner:'#d4552a',arena:true},
  {id:'arena_s',name:'Mestra Kalila, da Arena',icon:'🏟️',x:311,z:1.5,col:'#c0792a',tabs:['arena'],greet:'Na areia da arena os fracos caem e os fortes viram lenda. Quer provar o seu valor?',hat:'#7a4a14',banner:'#e08a2a',arena:true},
  {id:'arena_n',name:'Mestre Bjarn, da Arena',icon:'🏟️',x:-289.5,z:2.5,col:'#5a78d0',tabs:['arena'],greet:'Aqui no frio a gente resolve as diferenças na arena. Sem rancor: quem cai, volta.',hat:'#2a3e6a',banner:'#5a8ad0',arena:true},
- {id:'arena_g',name:'Guardião da Arena',icon:'🏟️',x:1800,z:-31,col:'#a03a2a',tabs:['arena'],greet:'Quem cai reaparece em instantes, sem perder nada. Para sair, fale comigo (só fora de combate).',hat:'#5a1c14',banner:'#d4552a',arena:true}];
+ {id:'arena_g',name:'Guardião da Arena',icon:'🏟️',x:1800,z:-31,col:'#a03a2a',tabs:['arena'],greet:'Quem cai precisa voltar à cidade para renascer, sem perder nada. Para sair, fale comigo (só fora de combate).',hat:'#5a1c14',banner:'#d4552a',arena:true}];
 // Cidades mais espaçadas: os NPCs que ficavam dentro das zonas seguras antigas (raio 11 / 13) são afastados do centro na mesma proporção
 // em que a zona segura cresceu (Aurora 11→15; Solara e Nevasca 13→17,5). NPCs de fora (missões, portais de calabouço) não mudam.
 { const OLD = [{ x: 0, r: 11, k: 15 / 11 }, { x: 300, r: 13, k: 17.5 / 13 }, { x: -300, r: 13, k: 17.5 / 13 }];

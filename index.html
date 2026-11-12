@@ -5964,7 +5964,8 @@ document.getElementById('ui').insertAdjacentHTML('beforeend',`
 <div id="pkHud" class="panel"><span>🏟️ <b>Arena PK</b></span><span id="pkSt"></span><button id="pkLeave">🚪 Sair</button></div>
 <div id="pkFeed"></div>
 <div id="pkProt"></div>`);
-document.body.insertAdjacentHTML('beforeend','<div id="pkDead"><div class="t">💀 Você caiu</div><div class="s" id="pkDeadBy"></div><div class="c" id="pkDeadC">5</div><div class="s">Reaparecendo… você não perde nada.</div></div>');
+document.body.insertAdjacentHTML('beforeend','<div id="pkDead"><div class="t">💀 Você caiu</div><div class="s" id="pkDeadBy"></div><div class="c" id="pkDeadC" style="display:none">5</div><div class="s">Você precisa voltar à cidade para renascer. Não perde nada.</div><button id="pkDeadBtn" style="pointer-events:auto;font-size:16px;padding:10px 20px;border-radius:9px;border:1px solid var(--gold);background:#3b3014;color:#ffe28a;font-weight:700;cursor:pointer;margin-top:6px">🏠 Voltar à cidade</button></div>');
+$('pkDeadBtn').addEventListener('click',()=>{const b=$('pkDeadBtn');if(b.disabled||!NET.room)return;NET.room.send('arena',{op:'revive'});b.disabled=true;setTimeout(()=>{b.disabled=false;},1500);});
 $('duOk').onclick=()=>{$('duInv').style.display='none';clearTimeout(PKS.invT);if(NET.room)NET.room.send('dans',{ok:true});};
 $('duNo').onclick=()=>{$('duInv').style.display='none';clearTimeout(PKS.invT);if(NET.room)NET.room.send('dans',{ok:false});};
 $('duSurr').onclick=()=>{const n=performance.now();if(PKS.surrAt&&n<PKS.surrAt){PKS.surrAt=0;$('duSurr').textContent='🏳️ Desistir';if(NET.room)NET.room.send('dsurr');}else{PKS.surrAt=n+3000;$('duSurr').textContent='Confirmar?';}};
@@ -6065,7 +6066,7 @@ function pkDmg(m){
  const mine=m.by===me;
  floatText((m.c?'💥 ':'')+m.d,pos,mine?(m.c?'#ffd84a':'#ffffff'):(m.c?'#e8c870':'#b8c4d0'),mine&&!!m.c);
  tgt.hp=Math.max(0,(tgt.hp==null?(tgt.maxHp||1):tgt.hp)-m.d);
- if(mine){const dd=D();if(!P.dead){const lc=RULES.leech(dd,m.d);if(lc.hp>0)P.hp=Math.min(dd.maxHp,P.hp+lc.hp);if(lc.mp>0)P.mp=Math.min(dd.maxMp,P.mp+lc.mp);}
+ if(mine){   // v1.53: sem absorção de HP/MP contra jogadores (só funciona em monstros)
   AUD.hit(S.cls,!!m.c,spat(pos));P.lastCombat=now;if(P.sel&&P.sel.isFoe&&P.sel.o===tgt)updateTarget();}
 }
 function pkCc(m){
@@ -6106,12 +6107,13 @@ function pkArenaOut(m){
  scene.clearColor=new BABYLON.Color4(NORMAL_CLEAR[0],NORMAL_CLEAR[1],NORMAL_CLEAR[2],1);pkMood(false);
  P.dead=false;P.root.rotation.z=0;P.pos.set(m.x,0,m.z);P.moveTo=null;P.atkTarget=null;P.interact=null;selectMonster(null);camera.target.copyFromFloats(m.x,.6,m.z);
  if(PKS.save){const d=D();P.hp=Math.max(1,Math.min(d.maxHp,PKS.save.hp));P.mp=Math.max(0,Math.min(d.maxMp,PKS.save.mp));PKS.save=null;}
+ if(P.hp<=0){const d=D();P.hp=Math.round(d.maxHp*.7);P.mp=Math.max(P.mp,Math.round(d.maxMp*.5));}
  NET.hpL=null;ring(m.x,m.z,3,'#8fd3ff',800);AUD.sfx('teleport');
  if(was)toast(`🏟️ Você saiu da Arena: ${m.k|0} abate(s), ${m.d|0} queda(s), ${m.p|0} ponto(s).`);
 }
 function pkArenaDead(m){
  P.dead=true;P.hp=0;P.root.rotation.z=Math.PI/2;P.atkTarget=null;P.moveTo=null;P.interact=null;selectMonster(null);closeDialog();
- PKS.d++;PKS.streak=0;PKS.respAt=performance.now()+(m.ms||5000);AUD.sfx('playerDie');
+ PKS.d++;PKS.streak=0;PKS.respAt=0;AUD.sfx('playerDie');
  $('pkDeadBy').textContent=m.by&&m.by!=='alguém'?'Derrotado por '+m.by:'Você foi derrotado';$('pkDeadC').textContent=Math.ceil((m.ms||5000)/1000);$('pkDead').style.display='flex';
  if(m.pk&&S)S.pk=m.pk;
 }
@@ -6178,11 +6180,11 @@ function pkMini(){
 function arenaTabHtml(){
  const A=RULES.ARENA,PV2=RULES.PVP,inA=PKS.mode==='arena',pk=S.pk||{k:0,d:0,p:0,bs:0},dl=S.dl||{w:0,l:0},rk2=PKS.rank;let h='';
  if(inA){
-  h+=`<p class="muted">Você está na Arena PK. Cair não custa nada: você reaparece em ${A.resp/1000} s, com 3 s de proteção. Para sair é preciso ficar ${A.leave/1000} s sem combate.</p>
+  h+=`<p class="muted">Você está na Arena PK. Cair não custa nada: você precisa voltar à cidade para renascer (botão na tela de queda). Para sair é preciso ficar ${A.leave/1000} s sem combate.</p>
   <div class="row2"><div class="ri">🚪</div><div class="rt"><b>Sair da Arena</b><small>Você volta para a cidade de onde entrou, com a vida e a mana que tinha antes.</small></div><div class="rb"><button data-act="arleave">Sair</button></div></div>`;
  }else{
   const okL=S.level>=A.minLv;
-  h+=`<p class="muted">A Arena PK fica numa zona separada e é opcional — a cidade continua segura. Lá todos lutam contra todos (quem está no mesmo grupo não se fere). Quem cai reaparece em ${A.resp/1000} s, sem perder nada. Os pontos valem no ranking semanal.</p>
+  h+=`<p class="muted">A Arena PK fica numa zona separada e é opcional — a cidade continua segura. Lá todos lutam contra todos (quem está no mesmo grupo não se fere). Quem cai precisa voltar à cidade para renascer, sem perder nada. Os pontos valem no ranking semanal.</p>
   <div class="row2"><div class="ri">🏟️</div><div class="rt"><b>Entrar na Arena PK</b><small>Nível mínimo ${A.minLv} • proteção de ${A.prot/1000} s ao entrar • poções: recarga de ${PV2.potCd/1000} s e metade do efeito • sem retorno à cidade lá dentro (use "Sair")</small>${okL?'':`<small class="no">Você precisa do nível ${A.minLv}.</small>`}</div><div class="rb"><button data-act="arenter" ${okL?'':'disabled'}>Entrar</button></div></div>`;
  }
  h+=`<div class="secH">📊 Seu histórico</div><div class="row2"><div class="rt"><small>⚔️ Abates: <b>${pk.k}</b> • 💀 Quedas: <b>${pk.d}</b> • 🔥 Maior sequência: <b>${pk.bs}</b> • ⭐ Pontos: <b>${fmt(pk.p)}</b></small><small>🤺 Duelos: <b class="ok">${dl.w}</b> vitória(s) • <b class="no">${dl.l}</b> derrota(s)</small></div></div>

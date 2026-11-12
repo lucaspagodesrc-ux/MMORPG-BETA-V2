@@ -1,28 +1,15 @@
-ATUALIZAÇÃO 1.52 — ARQUEIRO: FLECHAS NOVAS E 4 HABILIDADES TROCADAS
-Pacote CUMULATIVO: contém tudo da 1.51 e anteriores. Se a 1.51 já está instalada, mudam só index.html, rules.js e WorldRoom.ts.
+ATUALIZAÇÃO 1.53 — PVP: SEM ABSORÇÃO E RENASCER NA CIDADE
+Pacote CUMULATIVO: contém tudo da 1.52 e anteriores. Se a 1.52 já está instalada, mudam só index.html, rules.js e pvp.ts.
 
 O QUE MUDOU
-FLECHA NOVA (ataque básico e habilidades): agora tem haste de madeira, ponta de metal, colar e 3 penas na cor da habilidade, voa em arco leve e deixa um rastro brilhante. Ao acertar, solta um clarão.
+1) Absorção de HP e de MP agora só funciona contra MONSTROS. Contra jogadores (duelo e Arena PK) não recupera nada, nem vida nem mana.
+2) Arena PK: quem cai NÃO renasce mais sozinho no mesmo lugar depois de 5 s. A tela de queda mostra o botão "🏠 Voltar à cidade"; ao clicar, o jogador sai da Arena, volta para a cidade e renasce com 70% da vida e 50% da mana. Não perde nada (como antes). Enquanto não clicar, continua caído.
+   Os textos da Arena (janela do Guardião e o aviso ao entrar) foram atualizados.
 
-HABILIDADES TROCADAS (mesmos slots, mesmas teclas, mesmos níveis e ranks)
-• Salto Evasivo → TIRO EXPLOSIVO EVASIVO: o arqueiro crava uma flecha explosiva no chão à frente; a explosão levanta poeira, faíscas e pedaços de terra e ele desliza para trás (7 de distância) ganhando rapidez, como antes.
-• Tiro Triplo → VONTADE DO VENTO: um leque de flechas de vento se abre e converge no alvo ao mesmo tempo (3 flechas no rank 1, até 6 no rank 20), com flechas extras só visuais.
-• Flecha Gélida → RAJADA REUNIDORA: uma flecha de vento com anéis giratórios abre um redemoinho que junta até 5 monstros no centro e os atordoa (1,5 s no rank 1, até 2,4 s no rank 20). Funciona como as Correntes do Tanque (precisa de servidor).
-• Tiro Letal → FLECHA DILACERANTE: 0,3 s de carga (orbe de energia e faíscas convergindo no arco) e depois uma flecha grande e perfurante que atravessa o alvo. O dano chega junto com a flecha (o servidor espera a carga).
-
-HABILIDADES MANTIDAS, COM ANIMAÇÃO NOVA
-• Tiro Preciso: flecha maior, com rastro longo.
-• Chuva de Flechas: um leque de flechas sobe ao céu e 14 flechas caem na área e ficam cravadas no chão por um instante.
-• Tempestade de Flechas: o mesmo, em escala maior (7 flechas sobem, 30 caem, maiores e cravadas por mais tempo).
-• Foco Mortal: um arco espiritual brilhante e 7 flechas de energia giram em espiral em volta do arqueiro.
-
-OBSERVAÇÕES
-• Os personagens que já tinham ranks nessas habilidades mantêm os ranks (as habilidades continuam nos mesmos slots).
-• A Flecha Gélida perdeu a lentidão; a Rajada Reunidora a substitui com atordoamento em área.
-• Correção: a habilidade Correntes de Aço do Tanque (e a Rajada Reunidora) agora escolhem o alvo no cliente; antes a lista de habilidades com alvo não incluía esse tipo.
-• Outros jogadores veem as animações novas.
+NÃO MUDOU
+• Duelo: continua sendo uma luta sem perdas; quem perde mantém a vida e a mana que tinha antes do duelo (ninguém morre de verdade). Se quiser que o perdedor do duelo também precise voltar à cidade, é só pedir.
 
 INSTALAÇÃO
-1) Envie index.html, rules.js e WorldRoom.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo, se preferir.
-2) Aguarde o Render terminar o deploy (o servidor precisa reiniciar por causa do WorldRoom.ts e do rules.js).
+1) Envie index.html, rules.js e pvp.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo, se preferir.
+2) Aguarde o Render terminar o deploy (o servidor reinicia por causa do pvp.ts e do rules.js).
 3) No navegador, Ctrl+F5.

@@ -117,7 +117,7 @@ export class Pvp {
     d *= 1 - Math.min(0.85, room.buff(ts, "shield"));
     d = R.flatRed(V, SA, d);                                                              // Redução de Danos (menos o "Ignorar" do atacante)
     this.damage(s, ts, d, !!r.crit);
-    const lc = R.leech(SA, d); if (lc.hp > 0) this.heal(s, lc.hp);                          // Absorção de HP (% do dano + limite fixo)
+    // v1.53: a Absorção de HP/MP não funciona contra jogadores (duelo e Arena), só em monstros
     this.cc(ts, o);
     const cl = s.clone;                                                                   // Pierrot: os clones atacam junto
     if (!o.noClone && cl && cl.until > t) for (let n = 0; n < cl.n; n++) room.later(110 + n * 80, () => this.hit(s, q, mult * cl.mult, { noClone: true, basic: o.basic }));
@@ -257,6 +257,7 @@ export class Pvp {
     const op = String(m?.op || "");
     if (op === "enter") return this.enter(s);
     if (op === "leave") return this.leave(s, false);
+    if (op === "revive") { const p = this.P(s.client.sessionId); if (p && p.dead && s.pv && s.pv.mode === "arena") this.leave(s, true); return; }   // caído na Arena: volta à cidade e renasce
     if (op === "rank") return void this.rank(s);
   }
   private enter(s: any) {
@@ -272,7 +273,7 @@ export class Pvp {
     this.fresh(s); this.arena.add(sid);
     p.x = sp.x; p.z = sp.z; s.budget = 20; s.t = s.tpAt = now();
     s.client.send("arena", { st: "in", x: sp.x, z: sp.z, ms: AR.prot, pk: s.c.pk || { k: 0, d: 0, p: 0, bs: 0 } });
-    this.sys(s, `🏟️ Você entrou na Arena PK! Todos lutam contra todos; ao cair você reaparece em ${Math.round(AR.resp / 1000)} s sem perder nada.`);
+    this.sys(s, `🏟️ Você entrou na Arena PK! Todos lutam contra todos; ao cair você precisa voltar à cidade para renascer (sem perder nada).`);
     this.claim(s).catch(() => {});
   }
   leave(s: any, forced: boolean) {
@@ -290,7 +291,7 @@ export class Pvp {
   private arenaDeath(vs: any, killerSid: string) {
     const sid = vs.client.sessionId, p = this.P(sid), v = this.pv(vs), t = now(); if (!p || v.rs) return;
     const ks = this.S(killerSid), kn = ks ? this.name(killerSid) : "alguém";
-    v.deaths++; v.streak = 0; v.rs = t + AR.resp; v.zero = 0; p.dead = true;
+    v.deaths++; v.streak = 0; v.rs = Number.MAX_SAFE_INTEGER; v.zero = 0; p.dead = true;   // caído: só renasce voltando à cidade (op "revive")
     vs.c.pk = vs.c.pk || { k: 0, d: 0, p: 0, bs: 0 }; vs.c.pk.d++; this.room.touch(vs);
     let pts = 0;
     if (ks && ks.pv && ks.pv.mode === "arena") {
@@ -302,7 +303,7 @@ export class Pvp {
       this.week(ks, pts, 1, 0); if (kv.streak >= 3) for (const id of this.arena) this.sys(this.S(id), `🏟️ ${kn} está em sequência de ${kv.streak} abates!`);
     }
     this.week(vs, 0, 0, 1);
-    vs.client.send("arena", { st: "dead", by: kn, ms: AR.resp, pk: vs.c.pk });
+    vs.client.send("arena", { st: "dead", by: kn, ms: 0, pk: vs.c.pk });
     for (const id of this.arena) this.S(id)?.client.send("pkfeed", { k: kn, v: this.name(sid), pts });
   }
   private week(s: any, pts: number, k: number, d: number) {
@@ -370,7 +371,7 @@ export class Pvp {
   private tickArena(sid: string, t: number) {
     const s = this.S(sid), p = this.P(sid); if (!s || !p) { this.arena.delete(sid); return; }
     const v = this.pv(s);
-    if (v.mode !== "arena" || !R.arenaIn(p.x)) { this.arena.delete(sid); if (v.mode === "arena") v.mode = ""; return; }   // saiu por outro meio (teleporte de GM etc.)
+    if (v.mode !== "arena" || !R.arenaIn(p.x)) { this.arena.delete(sid); if (v.mode === "arena") { v.mode = ""; v.rs = 0; } return; }   // saiu por outro meio (teleporte de GM etc.)
     if (v.rs && t >= v.rs) {
       const sp = this.spawnPoint(sid); v.rs = 0; v.prot = t + 3000; p.dead = false; p.x = sp.x; p.z = sp.z; s.budget = 20; s.t = s.tpAt = t; this.fresh(s);
       s.client.send("arena", { st: "resp", x: sp.x, z: sp.z, ms: 3000 });
