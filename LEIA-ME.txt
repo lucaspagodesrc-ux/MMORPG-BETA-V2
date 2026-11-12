@@ -1,16 +1,29 @@
-ATUALIZAÇÃO 1.46 — PAINEL DO CALABOUÇO AO LADO DO MINIMAPA
-Pacote CUMULATIVO: contém tudo da 1.45, 1.44, 1.43, 1.42, 1.41, 1.40, 1.39 e 1.38. Se a 1.45 já está instalada, só o index.html muda.
+ATUALIZAÇÃO 1.47 — XP POR GOLPE, BÔNUS DE XP, DROPS DE CALABOUÇO, GEMAS EM ANÉIS
+Pacote CUMULATIVO: contém tudo da 1.46 e anteriores.
 
 O QUE MUDOU
-- O painel do calabouço (nome, tempo, etapa, barra de progresso e botões Pausar / Sair) saiu do centro da tela
-  e foi para o canto superior direito, logo à esquerda do minimapa. Assim não cobre mais a barra do alvo
-  (nome do monstro) nem o aviso de chefe do mundo, que ficam no topo central.
-- Em telas pequenas (celular), o painel fica logo abaixo do quadro do personagem, sem cobrir o minimapa,
-  o rastreador de missões ou os botões do menu.
-- Nenhuma regra de jogo mudou (rules.js e servidor iguais à 1.45).
+1) XP a cada golpe (e não só ao eliminar o monstro)
+   - Cada golpe dá XP proporcional ao quanto ele tirou da vida do monstro: no total 50% do XP do monstro vem dos golpes
+     e 40% vem ao derrotá-lo (ao todo ~90% do XP antigo para quem luta sozinho, para não ficar fácil demais de subir de nível).
+   - Habilidades em área: +10% de XP nos golpes.
+   - Grupo: +10% de XP por membro do grupo que esteja por perto (até 45 m, mesma sala/dungeon), máximo +30% — vale nos golpes e na eliminação.
+   - Calabouços: habilidades (não o ataque básico) dão +20% de XP nos golpes.
+   - Limite anti-abuso: cada jogador só recebe XP de golpe até 100% da vida de cada monstro (monstro que cura/reinicia não rende XP infinito).
+   - Espantalhos de treino, chefes de mundo e baús continuam sem XP por golpe. Reforços/ondas de dungeon seguem valendo 35%.
+   - O XP sobe na barra durante a luta (envio leve, sem reenviar o personagem).
+2) Calabouços: drops melhores
+   - Chance de cair equipamento +30%; chance de raro/épico bem maior (mais de 70% a mais de itens raros ou melhores).
+   - Chance de vir com engastes (slots) maior: 1 engaste 8% → 11%, 2 engastes 1,5% → 2,2%.
+   - Itens raros/épicos de calabouço têm 40% de chance de vir com um atributo extra (Força/Agilidade/Inteligência/Vitalidade).
+   - Itens de monstros de calabouço saem 1 a 2 níveis acima (antes 0 a 2).
+   - Baús de calabouço: mais raridade e mais chance de engastes, mais chance de atributo extra.
+3) Anéis contam como ARMA para gemas: os pergaminhos/gemas de ARMA agora podem ser engastados em anéis (e as de armadura
+   deixam de entrar em anéis). Pergaminhos já engastados em anéis que sejam de armadura ficam sem efeito até serem trocados.
+4) Gemas de armadura de Técnica de Amp. (Guardião Eterno / Sábio Eterno): 3% → 8%.
+5) O mostrador de jogadores online (topo da tela) agora só aparece para o GM.
 
 INSTALAÇÃO
-1) Envie o index.html para a raiz do repositório no GitHub (substituindo). Se vier de versão anterior
-   à 1.45, envie todos os arquivos do pacote.
+1) Envie TODOS os arquivos do pacote para a raiz do repositório no GitHub (substituindo): rules.js, index.html, WorldRoom.ts, monsters.ts
+   (os demais são iguais aos da versão anterior, mas pode enviar o pacote inteiro).
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.

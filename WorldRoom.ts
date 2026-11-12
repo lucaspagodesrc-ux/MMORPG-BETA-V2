@@ -145,8 +145,10 @@ export class WorldRoom extends Room<WorldState> {
     }
     const buffs = { dmg: this.buff(s, "dmg"), defdmg: this.buff(s, "defdmg"), crit: this.buff(s, "crit"), combo: this.buff(s, "combo"), flat: this.buff(s, "flat") };
     const r = R.hitDamage(this.stats(s), { mult, basic: o.basic, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def * (1 - (o.pierce || 0)), hp: sim.m.hp, maxHp: sim.m.maxHp });
+    const hp0 = sim.m.hp;
     const died = this.sim.damage(sid, sim, r.dmg, o.slow || 0);
     this.broadcast("dmg", { id: sim.m.id, d: r.dmg, c: r.crit ? 1 : 0, by: sid });
+    this.hitXp(s, sim, Math.min(r.dmg, hp0), o);                // XP a cada golpe (não só ao matar)
     if (died) { this.onKill(sim); return; }
     if (o.stun || o.root || o.lift || o.pull) this.sim.cc(sim, o, p.x, p.z);
     const cl = s.clone;                                         // Pierrot: os clones atacam junto
@@ -154,7 +156,7 @@ export class WorldRoom extends Room<WorldState> {
   }
   private hitNear(s: Sess, x: number, z: number, r: number, mult: number, o: any, seen: Set<Sim>) {
     const inst = this.playerOf(s)?.inst || 0;
-    for (const sim of this.sim.list) if (!seen.has(sim) && sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) { seen.add(sim); this.hit(s, sim, mult, o); }
+    for (const sim of this.sim.list) if (!seen.has(sim) && sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) { seen.add(sim); this.hit(s, sim, mult, { ...o, aoe: true }); }
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) if (!seen.has(q) && Math.hypot(q.m.x - x, q.m.z - z) <= r + 0.5) { seen.add(q); this.hit(s, q, mult, o); }
   }
   private hitLine(s: Sess, x: number, z: number, ux: number, uz: number, len: number, w: number, mult: number, o: any) {
@@ -162,7 +164,7 @@ export class WorldRoom extends Room<WorldState> {
     for (const sim of this.sim.list) {
       if (!sim.m.alive || sim.inst !== inst || cx(sim.m.x) !== cx(x)) continue;
       const rx = sim.m.x - x, rz = sim.m.z - z, t = rx * ux + rz * uz, pd = Math.abs(rx * uz - rz * ux);
-      if (t >= -0.5 && t <= len && pd <= w / 2 + 0.5 * sim.bs) this.hit(s, sim, mult, o);
+      if (t >= -0.5 && t <= len && pd <= w / 2 + 0.5 * sim.bs) this.hit(s, sim, mult, { ...o, aoe: true });
     }
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) {
       const rx = q.m.x - x, rz = q.m.z - z, t = rx * ux + rz * uz, pd = Math.abs(rx * uz - rz * ux);
@@ -171,15 +173,17 @@ export class WorldRoom extends Room<WorldState> {
   }
   private hitArea(s: Sess, x: number, z: number, r: number, mult: number, o: any) {
     const inst = this.playerOf(s)?.inst || 0;
-    for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, o);
+    for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, { ...o, aoe: true });
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) if (Math.hypot(q.m.x - x, q.m.z - z) <= r + 0.5) this.hit(s, q, mult, o);
   }
   private dot(s: Sess, sim: Sim, dmg: number, slow = 0) {                     // dano contínuo fixo
     if ((sim as any).pv) return this.pvp.dot(s, sim as any, dmg, slow);
     if (s.pv && s.pv.mode === "duel") return;
     if (!sim.m.alive || sim.immune || (sim.inst && this.dg.dormant(sim))) return; const sid = s.client.sessionId;
+    const hp0 = sim.m.hp;
     const died = this.sim.damage(sid, sim, dmg, slow);
     this.broadcast("dmg", { id: sim.m.id, d: dmg, c: 0, by: sid });
+    this.hitXp(s, sim, Math.min(dmg, hp0), { dot: true });
     if (died) this.onKill(sim);
   }
   /** Habilidades de salto/investida: o caminho não pode atravessar as paredes da dungeon. */
@@ -188,6 +192,41 @@ export class WorldRoom extends Room<WorldState> {
     const q = this.dg.clampMove(I, ox, oz, p.x, p.z); p.x = q.x; p.z = q.z;
   }
   private later(ms: number, fn: () => void) { setTimeout(() => { try { fn(); } catch (e) { console.error(e); } }, ms); }
+
+  /* ---------- XP por golpe (v1.47) ----------
+     Cada golpe rende XP proporcional à fração da vida do monstro que ele tirou (50% do XP do monstro no total);
+     os outros 40% vêm ao derrotá-lo. Habilidades em área: +10%. Habilidades dentro de calabouço: +20%. Grupo por perto: +10% por membro (máx. +30%).
+     Cada jogador só recebe XP de golpe até 100% da vida do monstro (curar/reiniciar o monstro não rende XP infinito). */
+  private partyBonus(s: Sess): number {
+    if (!s.partyId) return 0;
+    const p = this.playerOf(s); if (!p) return 0;
+    let n = 0;
+    for (const [sid, o] of this.sess) {
+      if (o === s || o.partyId !== s.partyId) continue;
+      const q = this.state.players.get(sid); if (!q || q.dead || q.inst !== p.inst || cx(q.x) !== cx(p.x) || Math.hypot(q.x - p.x, q.z - p.z) > 45) continue;
+      n++;
+    }
+    return Math.min(0.3, n * 0.1);
+  }
+  private hitXp(s: Sess, sim: Sim, real: number, o: any) {
+    const T = sim.T; if (T.dummy || T.wb || T.chest || !(real > 0) || !(sim.m.maxHp > 0)) return;
+    const sid = s.client.sessionId, xpp = sim.xpp || (sim.xpp = new Map());
+    const paid = xpp.get(sid) || 0, frac = Math.min(real / sim.m.maxHp, 1 - paid); if (frac <= 0) return;
+    xpp.set(sid, paid + frac);
+    let k = 1 + this.partyBonus(s);
+    if (o.aoe) k += 0.1;
+    if (!o.basic && !o.dot && sim.inst) k += 0.2;
+    const x = R.xpFor(T, sim.m.lvl, s.c.level) * 0.5 * frac * k * (sim.lazy ? 0.35 : 1);
+    (s as any).xpAcc = ((s as any).xpAcc || 0) + x;
+    const now = Date.now(); if (now - ((s as any).xpAt || 0) >= 700) this.flushXp(s);
+  }
+  private flushXp(s: Sess) {
+    const a = s as any, n = Math.floor(a.xpAcc || 0); a.xpAt = Date.now(); if (n < 1) return;
+    a.xpAcc -= n;
+    const c = s.c, up = R.gainXp(c, n); this.touch(s);
+    if (up) { const p = this.state.players.get(s.client.sessionId); if (p) p.level = c.level; this.sync(s); this.res(s, [{ lvl: c.level }]); }
+    else s.client.send("xp", { xp: c.xp, n });
+  }
 
   private onKill(sim: Sim) {
     if (sim.T.dummy) return;                                    // espantalho de treino: sem XP, drop ou missão
@@ -200,7 +239,8 @@ export class WorldRoom extends Room<WorldState> {
       const share = total > 0 ? dmg / total : 0;
       if (share < 0.1 && sid !== sim.lastHitBy) return;               // quem só encostou não ganha
       const c = s.c, out: any[] = [];
-      const xp = Math.max(1, Math.round(R.xpFor(T, mlvl, c.level) * Math.min(1, 0.4 + share) * (sim.lazy ? 0.35 : 1)));   // reforços/ondas da dungeon dão menos XP
+      this.flushXp(s);                                               // paga o XP de golpe que ainda estava acumulado
+      const xp = Math.max(1, Math.round(R.xpFor(T, mlvl, c.level) * 0.4 * Math.min(1, 0.4 + share) * (1 + this.partyBonus(s)) * (sim.lazy ? 0.35 : 1)));   // 40% do XP vem do golpe final   // reforços/ondas da dungeon dão menos XP
       c.kills = (c.kills || 0) + 1;
       out.push({ log: `<span style="color:#ffd27a">${T.n} Nv ${mlvl} derrotado! +${xp} XP</span>` });
       if (R.gainXp(c, xp)) { out.push({ lvl: c.level }); const p = this.state.players.get(sid); if (p) p.level = c.level; }

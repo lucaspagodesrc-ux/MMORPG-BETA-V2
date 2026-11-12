@@ -758,8 +758,8 @@ const GEMS = [
   { id: 'w_add',  cat: 'w', g: 2, n: 'Gema do Golpe Sombrio',      o: 'Dano Adicional',                  k: 'add',  v: .17, sc: 1,  d: 'Soma dano fixo a CADA golpe, depois da defesa do alvo. Cresce com o nível do equipamento.' },
   { id: 'w_cmax', cat: 'w', g: 3, n: 'Gema do Limite Supremo',     o: 'Aumento de Taxa Crítica Máxima',  k: 'cmax', v: 4,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 52%, no máximo 95%).' },
   // ---------- ARMADURA (armadura, elmo, botas, escudo, anéis, braceletes e brincos) ----------
-  { id: 'a_ampe', cat: 'a', g: 4, n: 'Gema do Guardião Eterno',    o: 'Técnica de Amp. Espada',          k: 'ampE', v: 3,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro.' },
-  { id: 'a_ampm', cat: 'a', g: 4, n: 'Gema do Sábio Eterno',       o: 'Técnica de Amp. Mágica',          k: 'ampM', v: 3,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes mágicas: Mago e Pierrot.' },
+  { id: 'a_ampe', cat: 'a', g: 4, n: 'Gema do Guardião Eterno',    o: 'Técnica de Amp. Espada',          k: 'ampE', v: 8,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes físicas: Guerreiro, Cavaleiro Pesado, Tanque, Assassino e Arqueiro.' },
+  { id: 'a_ampm', cat: 'a', g: 4, n: 'Gema do Sábio Eterno',       o: 'Técnica de Amp. Mágica',          k: 'ampM', v: 8,   u: '%',  d: 'Aumenta o dano das HABILIDADES das classes mágicas: Mago e Pierrot.' },
   { id: 'a_cmax', cat: 'a', g: 3, n: 'Gema do Horizonte Infinito', o: 'Taxa Crítica Máxima',             k: 'cmax', v: 2,   u: '%',  d: 'Aumenta o limite máximo da chance de crítico (normalmente 52%, no máximo 95%).' },
   { id: 'a_crit', cat: 'a', g: 4, n: 'Gema da Visão Aguçada',      o: 'Taxa Crítica',                    k: 'crit', v: 2,   u: '%',  d: 'Aumenta a chance de acerto crítico.' },
   { id: 'a_hp',   cat: 'a', g: 0, n: 'Gema da Vida Plena',         o: 'HP',                              k: 'hp',   v: 2,   sc: 1,  d: 'Aumenta a vida máxima. Cresce com o nível do equipamento.' },
@@ -796,7 +796,7 @@ for (const g of GEMS) { GEMD[g.id] = g; MATS['g_' + g.id] = { n: g.n, i: '📜',
 MATS.g_ext = { n: 'Extensor de Slot', i: '🔳', v: Math.round(EXT_PRICE * .1), ext: 1 };
 const gemVal = (g, ilvl) => g.sc ? Math.max(1, Math.round(g.v * ilvl)) : g.v;
 const gemTxt = (g, ilvl) => '+' + gemVal(g, ilvl).toLocaleString('pt-BR') + (g.u || '');
-const gemCat = it => it && it.slot === 'weapon' ? 'w' : 'a';
+const gemCat = it => it && (it.slot === 'weapon' || it.slot === 'ring') ? 'w' : 'a';   // anéis contam como ARMA para as gemas
 /** escola de habilidades da classe: 'E' = física (Espada) • 'M' = mágica */
 const schoolOf = cls => (cls === 'mago' || cls === 'pierrot') ? 'M' : 'E';
 /** ATRIBUTOS DE ITEM (fora do engaste): só vêm em drops de CHEFE. it.xa = { cdmg | ampE | ampM | cmax : valor }.
@@ -1040,12 +1040,14 @@ function eqKey(c, it, want) {
 }
 /** Aparência compacta (vai para os outros jogadores): chave|origem|+n|raridade;... */
 function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar); } return o.join(';'); }
+/** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
+function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
 function rollLoot(T, mlvl, cls, luck) {
   luck = luck || 0;
   const out = [];
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
   for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
-  if (Math.random() < T.eq * (1 + luck / 100)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .015 * lk ? 2 : Math.random() < .08 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
+  if (Math.random() < T.eq * (1 + luck / 100) * (T.dg ? 1.3 : 1)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + (T.dg ? .35 : 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .022 * lk ? 2 : Math.random() < .11 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(T.dg ? 1 : 0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.dg) dgAttrBoost(it); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
   if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
   if (T.boss && !T.chest && Math.random() < (T.dg ? .035 : .02) * (1 + luck / 100)) out.push(rollScroll(cls, mlvl));   // pergaminho de opção: chance mínima em chefes
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
@@ -1057,11 +1059,11 @@ function dgChestLoot(dg, tier, cls, luck) {
   luck = luck || 0; const lk = 1 + luck / 50;
   const out = [], mk = (bad) => {
     const ilvl = Math.max(1, ri(dg.ilvl[0], dg.ilvl[1]) + (tier - 1) - (bad ? ri(8, 16) : 0));
-    const rar = bad ? (Math.random() < .75 ? 0 : 1) : rarRoll([.7, 1.3, 2.4][tier - 1] + luck / 50);
-    const p2 = bad ? 0 : [.07, .12, .22][tier - 1] * lk, p1 = bad ? .04 : [.30, .38, .45][tier - 1] * lk, r = Math.random();
+    const rar = bad ? (Math.random() < .75 ? 0 : 1) : rarRoll([.7, 1.3, 2.4][tier - 1] + .3 + luck / 50);
+    const p2 = bad ? 0 : [.09, .15, .26][tier - 1] * lk, p1 = bad ? .04 : [.34, .42, .48][tier - 1] * lk, r = Math.random();
     const sl = r < p2 ? 2 : r < p2 + p1 ? 1 : 0;
     const mo = Math.random() < .7 ? (dg.cm || ['dg_s1', 'dg_s2', 'dg_boss'])[tier - 1] : pick(dg.mm || ['dg_a', 'dg_b', 'dg_c', 'dg_d']);
-    const it = genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, mo); if (luck > 0 && rar === 3) it.plus = ri(0, 4); return it;
+    const it = genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, mo); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (!bad) dgAttrBoost(it); return it;
   };
   out.push(mk(Math.random() < [.30, .22, .12][tier - 1] / (1 + luck / 100)));
   if (tier === 3 && Math.random() < .4) out.push(mk(false));
@@ -1332,7 +1334,7 @@ function cleanItem(it) {
   it.bon = nb;
   { const xa = {}; if (it.xa && typeof it.xa === 'object' && it.slot !== 'cape') for (const k in it.xa) if (xaOk(k, it.xa[k])) xa[k] = it.xa[k]; if (Object.keys(xa).length) it.xa = xa; else delete it.xa; }
   it.sl = Math.max(0, Math.min(MAX_SLOTS, Math.floor(it.sl || 0))); if (!it.sl || it.slot === 'cape') delete it.sl;
-  { const cat = it.slot === 'weapon' ? 'w' : 'a', gm = [];   // gemas engastadas: categoria certa (a mesma opção PODE repetir em vários engastes)
+  { const cat = gemCat(it), gm = [];   // gemas engastadas: categoria certa (a mesma opção PODE repetir em vários engastes)
     for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat) gm.push(id); else gm.push(null); }
     if (gm.some(Boolean)) it.gm = gm; else delete it.gm; }
   if (!(typeof it.mo === 'string' && OG[it.mo])) delete it.mo;
@@ -1578,7 +1580,7 @@ function act(sess, m, ctx) {
     const gi = m.gi; if (!intIn(gi, 0, c.inv.length)) return fail(); const sc = c.inv[gi];
     if (!sc || sc.k !== 'mat' || !MATS[sc.id] || !MATS[sc.id].gem) return fail('Escolha um pergaminho de opção.');
     const g = GEMD[MATS[sc.id].gem], cat = gemCat(it);
-    if (g.cat !== cat) return fail(cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas.' : 'Esta gema é de ARMA: só serve em armas.');
+    if (g.cat !== cat) return fail(cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas nem em anéis.' : 'Esta gema é de ARMA: só serve em armas e anéis.');
     const gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl) : []; while (gm.length < it.sl) gm.push(null);
     if (gm[si] === g.id) return fail('Este engaste já tem essa mesma gema.');
     if (gm[si] && !m.rep) return fail('O engaste já está ocupado: confirme para substituir (a gema antiga é destruída).');

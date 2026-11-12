@@ -17,6 +17,7 @@ export type Sim = {
   sx: number; sz: number; aggro: string | null; returning: boolean;
   atkAt: number; slowUntil: number; stunUntil: number; rootUntil: number; liftUntil: number; tauntUntil: number; slamAt: number; wanderAt: number; wx: number; wz: number; deadAt: number;
   markUntil: number; slot?: number; lastDmgAt?: number; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
+  xpp?: Map<string, number>;   // fração da vida do monstro já paga em XP por golpe (por jogador)
   inst: number; noResp: boolean; tier: number;   // instância de dungeon (0 = mundo), sem renascimento, nível do baú
   home?: number; lazy?: boolean; immune?: boolean; side?: number;   // dungeons em grade: sala de origem (etapa em que acorda) • criado durante a luta • escudo do chefe • lado preferido p/ contornar paredes
 };
@@ -62,7 +63,7 @@ export class MonsterSim {
     return s;
   }
   /** Chamado quando o baú aparece (chefe morreu). */
-  reveal(s: Sim) { s.m.hp = s.m.maxHp; s.m.alive = true; s.contrib.clear(); }
+  reveal(s: Sim) { s.m.hp = s.m.maxHp; s.m.alive = true; s.contrib.clear(); s.xpp?.clear(); }
   removeInst(inst: number) {
     this.list = this.list.filter((s) => { if (s.inst !== inst) return true; this.byId.delete(s.m.id); this.state.monsters.delete(String(s.m.id)); return false; });
   }
@@ -81,7 +82,7 @@ export class MonsterSim {
       m.x = clampX(zone.x + Math.cos(a) * r, zone.x); m.z = clampZ(zone.z + Math.sin(a) * r);
     }
     s.sx = m.x; s.sz = m.z; s.aggro = null; s.returning = false; s.atkAt = 0; s.slowUntil = 0; s.stunUntil = s.rootUntil = s.liftUntil = s.tauntUntil = 0; m.st = 0; s.markUntil = 0; s.slamAt = now + 6000; s.wanderAt = 0;
-    s.contrib.clear();
+    s.contrib.clear(); s.xpp?.clear();
     m.alive = true;
   }
 

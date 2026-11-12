@@ -885,7 +885,7 @@ function tipOf(it){
   return h+`<span class="muted">Venda: ${fmt(sellPrice(it))} 💰</span>`;}
  if(it.k==='mat'&&MATS[it.id].gem){const g=GEMD[MATS[it.id].gem],gr=GRADES[g.g],sch=RULES.schoolOf(S.cls),bad=((g.k==='ampE'||g.k==='atkE')&&sch==='M')||((g.k==='ampM'||g.k==='atkM')&&sch==='E');
   const cap=RULES.GCAP[g.k]?`Limite total de todas as gemas: ${RULES.GCAP[g.k]}${g.u==='%/s'?'%/s':'%'}`:RULES.GCAPL[g.k]?`Limite total: ${RULES.GCAPL[g.k]} × seu nível`:'';
-  return `<div style="display:flex;gap:8px;align-items:center"><span class="sock lg" style="--sc:${gr.c}">${gemSvg(MATS[it.id].gem)}</span><div><b style="color:${gr.c}">${g.n}</b><br><span class="muted">Pergaminho de opção • ${g.cat==='w'?'ARMA':'ARMADURA / ACESSÓRIOS'}</span></div></div><span style="color:${gr.c}">Grau: ${gr.n} (${gr.en})</span><br><b>${g.o}: ${g.sc?`+${g.v} × nível do item (ex.: +${RULES.gemVal(g,S.level)} em item nível ${S.level})`:`+${g.v}${g.u||''}`}</b><br><span class="muted">${g.d}</span><br>${cap?`<span class="muted">${cap}</span><br>`:''}${bad?'<span class="no">⚠ Não funciona para a sua classe</span><br>':''}<span class="muted">Use: fale com um Gemólogo → aba Engastar.<br>Venda ao NPC: ${fmt(MATS[it.id].v)} 💰 (o leilão paga mais)</span>`;}
+  return `<div style="display:flex;gap:8px;align-items:center"><span class="sock lg" style="--sc:${gr.c}">${gemSvg(MATS[it.id].gem)}</span><div><b style="color:${gr.c}">${g.n}</b><br><span class="muted">Pergaminho de opção • ${g.cat==='w'?'ARMA / ANÉIS':'ARMADURA / ACESSÓRIOS (exceto anéis)'}</span></div></div><span style="color:${gr.c}">Grau: ${gr.n} (${gr.en})</span><br><b>${g.o}: ${g.sc?`+${g.v} × nível do item (ex.: +${RULES.gemVal(g,S.level)} em item nível ${S.level})`:`+${g.v}${g.u||''}`}</b><br><span class="muted">${g.d}</span><br>${cap?`<span class="muted">${cap}</span><br>`:''}${bad?'<span class="no">⚠ Não funciona para a sua classe</span><br>':''}<span class="muted">Use: fale com um Gemólogo → aba Engastar.<br>Venda ao NPC: ${fmt(MATS[it.id].v)} 💰 (o leilão paga mais)</span>`;}
  if(it.k==='mat'&&MATS[it.id].ext)return `<b style="color:#c9a8ff">${nm(it)}</b><br>Cria +1 engaste ◇ em um equipamento (máx. ${RULES.MAX_SLOTS}).<br><span class="muted">Use: Gemólogo → aba Engastar.<br>Venda ao NPC: ${fmt(MATS[it.id].v)} 💰</span>`;
  if(it.k==='mat')return `<b>${nm(it)}</b><br><span class="muted">Material de criação • ${fmt(MATS[it.id].v)} 💰</span>`;
  return `<b>${nm(it)}</b><br>${POTS[it.id].d}<br><span class="muted">Use: ${it.id.startsWith('hp')?'9':'0'}</span>`;
@@ -4751,7 +4751,7 @@ function ahRender(onlyList){
     <label>Nível máx.<input data-f="lvMax" type="number" min="0" value="${f.lvMax}"></label>
     <label>Refino mín.<select data-f="plusMin">${ahOpt(Array.from({length:11},(_,i)=>[i,i?'+'+i:'Qualquer']),f.plusMin)}</select></label>
     <label>Engastes mín.<select data-f="slMin">${ahOpt([[0,'Qualquer'],[1,'◇ 1+'],[2,'◇◇ 2+'],[3,'◇◇◇ 3']],f.slMin)}</select></label>
-    <label>Gema (opção)<select data-f="gopt">${ahOpt([['','Qualquer'],...GEMS.map(g=>[g.id,(g.cat==='w'?'Arma • ':'Armadura • ')+g.o])],f.gopt)}</select></label>
+    <label>Gema (opção)<select data-f="gopt">${ahOpt([['','Qualquer'],...GEMS.map(g=>[g.id,(g.cat==='w'?'Arma/Anel • ':'Armadura • ')+g.o])],f.gopt)}</select></label>
     <label>Grau da gema<select data-f="gr">${ahOpt([[-1,'Qualquer'],...GRADES.map((g,i)=>[i,g.n+' ('+g.en+')'])],f.gr)}</select></label>
     <label>Preço mín.<input data-f="pMin" type="number" min="0" value="${f.pMin}"></label>
     <label>Preço máx.<input data-f="pMax" type="number" min="0" value="${f.pMax}"></label>
@@ -5044,7 +5044,7 @@ function renderDialog(){
    const list=[];for(const sk in S.eq){const it=S.eq[sk];if(it&&it.slot!=='cape')list.push({ref:'eq:'+sk,it,tip:`data-eq="${sk}"`,eq:true});}
    S.inv.forEach((it,i)=>{if(it&&it.k==='eq'&&it.slot!=='cape')list.push({ref:'inv:'+i,it,tip:`data-inv="${i}"`});});
    const cur=list.find(o=>o.ref===dlg.gsel)||null,exts=have('g_ext');
-   h+='<p class="muted">① equipamento • ② engaste ◇ • ③ gema. Gemas de <b>ARMA</b> só entram em armas; as de <b>ARMADURA</b> entram em armadura, elmo, botas, escudo, anéis, braceletes e brincos. A mesma opção pode ser engastada em vários engastes do item (até 3). Trocar uma gema destrói a antiga.</p>';
+   h+='<p class="muted">① equipamento • ② engaste ◇ • ③ gema. Gemas de <b>ARMA</b> entram em armas e anéis; as de <b>ARMADURA</b> entram em armadura, elmo, botas, escudo, braceletes e brincos. A mesma opção pode ser engastada em vários engastes do item (até 3). Trocar uma gema destrói a antiga.</p>';
    h+=`<div class="dsec">① Equipamento (${list.length})</div><div class="gmbox">`+(list.length?list.map(o=>{const it=o.it;return `<div class="row2 gsrow${o.ref===dlg.gsel?' sel':''}" data-act="gsel" data-id="${o.ref}"><div class="ri" ${o.tip} style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)}">${esc(it.name)}${it.plus?' +'+it.plus:''}${o.eq?' <small style="display:inline">(equipado)</small>':''}</b><small>${it.sl?socksH(it):'sem engastes'}</small></div></div>`;}).join(''):'<p class="muted">Você não tem equipamentos.</p>')+'</div>';
    if(cur){const it=cur.it,n3=it.sl||0,gi=Math.min(dlg.gsi||0,Math.max(0,n3-1));dlg.gsi=gi;
     h+=`<div class="dsec">② Engastes de <b style="color:${col(it)}">${esc(it.name)}</b> (${n3}/${RULES.MAX_SLOTS})</div>`;
@@ -5057,7 +5057,7 @@ function renderDialog(){
     h+=`<div class="dsec">③ Gemas na mochila${n3?' → engaste '+(gi+1):''}</div>`;
     h+=okg.length?okg.map(o=>{const g=o.g,gr=GRADES[g.g],same=gm[gi]===g.id,occ=!!gm[gi],asked=dlg.rep===o.i,bad=((g.k==='ampE'||g.k==='atkE')&&sc==='M')||((g.k==='ampM'||g.k==='atkM')&&sc==='E');
      return `<div class="row2"><div class="ri" data-inv="${o.i}" style="border-color:${gr.c}">${gemSvg(g.id)}</div><div class="rt"><b style="color:${gr.c}">${g.n} <small style="display:inline">×${o.m.n}</small></b><small>${g.o} <b>${RULES.gemTxt(g,it.ilvl)}</b> neste item • ${gr.n}</small>${bad?'<small class="no">⚠ não funciona para a sua classe</small>':''}${same?'<small class="muted">já está neste engaste</small>':''}</div><div class="rb"><button data-act="gins" data-id="${o.i}" ${n3&&!same?'':'disabled'}${asked?' style="background:#5a1a1a;border-color:#ff6b6b;color:#ffb0b0"':''}>${asked?'Confirmar troca':occ?'Substituir':'Engastar'}</button></div></div>`;}).join(''):'<p class="muted">Você não tem pergaminhos compatíveis com este equipamento. Compre na aba Comprar.</p>';
-    const oth=gems.length-okg.length;if(oth>0)h+=`<p class="muted">+ ${oth} gema(s) de ${cat==='w'?'armadura':'arma'} na mochila (não servem neste item).</p>`;
+    const oth=gems.length-okg.length;if(oth>0)h+=`<p class="muted">+ ${oth} gema(s) de ${cat==='w'?'armadura':'arma/anel'} na mochila (não servem neste item).</p>`;
    }else h+='<p class="muted">Escolha um equipamento acima.</p>';
  }else if(dlg.tab==='bau'){
   const slotH=(it,act,i,at)=>`<div class="slot" data-act="${act}" data-id="${i}" ${at}="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`;
@@ -5452,6 +5452,7 @@ async function netJoin(){
    if(S._respec&&!NET.ack){NET.ack=true;logMsg(`<span style="color:#ffe28a">⚖️ Seu personagem foi ajustado às novas regras de equilíbrio: seu nível foi mantido e os <b>${S.pts} pontos de atributo</b> foram devolvidos para você redistribuir (tecla C).</span>`);toast('⚖️ Personagem ajustado: redistribua seus atributos (C)');room.send('a',{t:'ack'});}
    if(S) refreshUI();});
   room.onMessage('res',m=>applyRes(m));
+  room.onMessage('xp',m=>{if(S&&m&&typeof m.xp==='number'){S.xp=m.xp;}});   // XP por golpe (leve, sem reenviar o personagem)
   room.onMessage('ahr',m=>ahReply(m));
   room.onMessage('wbs',m=>wbStatus(m));room.onMessage('wbmsg',m=>wbMsg(m));room.onMessage('wbr',m=>wbRank(m));room.onMessage('wbend',m=>wbEnd(m));room.onMessage('wbmy',m=>wbMy(m));
   room.onMessage('mailr',m=>mailReply(m));room.onMessage('mailn',m=>{MAIL.n=m.n|0;mailBadge();if(MAIL.open)NET.room.send('mail',{op:'list'});});
@@ -5567,8 +5568,8 @@ function remoteBasic(m){
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
  AUD.basic(o.cls,spat(from,26));if(mo&&C.ranged)shoot(from,mo,C.pcol,C.proj);
 }
-function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(ni&&S)ni.textContent=ONLINE?'🌐 sem conexão com o mundo online':'🌐 modo offline';return;}
- const st=room.state;if(!st||!st.players)return;const seen=new Set(),T0=performance.now(),px=P.pos.x,pz=P.pos.z,pl=new Map();if(ni)ni.textContent='🌐 '+st.players.size+' online • '+Math.max(0,st.players.size-1)+' outro(s) visível(is)';
+function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(ni&&S){ni.style.display='';ni.textContent=ONLINE?'🌐 sem conexão com o mundo online':'🌐 modo offline';}return;}
+ const st=room.state;if(!st||!st.players)return;const seen=new Set(),T0=performance.now(),px=P.pos.x,pz=P.pos.z,pl=new Map();if(ni){if(S.gm){ni.style.display='';ni.textContent='🌐 '+st.players.size+' online • '+Math.max(0,st.players.size-1)+' outro(s) visível(is)';}else ni.style.display='none';}   // só o GM vê quantas pessoas estão online
  st.players.forEach((p,id)=>{if(id===room.sessionId)return;if((p.inst||0)!==(NET.inst||0))return;
   const d=Math.hypot(p.x-px,p.z-pz);let o=NET.others.get(id);
   if(!o){if(d>RP.Rin)return;o=mkRemote(p,id);NET.others.set(id,o);}
