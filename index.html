@@ -3324,6 +3324,66 @@ function vortexFx(cx,cz,c){
    q.a.position.set(px,y,pz);q.a.lookAt(new V3(cx+Math.sin(b+.2)*r,y,cz+Math.cos(b+.2)*r));q.a.scaling.setAll(.75*(p>.75?Math.max(.01,(1-p)/.25):1));}
  },done:()=>{for(const t of rs)t.dispose();for(const q of ar)q.a.dispose();}});
 }
+/* =================== v1.54 — CAVALEIRO PESADO: Estilhaços do Escudo, Investida em rajada e Castelo de Escudo =================== */
+/** Estilhaços do Escudo: o escudo se parte em cacos de energia que voam em todas as direções; depois o escudo se refaz */
+function splinterFx(o,x,z,r,c){
+ try{if(o&&o.shieldN)o.shieldN.setEnabled(false);}catch(e){}
+ ring(x,z,1.4,'#ffffff',240);
+ later(130,()=>{
+  spark(x,1.2,z,'#ffffff',2.2);
+  const N=20;
+  for(let k=0;k<N;k++){
+   const a=k/N*Math.PI*2+rnd(-.12,.12),rr=r*rnd(.72,1.02),t0=rnd(.9,1.5),w=rnd(.5,.85);
+   const m=B.CreateBox('shd',{width:w,height:.09,depth:w*rnd(.5,.9)},scene);m.material=fxMat(k%3===0?'#ffffff':c);m.isPickable=false;m.position.set(x,1.2,z);
+   const ex=x+Math.cos(a)*rr,ez=z+Math.sin(a)*rr,sp=rnd(3,8),pk=rnd(.9,1.6);
+   fx.push({t0:performance.now(),dur:330+rnd(0,90),upd:t=>{const u=1-(1-t)*(1-t);m.position.set(x+(ex-x)*u,.15+1.05*(1-t)+Math.sin(t*Math.PI)*pk,z+(ez-z)*u);m.rotation.set(t*sp,t*sp*1.3,t*sp*.7);},
+    done:()=>{spark(ex,.2,ez,c,.8);m.dispose();}});
+  }
+  ring(x,z,r,c,520);ring(x,z,r*.6,'#ffffff',360);burst(x,z,'steel');
+ });
+ later(850,()=>{try{if(o&&o.shieldN)o.shieldN.setEnabled(true);}catch(e){}const p=o&&o.root?o.root.position:{x,z};ring(p.x,p.z,1.6,c,380);spark(p.x,1.2,p.z,c,1.3);});
+}
+/** Investida do Escudo: o personagem some numa rajada, deixando imagens-fantasma do escudo e uma onda de choque no fim */
+function rushFx(sx,sz,ex,ez,c){
+ const dx=ex-sx,dz=ez-sz,L=Math.hypot(dx,dz);if(L<.4){ring(ex,ez,2,c,350);return;}
+ const yaw=Math.atan2(dx,dz);
+ ring(sx,sz,1.8,c,300);burst(sx,sz,'earth');
+ const st=B.CreateBox('rst',{width:.9,height:.5,depth:L},scene);st.material=streakMat(c,.3);st.isPickable=false;st.position.set((sx+ex)/2,1,(sz+ez)/2);st.rotation.y=yaw;
+ fx.push({t0:performance.now(),dur:340,upd:t=>{st.material=streakMat(c,.3*(1-t));st.scaling.x=1-t*.7;},done:()=>st.dispose()});
+ const n=Math.max(3,Math.min(7,Math.round(L/1.5)));
+ for(let k=0;k<n;k++){
+  const u=k/n,px=sx+dx*u,pz=sz+dz*u;
+  later(k*28,()=>{
+   const g=B.CreateBox('rgh',{width:.12,height:.95,depth:.8},scene);g.material=glowMat(k%2?c:'#ffffff',.5);g.isPickable=false;g.position.set(px,1.15,pz);g.rotation.y=yaw+Math.PI/2;
+   fx.push({t0:performance.now(),dur:300,upd:t=>{g.material=glowMat(k%2?c:'#ffffff',.5*(1-t));g.scaling.y=1+t*.25;},done:()=>g.dispose()});
+   if(k%2===0)spark(px,.3,pz,'#d8c9a8',.7);
+  });
+ }
+ later(n*28+40,()=>{ring(ex,ez,2.6,c,420);ring(ex,ez,1.3,'#ffffff',260);spark(ex,1.1,ez,'#ffffff',1.8);burst(ex,ez,'steel');});
+}
+/** Castelo de Escudo (dome:1): cúpula de cristal hexagonal se ergue em volta; Bastião (dome:2): anéis dourados de runas sobem pelo corpo */
+function domeFx(o,s){
+ const c=s.color||'#7fa6d9',pos=()=>o.root.position;
+ if(s.dome===1){
+  const p0=pos();ring(p0.x,p0.z,3,c,600);
+  const sh=B.CreateSphere('dm1',{diameter:1,segments:8,slice:.55},scene),wf=B.CreateSphere('dm2',{diameter:1,segments:6,slice:.55},scene);
+  const wm=new BABYLON.StandardMaterial('dmw',scene);wm.disableLighting=true;wm.emissiveColor=C3.FromHexString('#cfe4ff');wm.wireframe=true;wm.alpha=.8;
+  sh.material=glowMat(c,.3);wf.material=wm;sh.isPickable=wf.isPickable=false;
+  const D=1500;
+  fx.push({t0:performance.now(),dur:D,upd:t=>{const p=pos(),g=t<.2?1-Math.pow(1-t/.2,3):1,sc=4.4*(.35+.65*g),f=t>.65?(1-t)/.35:1,pl=.85+.15*Math.sin(t*38);
+   for(const m of[sh,wf]){m.position.set(p.x,0,p.z);m.scaling.setAll(sc);m.rotation.y=t*2.2;}
+   sh.material=glowMat(c,t>.65?.1:.3);wm.alpha=.8*f*pl;sh.visibility=f;},
+   done:()=>{sh.dispose();wf.dispose();wm.dispose();}});
+  for(let k=0;k<6;k++)later(k*90,()=>{const a=k/6*6.283,p=pos();spark(p.x+Math.cos(a)*1.6,1.1,p.z+Math.sin(a)*1.6,'#ffffff',.9);});
+ }else if(s.dome===2){
+  const p0=pos();ring(p0.x,p0.z,2.6,c,700);ring(p0.x,p0.z,1.5,'#fff2a8',500);
+  for(let k=0;k<3;k++)later(k*160,()=>{
+   const t=B.CreateTorus('dm3',{diameter:1.7,thickness:.07,tessellation:28},scene);t.material=glowMat(k%2?'#ffffff':c,.8);t.isPickable=false;
+   fx.push({t0:performance.now(),dur:800,upd:u=>{const p=pos();t.position.set(p.x,.1+u*2.1,p.z);t.rotation.y=u*6;t.scaling.setAll(1+Math.sin(u*Math.PI)*.15);t.material=glowMat(k%2?'#ffffff':c,.8*(1-u*u));},done:()=>t.dispose()});
+  });
+ }
+}
+
 let toastT=null;function toast(s){const el=$('toast');el.textContent=s;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,1700);}
 function logMsg(s,c){const el=$('log');const d=document.createElement('div');d.style.color=c||'#cbd6e2';d.innerHTML=s;el.appendChild(d);while(el.children.length>40)el.removeChild(el.firstChild);el.scrollTop=el.scrollHeight;}
 
@@ -3886,8 +3946,9 @@ function chainPullFx(o,list,s){
  for(const m of list)chainFx(o.root.position,m,s.color);
  later(420,()=>{let cx=0,cz=0;for(const m of list){cx+=m.pos.x;cz+=m.pos.z;}cx/=list.length;cz/=list.length;ring(cx,cz,2.4,s.color,600);burst(cx,cz,'steel');});
 }
-function aoeAnimFx(s,pos){
+function aoeAnimFx(s,pos,o){
  const x=pos.x,z=pos.z;
+ if(s.splinter)splinterFx(o,x,z,s.radius,s.color);
  if(s.anim==='stomp')quakeFx(x,z,s.radius,2000);
  else if(s.anim==='sumo')[0,370,740].forEach(t=>later(t,()=>{ring(x,z,2.4,s.color,350);burst(x,z,'steel');}));
 }
@@ -4140,7 +4201,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(location.search==='?dbg')window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
+if(location.search==='?dbg')window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ARX:{splinterFx,rushFx,domeFx,arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -4388,7 +4449,7 @@ function castSkill(i){
    break;}
   case 'aoeSelf':
    if(s.fxMon){later(200,()=>{for(const m of nearMonsters(P.pos,s.radius))frostMon(m,s.color);hitArea(P.pos,s.radius,s.mult,so);});break;}
-   aoeAnimFx(s,P.pos);
+   aoeAnimFx(s,P.pos,P);
    if(s.delay)later(s.delay,()=>{ring(P.pos.x,P.pos.z,s.radius,s.color,550);skillFx(s,P.pos,null);hitArea(P.pos,s.radius,s.mult,so);});
    else{ring(P.pos.x,P.pos.z,s.radius,s.color,550);later(200,()=>hitArea(P.pos,s.radius,s.mult,so));}break;
   case 'shieldThrow':later(250,()=>{if(P.shieldN)P.shieldN.setEnabled(false);});later(300,()=>shieldFlyFx(P,dirx,dirz,s.range,s.color));break;
@@ -4421,15 +4482,15 @@ function castSkill(i){
    later(200+s.hits*130,()=>{for(let j=0;j<8;j++)if(j!==i)P.cd[j]=0;ring(P.pos.x,P.pos.z,3,'#ffd24a',600);toast('⚡ Recargas zeradas!');AUD.sfx('cdReset');});
    break;}
   case 'dash':{
-   const dx=tgt.pos.x-P.pos.x,dz=tgt.pos.z-P.pos.z,d=Math.hypot(dx,dz)||1,mv=Math.max(0,d-1.7);
-   ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*mv;P.pos.z+=dz/d*mv;collide(P.pos,.4);ring(P.pos.x,P.pos.z,1.8,s.color,350);later(120,()=>playerHit(tgt,s.mult,so));break;}
+   const dx=tgt.pos.x-P.pos.x,dz=tgt.pos.z-P.pos.z,d=Math.hypot(dx,dz)||1,mv=Math.max(0,d-1.7),sx0=P.pos.x,sz0=P.pos.z;
+   if(!s.rush)ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*mv;P.pos.z+=dz/d*mv;collide(P.pos,.4);if(s.rush)rushFx(sx0,sz0,P.pos.x,P.pos.z,s.color);else ring(P.pos.x,P.pos.z,1.8,s.color,350);later(120,()=>playerHit(tgt,s.mult,so));break;}
   case 'dashBack':{
    const n=nearestMonster(12);let dx,dz;
    if(n){dx=P.pos.x-n.pos.x;dz=P.pos.z-n.pos.z;}else{dx=-Math.sin(P.root.rotation.y);dz=-Math.cos(P.root.rotation.y);}
    const d=Math.hypot(dx,dz)||1;if(s.blast){blastDash(P,dx/d,dz/d,s,true);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*s.dist;P.pos.z+=dz/d*s.dist;collide(P.pos,.4);clampMap(P.pos);ring(P.pos.x,P.pos.z,1.6,s.color,350);
    for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}
   case 'buff':
-   if(s.spirit)spiritFx(P,s);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
+   if(s.spirit)spiritFx(P,s);if(s.dome)domeFx(P,s);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
  }
 }
 function learnSkill(i){
@@ -5851,7 +5912,7 @@ function remoteSkill(m){
   case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(s.charge){chargeFx(o,mo,s.color,s.pre);later(s.pre,()=>{if(mo.alive)bigShot(from,mo,s.color,null,{through:3,rings:true,sc:2.1,streak:3.6});});}else if(pr)shoot(from,mo,s.color,pr,null,{sc:1.3,streak:2.4});else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
   case 'multi':if(mo&&s.fan)fanFx(from,mo,s,null);else if(mo)for(let h=0;h<s.hits;h++)later(h*190,()=>{if(mo.alive){if(pr)shoot(from,mo,s.color,pr);else ring(mo.pos.x,mo.pos.z,1,s.color,200);}});break;
   case 'heal':ring(from.x,from.z,2.2,s.color,600);if(s.hot)for(let k=1;k<=s.hotDur;k++)later(k*1000,()=>ring(o.root.position.x,o.root.position.z,1.3,s.color,400));break;
-  case 'aoeSelf':if(s.fxMon){later(200,()=>{for(const m of nearMonsters(from,s.radius))frostMon(m,s.color);});break;}aoeAnimFx(s,from);if(s.delay)later(s.delay,()=>{ring(from.x,from.z,s.radius,s.color,550);skillFx(s,from,null);});else ring(from.x,from.z,s.radius,s.color,550);break;
+  case 'aoeSelf':if(s.fxMon){later(200,()=>{for(const m of nearMonsters(from,s.radius))frostMon(m,s.color);});break;}aoeAnimFx(s,from,o);if(s.delay)later(s.delay,()=>{ring(from.x,from.z,s.radius,s.color,550);skillFx(s,from,null);});else ring(from.x,from.z,s.radius,s.color,550);break;
   case 'shieldThrow':later(250,()=>{if(o.shieldN)o.shieldN.setEnabled(false);});later(300,()=>shieldFlyFx(o,m.dx||0,m.dz||1,s.range,s.color));break;
   case 'shieldBeam':shieldBeamFx(o,m.dx||0,m.dz||1,s.range,s.color);break;
   case 'daggerFan':daggerFanFx(o,m.dx||0,m.dz||1,m.n||1,s.range,s.color);break;
@@ -5870,9 +5931,9 @@ function remoteSkill(m){
    else if(s.meteor)fall(c.x,c.z,s.color,1.7,600,16,()=>ring(c.x,c.z,s.radius,s.color,600));
    else if(s.arr)rainFx(from,c,s);
    else{ring(c.x,c.z,s.radius,s.color,900);for(let j=0;j<10;j++)later(j*60,()=>{const a=rnd(0,6.28),rr=Math.sqrt(Math.random())*s.radius;fall(c.x+Math.cos(a)*rr,c.z+Math.sin(a)*rr,s.color,.22,300,9);});later(650,()=>{if(s.ice)for(const m of nearMonsters(c,s.radius))iceCage(m,1500);});}}break;
-  case 'barrage':case 'dash':ring(from.x,from.z,1.4,s.color,300);if(mo)ring(mo.pos.x,mo.pos.z,1.8,s.color,350);break;
+  case 'barrage':case 'dash':if(s.rush&&mo){const dx=mo.pos.x-from.x,dz=mo.pos.z-from.z,d=Math.hypot(dx,dz)||1,mv=Math.max(0,d-1.7);rushFx(from.x,from.z,from.x+dx/d*mv,from.z+dz/d*mv,s.color);break;}ring(from.x,from.z,1.4,s.color,300);if(mo)ring(mo.pos.x,mo.pos.z,1.8,s.color,350);break;
   case 'dashBack':if(s.blast){const an=o.root.rotation.y;blastDash(o,-Math.sin(an),-Math.cos(an),s,false);}else ring(from.x,from.z,1.2,s.color,300);break;
-  case 'buff':if(s.spirit)spiritFx(o,s);ring(from.x,from.z,2.6,s.color,700);break;
+  case 'buff':if(s.spirit)spiritFx(o,s);if(s.dome)domeFx(o,s);ring(from.x,from.z,2.6,s.color,700);break;
  }
 }
 function remoteBasic(m){

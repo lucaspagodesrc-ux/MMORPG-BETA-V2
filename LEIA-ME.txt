@@ -1,15 +1,17 @@
-ATUALIZAÇÃO 1.53 — PVP: SEM ABSORÇÃO E RENASCER NA CIDADE
-Pacote CUMULATIVO: contém tudo da 1.52 e anteriores. Se a 1.52 já está instalada, mudam só index.html, rules.js e pvp.ts.
+ATUALIZAÇÃO 1.54 — CAVALEIRO PESADO: NOVOS EFEITOS (inspirados no Force Shielder e no Warrior)
+Pacote CUMULATIVO: contém tudo da 1.53 e anteriores. Se a 1.53 já está instalada, mudam só index.html e rules.js.
 
 O QUE MUDOU
-1) Absorção de HP e de MP agora só funciona contra MONSTROS. Contra jogadores (duelo e Arena PK) não recupera nada, nem vida nem mana.
-2) Arena PK: quem cai NÃO renasce mais sozinho no mesmo lugar depois de 5 s. A tela de queda mostra o botão "🏠 Voltar à cidade"; ao clicar, o jogador sai da Arena, volta para a cidade e renasce com 70% da vida e 50% da mana. Não perde nada (como antes). Enquanto não clicar, continua caído.
-   Os textos da Arena (janela do Guardião e o aviso ao entrar) foram atualizados.
+1) Impacto Sísmico → "Estilhaços do Escudo" (nível 12). O escudo se parte em 20 cacos de energia que voam para todos os lados, com onda no chão; depois o escudo se refaz na mão. Mesmo dano em área baseado na DEFESA (x1,5) e mesma lentidão de 3 s. Troca de animação: sai o salto, entra o golpe de escudo.
+2) Investida do Escudo (nível 3): agora é uma rajada. Deixa imagens-fantasma do escudo e um rastro de energia pelo caminho, poeira na saída e onda de choque na chegada. Dano e alcance iguais.
+3) Postura Defensiva → "Castelo de Escudo" (nível 5): uma cúpula de cristal hexagonal se ergue em volta do personagem. Mesmo efeito de -35% de dano por 60 s.
+4) Bastião (nível 8): três anéis dourados com runas sobem pelo corpo ao ativar. Mesmo efeito de antes.
+Os outros jogadores veem os mesmos efeitos. Escudo Voador, Raio do Escudo, Golpe de Escudo e Vontade de Ferro continuam iguais (já eram baseados nas habilidades do Force Shielder).
 
-NÃO MUDOU
-• Duelo: continua sendo uma luta sem perdas; quem perde mantém a vida e a mana que tinha antes do duelo (ninguém morre de verdade). Se quiser que o perdedor do duelo também precise voltar à cidade, é só pedir.
+ATENÇÃO
+• Quem tinha pontos no Impacto Sísmico continua com eles na nova habilidade (mesma posição).
 
 INSTALAÇÃO
-1) Envie index.html, rules.js e pvp.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo, se preferir.
-2) Aguarde o Render terminar o deploy (o servidor reinicia por causa do pvp.ts e do rules.js).
+1) Envie index.html e rules.js para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo, se preferir.
+2) Aguarde o Render terminar o deploy (o servidor reinicia por causa do rules.js).
 3) No navegador, Ctrl+F5.
