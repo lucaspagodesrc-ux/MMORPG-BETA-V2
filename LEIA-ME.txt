@@ -1,28 +1,21 @@
-ATUALIZAÇÃO 1.48 — EVENTO DE BOAS-VINDAS, INAUGURAÇÃO E NATAL
-Pacote CUMULATIVO: contém tudo da 1.47 e anteriores. Se a 1.47 já está instalada, mudam: rules.js, index.html, itemutil.ts e auction.ts.
+ATUALIZAÇÃO 1.49 — GRUPO NO MINIMAPA / LOCALIZAÇÃO E EFEITOS DOS ITENS APRIMORADOS
+Pacote CUMULATIVO: contém tudo da 1.48 e anteriores. Se a 1.48 já está instalada, só o index.html muda.
 
-O EVENTO (do momento da atualização até 25/12/2026 às 23:59, horário de Brasília)
-- Novo NPC "Noel, Guardião dos Presentes" na praça da Vila Aurora (perto do Baú do Aventureiro). Aparece como ponto amarelo no minimapa
-  e ganha o símbolo 🎁 sobre a cabeça quando o jogador tem pacote para pegar.
-- 10 pacotes de presente: níveis 10, 20, 30, 40, 50, 60, 70, 80, 90 e 100. Cada personagem pega cada pacote uma vez, ao alcançar o nível
-  (quem sobe vários níveis pode pegar todos os pacotes liberados).
-- Cada pacote: conjunto completo +8 do nível, épico (★) e com atributos (classe principal + Vitalidade): arma, armadura, elmo, botas,
-  2 anéis, 2 braceletes, 2 brincos (+ escudo para o Cavaleiro Pesado). Precisa de 10 espaços livres na mochila (11 para o Cavaleiro).
-- Todos com 2 engastes já com gemas:
-  • Arma e anéis: 2× Dano Crítico (+15% cada)
-  • Braceletes: 2× Aumento do Limite de Absorção de HP
-  • Brincos: 2× Aumento de Absorção de HP (%)
-  • Armadura, elmo, botas (e escudo): 2× Técnica de Amp. 8% da classe (Amp. de Ataque ou Amp. Mágica)
-  (os tetos totais de cada bônus continuam valendo: se somar acima do teto, o excedente não conta).
-- Itens do evento: vinculados ao personagem; não podem ser quebrados, derrubados, guardados no baú (nem no da guilda),
-  leiloados ou negociados; as gemas deles não podem ser trocadas. Podem ser vendidos a um comerciante, mas por 0 (serve para limpar a mochila).
-- O balão (mouse sobre o item) mostra "Item de evento • vinculado a ...", a data de vencimento (25/12/2026 às 23:59 e o tempo restante),
-  as regras e todos os atributos. Depois do fim do evento os itens vencem e somem da mochila e do equipamento automaticamente.
-- Ao entrar no jogo aparece uma janela bem chamativa explicando o evento e onde pegar os pacotes. Ela não tem "X": o botão
-  "Entendido" só é liberado depois de rolar até o final do texto. A janela aparece sempre que o jogador entra no jogo enquanto o evento estiver ativo.
-- Também mudou (reforço): itens com "bd" nunca entram em troca, leilão ou baú da guilda no servidor.
+O QUE MUDOU
+1) Grupo no minimapa: cada membro do grupo (menos você) aparece como um ponto azul-claro com contorno branco no minimapa
+   (no mundo aberto, quando está no mesmo mapa/região que você; dentro de calabouço, quando está na mesma instância).
+2) Localização do membro: passe o mouse sobre o nome dele na barra de grupo (embaixo do HP/MP, no canto superior esquerdo).
+   Aparece o nome do lugar (cidade, zona de monstros, deserto/gelo, calabouço ou Arena PK), a distância em metros quando está no mesmo mapa,
+   "em outro mapa" quando está em outra região, e o nível. Funciona mesmo que ele esteja longe.
+3) Efeitos dos itens aprimorados (+7 a +10):
+   - As partículas (chamas, raios, gelo, veneno, almas, sombras, brilho dourado) agora ficam mais fortes a cada nível acima de +7:
+     mais partículas, maiores, mais vivas e mais brilhantes. Antes +9 e +10 só aumentavam um pouco a quantidade e quase não se notava.
+   - Os elementos que eram quase invisíveis (Raios, Gelo e Sombras) foram ampliados e clareados.
+   - Anéis, braceletes e brincos também escalam com o aprimoramento.
+   - Ícones dos itens (mochila/equipamento): +7 faísca ✦ subindo, +8 mais rápida, +9 e +10 ainda mais rápidas e maiores
+     (+10 com contorno branco forte).
 
 INSTALAÇÃO
-1) Envie rules.js, index.html, itemutil.ts e auction.ts para a raiz do repositório no GitHub (substituindo) — ou o pacote inteiro.
+1) Envie o index.html para a raiz do repositório no GitHub (substituindo).
 2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.
