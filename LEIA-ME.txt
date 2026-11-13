@@ -1,5 +1,22 @@
-ATUALIZAÇÃO 1.57 — COLISÃO COM MONSTROS E CHEFES
-Pacote CUMULATIVO (base 1.53 + visual novo da 1.56). Muda só o index.html; rules.js e o servidor continuam iguais à 1.53.
+ATUALIZAÇÃO 1.58 — UMA HABILIDADE POR VEZ
+Pacote CUMULATIVO (base 1.53 + visual novo 1.56 + colisão 1.57). Mudam index.html, rules.js e WorldRoom.ts.
+
+O QUE MUDOU NA 1.58
+• Uma habilidade só pode ser lançada depois que a anterior terminou de ser exibida. Vale para todas as classes (o Assassino não é mais exceção) e é conferido também pelo servidor.
+• O tempo de cada habilidade foi calculado pela sua animação/efeito real (golpes em sequência, atraso do impacto, voo do projétil, saltos, raio canalizado, ida e volta do escudo).
+• Se a tecla é apertada nos últimos 0,4 s da habilidade anterior, a próxima sai sozinha assim que ela termina. Antes disso aparece "Aguarde a habilidade atual terminar".
+• Durante a Sentença do Colosso (rolando) não dá para lançar outra habilidade.
+• O ataque básico NÃO fica preso por esse tempo (continua com a regra antiga).
+
+TEMPOS (ms) — projéteis somam o tempo de voo até o alvo; Estrela Sombria soma 520 por salto extra
+Guerreiro: Golpe Poderoso 650 • Giro de Lâmina 700 • Investida 450 • Grito de Guerra 500 • Terremoto 450 • Sangue de Guerra 500 • Fúria do Bárbaro 500 • Trovão 1000
+Arqueiro: Tiro Preciso 250 • Chuva de Flechas 900 • Tiro Explosivo Evasivo 520 • Foco Mortal 500 • Vontade do Vento 580 • Rajada Reunidora 900 • Tempestade de Flechas 900 • Flecha Dilacerante 700
+Mago: Bola de Fogo 250 • Nova Gélida 450 • Escudo Arcano 500 • Meteoro 850 • Raio Arcano 650 • Cura Arcana 500 • Tempestade de Gelo 900 • Apocalipse 1690
+Assassino: Corte Rápido 400 • Passo Sombrio 450 • Chuva de Adagas 450 • Dança das Lâminas 700 • Marca da Morte 500 • Véu Sombrio 500 • Manto Fumaça 500 • Estrela Sombria 600
+Cavaleiro Pesado: Golpe de Escudo 400 • Investida do Escudo 450 • Postura Defensiva 500 • Bastião 500 • Impacto Sísmico 1000 • Vontade de Ferro 500 • Escudo Voador 3800 • Raio do Escudo 3250
+Tanque: Gancho de Corrente 950 • Pisão Sísmico 600 • Provocar 500 • Correntes de Aço 700 • Golpe Ascendente 1100 • Muralha de Ferro 500 • Sentença do Colosso 600 (+ enquanto rola)
+Pierrot: Estocada 400 • Pirueta Giratória 450 • Passo de Bailarino 450 • Truque da Sorte 500 • Estocada Tripla 680 • Clones Ilusórios 500 • Redemoinho Circense 1150 • Grand Finale 400
+Para ajustar um tempo: função castMs no rules.js.
 
 O QUE MUDOU NA 1.57
 • O personagem não entra mais dentro dos monstros: ao encostar, é empurrado para fora do corpo. Vale para monstros comuns, chefes, monstros da masmorra e chefes mundiais.
@@ -34,6 +51,6 @@ COMO VOLTAR ATRÁS
 Suba novamente o index.html da 1.53 no GitHub (ou abra com ?org=0).
 
 INSTALAÇÃO
-1) Envie index.html para a raiz do repositório no GitHub (substituindo).
-2) Aguarde o Render terminar o deploy.
-3) No navegador, Ctrl+F5 e pronto.
+1) Envie index.html, rules.js e WorldRoom.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo.
+2) Aguarde o Render terminar o deploy (o servidor reinicia).
+3) No navegador, Ctrl+F5.

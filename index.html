@@ -4820,6 +4820,8 @@ function castSkill(i){
  const s=skStat(i),now=performance.now();
  if(s.type==='daggerFan'&&P.dag&&P.dag.st==='stuck'){P.dag.recall();if(NET.room)NET.room.send('cast',{i});return;}
  if(PAUSED)return;
+ if(P.roll)return;
+ {const w0=(P.skUntil||0)-now;if(w0>0){if(w0<400){if(!P.qSk){P.qSk=1;later(w0+15,()=>{P.qSk=0;castSkill(i);});}}else if(now>(P.skMsgT||0)){P.skMsgT=now+1500;toast('Aguarde a habilidade atual terminar');}return;}}
  if(S.cls!=='assassino'&&now<(P.actUntil||0)){const w=P.actUntil-now;if(w<400&&!P.qSk){P.qSk=1;later(w+15,()=>{P.qSk=0;castSkill(i);});}return;}
  if(now<P.cd[i])return;
  if(P.mp<s.mp){toast('Mana insuficiente');return;}
@@ -4838,7 +4840,7 @@ function castSkill(i){
  let stars=[];
  if(s.type==='starJump'){stars=pickStar(s.range,s.jumps||5);if(!stars.length){toast('Sem alvo próximo');return;}}
  if(s.type==='chainPull'&&tgt)stars=pickGrab(tgt,s.radius,s.cnt);
- P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.actUntil=now+RULES.animMs(S.cls,i);P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
+ P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.actUntil=now+RULES.animMs(S.cls,i);P.skUntil=now+RULES.castMs(S.cls,i,{dist:tgt?hyp(P.pos,tgt.pos):0,n:stars.length,hits:s.hits});P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
  if(NET.room)NET.room.send('cast',pkCastMsg(i,tgt,stars,dirx,dirz));
  if(C.combo){
   const prevOk=P.lastSkill>=0&&now-P.lastSkillAt<3500;

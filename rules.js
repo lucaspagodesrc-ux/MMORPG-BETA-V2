@@ -1724,8 +1724,35 @@ const arenaPrize = (c, i) => {
 };
 
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700, charge: 700, blast: 420 };
+/* tempo de exibição de cada habilidade (ms): enquanto ele não acaba, outra habilidade não pode ser lançada.
+   x = { dist: distância até o alvo, n: nº de alvos (saltos), hits } — o servidor chama sem x (usa o mínimo), o cliente passa os valores reais */
+const castMs = (cls, i, x) => {
+  const C = CLASSES[cls], s = C && C.skills[i]; if (!s) return 260; x = x || {};
+  const a = ANIM[s.anim] || 0, hits = x.hits || s.hits || 1, fly = (x.dist || 0) / 24 * 1000, pr = s.proj || (C.ranged ? C.proj : null); let t;
+  switch (s.type) {
+    case 'single': t = pr === 'hook' ? 950 : s.charge ? (s.pre || 300) + fly + 250 : pr ? 250 + fly : 400; break;
+    case 'multi': t = s.fan ? 580 + fly : (hits - 1) * 190 + 300 + (pr ? fly : 0); break;
+    case 'stab3': t = 650; break;
+    case 'aoeSelf': t = s.delay ? s.delay + 350 : 450; break;
+    case 'aoeMulti': t = 200 + hits * 200 + 150; break;
+    case 'aoeTarget': t = s.balls ? (s.balls - 1) * (s.gap || 420) + 850 : s.meteor ? 850 : 900; break;
+    case 'barrage': t = 200 + hits * 130 + 200; break;
+    case 'dash': t = 450; break;
+    case 'dashBack': t = s.blast ? 520 : 400; break;
+    case 'shieldThrow': t = 300 + 2 * ((s.range || 10) / 16 * 1000) + 2000; break;   // ida + 2 s girando + volta
+    case 'shieldBeam': t = 250 + (s.dur || 3) * 1000; break;                          // raio canalizado
+    case 'daggerFan': t = 450; break;
+    case 'starJump': t = 100 + (Math.max(1, x.n || 1) - 1) * 520 + 500; break;
+    case 'chainPull': t = s.gust ? 900 : 700; break;
+    case 'thunder': t = 1000; break;
+    case 'arcRay': t = 650; break;
+    case 'roll': t = 600; break;
+    default: t = 500;                                                                 // buff, cura, provocar, clones, metamorfose, manto, marca
+  }
+  return Math.round(Math.max(a, t));
+};
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

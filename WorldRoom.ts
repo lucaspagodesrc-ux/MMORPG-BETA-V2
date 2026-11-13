@@ -42,7 +42,7 @@ type Sess = {
   dirty: boolean; saving: boolean; d: any;
   tokens: number; tokT: number;
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
-  seen: Set<number>; busyUntil: number;
+  seen: Set<number>; busyUntil: number; skUntil?: number;
   partyId: number; clone?: { n: number; mult: number; until: number };
   pv?: any; px?: any; noDuel?: boolean; tpAt?: number;      // PvP (duelo / Arena PK): estado, alvo-proxy, "não aceitar duelos", último teleporte
 };
@@ -266,6 +266,7 @@ export class WorldRoom extends Room<WorldState> {
     if (s.form && Date.now() < s.form) return;                         // Metamorfose: só ataque básico
     if (this.isPaused(p)) return;
     if (c.cls !== "assassino" && Date.now() < s.busyUntil - 220) return;   // uma habilidade só depois do fim da animação da outra
+    if (!(C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck") && Date.now() < (s.skUntil || 0) - 250) return;   // vale para todas as classes: tempo de exibição da habilidade anterior (R.castMs)
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
     if (C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck" && s.dag.ret) {      // chamar as adagas de volta
       s.dag.ret();
@@ -290,7 +291,7 @@ export class WorldRoom extends Room<WorldState> {
       tgt = (s.pv && s.pv.mode && m?.pid) ? (this.pvp.target(s, String(m.pid)) as any) : this.sim.byId.get(Number(m?.tid));      // alvo: monstro ou, em duelo / Arena, outro jogador
       if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
     }
-    s.cd[i] = now + sk.cd * 1000; s.busyUntil = now + R.animMs(c.cls, i);
+    s.cd[i] = now + sk.cd * 1000; s.busyUntil = now + R.animMs(c.cls, i); s.skUntil = now + R.castMs(c.cls, i);
     let mult = sk.mult;
     if (C.combo) {
       const prevOk = s.lastSkill >= 0 && now - s.lastSkillAt < 3500;
