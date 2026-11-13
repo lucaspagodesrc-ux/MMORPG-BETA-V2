@@ -835,7 +835,7 @@ const TABN={forja:'🔨 Forjar',aprimorar:'⬆️ Aprimorar',quebrar:'⚒️ Que
 /* =================== ESTADO =================== */
 let S=null;            // dados do personagem (salvos)
 let dcache=null;
-const P={root:null,pos:new V3(0,0,5),hp:1,mp:1,dead:false,moveTo:null,atkTarget:null,interact:null,sel:null,cd:Array(8).fill(0),cdMax:Array(8).fill(1),lastSkill:-1,lastSkillAt:0,cst:0,cstAt:0,nextAtk:0,swingAt:0,potCd:0,lastCombat:0,buffs:{},moving:false,wMat:null,hand:null,rg:0};
+const P={root:null,pos:new V3(0,0,5),hp:1,mp:1,dead:false,moveTo:null,atkTarget:null,interact:null,sel:null,cd:Array(9).fill(0),cdMax:Array(9).fill(1),lastSkill:-1,lastSkillAt:0,cst:0,cstAt:0,nextAtk:0,swingAt:0,potCd:0,lastCombat:0,buffs:{},moving:false,wMat:null,hand:null,rg:0};
 const monsters=[],drops=[],obstacles=[],fx=[],floaters=[],keys={};
 let hover=null,ACC=null; // ACC = conta: {chars:[], stash:[40]} (baú compartilhado)
 
@@ -4639,7 +4639,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(/^\?dbg/.test(location.search))window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
+if(/^\?dbg/.test(location.search))window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -4808,15 +4808,23 @@ function killMonster(m){
  if(P.sel===m)selectMonster(null);if(P.atkTarget===m)P.atkTarget=null;
  m.plate.style.display='none';save();refreshUI();
 }
+/* Égide do Guardião: escudo que absorve dano antes da vida */
+function wardSet(v,dur){const now=performance.now(),txt=n=>'Escudo: absorve '+Math.round(n)+' de dano antes da vida.';
+ if(v>0&&dur){P.ward={v,until:now+dur*1000};addBuff('ward',v,dur,{i:'🔰',n:'Égide do Guardião',color:'#7fd8ff',d:txt(v)});ring(P.pos.x,P.pos.z,2.4,'#7fd8ff',700);floatText('🔰 +'+v,P.pos,'#7fd8ff',true);}
+ else if(v>0){if(P.ward){P.ward.v=v;if(P.buffs.ward){P.buffs.ward.val=v;P.buffs.ward.d=txt(v);}}}
+ else if(P.ward){P.ward=null;delete P.buffs.ward;floatText('🔰 Escudo quebrado',P.pos,'#9fb8c8');}}
+function wardAbsorb(dmg){const w=P.ward;if(!w)return dmg;if(w.v<=0||performance.now()>w.until){P.ward=null;delete P.buffs.ward;return dmg;}if(PKS.mode==='duel')return dmg;
+ const a=Math.min(w.v,dmg),left=w.v-a;floatText('🔰 -'+Math.round(a),P.pos,'#7fd8ff');wardSet(left);if(NET.room)NET.room.send('ward',{v:left});return Math.round(dmg-a);}
 function damagePlayer(raw,src){
  if(P.dead)return;const now=performance.now();
  {const av=RULES.defRoll(D(),null,getBuff('evade'));if(av){floatText(av==='block'?'Bloqueou!':'Esquivou!',P.pos,av==='block'?'#ffe28a':'#9fe7ff');AUD.sfx('dodge');return;}}
  const def=D().def*(1-getBuff('defloss'));let dmg=raw*(1-def/(def+80));dmg*=(1-Math.min(.85,getBuff('shield')));dmg=RULES.flatRed(D(),null,dmg);
+ dmg=wardAbsorb(dmg);if(dmg<=0){P.lastCombat=now;return;}
  P.hp-=dmg;P.lastCombat=now;floatText('-'+dmg,P.pos,'#ff6b6b');AUD.sfx('playerHurt');if(P.recall)cancelRecall('Retorno interrompido: você sofreu dano.');
  if(P.hp<=0){P.hp=0;die();}
 }
 function die(){
- P.dead=true;AUD.sfx('playerDie');P.atkTarget=null;P.moveTo=null;P.interact=null;selectMonster(null);closeDialog();
+ P.dead=true;P.ward=null;delete P.buffs.ward;AUD.sfx('playerDie');P.atkTarget=null;P.moveTo=null;P.interact=null;selectMonster(null);closeDialog();
  P.root.rotation.z=Math.PI/2;$('death').style.display='flex';ACT({t:'died'});save();
 }
 function revive(){
@@ -4842,6 +4850,7 @@ function castSkill(i){
  const s=skStat(i),now=performance.now();
  if(s.type==='daggerFan'&&P.dag&&P.dag.st==='stuck'){P.dag.recall();if(NET.room)NET.room.send('cast',{i});return;}
  if(PAUSED)return;
+ if(s.ward&&PKS.mode==='duel'){toast('🔰 A Égide do Guardião não funciona em duelo');return;}
  if(P.roll)return;
  {const w0=(P.skUntil||0)-now;if(w0>0){if(w0<400){if(!P.qSk){P.qSk=1;later(w0+15,()=>{P.qSk=0;castSkill(i);});}}else if(now>(P.skMsgT||0)){P.skMsgT=now+1500;toast('Aguarde a habilidade atual terminar');}return;}}
  if(S.cls!=='assassino'&&now<(P.actUntil||0)){const w=P.actUntil-now;if(w<400&&!P.qSk){P.qSk=1;later(w+15,()=>{P.qSk=0;castSkill(i);});}return;}
@@ -4930,6 +4939,7 @@ function castSkill(i){
    const d=Math.hypot(dx,dz)||1;if(s.blast){blastDash(P,dx/d,dz/d,s,true);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}ring(P.pos.x,P.pos.z,1.2,s.color,300);P.pos.x+=dx/d*s.dist;P.pos.z+=dz/d*s.dist;collide(P.pos,.4);clampMap(P.pos);ring(P.pos.x,P.pos.z,1.6,s.color,350);
    for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);P.moveTo=null;break;}
   case 'buff':
+   if(s.ward&&!NET.room)wardSet(s.ward,s.dur);
    if(s.spirit)spiritFx(P,s);for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
  }
 }
@@ -6272,6 +6282,7 @@ async function netJoin(){
   room.onMessage('mailr',m=>mailReply(m));room.onMessage('mailn',m=>{MAIL.n=m.n|0;mailBadge();if(MAIL.open)NET.room.send('mail',{op:'list'});});
   room.onMessage('trr',m=>trReply(m));room.onMessage('gs',m=>guStatus(m));room.onMessage('gr',m=>guReply(m));room.onMessage('ginv',m=>guInvite(m));room.onMessage('gu',()=>{if(GU.open&&NET.room)guSend({op:'info',nc:GU.tab==='bau'?0:1});});
   setTimeout(()=>{if(NET.room===room)room.send('mail',{op:'list'});},1500);
+  room.onMessage('ward',m=>{if(!S)return;if(m.dur){wardSet(m.v,m.dur);if(!m.me)toast('🔰 '+m.by+' protegeu você com a Égide do Guardião!');}else{if(m.hit)floatText('🔰 -'+Math.round(m.hit),P.pos,'#7fd8ff');if(m.why==='duel'&&P.ward)toast('🔰 Égide cancelada: não funciona em duelo');wardSet(m.v);}});
   room.onMessage('abuff',m=>{const sk=CLASSES[m.cls]&&CLASSES[m.cls].skills[m.i];if(!sk)return;for(const k in m.buffs)addBuff(k,m.buffs[k],m.dur,sk);ring(P.pos.x,P.pos.z,2.6,sk.color,700);toast(`${sk.i} ${m.by} protegeu você com ${sk.n}!`);logMsg(`<span style="color:${sk.color}">${sk.i} ${esc(m.by)} lançou ${sk.n} em você.</span>`);});
   room.onMessage('gmb',m=>{dirty();if(m&&m.on){const d=D();P.hp=d.maxHp;P.mp=d.maxMp;AUD.sfx('levelUp');ring(P.pos.x,P.pos.z,5,'#ffe28a',900);toast('✨ Você recebeu o Buff do GM por 5 minutos!');logMsg('<span style="color:#ffe28a">✨ <b>Buff do GM</b> ativo por 5 minutos'+(m.by?' (de '+esc(m.by)+')':'')+'</span>');}else{afterChange();logMsg('<span style="color:#cbd6e2">✨ O Buff do GM terminou.</span>');}});
   room.onMessage('drop',m=>{spawnDrop(m.item,{x:m.x,z:m.z},m.life);const d=drops[drops.length-1];if(d){d.sid=m.id;d.lockUntil=m.lock?performance.now()+m.lock:0;}if((m.item.k==='eq'&&m.item.rar>=2)||m.item.k==='tix')setTimeout(()=>AUD.sfx('rare'),300);else setTimeout(()=>AUD.sfx('drop'),200);});
@@ -6563,7 +6574,7 @@ function pkDmg(m){
  if(!S||!NET.room)return;const me=NET.room.sessionId,now=performance.now();
  const tgt=m.t===me?P:NET.others.get(m.t);if(!tgt)return;
  const pos=tgt===P?P.pos:tgt.root.position;if(tgt!==P&&hyp(P.pos,pos)>34)return;
- if(m.dg){floatText(m.dg===2?'Bloqueou!':'Esquivou!',pos,m.dg===2?'#ffe28a':'#9fe7ff');if(tgt===P)AUD.sfx('dodge');return;}
+ if(m.dg){floatText(m.dg===3?'🔰 Absorvido':m.dg===2?'Bloqueou!':'Esquivou!',pos,m.dg===3?'#7fd8ff':m.dg===2?'#ffe28a':'#9fe7ff');if(tgt===P)AUD.sfx('dodge');return;}
  if(m.t===me)return;                                  // o dano que EU levei já aparece pelo 'phit'
  const mine=m.by===me;
  floatText((m.c?'💥 ':'')+m.d,pos,mine?(m.c?'#ffd84a':'#ffffff'):(m.c?'#e8c870':'#b8c4d0'),mine&&!!m.c);

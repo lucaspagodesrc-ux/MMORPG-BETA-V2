@@ -1,5 +1,16 @@
-ATUALIZAÇÃO 1.61 — HELL CRASHER + ESCUDO VOADOR E RAIO DO ESCUDO MAIS RÁPIDOS
-Pacote CUMULATIVO. Em relação à 1.60 mudam index.html, rules.js e WorldRoom.ts (os TRÊS são obrigatórios).
+ATUALIZAÇÃO 1.62 — ÉGIDE DO GUARDIÃO + MENOS DANO EM ÁREA + MENOS CRÍTICO BASE
+Pacote CUMULATIVO. Em relação à 1.61 mudam index.html, rules.js, WorldRoom.ts e pvp.ts (os QUATRO são obrigatórios).
+
+O QUE MUDOU NA 1.62
+• Cavaleiro Pesado — nova habilidade "Égide do Guardião" (nível 30, recarga 60 s, 50 de mana, dura 30 s):
+  - Cria um escudo de 3000: todo dano tira primeiro do escudo; a vida só cai depois que ele quebra.
+  - Em grupo, todos os membros por perto (mesma área, até ~45 m) também ganham os 3000.
+  - Funciona na Arena PK.
+  - NÃO funciona em duelo: não dá para lançar durante o duelo e, se estava ativa, é cancelada quando o duelo começa.
+  - É a 9ª habilidade: ao aprender, ela vai para a segunda barra de atalhos (Shift+1).
+• Dano em área 15% menor em todas as habilidades de todas as classes que acertam vários alvos (áreas, giros, chuva de flechas, meteoro, raios, escudo voador, adagas etc.). Habilidades de alvo único não mudaram.
+• Taxa crítica base menor em todas as classes: base 5%→3%, bônus de classe (Assassino 8→6, Pierrot 14→11) e bônus da AGI cerca de 15% menor. Gemas engastadas, conjuntos e buffs de habilidade NÃO mudaram.
+• Para ajustar: AOE_K (dano em área) e a linha "crit:" de stats() no rules.js; ward/dur da Égide no Cavaleiro.
 
 O QUE MUDOU NA 1.61 (Cavaleiro Pesado)
 • Hell Crasher substitui o Impacto Sísmico (mesmo nível 12, recarga, mana, dano em área pela DEFESA e lentidão): o cavaleiro salta e crava o escudo no chão, que fica marcado com um enorme brasão de escudo em brasa por ~2 s. Outros jogadores também veem a marca.
@@ -73,6 +84,6 @@ COMO VOLTAR ATRÁS
 Suba novamente o index.html da 1.53 no GitHub (ou abra com ?org=0).
 
 INSTALAÇÃO
-1) Envie index.html, rules.js e WorldRoom.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo.
+1) Envie index.html, rules.js, WorldRoom.ts e pvp.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo.
 2) Aguarde o Render terminar o deploy (o servidor reinicia).
 3) No navegador, Ctrl+F5.

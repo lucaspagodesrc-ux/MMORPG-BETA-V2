@@ -130,6 +130,11 @@ export class Pvp {
   }
   private damage(s: any, ts: any, d: number, crit: boolean) {
     const room = this.room, sidA = s.client.sessionId, sidB = ts.client.sessionId, vm = this.pv(ts), t = now();
+    const w = ts.ward;                                                  // Égide do Guardião: absorve o dano antes da vida (Arena PK; em duelo não existe)
+    if (w && w.v > 0 && w.until > Date.now() && vm.mode !== "duel") {
+      const a = Math.min(w.v, d); w.v -= a; d = Math.round(d - a); ts.client.send("ward", { v: w.v, hit: a });
+      if (d <= 0) { vm.at = t; vm.by = sidA; vm.byAt = t; s.pv.at = t; this.near(sidB, "pdmg", { t: sidB, by: sidA, d: 0, dg: 3 }, sidA); return; }
+    }
     vm.hp = Math.max(-vm.max, vm.hp - d); vm.taken += d; vm.at = t; vm.by = sidA; vm.byAt = t; s.pv.at = t;
     if (vm.hp <= 0 && !vm.zero) vm.zero = t;
     this.near(sidB, "pdmg", { t: sidB, by: sidA, d, c: crit ? 1 : 0 }, sidA);
@@ -199,7 +204,7 @@ export class Pvp {
     this.duels.set(d.id, d); this.of.set(a, d); this.of.set(b, d);
     this.room.sim.noAggro.add(a); this.room.sim.noAggro.add(b);       // duelo justo: monstros ignoram os dois até o fim
     for (const [me, fo] of [[f, s], [s, f]]) {
-      const v = this.pv(me); v.mode = "duel"; v.prot = 0; v.rs = 0; this.fresh(me);
+      const v = this.pv(me); v.mode = "duel"; v.prot = 0; v.rs = 0; this.fresh(me); this.room.clearWard(me, "duel");
       const fp = this.P(fo.client.sessionId);
       me.client.send("duel", { st: "count", ms: DU.count, limit: DU.limit, cx: d.cx, cz: d.cz, r: DU.r, out: DU.out, foe: { id: fo.client.sessionId, name: fp.name, lv: fp.level, cls: fp.cls } });
     }

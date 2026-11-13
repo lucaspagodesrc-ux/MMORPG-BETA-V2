@@ -103,7 +103,8 @@ const CLASSES={
    {n:'Hell Crasher',i:'🛡️',lv:12,cd:12,mp:28,type:'aoeSelf',mult:.8,defMult:1.5,radius:4.5,slow:3000,anim:'jump',delay:650,crest:1,color:'#ffb347',d:'Salta bem alto e crava o escudo no chão, marcando um enorme brasão de escudo em chamas: dano em área baseado na DEFESA e lentidão.'},
    {n:'Vontade de Ferro',i:'🩹',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.3,color:'#6fdc7f',d:'Recupera 30% da vida máxima.'},
    {n:'Escudo Voador',i:'🥏',lv:20,cd:24,mp:40,type:'shieldThrow',mult:1.3,defMult:1.0,range:8,fspd:24,spin:.8,pierce:.5,anim:'throw',color:'#9fd0ff',d:'Arremessa o escudo para frente, ferindo (perfurante) todos que acertar. No alcance máximo ele gira por um instante causando dano em área e volta rápido para você. Sem escudo enquanto ele voa.'},
-   {n:'Raio do Escudo',i:'🔆',lv:25,cd:22,mp:45,type:'shieldBeam',mult:.9,defMult:1.6,range:15,pierce:.5,dur:1.5,beam:1.5,anim:'beam',color:'#fff2a8',d:'Bate a espada no escudo e solta um raio concentrado por 1,5s à frente, causando dano perfurante em tudo que ele atravessa.'}]},
+   {n:'Raio do Escudo',i:'🔆',lv:25,cd:22,mp:45,type:'shieldBeam',mult:.9,defMult:1.6,range:15,pierce:.5,dur:1.5,beam:1.5,anim:'beam',color:'#fff2a8',d:'Bate a espada no escudo e solta um raio concentrado por 1,5s à frente, causando dano perfurante em tudo que ele atravessa.'},
+   {n:'Égide do Guardião',i:'🔰',lv:30,cd:60,cdMin:60,mp:50,type:'buff',ward:3000,dur:30,fixDur:1,color:'#7fd8ff',d:'Cria um escudo que absorve 3000 de dano por 30s: você só perde vida depois que o escudo quebrar. Em grupo, todos os membros próximos também recebem o escudo. Funciona na Arena PK; não funciona em duelo (é cancelado quando o duelo começa).'}]},
  tanque:{n:'Tanque',i:'⛓️',wi:'🔨',main:'vit',base:{str:6,agi:2,int:2,vit:14},range:2.8,ranged:false,
   d:'O mais resistente: DEFESA +75%, vida +30%. Puxa, atordoa, imobiliza, levanta e PROVOCA os monstros para levar o dano.',
   skills:[
@@ -938,7 +939,7 @@ function stats(c) {
     dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1) * (1 + sb('dmgP') / 100) + (gm ? 200 : 0),
     luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: (pr ? 2.1 : 1.7) + (G.cdmg + sb('cdmg')) / 100,
     // Retornos decrescentes: crítico/esquiva/velocidade nunca disparam, por mais pontos que se invista.
-    crit: 5 + (as ? 8 : 0) + (pr ? 14 : 0) + 45 * st.agi / (st.agi + 200) + G.crit + sb('crit'),
+    crit: 3 + (as ? 6 : 0) + (pr ? 11 : 0) + 38 * st.agi / (st.agi + 200) + G.crit + sb('crit'),   // v1.62: base, bônus de classe e AGI reduzidos; gemas e conjuntos iguais
     dodge: 25 * st.agi / (st.agi + 250) + G.eva + sb('eva'),
     atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) * (1 + sb('aspd') / 100),
     // novos (gemas/conjuntos): amp de habilidades, penetração, dano adicional, teto de crítico, redução de dano, absorção e regeneração
@@ -989,13 +990,15 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 /** Valores de uma habilidade conforme o rank. */
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
 const BCAP = { flat: 1000, aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
+/* dano em área: todas as habilidades que acertam vários alvos causam 15% menos dano (AOE_K) */
+const AOE_K = .85, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1 };
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
   if (s.flatMin != null) bf.flat = s.flatMin + (s.flatMax - s.flatMin) * Math.min(1, k / (MAXRANK - 1));
   if (s.evMin != null && bf.evade != null) bf.evade = s.evMin + (s.evMax - s.evMin) * Math.min(1, k / (MAXRANK - 1));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
-  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) * (AOE_T[s.type] ? AOE_K : 1) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
@@ -1282,7 +1285,7 @@ const defBar = () => [0, 1, 2, 3, 4, 5, 6, 7, -1, -1, -1, -1, -1, -1, -1, -1];
 function cleanBar(b) {
   const o = defBar().fill(-1), seen = new Set();
   if (!Array.isArray(b)) return defBar();
-  for (let i = 0; i < 16; i++) { const v = Math.floor(b[i]); if (v >= 0 && v < 8 && !seen.has(v)) { o[i] = v; seen.add(v); } }
+  for (let i = 0; i < 16; i++) { const v = Math.floor(b[i]); if (v >= 0 && v < 9 && !seen.has(v)) { o[i] = v; seen.add(v); } }
   return o;
 }
 function newChar(cls, name) {
@@ -1297,7 +1300,7 @@ const GM_GOLD = 999999999;
 /** Personagem do GM: nível máximo, melhor equipamento +10, habilidades no máximo. */
 function gmChar(cls, old) {
   const C = CLASSES[cls], c = old || newChar(cls, 'GM ' + C.n);
-  c.gm = 1; c.gmu = 0; c.level = MAX_LEVEL; c.xp = 0; c.sp = 0; c.sk = Array(8).fill(MAXRANK);
+  c.gm = 1; c.gmu = 0; c.level = MAX_LEVEL; c.xp = 0; c.sp = 0; c.sk = Array(9).fill(MAXRANK);
   const tot = PTS_PER_LEVEL * (MAX_LEVEL - 1), main = Math.round(tot * .6); c.alloc = { str: 0, agi: 0, int: 0, vit: tot - main }; c.alloc[C.main] += main; c.pts = 0;
   c.gold = GM_GOLD;
   const mk = (slot, w) => { const it = genItem(slot, MAX_LEVEL, 3, cls, cls, 0, true); if (slot === 'weapon') it.cls = cls; it.plus = MAXPLUS; return it; };
@@ -1354,7 +1357,7 @@ function cleanItem(it) {
 /** Atualiza personagens antigos para as regras atuais. Nunca apaga o personagem: só corrige/ajusta. */
 function migrate(c) {
   if (!c.sk || !Array.isArray(c.sk)) { c.sk = Array(8).fill(0); c.sk[0] = 1; if (c.sp === undefined) c.sp = c.level; }
-  while (c.sk.length < 8) c.sk.push(0); if (c.sp === undefined) c.sp = 0;
+  while (c.sk.length < 9) c.sk.push(0); if (c.sp === undefined) c.sp = 0;
   if (c.cls === 'tanque' && !c.tkv) {            // Campo de Atração foi removido: Sentença do Colosso passa de 7 para 6
     c.tkv = 1; const old = c.sk[6] || 0; let rf = 0; for (let r = 0; r < old; r++) rf += skCost(r);
     c.sp = (c.sp || 0) + rf; c.sk[6] = c.sk[7] || 0; c.sk[7] = 0;
@@ -1520,7 +1523,7 @@ function act(sess, m, ctx) {
   if (t === 'title') { const id = String(m.id || ''); if (id && !titleHave(c, id)) return fail('Título bloqueado'); c.title = id; return done(); }
   if (t === 'bar') { if (!Array.isArray(m.bar) || m.bar.length !== 16) return fail(); c.bar = cleanBar(m.bar); return done(); }
   if (t === 'skup') {
-    if (!intIn(m.i, 0, 8)) return fail(); const s = CLASSES[c.cls].skills[m.i], r = c.sk[m.i] || 0; if (r >= MAXRANK) return fail();
+    if (!intIn(m.i, 0, 9)) return fail(); const s = CLASSES[c.cls].skills[m.i]; if (!s) return fail(); const r = c.sk[m.i] || 0; if (r >= MAXRANK) return fail();
     if (c.level < s.lv) return fail('Nível ' + s.lv + ' necessário');
     const cost = skCost(r); if (c.sp < cost) return fail('Pontos de habilidade insuficientes');
     c.sp -= cost; c.sk[m.i] = r + 1; if (!r) { c.bar = cleanBar(c.bar); if (!c.bar.includes(m.i)) { const e = c.bar.indexOf(-1); if (e >= 0) c.bar[e] = m.i; } } F('learn'); T((r ? '⬆️ ' : '📖 ') + s.n + ' — Rank ' + (r + 1));

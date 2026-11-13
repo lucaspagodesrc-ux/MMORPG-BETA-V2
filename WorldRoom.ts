@@ -43,7 +43,7 @@ type Sess = {
   tokens: number; tokT: number;
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
   seen: Set<number>; busyUntil: number; skUntil?: number;
-  partyId: number; clone?: { n: number; mult: number; until: number };
+  partyId: number; ward?: { v: number; until: number }; clone?: { n: number; mult: number; until: number };
   pv?: any; px?: any; noDuel?: boolean; tpAt?: number;      // PvP (duelo / Arena PK): estado, alvo-proxy, "não aceitar duelos", último teleporte
 };
 type WDrop = { id: number; item: any; x: number; z: number; exp: number; life: number; inst: number; owner: string; party: number; free: number };
@@ -67,6 +67,19 @@ export class WorldRoom extends Room<WorldState> {
   private stats(s: Sess) { const g = (s.c.gmu || 0) > Date.now(); if (s.d && !!s.d.gm !== g) s.d = null; return s.d || (s.d = R.stats(s.c)); }
   private touch(s: Sess) { s.d = null; s.dirty = true; }
   private buff(s: Sess, k: string) { const b = s.buffs[k]; return b && b.until > Date.now() ? b.val : 0; }
+  /** Égide do Guardião: escudo que absorve dano. Vai para quem lançou e para os membros do grupo por perto (nunca para quem está em duelo). */
+  private giveWard(s: Sess, v: number, dur: number, i: number) {
+    const p = this.playerOf(s); if (!p) return; const until = Date.now() + dur * 1000;
+    for (const [sid, o] of this.sess) {
+      if (o !== s && (!s.partyId || o.partyId !== s.partyId)) continue;
+      const q = this.state.players.get(sid); if (!q || q.dead) continue;
+      if (o !== s && (q.inst !== p.inst || cx(q.x) !== cx(p.x) || Math.hypot(q.x - p.x, q.z - p.z) > 45)) continue;
+      if (o.pv && o.pv.mode === "duel") continue;
+      o.ward = { v, until }; o.client.send("ward", { v, max: v, dur, by: s.c.name, me: o === s ? 1 : 0, i });
+    }
+  }
+  /** tira o escudo (começo de duelo) */
+  clearWard(s: Sess, why = "") { if (s.ward) { s.ward = undefined; s.client.send("ward", { v: 0, why }); } }
   private addBuff(s: Sess, k: string, val: number, dur: number) { s.buffs[k] = { val, until: Date.now() + dur * 1000 }; }
   private okRate(s: Sess, cost = 1) {            // balde de fichas por jogador (contra spam de mensagens)
     const now = Date.now(); s.tokens = Math.min(30, s.tokens + (now - s.tokT) / 1000 * 12); s.tokT = now;
@@ -286,6 +299,7 @@ export class WorldRoom extends Room<WorldState> {
     }
     const off = !["buff", "dashBack", "heal", "clone", "transform"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
+    if ((sk as any).ward && s.pv && s.pv.mode === "duel") return;       // Égide: não funciona em duelo
     let tgt: Sim | undefined;
     if (["single", "dash", "aoeTarget", "multi", "barrage", "mark", "chainPull", "thunder", "arcRay"].includes(sk.type)) {
       tgt = (s.pv && s.pv.mode && m?.pid) ? (this.pvp.target(s, String(m.pid)) as any) : this.sim.byId.get(Number(m?.tid));      // alvo: monstro ou, em duelo / Arena, outro jogador
@@ -424,7 +438,8 @@ export class WorldRoom extends Room<WorldState> {
         for (let n = 0; n < 3; n++) this.later(120 + n * 180, () => { const q = this.playerOf(s); if (!q || q.dead) return; this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.8, mult, so); });
         break;
       }
-      case "dashBack": case "buff": case "transform": case "heal": for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur); if (sk.type === "heal") this.pvp.onHealSkill(s, sk); break;
+      case "dashBack": case "buff": case "transform": case "heal": for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);
+        if ((sk as any).ward) this.giveWard(s, (sk as any).ward, sk.dur, i); if (sk.type === "heal") this.pvp.onHealSkill(s, sk); break;
     }
   }
 
@@ -622,6 +637,7 @@ export class WorldRoom extends Room<WorldState> {
 
     /* ---- grupos ---- */
     // Buff do GM: só personagens de conta GM. Modos: self | id (jogador clicado) | near (raio) | all (todos do mapa)
+    this.onMessage("ward", (client, m) => { const s = this.sess.get(client.sessionId); if (!s || !s.ward) return; const v = Number(m?.v); if (Number.isFinite(v)) s.ward.v = Math.max(0, Math.min(s.ward.v, v)); });   // o cliente avisa quanto sobrou depois de dano de monstros
     this.onMessage("gmbuff", (client, m) => {
       const s = this.S(client), p = this.state.players.get(client.sessionId);
       if (!s || !p || !s.c.gm || !this.okRate(s, 1)) return;
@@ -746,7 +762,7 @@ export class WorldRoom extends Room<WorldState> {
     this.state.players.set(client.sessionId, p);
     const now = Date.now();
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,
-      dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(8).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, seen: new Set(), busyUntil: 0, partyId: 0 };
+      dirty: true, saving: false, d: null, tokens: 30, tokT: now, cd: Array(9).fill(0), lastBasic: 0, buffs: {}, cst: 0, cstAt: 0, lastSkill: -1, lastSkillAt: 0, seen: new Set(), busyUntil: 0, partyId: 0 };
     this.sess.set(client.sessionId, s);
     mailNotify(this, s.acc.id);
     if (p.x > 450) {                                            // estava numa dungeon: volta para a instância se ainda estiver no prazo
