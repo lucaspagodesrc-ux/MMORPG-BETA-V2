@@ -2887,15 +2887,16 @@ function mkHead(par,y,o){const rx=o.rx||.5,ry=o.ry||.52,P=[];
  const h=put(revolve(P,{n:32,sz:.93}),par,0,0,0,sk);
  // decalque do rosto: patch na frente da elipsoide
  const y0=y-.28*ry*2,y1=y+.18*ry*2,A=.78;
- const dec=surf((u,v)=>{const yy=y0+(y1-y0)*v-y;const r=headR(yy,rx,ry,o.jaw==null?.34:o.jaw)+.006,a=(u-.5)*2*A;return new V3(Math.sin(a)*r,y+yy,Math.cos(a)*r*.93);},14,10,false);
- put(dec,par,0,0,0,M(faceTex(o.face||{}),{alpha:1,spec:0}),{ink:0});dec.material.backFaceCulling=false;dec.material.zOffset=-8;dec.renderingGroupId=1;
+ const dec=surf((u,v)=>{const yy=y0+(y1-y0)*v-y;const r=headR(yy,rx,ry,o.jaw==null?.34:o.jaw)+.014,a=(u-.5)*2*A;return new V3(Math.sin(a)*r,y+yy,Math.cos(a)*r*.93);},14,10,false);
+ put(dec,par,0,0,0,M(faceTex(o.face||{}),{alpha:1,spec:0}),{ink:0});dec.material.backFaceCulling=false;dec.material.zOffset=-4;
  // nariz e orelhas
  put(blob(.13,{k:.02}),par,0,y-.04,.47,sk,{s:[.9,1,1.2],ink:0});
  for(const sx of[-1,1])put(blob(.16,{k:.04}),par,sx*(rx-.01),y-.02,0,sk,{s:[.45,1,.8],ink:0});
  return h;}
 
 /** corpo base articulado (compatível com animLimbs do jogo): braços/pernas em pivôs */
-function mkBody(cfg){const g=new B.TransformNode('g',scene);const c=cfg;
+let HL=[];const HM=m=>{HL.push(m);return m;};
+function mkBody(cfg){HL=[];const g=new B.TransformNode('g',scene);const c=cfg;
  const sc=c.scale||1,wid=c.wid||1;
  const nd=(p,x,y,z)=>{const n=new B.TransformNode('lb',scene);n.parent=p;n.position.set(x,y,z);return n;};
  const tex=c.torsoTex,ext=M(tex,{spec:c.metal?.5:.12,pow:c.metal?60:20});
@@ -2949,7 +2950,7 @@ function mkCav(){
  // elmo fechado dourado
  const hy=2.62;const helmT=metalTex('#dba93a',15,{name:'hel',fn:(c,S)=>{c.fillStyle='#161018';c.fillRect(S*.30,S*.34,S*.4,S*.07);c.fillRect(S*.47,S*.34,S*.06,S*.4);c.strokeStyle='#fff3c0';c.globalAlpha=.5;c.lineWidth=4;c.beginPath();c.moveTo(S*.2,S*.18);c.quadraticCurveTo(S*.5,S*.1,S*.8,S*.18);c.stroke();c.globalAlpha=1;}});
  const HP=[];for(let i=0;i<=22;i++){const t=i/22,yy=-.5+t*1.06;const r=yy<-.05?(.40-.0*(yy+.5)):(.50*Math.sqrt(Math.max(0,1-Math.pow((yy-.05)/.52,2))));HP.push([Math.max(.001,(yy<-.05?.40+(yy+.5)*.16:r)),hy+yy]);}
- put(revolve(HP,{n:32,sz:.98}),g,0,0,0,M(helmT,{spec:.6,pow:70}));
+ put(revolve(HP,{n:32,sz:.98}),g,0,0,0,HM(M(helmT,{spec:.6,pow:70})));
  // penacho vermelho (tubo curvo de pano)
  put(tube(smoothPath([[0,hy+.45,.0],[0,hy+.9,-.1],[0,hy+1.0,-.5],[0,hy+.7,-.85],[0,hy+.3,-.9]],10),t=>.16*(1-t*.75)+.02),g,0,0,0,M(clothTex('#d0283a',32),{spec:.2}));
  // escudo kite pintado
@@ -2974,7 +2975,7 @@ function mkGue(){
  // elmo com viseira e chifres
  const hy=2.6,helmT=metalTex('#2f3f75',47,{name:'gH',fn:(c,S)=>{c.fillStyle='#8a4ae0';c.fillRect(S*.3,S*.46,S*.4,S*.05);c.fillStyle='#140e1c';c.fillRect(S*.32,S*.40,S*.36,S*.05);c.fillRect(S*.47,S*.40,S*.06,S*.35);}});
  const HP=[];for(let i=0;i<=22;i++){const t=i/22,yy=-.5+t*1.06;const r=yy<-.05?(.40+(yy+.5)*.16):(.50*Math.sqrt(Math.max(0,1-Math.pow((yy-.05)/.52,2))));HP.push([Math.max(.001,r),hy+yy]);}
- put(revolve(HP,{n:32,sz:.98}),g,0,0,0,M(helmT,{spec:.6,pow:70}));
+ put(revolve(HP,{n:32,sz:.98}),g,0,0,0,HM(M(helmT,{spec:.6,pow:70})));
  for(const s of[-1,1])put(tube(smoothPath([[s*.38,hy+.15,0],[s*.62,hy+.3,0],[s*.74,hy+.62,0],[s*.66,hy+.9,0]],8),t=>.09*(1-t*.9)),g,0,0,0,M(clothTex('#e8dcc0',48),{spec:.3}));
  // montante enorme com fio roxo brilhante
  const sw=new B.TransformNode('sw',scene);sw.parent=g;sw.parent=cfg.hR;sw.position.set(0,0,0);sw.rotation.set(.0,0,-.12);
@@ -2993,7 +2994,7 @@ function mkTan(){
  const hy=2.55;mkHead(g,hy,{skin:'#d49a70',face:{eye:'#6a4a2a',angry:.9,mouth:'grin',es:.92,brow:'#8a3a14'}});
  // elmo viking: calota + chifres curvos
  const HP=[];for(let i=0;i<=14;i++){const t=i/14*Math.PI/2;HP.push([.56*Math.cos(t)+.001,hy+.12+.52*Math.sin(t)]);}
- const helm=put(revolve(HP,{n:30,sz:.96}),g,0,0,0,M(metalTex('#8a94a4',66,{name:'vH',fn:(c,S)=>{c.fillStyle='#5a3a22';c.fillRect(0,S*.46,S,S*.1);}}),{spec:.6}));
+ const helm=put(revolve(HP,{n:30,sz:.96}),g,0,0,0,HM(M(metalTex('#8a94a4',66,{name:'vH',fn:(c,S)=>{c.fillStyle='#5a3a22';c.fillRect(0,S*.46,S,S*.1);}}),{spec:.6})));
  for(const s of[-1,1])put(tube(smoothPath([[s*.50,hy+.34,0],[s*.78,hy+.45,0],[s*.92,hy+.78,0],[s*.8,hy+1.02,0]],8),t=>.12*(1-t*.88)),g,0,0,0,M(clothTex('#efe6c8',67),{spec:.2}));
  // barba ruiva: mechas esculpidas
  const hair=M(hairTex('#c4501e',68),{spec:.08});
@@ -3015,7 +3016,7 @@ function mkAss(){
  const g=mkBody(cfg);const hy=2.5;
  mkHead(g,hy,{skin:'#d8b08a',face:{eye:'#d83a4a',angry:1.2,mouth:'smirk',es:1.05,brow:'#1c1424',mask:'#8a1e2a'},jaw:.4});
  // capuz vermelho esculpido: cobre a cabeça, abre no rosto, ponta caída atrás
- const red=M(clothTex('#26242e',85),{spec:.1});
+ const red=HM(M(clothTex('#26242e',85),{spec:.1}));
  mkHood(g,hy,red,{R:.62,front:.38});
  put(tube(smoothPath([[0,hy+.4,-.4],[0,hy+.3,-.7],[0,hy-.1,-.85],[0,hy-.5,-.8]],8),t=>.2*(1-t*.9)),g,0,0,0,red);
  // lenço no pescoço
@@ -3030,7 +3031,7 @@ function mkArq(){
   arms:{L:{el:[.75,1.55,.3],wr:[.78,1.45,.62]},R:{el:[.55,1.5,.12],wr:[.4,1.4,.32]}}};
  const g=mkBody(cfg);const hy=2.5;
  mkHead(g,hy,{skin:'#f0c8a0',face:{eye:'#2f9a5a',mouth:'smile',es:1,brow:'#6a4a2a'}});
- const grn=M(clothTex('#2f6a3b',105),{spec:.06});
+ const grn=HM(M(clothTex('#2f6a3b',105),{spec:.06}));
  mkHood(g,hy,grn,{R:.6,front:.34});
  put(tube(smoothPath([[0,hy+.3,-.45],[0,hy+.1,-.7],[0,hy-.3,-.78]],7),t=>.22*(1-t*.8)),g,0,0,0,grn);
  // capa longa
@@ -3051,13 +3052,14 @@ function mkMag(){
   arms:{L:{el:[.74,1.5,.14],wr:[.68,1.22,.3]},R:{el:[.62,1.55,.12],wr:[.5,1.42,.3]}}};
  const g=mkBody(cfg);const hy=2.5;
  // túnica longa com dobras (pano)
- put(revolve([[.001,.12],[.62,.14],[.55,.5],[.46,.9],[.36,1.04]],{n:40,sz:.82,mod:(a)=>1+.07*Math.sin(a*8)+.03*Math.sin(a*3)}),g,0,0,0,M(clothTex('#3a5ad0',125,{name:'rb',fn:(c,S)=>{c.fillStyle='#e8c14a';c.fillRect(0,S*.88,S,S*.12);c.fillRect(0,0,S,S*.05);c.fillRect(S*.47,0,S*.06,S);}}),{spec:.08}));
+ const rbm=M(clothTex('#3a5ad0',125,{name:'rb',fn:(c,S)=>{c.fillStyle='#e8c14a';c.fillRect(0,S*.88,S,S*.12);c.fillRect(0,0,S,S*.05);c.fillRect(S*.47,0,S*.06,S);}}),{spec:.08});g._mats.torso2=[rbm];
+ put(revolve([[.001,.50],[.50,.52],[.46,.76],[.40,.92],[.36,1.04]],{n:40,sz:.8,mod:(a)=>1+.05*Math.sin(a*8)+.02*Math.sin(a*3)}),g,0,0,0,rbm);
  mkHead(g,hy,{skin:'#f4d2b0',face:{eye:'#8a4aff',mouth:'open',es:1.12,brow:'#c8c8d8'}});
  const hair=M(hairTex('#4aa8e8',126),{spec:.06}),white=M(hairTex('#f2f2f6',127),{spec:.06});
  for(const s of[-1,1])put(tube(smoothPath([[s*.46,hy+.1,.0],[s*.58,hy-.3,-.05],[s*.52,hy-.8,-.1]],6),t=>.16*(1-t*.6)),g,0,0,0,hair);
  // chapéu de bruxo: aba larga ondulada + cone torto
- put(revolve([[.001,hy+.42],[.98,hy+.40],[1.04,hy+.46],[.62,hy+.5],[.50,hy+.52]],{n:36,sz:1.0,mod:(a)=>1+.05*Math.sin(a*3)}),g,0,0,0,M(clothTex('#2a4ab8',128),{spec:.06}));
- put(tube(smoothPath([[0,hy+.45,0],[0,hy+.9,.0],[.08,hy+1.3,.0],[.3,hy+1.6,.02],[.52,hy+1.65,.0]],10),t=>.5*(1-t)+.03),g,0,0,0,M(clothTex('#3a5ad0',129),{spec:.06}));
+ put(revolve([[.001,hy+.42],[.98,hy+.40],[1.04,hy+.46],[.62,hy+.5],[.50,hy+.52]],{n:36,sz:1.0,mod:(a)=>1+.05*Math.sin(a*3)}),g,0,0,0,HM(M(clothTex('#2a4ab8',128),{spec:.06})));
+ put(tube(smoothPath([[0,hy+.45,0],[0,hy+.9,.0],[.08,hy+1.3,.0],[.3,hy+1.6,.02],[.52,hy+1.65,.0]],10),t=>.5*(1-t)+.03),g,0,0,0,HM(M(clothTex('#3a5ad0',129),{spec:.06})));
  put(tube([[0,hy+.5,.0],[0,hy+.58,0]],()=>.5),g,0,0,0,M(clothTex('#f0c84a',130),{spec:.5}),{ink:0});
  // barba branca longa em mechas
  for(let k=-3;k<=3;k++)put(tube(smoothPath([[k*.08,hy-.30,.40],[k*.1,hy-.65,.46],[k*.07,hy-1.05+Math.abs(k)*.08,.42]],6),t=>.11*(1-t*.8)),g,0,0,0,white);
@@ -3083,7 +3085,7 @@ function mkPie(){
  for(const s of[-1,1])put(blob(.55,{k:.1,seed:s+7}),g,s*.58,hy+.16,0,hair);
  const HP=[];for(let i=0;i<=16;i++){const t=i/16*Math.PI*.5;HP.push([Math.max(.001,.54*Math.cos(t)),hy+.2+.45*Math.sin(t)]);}put(revolve(HP,{n:28}),g,0,0,0,hair);
  for(const s of[-1,1]){put(tube(smoothPath([[s*.1,hy+.5,0],[s*.4,hy+.85,0],[s*.7,hy+.95,0],[s*.85,hy+.72,0]],8),t=>.26*(1-t*.85)+.025),g,0,0,0,M(clothTex(s<0?'#d8284a':'#f2f2f2',149),{spec:.08}));put(blob(.2,{k:.02}),g,s*.86,hy+.66,0,M(clothTex('#ffd24a',150),{spec:.6}));}
- put(revolve([[.001,hy+.42],[.55,hy+.44],[.58,hy+.52],[.50,hy+.58],[.001,hy+.6]],{n:28}),g,0,0,0,M(clothTex('#d8284a',151),{spec:.08}));
+ put(revolve([[.001,hy+.42],[.55,hy+.44],[.58,hy+.52],[.50,hy+.58],[.001,hy+.6]],{n:28}),g,0,0,0,HM(M(clothTex('#d8284a',151),{spec:.08})));
  // florete fino
  const fl=new B.TransformNode('fl',scene);fl.parent=g;fl.parent=cfg.hR;fl.position.set(0,0,0);fl.rotation.set(-.2,0,-.3);
  put(blade(1.5,.045,.02,M(metalTex('#e8f0ff',151),{spec:.9})),fl,0,.1,0,null,{});put(blob(.3,{k:.02,fn:(x,y,z)=>[x*1.2,y*.4,z*1.2]}),fl,0,.08,0,M(metalTex('#ffd24a',152),{spec:.5}));put(tube([[0,-.2,0],[0,.08,0]],()=>.035),fl,0,0,0,M(leatherTex('#c03a6a',153)));
@@ -3096,24 +3098,81 @@ function mkHood(g,hy,mt,o){o=o||{};const R=o.R||.6,front=o.front==null?.30:o.fro
 
 const MK={guerreiro:mkGue,cavaleiro:mkCav,tanque:mkTan,assassino:mkAss,arqueiro:mkArq,mago:mkMag,pierrot:mkPie};
 
+
+const PLATE={cavaleiro:1,guerreiro:1,tanque:1};
+function dts(c){return{D:null};}
+function armTex(part,c1,c2,plus,plate){const D=sh(c1,-.72),D2=sh(c1,-.45),H=sh(c1,.55),A=sh(c2||c1,.3),glow=plus>=7;
+ const key=part+(plate?'P':'C')+(plus>=7?'g':'');
+ const ln=(c,col,w,a,f)=>{c.strokeStyle=col;c.lineWidth=w;c.globalAlpha=a;c.beginPath();f();c.stroke();c.globalAlpha=1;};
+ const rv=(c,x,y,r)=>{c.fillStyle=D;c.beginPath();c.arc(x,y,r*2,0,TAU);c.fill();c.fillStyle=A;c.globalAlpha=.9;c.beginPath();c.arc(x-r*.5,y-r*.5,r*.9,0,TAU);c.fill();c.globalAlpha=1;};
+ const mk=fn=>plate?metalTex(c1,70+(part.length),{name:key,fn}):clothTex(c1,70+part.length,{name:key,fn});
+ if(part==='torso')return mk((c,S)=>{
+  c.fillStyle=D;c.globalAlpha=.85;c.fillRect(0,S*.12,S,S*.11);c.globalAlpha=1;for(let i=0;i<14;i++)rv(c,i*S/14+S/28,S*.175,3);
+  if(plate){
+   for(const sx of[-1,1]){ln(c,D,12.6,.9,()=>{c.moveTo(S*.5,S*.28);c.quadraticCurveTo(S*(.5+sx*.15),S*.31,S*(.5+sx*.21),S*.47);c.quadraticCurveTo(S*(.5+sx*.1),S*.54,S*.5,S*.53);});
+    ln(c,H,5.25,.8,()=>{c.moveTo(S*.5,S*.30);c.quadraticCurveTo(S*(.5+sx*.14),S*.33,S*(.5+sx*.19),S*.46);});
+    if(glow)ln(c,H,6.3,.9,()=>{c.moveTo(S*.5,S*.325);c.quadraticCurveTo(S*(.5+sx*.12),S*.355,S*(.5+sx*.165),S*.46);});
+    ln(c,D2,8.4,.7,()=>{c.moveTo(S*(.5+sx*.08),S*.38);c.quadraticCurveTo(S*(.5+sx*.14),S*.42,S*(.5+sx*.12),S*.5);});}
+   c.fillStyle=D;c.globalAlpha=.4;c.beginPath();c.moveTo(S*.38,S*.3);c.lineTo(S*.62,S*.3);c.lineTo(S*.57,S*.55);c.lineTo(S*.43,S*.55);c.closePath();c.fill();c.globalAlpha=1;
+   ln(c,D,10.5,.9,()=>{c.moveTo(S*.5,S*.24);c.lineTo(S*.5,S*.66);});for(const y of[.34,.44,.52])rv(c,S*.5,S*y,3.5);
+   for(const y of[.575,.61,.645]){ln(c,D,10.5,.9,()=>{c.moveTo(0,S*y);c.lineTo(S,S*y);});ln(c,H,4.2,.7,()=>{c.moveTo(0,S*y+4);c.lineTo(S,S*y+4);});}
+   c.fillStyle=D;c.fillRect(0,S*.65,S,S*.09);c.fillStyle=A;c.fillRect(S*.45,S*.665,S*.1,S*.06);c.fillStyle=D;c.fillRect(S*.47,S*.68,S*.06,S*.03);
+   for(let i=0;i<=9;i++)ln(c,D,7.35,.8,()=>{c.moveTo(i*S/9,S*.73);c.lineTo(i*S/9,S);});ln(c,D,8.4,.8,()=>{c.moveTo(0,S*.86);c.lineTo(S,S*.86);});
+   ln(c,D,12.6,.9,()=>{c.moveTo(2,S*.2);c.lineTo(2,S);c.moveTo(S-2,S*.2);c.lineTo(S-2,S);});
+   for(const y of[.42,.5,.58])ln(c,D2,6.3,.6,()=>{c.moveTo(S*.0,S*y);c.lineTo(S*.18,S*y);c.moveTo(S*.82,S*y);c.lineTo(S,S*y);});
+   ln(c,D,6.3,.55,()=>{c.moveTo(S*.4,S*.4);c.bezierCurveTo(S*.36,S*.44,S*.42,S*.5,S*.45,S*.46);c.moveTo(S*.6,S*.4);c.bezierCurveTo(S*.64,S*.44,S*.58,S*.5,S*.55,S*.46);});
+  }else{
+   ln(c,D,10.5,.8,()=>{c.moveTo(S*.5,S*.2);c.lineTo(S*.5,S);});for(let i=0;i<6;i++)rv(c,S*.5,S*(.3+i*.1),3);
+   c.fillStyle=D;c.globalAlpha=.8;c.fillRect(0,S*.64,S,S*.07);c.globalAlpha=1;c.fillStyle=H;c.fillRect(S*.46,S*.645,S*.08,S*.06);
+   c.fillStyle=D;c.globalAlpha=.7;c.fillRect(0,S*.94,S,S*.06);c.globalAlpha=1;
+   ln(c,D2,6.3,.5,()=>{c.moveTo(S*.3,S*.3);c.quadraticCurveTo(S*.5,S*.4,S*.7,S*.3);});}
+ });
+ if(part==='sleeve')return mk((c,S)=>{for(const y of[.25,.5,.75]){ln(c,D,10.5,.9,()=>{c.moveTo(0,S*y);c.lineTo(S,S*y);});ln(c,H,4.2,.7,()=>{c.moveTo(0,S*y+4);c.lineTo(S,S*y+4);});}
+  for(const y of[.2,.45,.7])for(let i=0;i<4;i++)rv(c,S*(i*.25+.12),S*y,2.6);c.fillStyle=D;c.globalAlpha=.8;c.fillRect(0,0,S,S*.1);c.fillRect(0,S*.9,S,S*.1);c.globalAlpha=1;
+  if(glow)ln(c,H,6.3,.8,()=>{c.moveTo(S*.5,0);c.lineTo(S*.5,S);});});
+ if(part==='shoulder')return mk((c,S)=>{for(const y of[.28,.5,.72]){ln(c,D,12.6,.9,()=>{c.moveTo(0,S*y);c.lineTo(S,S*y);});ln(c,H,5.25,.8,()=>{c.moveTo(0,S*y+5);c.lineTo(S,S*y+5);});}
+  c.fillStyle=D;c.globalAlpha=.9;c.fillRect(0,S*.9,S,S*.1);c.globalAlpha=1;for(let i=0;i<10;i++)rv(c,i*S/10+S/20,S*.94,3);for(let i=0;i<5;i++)ln(c,D2,6.3,.7,()=>{c.moveTo(i*S/5,0);c.lineTo(i*S/5,S*.28);});
+  if(glow)ln(c,H,6.3,.9,()=>{c.moveTo(0,S*.12);c.lineTo(S,S*.12);});});
+ if(part==='pants')return clothTex(c2,80,{name:'pn'+c2+(plate?'P':'C'),fn:(c,S)=>{const d=sh(c2,-.55);ln(c,d,5,.7,()=>{c.moveTo(S*.25,0);c.lineTo(S*.25,S);c.moveTo(S*.75,0);c.lineTo(S*.75,S);});c.fillStyle=d;c.globalAlpha=.55;c.fillRect(0,S*.46,S,S*.07);c.globalAlpha=1;}});
+ if(part==='boots')return leatherTex(c1,81+(plus>=7?1:0));
+ return null;}
+function bootTex(c1,plus){const D=sh(c1,-.6),H=sh(c1,.5);return paint('bt'+c1+(plus>=7),256,(c,S)=>{c.fillStyle=c1;c.fillRect(0,0,S,S);const g=c.createLinearGradient(0,0,0,S);g.addColorStop(0,sh(c1,.2));g.addColorStop(1,sh(c1,-.3));c.fillStyle=g;c.fillRect(0,0,S,S);
+ c.fillStyle=D;c.fillRect(0,0,S,S*.16);c.fillStyle=H;c.globalAlpha=.6;c.fillRect(0,S*.16,S,3);c.globalAlpha=1;
+ for(const y of[.42,.66]){c.fillStyle=D;c.fillRect(0,S*y,S,S*.07);c.fillStyle=H;c.fillRect(S*.46,S*y+1,S*.08,S*.05);}
+ c.fillStyle=D;c.fillRect(0,S*.9,S,S*.1);c.strokeStyle=sh(c1,.4);c.globalAlpha=.5;c.setLineDash([6,5]);c.lineWidth=2;c.beginPath();c.moveTo(0,S*.3);c.lineTo(S,S*.3);c.stroke();c.setLineDash([]);c.globalAlpha=1;});}
+function helmTex(cls,c1,plus){const D=sh(c1,-.62),H=sh(c1,.55),plate=!!PLATE[cls];
+ const rv=(c,x,y,r)=>{c.fillStyle=D;c.beginPath();c.arc(x,y,r,0,TAU);c.fill();};
+ if(!plate)return clothTex(sh(c1,-.05),90+cls.length,{name:'hc'+cls,fn:(c,S)=>{c.fillStyle=D;c.globalAlpha=.7;c.fillRect(0,S*.55,S,S*.07);c.globalAlpha=1;c.fillStyle=H;c.globalAlpha=.7;c.fillRect(S*.47,0,S*.06,S*.55);c.globalAlpha=1;}});
+ const vis=cls!=='tanque';
+ return metalTex(c1,90+cls.length,{name:'hm'+cls+(plus>=7?'g':''),fn:(c,S)=>{
+  if(vis){c.fillStyle=D;c.fillRect(S*.28,S*.33,S*.44,S*.08);c.fillRect(S*.47,S*.33,S*.06,S*.42);c.fillStyle=H;c.globalAlpha=.7;c.fillRect(S*.27,S*.315,S*.46,3);c.globalAlpha=1;
+   c.fillStyle=D;c.globalAlpha=.85;c.fillRect(0,S*.24,S,S*.045);c.globalAlpha=1;for(let i=0;i<16;i++)rv(c,i*S/16+S/32,S*.262,2.6);
+   c.strokeStyle=D;c.lineWidth=4;c.globalAlpha=.7;c.beginPath();c.moveTo(S*.5,0);c.lineTo(S*.5,S*.24);c.stroke();c.globalAlpha=1;
+   for(const sx of[-1,1]){c.strokeStyle=D;c.lineWidth=3;c.globalAlpha=.65;c.beginPath();c.moveTo(S*(.5+sx*.2),S*.45);c.lineTo(S*(.5+sx*.2),S*.75);c.stroke();c.globalAlpha=1;}
+   if(plus>=7){c.fillStyle=H;c.globalAlpha=.9;c.fillRect(S*.3,S*.345,S*.4,S*.02);c.globalAlpha=1;}}
+  else{c.fillStyle=D;c.fillRect(0,S*.44,S,S*.12);c.fillStyle=H;c.globalAlpha=.6;c.fillRect(0,S*.435,S,3);c.globalAlpha=1;for(let i=0;i<18;i++)rv(c,i*S/18+S/36,S*.5,3);
+   c.strokeStyle=D;c.lineWidth=5;c.globalAlpha=.8;c.beginPath();c.moveTo(S*.5,0);c.lineTo(S*.5,S*.44);c.stroke();c.globalAlpha=1;}
+ }});}
 function gear(o,ap){const sig=JSON.stringify(ap);if(o.gsig===sig)return;o.gsig=sig;const Mt=o.orgM;if(!Mt)return;
  const lst=k=>Array.isArray(Mt[k])?Mt[k]:(Mt[k]?[Mt[k]]:[]);
+ const plate=!!PLATE[o.cls];
  const paintM=(ms,tex,glow,col)=>{for(const m of ms){m.diffuseTexture=tex||m._t0;m.emissiveColor=glow>0?new C3(.16+col.r*glow,.15+col.g*glow,.17+col.b*glow):new C3(.16,.15,.17);}};
- const ar=ap.armor,bo=ap.boots;
- if(ar){const [c1,c2]=gcols(ar),col=C3.FromHexString(c1),gl=ar.plus>=7?.05*(ar.plus-6):0;
-  paintM(lst('torso'),metalTex(c1,61+(ar.plus|0)),gl,col);paintM(lst('sleeve'),metalTex(sh(c1,-.12),62),gl,col);paintM(lst('shoulder'),metalTex(sh(c1,.1),63),gl,col);paintM(lst('pants'),clothTex(c2,64),0,col);}
- else{paintM(lst('torso'),null,0);paintM(lst('sleeve'),null,0);paintM(lst('shoulder'),null,0);paintM(lst('pants'),null,0);}
- if(bo){const [c1]=gcols(bo),col=C3.FromHexString(c1);paintM(lst('boots'),leatherTex(c1,65),bo.plus>=7?.05*(bo.plus-6):0,col);}else paintM(lst('boots'),null,0);
+ const ar=ap.armor,bo=ap.boots,he=ap.helmet;
+ if(ar){const [c1,c2]=gcols(ar),col=C3.FromHexString(c1),gl=ar.plus>=7?.02*(ar.plus-6):0,pl=ar.plus|0;
+  paintM(lst('torso'),armTex('torso',c1,c2,pl,plate),gl,col);paintM(lst('torso2'),armTex('torso',c1,c2,pl,false),gl,col);paintM(lst('sleeve'),armTex('sleeve',c1,c2,pl,plate),gl,col);paintM(lst('shoulder'),armTex('shoulder',c1,c2,pl,true),gl,col);paintM(lst('pants'),armTex('pants',c1,c2,pl,plate),0,col);}
+ else{for(const k of['torso','torso2','sleeve','shoulder','pants'])paintM(lst(k),null,0);}
+ if(bo){const [c1]=gcols(bo),col=C3.FromHexString(c1);paintM(lst('boots'),bootTex(c1,bo.plus|0),bo.plus>=7?.04*(bo.plus-6):0,col);}else paintM(lst('boots'),null,0);
+ if(he){const [c1]=gcols(he),col=C3.FromHexString(c1);paintM(lst('helmet'),helmTex(o.cls,c1,he.plus|0),he.plus>=7?.04*(he.plus-6):0,col);}else paintM(lst('helmet'),null,0);
  if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
  const cp=ap.cape;if(cp&&o.orgG){const kind=RULES.capeKind(o.cls),pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind]||['#c4302b','#f2a548'];
   const len=kind==='m'?1.0:1.5,wd=kind==='m'?.8:1.0;
   const tx=clothTex(pal[0],70,{name:'cape'+kind,fn:(c,S)=>{c.fillStyle=pal[1];c.fillRect(0,S-16,S,16);c.fillRect(0,0,S,10);c.globalAlpha=.5;c.fillRect(0,S-26,S,4);c.globalAlpha=1;}});
-  const m=M(tx,{spec:.15});const w0=(o.orgG.scaling.x)||1;
+  const m=M(tx,{spec:.15});
   const cm=surf((u,v)=>new V3((u-.5)*(wd*.9+.35*v),1.9-v*len,-(.30+.10*v)+Math.sin(u*TAU*2.5+v*2)*.035*v),14,14,false);
-  cm.material=m;m.backFaceCulling=false;cm.parent=o.orgG;cm.isPickable=false;ink(cm,.015);
-  const col=new B.TransformNode('cpc',scene);cm.addChild&&0;o.orgCape=cm;}
+  cm.material=m;m.backFaceCulling=false;cm.parent=o.orgG;cm.isPickable=false;ink(cm,.015);o.orgCape=cm;}
 }
-function build(cls,o,r){const f=MK[cls];if(!f)return null;const g=f();const L=g._L;g.parent=r;g.scaling.scaleInPlace(ORG_SCALE);g.rotation.y=0;
+const SZ={cavaleiro:[1.16,1.16],guerreiro:[1.16,1.16],tanque:[1.5,1.2]};
+function build(cls,o,r){const f=MK[cls];if(!f)return null;const g=f();const L=g._L;g.parent=r;{const z=SZ[cls]||[1,1];g.scaling.set(g.scaling.x*ORG_SCALE*z[0],g.scaling.y*ORG_SCALE*z[1],g.scaling.z*ORG_SCALE*z[0]);}g._mats.helmet=HL.slice();g.rotation.y=0;
  o.org=1;o.orgM=g._mats;o.orgG=g;for(const k in o.orgM){const v=o.orgM[k];if(v&&v.diffuseTexture)v._t0=v.diffuseTexture;else if(Array.isArray(v))v.forEach(x=>x._t0=x.diffuseTexture);}o.limbs=L;o.hand=L.hR;o.handL=L.hL;
  const kids=[g,...g.getChildMeshes(false)];
  o.shieldN=g._shield||null;
@@ -3346,7 +3405,7 @@ function mkPs(o,anchor,el,rate,sc,pl){
  ps.start();o.gfx.push(ps);return ps;}
 function mkBolt(o,anchor,a,b,spread){const pts=[a.clone(),b.clone()];const line=B.CreateLines('bolt',{points:pts,updatable:true},scene);line.color=new C3(.75,.9,1);line.isPickable=false;line.parent=anchor;o.gbolts.push({line,a,b,spread:spread||.5,n:7});}
 function applyGear(o,ap){
- if(!o.root)return;if(o.org){ORG.gear(o,ap);return;}if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
+ if(!o.root)return;if(o===P&&S)o.cls=S.cls;if(o.org){ORG.gear(o,ap);return;}if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
  if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
  const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;o.gx=[];
  const hgR=new BABYLON.TransformNode('hgR',scene),hgL=new BABYLON.TransformNode('hgL',scene);hgR.parent=o.hand||g;hgL.parent=o.handL||g;o.hg=[hgR,hgL];const hgS=new BABYLON.TransformNode('hgS',scene);hgS.parent=o.shieldN||o.handL||g;o.hg.push(hgS);o.gfx=[];o.gbolts=[];

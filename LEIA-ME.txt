@@ -8,11 +8,18 @@ O QUE O MODO ORGÂNICO FAZ
 • As 7 classes ganham corpo esculpido (sem formas geométricas), texturas pintadas de pano/metal/couro, rosto pintado, capuzes/elmos e armas modeladas.
 • Braços e pernas continuam articulados: caminhada, golpes e habilidades animam normalmente; espada, escudo e armas ficam presas às mãos (escudo voador continua funcionando).
 
+NOVIDADES DESTA REVISÃO
+• Rosto: o olho não aparece mais pela nuca.
+• Mago: túnica mais curta (sem aspecto de saia), com as pernas e botas visíveis.
+• Elmos, chapéus e capuzes agora mudam de cor com o elmo equipado.
+• Armadura com detalhes em tom escuro de contraste: placas do peito, costura central, rebites, faixas de cinto com fivela, placas de quadril, lâminas nas ombreiras e mangas, viseira e faixas no elmo, fivelas nas botas. Em +7 ou mais há brilho leve.
+• Guerreiro e Cavaleiro Pesado ficaram maiores; o Tanque ficou maior e bem mais largo.
+
 LIMITAÇÕES DO TESTE
-• Equipamento no modo orgânico: ARMADURA muda a cor/textura do traje (peito, mangas, ombreiras, calça), BOTAS mudam de cor, e a CAPA aparece (vermelha/azul/roxa conforme a classe). Elmo, arma, escudo, brilhos de aprimoramento e acessórios ainda NÃO aparecem.
+• Arma, escudo, acessórios e as auras/partículas de aprimoramento ainda NÃO aparecem no modo orgânico.
 • Monstros ainda são os antigos.
-• Braços/pernas são peças rígidas (sem dobra suave); a pose é a mesma para todas as classes.
-• Verificado só offline (sem outros jogadores / servidor).
+• Braços/pernas são peças rígidas; a pose é a mesma para todas as classes.
+• Verificado só offline.
 
 COMO VOLTAR ATRÁS
 Suba novamente o index.html da 1.53 no GitHub (ou abra com ?org=0).
