@@ -9,7 +9,7 @@ O QUE O MODO ORGÂNICO FAZ
 • Braços e pernas continuam articulados: caminhada, golpes e habilidades animam normalmente; espada, escudo e armas ficam presas às mãos (escudo voador continua funcionando).
 
 LIMITAÇÕES DO TESTE
-• Os visuais de equipamento (armas/armaduras/auras trocadas pelo jogador) NÃO aparecem no modo orgânico.
+• Equipamento no modo orgânico: ARMADURA muda a cor/textura do traje (peito, mangas, ombreiras, calça), BOTAS mudam de cor, e a CAPA aparece (vermelha/azul/roxa conforme a classe). Elmo, arma, escudo, brilhos de aprimoramento e acessórios ainda NÃO aparecem.
 • Monstros ainda são os antigos.
 • Braços/pernas são peças rígidas (sem dobra suave); a pose é a mesma para todas as classes.
 • Verificado só offline (sem outros jogadores / servidor).

@@ -2904,6 +2904,7 @@ function mkBody(cfg){const g=new B.TransformNode('g',scene);const c=cfg;
  if(c.skirt)put(revolve([[.001,.55],[c.skirt.r*1.0,.62],[c.skirt.r*.9,.85],[.36*wid,1.02]],{n:32,sz:.74,mod:(a)=>1+.045*Math.sin(a*9)}),g,0,0,0,M(c.skirt.tex,{spec:.05}));
  const L={ph:0,t:0,spd:0,x:0,z:0,meshes:[],leg:[],arm:[],ank:[],rest:c.rest||[-.3,-.55],restL:c.restL||[-.15,-.45],restZ:[-.1,.1],ph0:Math.random()*6,c:cfg,lr:.15};
  const legM=M(c.pantsTex,{spec:.1}),bm=M(c.bootsTex,{spec:.12});
+ const MT={torso:ext,pants:legM,boots:bm,sleeve:null,shoulder:[]};g._mats=MT;
  for(const s of[-1,1]){
   const hip=nd(g,s*.2,1.02,0);
   put(tube(smoothPath([[0,.02,0],[s*.012,-.22,.03],[s*.006,-.47,0]],5),t=>.165-.035*t),hip,0,0,0,legM);
@@ -2914,7 +2915,7 @@ function mkBody(cfg){const g=new B.TransformNode('g',scene);const c=cfg;
   const an=nd(kn,0,-.43,0);
   put(blob(.5,{k:.03,fn:(x,y,z)=>[x*.55,y*.42,z*1.0]}),an,0,-.05,.1,bm);
   L.leg.push({h:hip,k:kn});L.ank.push(an);}
- const slM=M(c.sleeveTex||tex,{spec:c.metal?.4:.1}),handM=c.glove?M(c.glove,{spec:.5,pow:50}):M(skinTex(c.skin||'#f1c7a0'),{spec:.06});
+ const slM=M(c.sleeveTex||tex,{spec:c.metal?.4:.1});MT.sleeve=slM;const handM=c.glove?M(c.glove,{spec:.5,pow:50}):M(skinTex(c.skin||'#f1c7a0'),{spec:.06});
  for(const s of[-1,1]){
   const sh=nd(g,s*.44*wid,1.78,0);
   put(tube(smoothPath([[0,0,0],[s*.01,-.2,.01],[0,-.38,0]],5),t=>.12-.025*t),sh,0,0,0,slM);
@@ -2923,7 +2924,7 @@ function mkBody(cfg){const g=new B.TransformNode('g',scene);const c=cfg;
   put(tube([[0,0,0],[0,-.18,0],[0,-.36,0]],t=>.10-.02*t),el,0,0,0,slM);
   const wr=nd(el,0,-.36,0);
   put(blob(.22,{k:.05,seed:s+4,fn:(x,y,z)=>[x*.95,y*.9,z*1.05]}),wr,0,-.04,0,handM,{});
-  if(c.shoulder)put(c.shoulder(s),sh,s*.02,.04,0,M(c.shoulderTex||tex,{spec:.5,pow:50}),{s:[1,1,1]});
+  if(c.shoulder){const shm=M(c.shoulderTex||tex,{spec:.5,pow:50});MT.shoulder.push(shm);put(c.shoulder(s),sh,s*.02,.04,0,shm,{s:[1,1,1]});}
   L.arm.push({s:sh,e:el,w:wr});}
  L.hL=L.arm[0].w;L.hR=L.arm[1].w;c.hL=L.hL;c.hR=L.hR;g._L=L;
  g.scaling.setAll(sc);return g;}
@@ -3094,13 +3095,31 @@ function mkHood(g,hy,mt,o){o=o||{};const R=o.R||.6,front=o.front==null?.30:o.fro
  put(m,g,0,0,-.02,mt);m.material.backFaceCulling=false;return m;}
 
 const MK={guerreiro:mkGue,cavaleiro:mkCav,tanque:mkTan,assassino:mkAss,arqueiro:mkArq,mago:mkMag,pierrot:mkPie};
+
+function gear(o,ap){const sig=JSON.stringify(ap);if(o.gsig===sig)return;o.gsig=sig;const Mt=o.orgM;if(!Mt)return;
+ const lst=k=>Array.isArray(Mt[k])?Mt[k]:(Mt[k]?[Mt[k]]:[]);
+ const paintM=(ms,tex,glow,col)=>{for(const m of ms){m.diffuseTexture=tex||m._t0;m.emissiveColor=glow>0?new C3(.16+col.r*glow,.15+col.g*glow,.17+col.b*glow):new C3(.16,.15,.17);}};
+ const ar=ap.armor,bo=ap.boots;
+ if(ar){const [c1,c2]=gcols(ar),col=C3.FromHexString(c1),gl=ar.plus>=7?.05*(ar.plus-6):0;
+  paintM(lst('torso'),metalTex(c1,61+(ar.plus|0)),gl,col);paintM(lst('sleeve'),metalTex(sh(c1,-.12),62),gl,col);paintM(lst('shoulder'),metalTex(sh(c1,.1),63),gl,col);paintM(lst('pants'),clothTex(c2,64),0,col);}
+ else{paintM(lst('torso'),null,0);paintM(lst('sleeve'),null,0);paintM(lst('shoulder'),null,0);paintM(lst('pants'),null,0);}
+ if(bo){const [c1]=gcols(bo),col=C3.FromHexString(c1);paintM(lst('boots'),leatherTex(c1,65),bo.plus>=7?.05*(bo.plus-6):0,col);}else paintM(lst('boots'),null,0);
+ if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
+ const cp=ap.cape;if(cp&&o.orgG){const kind=RULES.capeKind(o.cls),pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind]||['#c4302b','#f2a548'];
+  const len=kind==='m'?1.0:1.5,wd=kind==='m'?.8:1.0;
+  const tx=clothTex(pal[0],70,{name:'cape'+kind,fn:(c,S)=>{c.fillStyle=pal[1];c.fillRect(0,S-16,S,16);c.fillRect(0,0,S,10);c.globalAlpha=.5;c.fillRect(0,S-26,S,4);c.globalAlpha=1;}});
+  const m=M(tx,{spec:.15});const w0=(o.orgG.scaling.x)||1;
+  const cm=surf((u,v)=>new V3((u-.5)*(wd*.9+.35*v),1.9-v*len,-(.30+.10*v)+Math.sin(u*TAU*2.5+v*2)*.035*v),14,14,false);
+  cm.material=m;m.backFaceCulling=false;cm.parent=o.orgG;cm.isPickable=false;ink(cm,.015);
+  const col=new B.TransformNode('cpc',scene);cm.addChild&&0;o.orgCape=cm;}
+}
 function build(cls,o,r){const f=MK[cls];if(!f)return null;const g=f();const L=g._L;g.parent=r;g.scaling.scaleInPlace(ORG_SCALE);g.rotation.y=0;
- o.org=1;o.limbs=L;o.hand=L.hR;o.handL=L.hL;
+ o.org=1;o.orgM=g._mats;o.orgG=g;for(const k in o.orgM){const v=o.orgM[k];if(v&&v.diffuseTexture)v._t0=v.diffuseTexture;else if(Array.isArray(v))v.forEach(x=>x._t0=x.diffuseTexture);}o.limbs=L;o.hand=L.hR;o.handL=L.hL;
  const kids=[g,...g.getChildMeshes(false)];
  o.shieldN=g._shield||null;
  L.lr=.15*ORG_SCALE;L.ank.forEach(a=>{});animLimbs({limbs:L},0,0,0,0,true);L.t=0;
  return g;}
-return{build,MK};})();
+return{build,gear,MK};})();
 
 function buildModel(cls,o){
  const r=new BABYLON.TransformNode('player',scene);
@@ -3327,7 +3346,7 @@ function mkPs(o,anchor,el,rate,sc,pl){
  ps.start();o.gfx.push(ps);return ps;}
 function mkBolt(o,anchor,a,b,spread){const pts=[a.clone(),b.clone()];const line=B.CreateLines('bolt',{points:pts,updatable:true},scene);line.color=new C3(.75,.9,1);line.isPickable=false;line.parent=anchor;o.gbolts.push({line,a,b,spread:spread||.5,n:7});}
 function applyGear(o,ap){
- if(!o.root||o.org)return;if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
+ if(!o.root)return;if(o.org){ORG.gear(o,ap);return;}if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
  if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
  const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;o.gx=[];
  const hgR=new BABYLON.TransformNode('hgR',scene),hgL=new BABYLON.TransformNode('hgL',scene);hgR.parent=o.hand||g;hgL.parent=o.handL||g;o.hg=[hgR,hgL];const hgS=new BABYLON.TransformNode('hgS',scene);hgS.parent=o.shieldN||o.handL||g;o.hg.push(hgS);o.gfx=[];o.gbolts=[];
