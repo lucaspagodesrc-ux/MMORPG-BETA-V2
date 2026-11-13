@@ -1,3 +1,13 @@
+ATUALIZAÇÃO 1.64 — DANO EM ÁREA AINDA MENOR + ÁREA E MARCAÇÃO NO CHÃO MENORES
+Pacote CUMULATIVO. Em relação à 1.63 muda só o rules.js (se a 1.62 ainda não foi instalada, envie também index.html, WorldRoom.ts e pvp.ts).
+
+O QUE MUDOU NA 1.64
+• Dano das habilidades em área agora é 30% menor que o original (antes 15%), em todas as classes.
+• A área dessas habilidades ficou 20% menor, e a marcação no chão (anéis, círculos, brasão do Hell Crasher) encolhe junto, mostrando a área real.
+• Habilidades sem dano (ex.: Provocar) mantêm o alcance. Habilidades de alvo único não mudaram.
+• Exemplos (rank 1): Terremoto 2,20→1,54 e raio 5,0→4,0 • Meteoro 3,40→2,38 e raio 4,0→3,2 • Apocalipse 7,00→4,90 e raio 6,5→5,2 • Hell Crasher raio 4,5→3,6.
+• Para ajustar: AOE_K (dano) e AOE_R (tamanho da área) no rules.js.
+
 ATUALIZAÇÃO 1.63 — MARCA DO HELL CRASHER MENOR
 Pacote CUMULATIVO. Em relação à 1.62 muda só o index.html (se a 1.62 ainda não foi instalada, envie também rules.js, WorldRoom.ts e pvp.ts).
 

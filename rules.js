@@ -990,15 +990,15 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 /** Valores de uma habilidade conforme o rank. */
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
 const BCAP = { flat: 1000, aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
-/* dano em área: todas as habilidades que acertam vários alvos causam 15% menos dano (AOE_K) */
-const AOE_K = .85, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1 };
+/* dano em área: habilidades que acertam vários alvos causam 30% menos dano (AOE_K) e a área (raio, e a marcação no chão junto) fica 20% menor (AOE_R) */
+const AOE_K = .7, AOE_R = .8, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1 };
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
   if (s.flatMin != null) bf.flat = s.flatMin + (s.flatMax - s.flatMin) * Math.min(1, k / (MAXRANK - 1));
   if (s.evMin != null && bf.evade != null) bf.evade = s.evMin + (s.evMax - s.evMin) * Math.min(1, k / (MAXRANK - 1));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
-  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) * (AOE_T[s.type] ? AOE_K : 1) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? s.radius + ph(k, .25, .1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) * (AOE_T[s.type] ? AOE_K : 1) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? (s.radius + ph(k, .25, .1)) * (s.mult ? AOE_R : 1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
