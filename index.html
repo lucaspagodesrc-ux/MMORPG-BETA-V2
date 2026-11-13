@@ -2811,7 +2811,7 @@ function limbGear(L,c,sp,fin){
   if(sp.toe)CH.det(L.ank[i],'toe',[sph(lr*.8,0,-(c.ay==null?.12:c.ay)*.5,lr*2.5,sp.toe,null,5)],.015,fin);
  }
 }
-const ORGMODE=/[?&]org=1/.test(location.search)||(()=>{try{return localStorage.getItem('org')==='1';}catch(e){return false;}})();
+const ORGMODE=!(/[?&]org=0/.test(location.search)||(()=>{try{return localStorage.getItem('org')==='0';}catch(e){return false;}})());
 const GINK_=ink;
 const ORG=(()=>{const GINK=GINK_;const ORG_SCALE=window.__ORGS||.62;
 /* ===== Kit de modelagem orgânica (Babylon): superfícies esculpidas + texturas pintadas ===== */
