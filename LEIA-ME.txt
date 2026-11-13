@@ -1,3 +1,10 @@
+ATUALIZAÇÃO 1.63 — MARCA DO HELL CRASHER MENOR
+Pacote CUMULATIVO. Em relação à 1.62 muda só o index.html (se a 1.62 ainda não foi instalada, envie também rules.js, WorldRoom.ts e pvp.ts).
+
+O QUE MUDOU NA 1.63
+• Hell Crasher: o brasão de escudo marcado no chão ficou com cerca de metade do tamanho (fica dentro do anel da área de dano, em volta do cavaleiro). Dano e área não mudaram.
+• Para ajustar: "const R=r*.55" em shieldCrestFx no index.html.
+
 ATUALIZAÇÃO 1.62 — ÉGIDE DO GUARDIÃO + MENOS DANO EM ÁREA + MENOS CRÍTICO BASE
 Pacote CUMULATIVO. Em relação à 1.61 mudam index.html, rules.js, WorldRoom.ts e pvp.ts (os QUATRO são obrigatórios).
 
