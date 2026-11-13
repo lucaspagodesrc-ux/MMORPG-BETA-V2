@@ -3115,10 +3115,10 @@ function gear(o,ap){const sig=JSON.stringify(ap);if(o.gsig===sig)return;o.gsig=s
 }
 const SZ={cavaleiro:[1.16,1.16],guerreiro:[1.16,1.16],tanque:[1.5,1.2]};
 function build(cls,o,r){const f=MK[cls];if(!f)return null;const g=f();const L=g._L;
- {const hd=new B.TransformNode('hd',scene);hd.parent=g;const PV=2.02;hd.position.set(0,PV,0);hd.scaling.setAll(1.3);
+ {const hd=new B.TransformNode('hd',scene);hd.parent=g;const PV=2.02;hd.position.set(0,PV,0);hd.scaling.setAll(1.1);
   for(const m of g.getChildren()){if(!m.getBoundingInfo||m===hd)continue;const bb=m.getBoundingInfo().boundingBox,y0=bb.minimum.y*m.scaling.y+m.position.y,y1=bb.maximum.y*m.scaling.y+m.position.y;
    if(y1>2.25&&y0>1.4){m.parent=hd;m.position.y-=PV;}}
-  g.scaling.y*=.9;g.scaling.x*=1.08;g.scaling.z*=1.08;}g.parent=r;{const z=SZ[cls]||[1,1];g.scaling.set(g.scaling.x*ORG_SCALE*z[0],g.scaling.y*ORG_SCALE*z[1],g.scaling.z*ORG_SCALE*z[0]);}g._mats.helmet=HL.slice();g.rotation.y=0;
+  g.scaling.y*=.96;g.scaling.x*=1.04;g.scaling.z*=1.04;}g.parent=r;{const z=SZ[cls]||[1,1];g.scaling.set(g.scaling.x*ORG_SCALE*z[0],g.scaling.y*ORG_SCALE*z[1],g.scaling.z*ORG_SCALE*z[0]);}g._mats.helmet=HL.slice();g.rotation.y=0;
  o.org=1;o.orgM=g._mats;o.orgG=g;for(const k in o.orgM){const v=o.orgM[k];if(v&&v.diffuseTexture)v._t0=v.diffuseTexture;else if(Array.isArray(v))v.forEach(x=>x._t0=x.diffuseTexture);}o.limbs=L;o.hand=L.hR;o.handL=L.hL;
  const kids=[g,...g.getChildMeshes(false)];
  o.shieldN=g._shield||null;

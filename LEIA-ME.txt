@@ -1,5 +1,13 @@
-ATUALIZAÇÃO 1.58 — UMA HABILIDADE POR VEZ
-Pacote CUMULATIVO (base 1.53 + visual novo 1.56 + colisão 1.57). Mudam index.html, rules.js e WorldRoom.ts.
+ATUALIZAÇÃO 1.59 — COR PRÓPRIA PARA CADA CONJUNTO + CABEÇA PROPORCIONAL
+Pacote CUMULATIVO. Em relação à 1.58 mudam index.html e rules.js (se a 1.58 ainda não foi instalada, envie também o WorldRoom.ts).
+
+O QUE MUDOU NA 1.59
+• Cada conjunto (origem do item: "do Dragão", "da Sombra", "do Faraó"...) agora tem uma cor própria e bem diferente das outras. Antes vários conjuntos tinham tons quase iguais (os da masmorra do Vazio eram todos roxos, os de gelo todos azul-claros).
+• Elmo, armadura e botas usam cada um a cor do SEU conjunto: dá para ter elmo de uma cor, armadura de outra e bota de outra.
+• A cor do nome do conjunto na janela do item acompanha a cor nova, para reconhecer a peça pelo visual.
+• Itens SEM conjunto (sem origem de monstro) continuam com a cor da raridade (épico = roxo).
+• Cabeça dos personagens reduzida (estava 30% maior que o corpo; agora 10%) e corpo menos achatado.
+• Para ajustar uma cor: bloco "cores dos conjuntos" no rules.js (ou os campos col/col2 de cada conjunto em OG).
 
 O QUE MUDOU NA 1.58
 • Uma habilidade só pode ser lançada depois que a anterior terminou de ser exibida. Vale para todas as classes (o Assassino não é mais exceção) e é conferido também pelo servidor.
@@ -51,6 +59,6 @@ COMO VOLTAR ATRÁS
 Suba novamente o index.html da 1.53 no GitHub (ou abra com ?org=0).
 
 INSTALAÇÃO
-1) Envie index.html, rules.js e WorldRoom.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo.
-2) Aguarde o Render terminar o deploy (o servidor reinicia).
+1) Envie index.html e rules.js (e WorldRoom.ts, se ainda não instalou a 1.58) para a raiz do repositório no GitHub. Pode enviar o pacote todo.
+2) Aguarde o Render terminar o deploy (o servidor reinicia por causa do rules.js).
 3) No navegador, Ctrl+F5.

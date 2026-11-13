@@ -1724,6 +1724,26 @@ const arenaPrize = (c, i) => {
 };
 
 const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700, charge: 700, blast: 420 };
+/* cores dos conjuntos: cada conjunto (origem) fica com uma cor própria e bem diferente das outras, para dar para reconhecer a peça pelo visual.
+   A cor original é mantida quando já é única; quando parece com a de um conjunto anterior, o matiz é girado até ficar distinta. colO/col2O guardam as originais. */
+(() => {
+  const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; };
+  const hex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  const hsl = ([r, g, b]) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let h = 0, s = 0;
+    if (d) { s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; } return [h, s, l]; };
+  const unhsl = (h, s, l) => { const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(h / 60 % 2 - 1)), m = l - c / 2, i = Math.floor(h / 60) % 6;
+    const [r, g, b] = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][i]; return [(r + m) * 255, (g + m) * 255, (b + m) * 255]; };
+  const dist = (a, b) => { const dr = a[0] - b[0], dg = a[1] - b[1], db = a[2] - b[2], rm = (a[0] + b[0]) / 2; return Math.sqrt((2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db); };
+  const used = [], bySf = {}, seen = new Set(), LS = [.5, .66, .38, .58, .76, .44], SS = [.72, .55, .9];
+  for (const k in OG) { const g = OG[k]; if (seen.has(g)) continue; seen.add(g);
+    if (bySf[g.sf]) { g.colO = g.col; g.col2O = g.col2; g.col = bySf[g.sf][0]; g.col2 = bySf[g.sf][1]; continue; }
+    let c = rgb(g.col), n = 0; const near = v => used.reduce((m, u) => Math.min(m, dist(u, v)), 1e9);
+    if (near(c) < 110) { n = 1; let best = -1;      // parecida com um conjunto anterior: escolhe, entre matizes/tons possíveis, a cor mais distante de todas as já usadas
+      for (let h = 0; h < 360; h += 10) for (const l of LS) for (const sv of SS) { const v = unhsl(h, sv, l), d = near(v); if (d > best) { best = d; c = v; } } }
+    used.push(c);
+    if (n) { g.colO = g.col; g.col2O = g.col2; g.col = hex(c); const [h, s2, l] = hsl(c); g.col2 = hex(unhsl(h, Math.min(1, s2 + .05), Math.max(.14, l * .48))); }
+    bySf[g.sf] = [g.col, g.col2]; }
+})();
 /* tempo de exibição de cada habilidade (ms): enquanto ele não acaba, outra habilidade não pode ser lançada.
    x = { dist: distância até o alvo, n: nº de alvos (saltos), hits } — o servidor chama sem x (usa o mínimo), o cliente passa os valores reais */
 const castMs = (cls, i, x) => {
