@@ -1,5 +1,11 @@
-ATUALIZAÇÃO 1.56 — VISUAL HAND-PAINTED: PERSONAGENS E MONSTROS ORGÂNICOS
-Pacote CUMULATIVO (base 1.53). Muda só o index.html; rules.js e o servidor continuam iguais à 1.53.
+ATUALIZAÇÃO 1.57 — COLISÃO COM MONSTROS E CHEFES
+Pacote CUMULATIVO (base 1.53 + visual novo da 1.56). Muda só o index.html; rules.js e o servidor continuam iguais à 1.53.
+
+O QUE MUDOU NA 1.57
+• O personagem não entra mais dentro dos monstros: ao encostar, é empurrado para fora do corpo. Vale para monstros comuns, chefes, monstros da masmorra e chefes mundiais.
+• O raio do corpo cresce com o tamanho do monstro (chefes ocupam mais espaço), mas nunca passa do alcance do ataque corpo a corpo da classe — então dá sempre para bater.
+• Investidas, saltos e teleportes que terminam em cima do monstro deixam o personagem encostado nele, não dentro. Durante o salto (no ar) não há colisão.
+• Não muda: monstros continuam podendo se sobrepor entre si, e outros jogadores não colidem.
 
 COMO FUNCIONA
 • O visual novo já vem LIGADO. Para voltar ao antigo: abra com ?org=0 no endereço (ou no console: localStorage.setItem('org','0') e Ctrl+F5).

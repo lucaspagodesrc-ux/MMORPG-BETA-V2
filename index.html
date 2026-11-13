@@ -1856,6 +1856,10 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
  SHS.n.build('shN');
 }
 Math.random=__rand0; // volta ao aleatório normal depois de gerar o cenário
+/* jogador não atravessa monstros/chefes: empurra para fora do corpo (raio cresce com o tamanho; nunca maior que o alcance do ataque corpo a corpo) */
+function collideMobs(p){const c=S&&CLASSES[S.cls],cap=(c?c.range:2.4)-.35;
+ for(const m of monsters){if(!m.alive||!m.root||!m.root.isEnabled())continue;const min=Math.min(cap,.4+.55*(m.bs||1)),dx=p.x-m.pos.x,dz=p.z-m.pos.z;if(Math.abs(dx)>min||Math.abs(dz)>min)continue;
+  const d=Math.hypot(dx,dz);if(d>=min)continue;if(d>1e-4){p.x=m.pos.x+dx/d*min;p.z=m.pos.z+dz/d*min;}else{const a=P.root?P.root.rotation.y+Math.PI:0;p.x=m.pos.x+Math.sin(a)*min;p.z=m.pos.z+Math.cos(a)*min;}}}
 function collide(p,rad){for(const o of obstacles){const dx=p.x-o.x,dz=p.z-o.z,min=o.r+rad;if(Math.abs(dx)>min||Math.abs(dz)>min)continue;const d=Math.hypot(dx,dz);if(d<min&&d>1e-4){p.x=o.x+dx/d*min;p.z=o.z+dz/d*min;}}}
 const clampMap=p=>{if(p.x>1650){const dx=p.x-1800,l=Math.hypot(dx,p.z);if(l>35){p.x=1800+dx/l*35;p.z=p.z/l*35;}return;}if(p.x>450){if(NET.inst&&DG.cur&&DG.cur.rooms){dgClamp(p);return;}p.x=Math.max(588,Math.min(612,p.x));p.z=Math.max(-78,Math.min(79,p.z));if(NET.inst&&p===P.pos&&P.dgMaxZ!==undefined&&p.z>P.dgMaxZ-.5)p.z=P.dgMaxZ-.5;return;}const cx=p.x<-150?SN.x:p.x>150?SC.x:0;p.x=Math.max(cx-MAP,Math.min(cx+MAP,p.x));p.z=Math.max(-MAP,Math.min(MAP,p.z));};
 
@@ -5077,6 +5081,7 @@ function updatePlayer(dt,now){
    else if(P.moveTo&&tgt===P.moveTo)P.moveTo=null;
   }
  }
+ if(!P.dead&&P.pos.y<.5)collideMobs(P.pos);
  collide(P.pos,.4);clampMap(P.pos);
  // animação
  const sw=(now-P.swingAt)/260;
