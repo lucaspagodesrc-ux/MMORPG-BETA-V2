@@ -1,5 +1,13 @@
-ATUALIZAÇÃO 1.59 — COR PRÓPRIA PARA CADA CONJUNTO + CABEÇA PROPORCIONAL
-Pacote CUMULATIVO. Em relação à 1.58 mudam index.html e rules.js (se a 1.58 ainda não foi instalada, envie também o WorldRoom.ts).
+ATUALIZAÇÃO 1.60 — COR DO EQUIPAMENTO PELA LINHA DO ITEM (corrige "tudo roxo")
+Pacote CUMULATIVO. Em relação à 1.59 mudam index.html e rules.js (os DOIS são obrigatórios; se a 1.58 ainda não foi instalada, envie também o WorldRoom.ts).
+
+O QUE MUDOU NA 1.60
+• Causa do "tudo roxo": itens sem conjunto de monstro (como os dos pacotes de evento, que são épicos) eram pintados pela cor da RARIDADE — épico = roxo, em qualquer nível.
+• Agora, item sem conjunto de monstro usa a cor da sua LINHA (o nome/nível do item):
+  Pano bege • Couro marrom • Ferro/Malha cinza • Aço/Placas azul • Rúnico verde-água • Abissal índigo • Dracônico vermelho • Solar dourado • Faraônico laranja • Imortal branco-prata • linha nv 90+ rosa • linha nv 120+ verde
+• Item COM conjunto de monstro ("do Dragão", "da Sombra"...) continua com a cor própria do conjunto (1.59).
+• Elmo, armadura e botas são independentes: cada peça mostra a cor da sua linha/conjunto.
+• Para ajustar as cores das linhas: TIERC / TIERC2 no rules.js.
 
 O QUE MUDOU NA 1.59
 • Cada conjunto (origem do item: "do Dragão", "da Sombra", "do Faraó"...) agora tem uma cor própria e bem diferente das outras. Antes vários conjuntos tinham tons quase iguais (os da masmorra do Vazio eram todos roxos, os de gelo todos azul-claros).

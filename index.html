@@ -3469,9 +3469,9 @@ let _pt=null;function ptex(){if(_pt)return _pt;const t=new BABYLON.DynamicTextur
 const GMATS=new Map();
 function gmat(hex,plus,alpha,style){const al=alpha&&alpha<1,k=hex+'|'+plus+'|'+(alpha||1)+'|'+(style||'');let g=GMATS.get(k);if(!g){const m=new BABYLON.StandardMaterial('gm'+k,scene),c=C3.FromHexString(hex);m.diffuseColor=style&&!al?c.scale(.58):c;m.specularColor=new C3(.25,.25,.25);const base=c.scale(GLOW(plus));m.emissiveColor=base;if(al){m.alpha=alpha;m.disableLighting=true;m.emissiveColor=c;}if(style&&!al){m.diffuseTexture=PAINT.tex(style);m.__st=style;}g={m,base,plus,pulse:plus>=7&&!al};GMATS.set(k,g);}return g.m;}
 const GEARS=new Set();
-function parseAp(s){const o={};if(!s)return o;for(const t of String(s).split(';')){const a=t.split('|');if(a[0])o[a[0]]={mo:a[1]||'',plus:+a[2]||0,rar:+a[3]||0};}return o;}
+function parseAp(s){const o={};if(!s)return o;for(const t of String(s).split(';')){const a=t.split('|');if(a[0])o[a[0]]={mo:a[1]||'',plus:+a[2]||0,rar:+a[3]||0,il:+a[4]||0};}return o;}
 function apLocal(){return S?parseAp(RULES.apOf(S)):{};}
-const gcols=w=>{const g=w.mo&&OG[w.mo];if(g)return [g.col,g.col2,g.el,g.ft];const c=w.rar>0?RAR[w.rar].c:'#b9c2cc';return [c,c,'gold',''];};
+const gcols=w=>{const g=w.mo&&OG[w.mo];if(g)return [g.col,g.col2,g.el,g.ft];if(w.il&&RULES.TIERC){const t=RULES.tierOf(w.il);return [RULES.TIERC[t],RULES.TIERC2[t],'gold',''];}const c=w.rar>0?RAR[w.rar].c:'#b9c2cc';return [c,c,'gold',''];};
 function cmat(hex,plus){const k='cc|'+hex+'|'+plus;let g=GMATS.get(k);if(!g){const m=new BABYLON.StandardMaterial('cm'+k,scene),c=C3.FromHexString(hex);m.diffuseColor=c.scale(.7);m.specularColor=new C3(.12,.12,.12);m.backFaceCulling=false;m.twoSidedLighting=true;m.diffuseTexture=PAINT.tex('cloth');m.__st='cloth';const base=c.scale(Math.max(.1,GLOW(plus)));m.emissiveColor=base;g={m,base,plus,pulse:plus>=7};GMATS.set(k,g);}return g.m;}
 /* tecido: malha de vértices animada (ondula parado e abre para trás quando o personagem corre) */
 const CAPS=(R,cy,h)=>y=>{const d=Math.abs(y-cy),hh=h/2-R;return d<=hh?R:(d-hh>=R?0:Math.sqrt(R*R-(d-hh)*(d-hh)));};
