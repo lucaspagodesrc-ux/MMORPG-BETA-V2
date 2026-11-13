@@ -445,7 +445,9 @@
    <div id="aStat" class="muted"></div>
 </div>
 
-<script src="/colyseus-client/colyseus.js"></script>
+<script>window.GAME_SERVER=window.GAME_SERVER||"";</script>
+<script src="config.js" onerror="void 0"></script>
+<script src="colyseus-client/colyseus.js"></script>
 <script src="rules.js"></script>
 <script>
 /* =================== ÁUDIO: MÚSICA + EFEITOS SONOROS ===================
@@ -453,7 +455,8 @@
    Efeitos: sintetizados em tempo real com Web Audio (não precisam de arquivos). */
 const AUD=(function(){
 'use strict';
-const MUSIC_SRC=(location.protocol.indexOf('http')===0?'/audio/':'')+'tema.mp3'+(location.protocol.indexOf('http')===0?'?v=13':'');
+const SRV=(window.GAME_SERVER||'').replace(/\/+$/,'');   /* endereço do servidor de jogo (vazio = o mesmo site da página) */
+const MUSIC_SRC=(location.protocol.indexOf('http')===0?'audio/':'')+'tema.mp3'+(location.protocol.indexOf('http')===0?'?v=13':'');
 const cfg={mv:.4,sv:.7,mm:false,sm:false};
 try{const j=JSON.parse(localStorage.getItem('mmo_audio')||'null');if(j){
  if(typeof j.mv==='number')cfg.mv=Math.min(1,Math.max(0,j.mv));if(typeof j.sv==='number')cfg.sv=Math.min(1,Math.max(0,j.sv));
@@ -2064,7 +2067,7 @@ function mkLimbs(par,c){
 }
 /* anima: andar (a partir da velocidade real do modelo) + golpe/habilidade (sa = instante do golpe) */
 function animLimbs(o,px,pz,now,sa,melee){
- const L=o.limbs;if(!L)return;
+ const L=o.limbs;if(!L)return;if(L.glb){GLB.anim(o,px,pz,now,sa);return;}
  const first=!L.t;let dt=first?.016:Math.min(.1,(now-L.t)/1000);if(dt<=0)return;
  const sp=first?0:Math.hypot(px-L.x,pz-L.z)/dt;L.t=now;L.x=px;L.z=pz;
  L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
@@ -2814,7 +2817,6 @@ function mkGue(){
   shoulder:(s)=>revolve((()=>{const P=[];for(let i=0;i<=10;i++){const t=i/10*Math.PI/2;P.push([.34*Math.cos(t),.20*Math.sin(t)]);}return P;})(),{n:20,sx:1.2}),shoulderTex:metalTex('#3a4c88',45)};
  const g=mkBody(cfg);
  // capa roxa esculpida atrás
- const cape=M(clothTex('#5a2f9a',46),{spec:.06});const cp=put(drape(1.15,1.7,1.9,.2,{botW:1.5,fold:4,amp:.07,sag:.0}),g,0,0,-.38,cape);cp.rotation.x=.12;cp.material.backFaceCulling=false;
  // elmo com viseira e chifres
  const hy=2.6,helmT=metalTex('#2f3f75',47,{name:'gH',fn:(c,S)=>{c.fillStyle='#8a4ae0';c.fillRect(S*.3,S*.46,S*.4,S*.05);c.fillStyle='#140e1c';c.fillRect(S*.32,S*.40,S*.36,S*.05);c.fillRect(S*.47,S*.40,S*.06,S*.35);}});
  const HP=[];for(let i=0;i<=22;i++){const t=i/22,yy=-.5+t*1.06;const r=yy<-.05?(.40+(yy+.5)*.16):(.50*Math.sqrt(Math.max(0,1-Math.pow((yy-.05)/.52,2))));HP.push([Math.max(.001,r),hy+yy]);}
@@ -2878,7 +2880,6 @@ function mkArq(){
  mkHood(g,hy,grn,{R:.6,front:.34});
  put(tube(smoothPath([[0,hy+.3,-.45],[0,hy+.1,-.7],[0,hy-.3,-.78]],7),t=>.22*(1-t*.8)),g,0,0,0,grn);
  // capa longa
- const cp=put(drape(1.1,1.6,1.95,.35,{botW:1.5,fold:4,amp:.06}),g,0,0,-.4,grn);cp.rotation.x=.14;cp.material.backFaceCulling=false;
  // aljava com flechas
  const q=new B.TransformNode('q',scene);q.parent=g;q.position.set(.18,1.55,-.5);q.rotation.z=-.3;
  put(tube([[0,-.5,0],[0,.35,0]],()=>.13),q,0,0,0,M(leatherTex('#5a3a22',106)));for(let k=0;k<3;k++){put(tube([[k*.08-.08,.3,0],[k*.08-.08,.8,0]],()=>.014),q,0,0,0,M(woodTex('#d9c9a0',107)));put(blob(.1,{k:.02}),q,k*.08-.08,.84,0,M(clothTex('#c43a3a',108)),{s:[.7,1.6,.7]});}
@@ -3106,12 +3107,7 @@ function gear(o,ap){const sig=JSON.stringify(ap);if(o.gsig===sig)return;o.gsig=s
  if(bo){const [c1]=gcols(bo),col=C3.FromHexString(c1);paintM(lst('boots'),bootTex(c1,bo.plus|0),bo.plus>=7?.04*(bo.plus-6):0,col);}else paintM(lst('boots'),null,0);
  if(he){const [c1]=gcols(he),col=C3.FromHexString(c1);paintM(lst('helmet'),helmTex(o.cls,c1,he.plus|0),he.plus>=7?.04*(he.plus-6):0,col);}else paintM(lst('helmet'),null,0);
  if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
- const cp=ap.cape;if(cp&&o.orgG){const kind=RULES.capeKind(o.cls),pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind]||['#c4302b','#f2a548'];
-  const len=kind==='m'?1.0:1.5,wd=kind==='m'?.8:1.0;
-  const tx=clothTex(pal[0],70,{name:'cape'+kind,fn:(c,S)=>{c.fillStyle=pal[1];c.fillRect(0,S-16,S,16);c.fillRect(0,0,S,10);c.globalAlpha=.5;c.fillRect(0,S-26,S,4);c.globalAlpha=1;}});
-  const m=M(tx,{spec:.15});
-  const cm=surf((u,v)=>new V3((u-.5)*(wd*.9+.35*v),1.9-v*len,-(.30+.10*v)+Math.sin(u*TAU*2.5+v*2)*.035*v),14,14,false);
-  cm.material=m;m.backFaceCulling=false;cm.parent=o.orgG;cm.isPickable=false;ink(cm,.015);o.orgCape=cm;}
+ {const W={guerreiro:1.1,tanque:1.25,cavaleiro:1.05}[o.cls]||1;CAPE(o,o.orgG,ap,{sx:.44*W,sy:1.8,hy:2.5,hr:.5,bz:-.34*W-.06,R:y=>y>.95&&y<2.0?.3*W:0,len:1.45});}
 }
 const SZ={cavaleiro:[1.16,1.16],guerreiro:[1.16,1.16],tanque:[1.5,1.2]};
 function build(cls,o,r){const f=MK[cls];if(!f)return null;const g=f();const L=g._L;
@@ -3287,9 +3283,131 @@ function limbGear(L,c,sp,fin){
   if(sp.toe)CH.det(L.ank[i],'toe',[sph(lr*.8,0,-(c.ay==null?.12:c.ay)*.5,lr*2.5,sp.toe,null,5)],.015,fin);
  }
 }
+/* =================== v1.65: personagens modelados no Blender (arquivos .glb) =================== */
+/* O modelo é baixado uma vez (modelos/<classe>.glb) e copiado para cada personagem. Enquanto não chega, o boneco orgânico aparece
+   e é trocado sozinho. Animações do Blender (Idle, Walk, Attack, Shield, Jump, Cast, Throw, Hit, Death) são tocadas quadro a quadro
+   pelo próprio relógio do jogo, então ficam sincronizadas com os golpes e habilidades. Desligar: ?glb=0 */
+const GLBMODE=ORGMODE&&!(/[?&]glb=0/.test(location.search)||(()=>{try{return localStorage.getItem('glb')==='0';}catch(e){return false;}})());
+const GLB=(()=>{
+ const FILES={cavaleiro:'cavaleiro.glb',guerreiro:'guerreiro.glb',tanque:'tanque.glb',assassino:'assassino.glb',arqueiro:'arqueiro.glb',mago:'mago.glb',pierrot:'pierrot.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
+ const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
+ let ldr=null,IPC=null;const GLBV='167';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
+ const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
+ const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
+  const tryI=i=>{if(i>=LOADER.length)return no(new Error('loader'));const s=document.createElement('script');s.src=LOADER[i];s.onload=()=>ok();s.onerror=()=>tryI(i+1);document.head.appendChild(s);};tryI(0);}));
+ function load(cls){
+  if(C[cls])return C[cls].p;const e=C[cls]={st:0,ct:null};
+  e.p=loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',FILES[cls]+'?v='+GLBV,scene,null,'.glb')).then(ct=>{
+    e.ct=ct;e.st=1;ct.animationGroups.forEach(a=>a.stop());
+    for(const w of WAIT.splice(0))if(w.o.cls===cls||w.cls===cls)swap(w);else WAIT.push(w);
+   }).catch(err=>{e.st=-1;console.warn('GLB',cls,err);});
+  return e.p;}
+ const ready=cls=>!!(C[cls]&&C[cls].st===1);
+ /* monta uma cópia do modelo dentro de r */
+ function inst(cls,o,r){
+  const ct=C[cls].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true});
+  const top=new BABYLON.TransformNode('glb',scene);top.parent=r;const S=SCALE[cls]||1;top.scaling.setAll(S);
+  const root=I.rootNodes[0];root.parent=top;
+  const all=root.getDescendants(false),by=n=>all.find(x=>x.name===n);
+  const mats={};
+  const seenM=new Set();
+  for(const m of root.getChildMeshes(false)){m.isPickable=false;m.alwaysSelectAsActiveMesh=true;
+   if(m.material&&seenM.has(m.material))m.material=m.material.clone(m.material.name+'_'+m.name);   // material próprio por malha (o contorno falha quando duas malhas com pele dividem o mesmo)
+   if(m.material)seenM.add(m.material);const pm=m.material;
+   if(pm){pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);if(pm.albedoTexture)pm.albedoTexture.anisotropicFilteringLevel=4;
+    if(TINT.includes(pm.name)){(mats[pm.name]=mats[pm.name]||[]).push(pm);pm.albedoColor=C3.FromHexString(DEF).toLinearSpace();}}
+   if(!/^(Shield|Sword|Weapon|Quiver|Body0)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
+  const AG={};for(const a of I.animationGroups){AG[a.name]=a;a.start(true,0);a.setWeightForAllAnimatables(0);a.speedRatio=0;}
+  const L={glb:1,t:0,x:0,z:0,spd:0,ph:0,ph0:Math.random()*6,AG,ank:[by('foot.L')||top,by('foot.R')||top],lr:.15,top,cls};
+  o.glb=1;o.org=0;o.limbs=L;o.glbM=mats;o.glbTop=top;o.orgG=top;
+  o.hand=(cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||by('hand.R')||top;o.handL=by('hand.L')||top;
+  /* peças de cada conjunto: o nó do glTF e as malhas com pele (ficam em outro lugar da hierarquia, mas com o mesmo nome no começo) */
+  o.glbParts={};for(const n of all){const mm=/^(Armor|Boots|Helm|Shield)([1-5])(?:$|_)/.exec(n.name);if(mm){const g=(o.glbParts[mm[1]]=o.glbParts[mm[1]]||{});(g[mm[2]]=g[mm[2]]||[]).push(n);}}
+  o.shieldN=by('Shield2')||by('Shield')||null;showSets(o,{});
+  if(!o.wMat)o.wMat=mat('wm','#cfd6dd',null,null,'metal');
+  top.onDisposeObservable.add(()=>{for(const a of I.animationGroups)try{a.dispose();}catch(e){}for(const s of I.skeletons)try{s.dispose();}catch(e){}});
+  return top;}
+ /* troca o boneco provisório pelo modelo quando o arquivo termina de baixar */
+ function swap(w){const o=w.o,r=w.r;if(!r||r.isDisposed()||o.root&&o.root!==r&&o.rig!==r)return;
+  try{if(w.g&&!w.g.isDisposed())w.g.dispose();}catch(e){}
+  if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
+  inst(w.cls,o,r);const ap=o.gap;o.gsig=null;if(ap)gear(o,ap);
+  if(o.rig===r)r.getChildMeshes().forEach(m=>{if(!m.metadata)m.metadata={t:'p',ref:o};});}
+ function build(cls,o,r){
+  if(!FILES[cls])return false;
+  if(ready(cls)){inst(cls,o,r);return true;}
+  if(!C[cls]||C[cls].st===0){load(cls);ORG.build(cls,o,r);WAIT.push({o,r,g:o.orgG,cls});return true;}
+  return false;}
+ /* animação: escolhe e posiciona os clipes pelo estado do personagem (andar/parado/golpe/habilidade) */
+ const KA={shield:'Shield',throw:'Throw',beam:'Cast',jump:'Jump',stomp:'Jump',sky:'Jump',spin:'Attack',stab:'Attack',both:'Attack',sumo:'Attack'};
+ const DUR={shield:300,jump:800,beam:750,throw:450,spin:700,stomp:600,sumo:1100,stab:600,sky:700};
+ function anim(o,px,pz,now,sa){
+  const L=o.limbs,first=!L.t;let dt=first?.016:Math.min(.1,(now-L.t)/1000);if(dt<=0)return;
+  const sp=first?0:Math.hypot(px-L.x,pz-L.z)/dt;L.t=now;L.x=px;L.z=pz;L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
+  const a=Math.min(1,L.spd/3.2),AG=L.AG;
+  const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,D=DUR[kind]||420,sw=(now-(sa||0))/D,act=sw>0&&sw<1,clip=act?(KA[kind]||(L.cls==='arqueiro'||L.cls==='mago'?'Cast':'Attack')):null;
+  const fa=act?Math.min(1,sw/.08,(1-sw)/.12):0;
+  L.ph+=(L.spd*dt)/(1.6*(SCALE[L.cls]||1));            // passos acompanham a distância andada
+  const set=(n,w,f)=>{const g=AG[n];if(!g)return;g.setWeightForAllAnimatables(w);if(w>0)g.goToFrame(g.from+(g.to-g.from)*f);};
+  for(const n in AG)if(n!=='Walk'&&n!=='Idle'&&n!==clip)AG[n].setWeightForAllAnimatables(0);
+  if(clip)set(clip,fa,Math.max(0,Math.min(.999,sw)));
+  set('Walk',(1-fa)*a,(L.ph%1+1)%1);
+  set('Idle',(1-fa)*(1-a),((now/2000+L.ph0)%1+1)%1);
+  if(kind==='jump'){if(act){o.root.position.y=sw<.8?3*Math.sin(Math.PI*sw/.8):0;o._jy=1;}else if(o._jy){o.root.position.y=0;o._jy=0;}}
+  else if(o._jy){o.root.position.y=0;o._jy=0;}
+  if(kind==='spin'&&act){if(o._sbA!==sa){o._sbA=sa;o._sb=o.root.rotation.y;}o.root.rotation.y=o._sb+sw*Math.PI*4;}
+  else if(kind==='spin'&&o._sbA===sa&&o._sbD!==sa&&sw>=1){o._sbD=sa;o.root.rotation.y=o._sb;}
+ }
+ /* conjuntos por nível do item (até 100): Ferro, Dourado, Sombrio, Dracônico, Solar. Sem item no espaço: Ferro.
+    número do conjunto no arquivo: 1 Dourado, 2 Ferro, 3 Sombrio, 4 Solar, 5 Dracônico */
+ const setOf=it=>{if(!it)return 2;const L=it.il||it.ilvl||0;return L<=20?2:L<=40?1:L<=60?3:L<=80?5:4;};
+ function showSets(o,ap){const P_=o.glbParts||{};const pick={Armor:setOf(ap.armor),Helm:setOf(ap.helmet),Boots:setOf(ap.boots)};pick.Shield=pick.Armor;
+  for(const k in P_)for(const i in P_[k]){const on=+i===pick[k],ns=P_[k][i];if(k==='Shield'){const top=ns.find(n=>n.name==='Shield'+i)||ns[0];if(on)o.shieldN=top;ns.forEach(n=>{if(n===top)n.setEnabled(on);});}else ns.forEach(n=>n.setEnabled(on));}}
+ /* equipamento: cada peça mostra o conjunto do seu nível; capa só com o item de capa */
+ function gear(o,ap){o.gap=ap;const sig=JSON.stringify(ap);if(o.gsig===sig)return;o.gsig=sig;
+  showSets(o,ap);
+  if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
+  const pl=o.cls==='cavaleiro'||o.cls==='guerreiro',tk=o.cls==='tanque';
+  CAPE(o,o.glbTop,ap,tk?{sx:.5,sy:1.56,hy:1.95,hr:.4,bz:-.52,R:y=>y>.95&&y<1.7?.46:0,len:1.3}:pl?{sx:.4,sy:1.56,hy:1.95,hr:.4,bz:-.44,R:y=>y>.95&&y<1.7?.38:0,len:1.3}:{sx:.36,sy:1.54,hy:1.88,hr:.32,bz:-.34,R:y=>y>.95&&y<1.65?.3:0,len:1.25});
+ }
+ /* cada classe é baixada só quando aparece um personagem dela */
+ return{build,anim,gear,load,ready,FILES,setOf};
+})();
+
+/* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago, dano mágico),
+   capa (demais). Tecido animado (balança parado e abre para trás ao correr). A = medidas do modelo: ombro (sx, sy), cabeça (hy, hr), costas (bz). */
+const capeLook=cls=>cls==='assassino'||cls==='arqueiro'?'a':cls==='mago'?'m':'p';
+function CAPE(o,parent,ap,A){
+ clearGear(o);const cp=ap.cape;if(!cp||!parent)return;
+ const kind=capeLook(o.cls),arm=ap.armor,pl=arm?arm.plus:0,ael=arm?gcols(arm)[2]:'gold';
+ const pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind],m1=cmat(pal[0],pl),m2=cmat(pal[1],pl),s1=gmat(pal[0],pl,0,'cloth');
+ const g=new BABYLON.TransformNode('capeG',scene);g.parent=parent;o.gear=g;o.gx=[];o.gfx=[];o.gbolts=[];
+ const add=(m,x,y,z,mt)=>{m.parent=g;m.position.set(x,y,z);m.material=mt;m.isPickable=false;o.gx.push(m);try{GINK_(m,.015);}catch(e){}return m;};
+ CLOTH_R=A.R||null;
+ if(kind==='m'){   // cachecol: volta grossa no pescoço e pontas caindo na frente e atrás
+  const sc=add(BABYLON.MeshBuilder.CreateTorus('scarf',{diameter:A.sx*1.25,thickness:.16,tessellation:20},scene),0,A.sy+.06,0,s1);sc.scaling.set(1,1.5,.85);
+  const strip=(x,z,len,w,amp,ph,side)=>{mkCloth(o,g,x,A.sy+.04,z,w,len,1,8,m1,0,1,{fl:.06,amp,ph,cv:0,side,noR:1});mkCloth(o,g,x,A.sy+.04,z,w,len,1,1,m2,.9,1,{fl:.06,amp,ph,cv:0,side,noR:1});};
+  strip(-.12,A.bz+.04,.95,.16,.3,0);strip(.12,A.bz+.02,.75,.15,.3,1.7);strip(.16,-A.bz*.8,.6,.14,.14,3.1,1);
+ }else{
+  const Hh=A.len*(kind==='a'?1:.95),w=A.sx*2+(kind==='a'?.05:.14);
+  mkCloth(o,g,0,A.sy-.02,A.bz,w,Hh,6,9,m1,0,1,{fl:.22,amp:.3});mkCloth(o,g,0,A.sy-.02,A.bz,w,Hh,6,1,m2,.92,1,{fl:.22,amp:.3});
+  if(kind==='a'){   // manto: capuz caído nas costas e pano sobre os ombros
+   const sh=add(BABYLON.MeshBuilder.CreateSphere('mantle',{diameter:1,segments:12,slice:.5},scene),0,A.sy-.06,-.02,s1);sh.scaling.set(A.sx*2.3,.42,A.sx*1.7);
+   mkCloth(o,g,0,A.sy+.18,A.bz-.04,A.sx*1.1,.5,4,4,m1,0,1,{fl:.1,amp:.1,cv:.06,noR:1});
+  }else{   // capa: presilhas douradas nos ombros
+   for(const sx of[-1,1])add(BABYLON.MeshBuilder.CreateSphere('clasp',{diameter:.13,segments:8},scene),sx*A.sx*.62,A.sy+.02,A.bz+.1,gmat('#e8b84a',pl,0,'metal'));
+  }
+ }
+ if(pl>=7){const n=new BABYLON.TransformNode('cf',scene);n.parent=g;n.position.set(0,A.sy-A.len,A.bz-.1);mkPs(o,n,ael,(pl>=9?20:pl>=8?14:9)*.6,1.4);}
+ for(const m of g.getChildMeshes(false))m.alwaysSelectAsActiveMesh=true;
+ GEARS.add(o);
+}
+
 function buildModel(cls,o){
  const r=new BABYLON.TransformNode('player',scene);
  const fin=m=>{m.isPickable=false;return m;};
+ if(GLBMODE&&GLB.build(cls,o,r)){if(!o.wMat)o.wMat=mat('wm','#cfd6dd',null,null,'metal');shadowDisc(r,.7);return r;}
  if(ORGMODE&&ORG.MK[cls]){o.wMat=mat('wm','#cfd6dd',null,null,'metal');ORG.build(cls,o,r);shadowDisc(r,.7);return r;}
  const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;m.isPickable=false;return m;};
  o.wMat=mat('wm','#cfd6dd',null,null,'metal');
@@ -3512,7 +3630,7 @@ function mkPs(o,anchor,el,rate,sc,pl){
  ps.start();o.gfx.push(ps);return ps;}
 function mkBolt(o,anchor,a,b,spread){const pts=[a.clone(),b.clone()];const line=B.CreateLines('bolt',{points:pts,updatable:true},scene);line.color=new C3(.75,.9,1);line.isPickable=false;line.parent=anchor;o.gbolts.push({line,a,b,spread:spread||.5,n:7});}
 function applyGear(o,ap){
- if(!o.root)return;if(o===P&&S)o.cls=S.cls;if(o.org){ORG.gear(o,ap);return;}if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
+ if(!o.root)return;if(o===P&&S)o.cls=S.cls;if(o.glb){GLB.gear(o,ap);return;}if(o.org){o.gap=ap;ORG.gear(o,ap);return;}if(o===P&&S)o.cls=S.cls;const sig=JSON.stringify(ap);if(o.gsig===sig&&o.gear)return;o.gsig=sig;clearGear(o);
  if(!o._gd){o._gd=1;o.root.onDisposeObservable.add(()=>{for(const ps of o.gfx||[])try{ps.dispose(false);}catch(e){}o.gfx=[];o.gbolts=[];o.gear=null;o.gsig=null;o._gd=0;GEARS.delete(o);});}
  const A=ANCH[o.cls]||ANCH.mago,g=new BABYLON.TransformNode('gear',scene);g.parent=o.root;o.gear=g;o.gx=[];
  const hgR=new BABYLON.TransformNode('hgR',scene),hgL=new BABYLON.TransformNode('hgL',scene);hgR.parent=o.hand||g;hgL.parent=o.handL||g;o.hg=[hgR,hgL];const hgS=new BABYLON.TransformNode('hgS',scene);hgS.parent=o.shieldN||o.handL||g;o.hg.push(hgS);o.gfx=[];o.gbolts=[];
@@ -3592,7 +3710,7 @@ function applyGear(o,ap){
   put(B.CreateBox('sx1',{width:.04,height:R*.62,depth:.07},scene),-.18,.1,.05,m2,hgS);put(B.CreateBox('sx2',{width:.04,height:.07,depth:R*.62},scene),-.18,.1,.05,m2,hgS);}
  // ---- capa: tecido que ondula + dragonas nos ombros (p = capa vermelha, m = estola azul, a = manto com capuz)
  const cp=ap.cape;CLOTH_R=bodyR(o.cls,!!ap.armor);
- if(cp){const kind=RULES.capeKind(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
+ if(cp){const kind=capeLook(o.cls),arm=ap.armor,pl=arm?arm.plus:0,[,,ael]=arm?gcols(arm):[0,0,'gold'];
   const pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind],c1=pal[0],c2=pal[1];
   const m1=cmat(c1,pl),m2=cmat(c2,pl),s1=gmat(c1,pl,0,'cloth'),s2=gmat(c2,pl,0,'metal'),bz=-(.3+(A.sx>.5?.1:0)),pw=Math.min(.66,A.pad*(kind==='m'?1.0:1.25));
   for(const sx of[-1,1]){const px=sx*A.sx,py=A.sy;   // dragonas
@@ -4639,7 +4757,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(/^\?dbg/.test(location.search))window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
+if(/^\?dbg/.test(location.search))window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -6238,7 +6356,7 @@ setInterval(()=>{if(!S)return;hoverTick();updateHud();drawMini();if(MB.open)mbDr
 /* =================== REDE: LOGIN, SAVE NO SERVIDOR, MULTIPLAYER =================== */
 const ONLINE=location.protocol.startsWith('http');let TOKEN=null;
 try{TOKEN=localStorage.getItem('mmo_token');}catch(e){}
-async function api(path,method,body){const r=await fetch('/api/'+path,{method:method||'GET',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json();}catch(e){}if(!r.ok){const er=new Error(j.error||'Erro '+r.status);er.status=r.status;throw er;}return j;}
+async function api(path,method,body){const r=await fetch(SRV+'/api/'+path,{method:method||'GET',headers:{'Content-Type':'application/json',...(TOKEN?{Authorization:'Bearer '+TOKEN}:{})},body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json();}catch(e){}if(!r.ok){const er=new Error(j.error||'Erro '+r.status);er.status=r.status;throw er;}return j;}
 let nsT=0;
 async function enterWithAccount(){
  const d=await api('account');
@@ -6264,8 +6382,8 @@ function clearOthers(){for(const o of NET.others.values())killRemote(o);NET.othe
 async function netJoin(){
  if(!ONLINE||!TOKEN||!window.Colyseus||NET.room||!S)return;
  try{
-  try{const t0=Date.now(),h=await (await fetch('/health',{cache:'no-store'})).json(),t1=Date.now();if(h&&h.t)NET.off=h.t-(t0+t1)/2;}catch(e){}
-  const cl=new Colyseus.Client(location.origin.replace(/^http/,'ws'));
+  try{const t0=Date.now(),h=await (await fetch(SRV+'/health',{cache:'no-store'})).json(),t1=Date.now();if(h&&h.t)NET.off=h.t-(t0+t1)/2;}catch(e){}
+  const cl=new Colyseus.Client((SRV||location.origin).replace(/^http/,'ws'));
   const room=await cl.joinOrCreate('world',{token:TOKEN,charId:S.id,x:P.pos.x,z:P.pos.z});
   NET.room=room;NET.lv=S.level;
   room.onMessage('chat',m=>{const c=m.kind==='w'?'#e08cff':m.kind==='p'?'#7fe0ff':m.kind==='gd'?(m.sys?'#7fbf8a':'#8be07f'):m.kind==='sys'?'#9fb0c2':m.kind==='wb'?'#ffb347':'#cbd6e2';logMsg(`<span style="color:${c}${m.kind==='wb'?';font-weight:600':''}">${m.kind==='w'?'[Sussurro] ':m.kind==='p'?'[Grupo] ':m.kind==='gd'?'[Guilda] ':''}${m.from?'<b>'+esc(m.from)+'</b>: ':''}${esc(m.text)}</span>`);});

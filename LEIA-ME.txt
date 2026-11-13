@@ -1,3 +1,240 @@
+ATUALIZAÇÃO 1.67.1 — SERVIDOR NA HOSTINGER (VPS) COM BANCO DE DADOS PRÓPRIO
+Pacote CUMULATIVO (inclui a 1.67 e a 1.66). Em relação à 1.67 só entram/mudam arquivos da pasta deploy/:
+  deploy/vps-instalar.sh (novo) • deploy/importar-neon.sh (novo) • deploy/backup.sh (novo) • deploy/atualizar.sh
+O código do jogo não muda. (A Oracle não aceita mais cadastro de pessoa física no Brasil; por isso a Hostinger.)
+
+COMO FICA (só a Hostinger é paga)
+  • Hostinger VPS ............ servidor do jogo + banco de dados PostgreSQL (sem limite de horas/tráfego do Neon)
+  • Cloudflare Pages (grátis)  página, modelos 3D, música
+  • DuckDNS (grátis) ......... endereço do servidor (ex.: projetommorpg.duckdns.org)
+  • GitHub (grátis) .......... onde ficam os arquivos; a VPS e o Cloudflare atualizam sozinhos
+  • Neon ...................... só para copiar as contas na migração; depois fica parado (o grátis nunca cobra)
+
+===================================================================================
+PASSO A PASSO — HOSTINGER
+===================================================================================
+
+PASSO 1 — SUBIR OS ARQUIVOS NO GITHUB
+  Envie para o repositório MMORPG-BETA-V2 tudo deste pacote (principalmente a pasta deploy/ com os 6 scripts,
+  index.html, index.ts, package.json, rules.js, WorldRoom.ts, pvp.ts e os 7 .glb).
+  A VPS baixa o jogo do GitHub, então isto vem PRIMEIRO.
+
+PASSO 2 — GUARDAR OS DADOS DO RENDER
+  Render → serviço → Environment → copie DATABASE_URL e JWT_SECRET para um bloco de notas.
+
+PASSO 3 — CONTRATAR A VPS
+  1. hostinger.com.br → VPS → plano KVM 1 (1 CPU, 4 GB, 50 GB, 4 TB de tráfego).
+  2. Período: o preço promocional exige pagar adiantado (12/24/48 meses). Confira também o preço de RENOVAÇÃO.
+  3. Extras que NÃO precisa: domínio, e-mail, backup diário pago, painel/“aplicativo” pronto.
+  4. Ao configurar a VPS:
+       • Localização: BRASIL (menos lag para os jogadores)
+       • Sistema operacional: "Ubuntu 24.04" LIMPO (sem painel e sem aplicativo)
+       • Crie uma senha de root forte e guarde (não precisa de chave SSH).
+       • Se oferecer "Malware scanner"/firewall da Hostinger, pode deixar como vier.
+  5. Aguarde a VPS ficar "Em execução" (alguns minutos).
+
+PASSO 4 — ABRIR O TERMINAL
+  hPanel → VPS → sua VPS → botão "Terminal do navegador" (Browser terminal). Abre uma tela preta já como root.
+  (Para colar no terminal do navegador: botão direito → Colar, ou Ctrl+Shift+V.)
+
+PASSO 5 — RODAR A INSTALAÇÃO (um comando só)
+  Cole esta linha inteira e aperte Enter:
+
+  apt-get update && apt-get install -y git && git clone https://github.com/lucaspagodesrc-ux/MMORPG-BETA-V2.git /opt/mmorpg && bash /opt/mmorpg/deploy/vps-instalar.sh
+
+  • Se o repositório for PRIVADO, o git pede:
+      Username: lucaspagodesrc-ux
+      Password: um TOKEN do GitHub (não é a senha!) — GitHub → Settings → Developer settings →
+                Personal access tokens → Fine-grained → só este repositório → "Contents: Read-only".
+      (Ao colar a senha nada aparece na tela; é normal.)
+  • Depois ele faz 7 perguntas — responda colando:
+      1) projetommorpg.duckdns.org
+      2) o token do DuckDNS
+      3) o DATABASE_URL do Render (copia todas as contas e personagens do Neon para a VPS)
+      4) o JWT_SECRET do Render (assim ninguém precisa logar de novo)
+      5) Enter (por enquanto; preenchemos no passo 8)
+      6) e 7) Enter (mantém GM123 / GMSRC)
+  • Espere ~10 min. No final aparece:  ✅ Servidor do jogo LIGADO   e   Personagens no banco: (número)
+    Confira se o número de personagens bate com o que existia.
+
+PASSO 6 — CONFERIR
+  Abra no navegador: https://projetommorpg.duckdns.org/health  → deve mostrar {"ok":true,...}
+  (Na primeira vez o HTTPS pode levar 1–2 minutos para ser emitido.)
+
+PASSO 7 — PÁGINA NO CLOUDFLARE PAGES (grátis)
+  1. dash.cloudflare.com → Workers & Pages → Create → Pages → Connect to Git → MMORPG-BETA-V2.
+  2. Framework preset: None • Build command: bash deploy/pages-build.sh • Build output directory: dist
+     Environment variables: GAME_SERVER = https://projetommorpg.duckdns.org
+  3. Save and Deploy → você recebe o link do jogo (ex.: https://projetommorpg.pages.dev). É ESSE que você divulga.
+
+PASSO 8 — TRAVAR O SERVIDOR PARA SÓ A SUA PÁGINA USAR (recomendado)
+  No terminal da VPS:
+      nano /etc/mmorpg.env
+  Na linha ALLOWED_ORIGINS= coloque o link do passo 7, ex.: ALLOWED_ORIGINS=https://projetommorpg.pages.dev
+  Salve (Ctrl+O, Enter, Ctrl+X) e rode:  systemctl restart mmorpg
+
+PASSO 9 — TESTAR E DESLIGAR O RESTO
+  • Entre pelo link do Cloudflare com uma conta antiga, teste 2 abas e o GM.
+  • Funcionando: no Render → Settings → Suspend/Delete. O Neon pode ficar parado (plano grátis não cobra);
+    só apague depois de algumas semanas, quando tiver certeza de que está tudo na VPS.
+
+COMANDOS ÚTEIS (no terminal da VPS)
+  journalctl -u mmorpg -n 50 ........ últimas mensagens do servidor do jogo
+  systemctl restart mmorpg .......... reiniciar o jogo
+  mmorpg-atualizar .................. puxar do GitHub agora (já faz sozinho a cada 2 min)
+  mmorpg-backup ..................... fazer um backup agora (já faz sozinho todo dia às 04:00, guarda 14 dias)
+  ls /var/backups/mmorpg ............ ver os backups
+  mmorpg-importar-neon .............. copiar de novo do Neon (APAGA o banco da VPS e põe o do Neon; pede confirmação)
+
+SE ALGO DER ERRADO
+  • "Não consegui ler o Neon": o endereço está errado ou o Neon estourou a cota do mês (aí ele só volta no próximo
+    ciclo). O jogo liga com banco vazio; quando o Neon voltar, rode mmorpg-importar-neon (antes de liberar para os jogadores).
+  • /health não abre: espere 2 min; confira se o DuckDNS mostra o IP da VPS; veja journalctl -u caddy -n 30.
+  • Mande para mim as últimas linhas de /var/log/mmorpg-instalar.log (sem senhas).
+
+O QUE NÃO PUDE TESTAR DAQUI
+  Não tenho acesso a uma VPS da Hostinger. A cópia do banco (exportar/importar) foi testada aqui com PostgreSQL
+  e funcionou; o instalador completo foi conferido mas não executado numa VPS real. Se travar, me mande a tela.
+
+ATUALIZAÇÃO 1.67 — SERVIDOR GRATUITO SEM LIMITE DE BANDA (Oracle Cloud + Cloudflare Pages + Neon)
+Pacote CUMULATIVO (inclui tudo da 1.66: 7 classes modeladas no Blender, 5 conjuntos, capas novas).
+Em relação à 1.66 mudam index.html, index.ts e package.json, e entra a pasta deploy/ (3 scripts).
+
+POR QUE MUDAR
+O Render grátis só dá 5 GB de tráfego por mês. Os modelos 3D (~15,7 MB) e o próprio jogo esgotam isso rápido.
+Nova divisão, tudo gratuito:
+  • Cloudflare Pages → entrega a página, os modelos .glb, a música e o rules.js (tráfego ilimitado, CDN mundial).
+  • Oracle Cloud "Always Free" → só o servidor do jogo (Colyseus/websocket + API). 10 TB de tráfego/mês grátis, máquina ligada 24h (não dorme como o Render).
+  • Neon → o banco PostgreSQL continua o MESMO (nenhum dado é perdido, ninguém precisa criar conta de novo).
+O jogo continua funcionando no Render enquanto você não terminar a migração (o código novo funciona nos dois).
+
+ARQUIVOS PARA SUBIR NO GITHUB (substituir/adicionar)
+  index.html, index.ts, package.json, rules.js, WorldRoom.ts, pvp.ts, os 7 .glb,
+  e a pasta deploy/ inteira (oracle-init.sh, atualizar.sh, pages-build.sh).
+  Os demais .ts estão no pacote só por segurança (não mudaram).
+  NUNCA coloque senhas/tokens no GitHub: eles vão só no painel da Oracle (passo 3).
+
+===================================================================================
+PASSO A PASSO DA MIGRAÇÃO (faça na ordem; ~40 min no total)
+===================================================================================
+
+PASSO 1 — PEGAR OS DADOS DO RENDER (2 min)
+  No Render → seu serviço → Environment. Copie e guarde num bloco de notas:
+    DATABASE_URL (começa com postgresql://)   e   JWT_SECRET.
+  (Se o painel do Render estiver bloqueado, o DATABASE_URL também está no painel do Neon → Connection string.)
+
+PASSO 2 — DOMÍNIO GRÁTIS NO DUCKDNS (3 min)
+  1. Entre em https://www.duckdns.org e faça login (com Google ou GitHub).
+  2. Crie um subdomínio, ex.: meujogo  →  vira meujogo.duckdns.org
+  3. Copie o "token" que aparece no topo da página.
+  (O IP você não precisa preencher: o script da Oracle atualiza sozinho.)
+
+PASSO 3 — CRIAR A MÁQUINA NA ORACLE (15 min + ~10 min instalando sozinha)
+  1. Crie a conta em https://www.oracle.com/cloud/free/  (pede cartão só para verificação; a conta
+     "Always Free" não cobra nada enquanto você usar só recursos marcados "Always Free").
+     Escolha a região mais perto dos jogadores (ex.: Brazil East – São Paulo). A região NÃO muda depois.
+  2. Menu ☰ → Compute → Instances → "Create instance".
+  3. Image: troque para Canonical Ubuntu 22.04 (ou 24.04).
+  4. Shape: "Ampere" → VM.Standard.A1.Flex com 2 OCPU e 12 GB (grátis até 4 OCPU/24 GB).
+     Se der "Out of capacity", tente outro "Availability domain", outra hora, ou use
+     VM.Standard.E2.1.Micro (AMD, 1 GB — também grátis, funciona com o swap que o script cria).
+  5. Networking: deixe criar a rede nova (VCN) com "Assign a public IPv4 address" = SIM.
+  6. SSH keys: "Generate a key pair" e BAIXE a chave privada (guarde; serve para entrar na máquina se precisar).
+  7. Clique em "Show advanced options" → aba "Management" → "Initialization script" → "Paste cloud-init script".
+     Abra deploy/oracle-init.sh num editor, PREENCHA as linhas do topo e cole o arquivo INTEIRO:
+        DOMINIO="meujogo.duckdns.org"
+        DUCKDNS_TOKEN="(token do passo 2)"
+        DATABASE_URL="(do passo 1)"
+        JWT_SECRET="(do passo 1)"
+        ALLOWED_ORIGINS=""   (deixe vazio por enquanto; preenchemos no passo 6)
+        GITHUB_TOKEN=""      (só se o repositório for PRIVADO — GitHub → Settings → Developer settings →
+                              Fine-grained token, só este repositório, permissão "Contents: Read-only")
+  8. "Create". Anote o "Public IP address" da máquina.
+
+PASSO 4 — ABRIR AS PORTAS 80 e 443 NA ORACLE (3 min) — sem isso nada conecta!
+  Na página da instância → clique na "Subnet" → "Security Lists" → "Default Security List" →
+  "Add Ingress Rules":
+      Source CIDR 0.0.0.0/0 • IP Protocol TCP • Destination Port Range 80,443  → "Add".
+  (O firewall interno do Ubuntu o próprio script já libera.)
+
+PASSO 5 — CONFERIR O SERVIDOR (após ~10 min)
+  Abra no navegador:  https://meujogo.duckdns.org/health
+  Deve responder {"ok":true...}. Se não abrir:
+    • espere mais 5 min (o certificado HTTPS é emitido na primeira visita);
+    • confira o passo 4;
+    • veja o registro: entre na máquina (Instances → "Console connection" ou SSH com a chave) e rode
+        sudo tail -50 /var/log/mmorpg-instalar.log
+        sudo journalctl -u mmorpg -n 50
+  Atualização automática: a cada 2 min a máquina verifica o GitHub; quando você sobe arquivo novo,
+  ela baixa e reinicia o servidor sozinha (não precisa fazer nada na Oracle depois).
+
+PASSO 6 — PÁGINA NO CLOUDFLARE PAGES (8 min)
+  1. Crie conta em https://dash.cloudflare.com (grátis).
+  2. Workers & Pages → Create → aba "Pages" → "Connect to Git" → autorize o GitHub → escolha MMORPG-BETA-V2.
+  3. Configuração do build:
+        Framework preset: None
+        Build command:    bash deploy/pages-build.sh
+        Build output directory: dist
+        Environment variables → Add:  GAME_SERVER = https://meujogo.duckdns.org
+  4. "Save and Deploy". Ao terminar, o endereço do jogo será algo como https://mmorpg-beta-v2.pages.dev
+     A cada envio ao GitHub, o Cloudflare publica de novo sozinho.
+  5. (Recomendado) Volte na Oracle e trave quem pode usar o servidor: entre na máquina e rode
+        sudo nano /etc/mmorpg.env    → ALLOWED_ORIGINS=https://mmorpg-beta-v2.pages.dev
+        sudo systemctl restart mmorpg
+     (Pode listar vários separados por vírgula. Vazio = aceita de qualquer site.)
+
+PASSO 7 — TESTAR E DESLIGAR O RENDER
+  • Abra o endereço .pages.dev, faça login com uma conta existente (deve entrar com os mesmos dados),
+    entre no mundo com 2 abas para ver o outro jogador, teste o GM (GM123 / GMSRC).
+  • Passe o novo endereço para os jogadores.
+  • Funcionando, no Render: Settings → "Suspend" (ou Delete). Não apague o banco do Neon!
+
+COMO FUNCIONA POR DENTRO (para referência)
+  • index.html lê config.js (gerado no build do Cloudflare com GAME_SERVER) e conecta a API e o websocket
+    nesse endereço. Sem config.js (ex.: ainda no Render), usa o próprio site — por isso funciona nos dois.
+  • Servidor: compressão gzip nas respostas, websocket comprimido (menos tráfego), CORS controlado por ALLOWED_ORIGINS.
+  • Modelos .glb e música ficam com cache longo no Cloudflare (_headers).
+
+LIMITAÇÕES / CUIDADOS
+  • Não consegui testar numa conta real da Oracle/Cloudflare daqui; os scripts foram verificados localmente
+    (build da página e compilação do servidor ok). Se algum passo travar, me mande a mensagem de erro ou as
+    últimas linhas do /var/log/mmorpg-instalar.log.
+  • A Oracle pode reclamar máquinas "Always Free" ociosas por muito tempo (uso de CPU muito baixo por 7 dias).
+    Com jogadores conectados isso não acontece; se acontecer, a máquina só é desligada e você a liga de novo.
+    Converter a conta para "Pay As You Go" evita isso e continua sem cobrança usando só itens grátis.
+  • O Neon grátis tem limite próprio (0,5 GB de dados e horas de computação); é o mesmo banco de hoje.
+
+ATUALIZAÇÃO 1.66 — TODAS AS CLASSES MODELADAS NO BLENDER, COM 5 CONJUNTOS + CAPAS NOVAS
+Pacote CUMULATIVO. Em relação à 1.65 mudam index.html e entram 7 arquivos 3D (.glb), um por classe:
+cavaleiro.glb, guerreiro.glb, tanque.glb, assassino.glb, arqueiro.glb, mago.glb, pierrot.glb
+
+O QUE MUDOU NA 1.66
+• As 7 classes usam modelos feitos no Blender, com textura pintada, rosto (classes de elmo aberto) e animações.
+• 5 conjuntos por classe, escolhidos pelo NÍVEL de cada item (elmo, armadura e botas são independentes — dá para misturar):
+    nível 1–20 Ferro • 21–40 Dourado • 41–60 Sombrio • 61–80 Dracônico • 81–100 Solar (acima de 100: Solar, até definirmos)
+  Sem item no espaço, aparece a peça do conjunto Ferro. O escudo do Cavaleiro acompanha o conjunto da armadura.
+• Capas: só aparecem com o item de capa equipado (todas as classes); os trajes padrão não têm mais capa.
+    Assassino e Arqueiro: manto com capuz • Mago (dano mágico): dragona tipo cachecol • demais: capa com presilhas.
+  O tecido balança parado e abre para trás ao correr.
+• Cada classe é baixada só quando aparece um personagem dela (1,5 a 2,5 MB cada, guardado em cache). Enquanto baixa, aparece o boneco anterior.
+• Observação: o Pierrot usa capa (é dano físico); as estolas que ele já tem continuam equipáveis, só o visual mudou.
+
+COMO VOLTAR AO MODELO ANTERIOR (sem desinstalar)
+• ?glb=0 no endereço (ou localStorage.setItem('glb','0') e Ctrl+F5). ?org=0 volta ao visual geométrico antigo.
+
+ATUALIZAÇÃO 1.65 — TESTE: CAVALEIRO PESADO MODELADO NO BLENDER (arquivo 3D .glb)
+Pacote CUMULATIVO. Em relação à 1.64 mudam index.html e index.ts, e entra o arquivo novo cavaleiro.glb.
+
+O QUE MUDOU NA 1.65
+• O Cavaleiro Pesado agora usa um modelo 3D feito no Blender (cavaleiro.glb, ~0,9 MB): corpo, armadura, elmo com viseira em T e pluma, ombreiras, saiote de placas, escudo com brasão e espada, com textura pintada (sombras, brilho nas bordas e pinceladas gravadas na textura).
+• Esqueleto de verdade com 9 animações: parado, andar, golpe de espada, golpe de escudo, salto/pancada (Hell Crasher), lançar (Raio do Escudo), arremesso (Escudo Voador), apanhar e morrer. As animações seguem o relógio do jogo, então ficam sincronizadas com os golpes.
+• Armadura, elmo e botas continuam mudando de cor com o equipamento; a capa aparece nas costas; o escudo some durante o Escudo Voador.
+• O arquivo é baixado uma vez e fica guardado no navegador (cache de 1 dia). Enquanto não chega, aparece o boneco atual e ele é trocado sozinho.
+• As outras classes continuam como estão.
+
+COMO VOLTAR AO MODELO ANTERIOR (sem desinstalar)
+• Abra o jogo com ?glb=0 no endereço (ou no console: localStorage.setItem('glb','0') e Ctrl+F5). ?org=0 volta ao visual geométrico antigo.
+
 ATUALIZAÇÃO 1.64 — DANO EM ÁREA AINDA MENOR + ÁREA E MARCAÇÃO NO CHÃO MENORES
 Pacote CUMULATIVO. Em relação à 1.63 muda só o rules.js (se a 1.62 ainda não foi instalada, envie também index.html, WorldRoom.ts e pvp.ts).
 
@@ -101,6 +338,7 @@ COMO VOLTAR ATRÁS
 Suba novamente o index.html da 1.53 no GitHub (ou abra com ?org=0).
 
 INSTALAÇÃO
-1) Envie index.html, rules.js, WorldRoom.ts e pvp.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo.
-2) Aguarde o Render terminar o deploy (o servidor reinicia).
+1) Envie index.html, index.ts e os 7 arquivos .glb para a RAIZ do repositório no GitHub (junto do index.html). Pode enviar o pacote todo.
+   (Se a 1.62 ainda não foi instalada, envie também rules.js, WorldRoom.ts e pvp.ts.)
+2) Aguarde o Render terminar o deploy.
 3) No navegador, Ctrl+F5.

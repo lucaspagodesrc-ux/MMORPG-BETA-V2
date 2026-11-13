@@ -3,7 +3,9 @@
   "version": "0.7.0",
   "private": true,
   "description": "Servidor do Projeto MMORPG: login, PostgreSQL e multiplayer (Colyseus)",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "tsx index.ts",
     "dev": "tsx watch index.ts",
@@ -19,7 +21,8 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "compression": "^1.7.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -27,6 +30,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.0",
     "@types/pg": "^8.11.5",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "@types/compression": "^1.7.5"
   }
 }
