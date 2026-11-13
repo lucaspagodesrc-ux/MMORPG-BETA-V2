@@ -100,10 +100,10 @@ const CLASSES={
    {n:'Investida do Escudo',i:'🐂',lv:3,cd:8,mp:12,type:'dash',mult:1.2,defMult:.8,range:10,color:'#8fd3ff',d:'Avança com o escudo e converte defesa em dano.'},
    {n:'Postura Defensiva',i:'🏰',lv:5,cd:60,cdMin:35,mp:18,type:'buff',buffs:{shield:.35},dur:60,fixDur:1,color:'#7fa6d9',d:'Auto-buff (só em você) por 1 minuto: -35% de dano recebido. Recarga: 60s no rank 1 até 35s no rank máximo.'},
    {n:'Bastião',i:'⚙️',lv:8,cd:120,cdMin:90,mp:25,type:'buff',buffs:{defdmg:.6,defloss:.6},fixBuff:1,dur:60,fixDur:1,color:'#ffd27a',d:'Auto-buff por 1 minuto: converte 60% da sua DEFESA em força (a defesa cai 60% e todo ataque ganha esse valor como dano). Recarga: 120s no rank 1 até 90s no máximo.'},
-   {n:'Impacto Sísmico',i:'💢',lv:12,cd:12,mp:28,type:'aoeSelf',mult:.8,defMult:1.5,radius:4.5,slow:3000,anim:'jump',delay:650,color:'#c9a56b',d:'Salta bem alto e bate com o escudo no chão: dano em área baseado na DEFESA.'},
+   {n:'Hell Crasher',i:'🛡️',lv:12,cd:12,mp:28,type:'aoeSelf',mult:.8,defMult:1.5,radius:4.5,slow:3000,anim:'jump',delay:650,crest:1,color:'#ffb347',d:'Salta bem alto e crava o escudo no chão, marcando um enorme brasão de escudo em chamas: dano em área baseado na DEFESA e lentidão.'},
    {n:'Vontade de Ferro',i:'🩹',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.3,color:'#6fdc7f',d:'Recupera 30% da vida máxima.'},
-   {n:'Escudo Voador',i:'🥏',lv:20,cd:24,mp:40,type:'shieldThrow',mult:1.3,defMult:1.0,range:12,pierce:.5,anim:'throw',color:'#9fd0ff',d:'Arremessa o escudo para frente, ferindo (perfurante) todos que acertar. No alcance máximo ele gira por 2s causando dano em área e depois volta para você. Sem escudo enquanto ele voa.'},
-   {n:'Raio do Escudo',i:'🔆',lv:25,cd:22,mp:45,type:'shieldBeam',mult:.9,defMult:1.6,range:15,pierce:.5,dur:3,anim:'beam',color:'#fff2a8',d:'Bate a espada no escudo e solta um raio por 3s à frente, causando dano perfurante em tudo que ele atravessa.'}]},
+   {n:'Escudo Voador',i:'🥏',lv:20,cd:24,mp:40,type:'shieldThrow',mult:1.3,defMult:1.0,range:8,fspd:24,spin:.8,pierce:.5,anim:'throw',color:'#9fd0ff',d:'Arremessa o escudo para frente, ferindo (perfurante) todos que acertar. No alcance máximo ele gira por um instante causando dano em área e volta rápido para você. Sem escudo enquanto ele voa.'},
+   {n:'Raio do Escudo',i:'🔆',lv:25,cd:22,mp:45,type:'shieldBeam',mult:.9,defMult:1.6,range:15,pierce:.5,dur:1.5,beam:1.5,anim:'beam',color:'#fff2a8',d:'Bate a espada no escudo e solta um raio concentrado por 1,5s à frente, causando dano perfurante em tudo que ele atravessa.'}]},
  tanque:{n:'Tanque',i:'⛓️',wi:'🔨',main:'vit',base:{str:6,agi:2,int:2,vit:14},range:2.8,ranged:false,
   d:'O mais resistente: DEFESA +75%, vida +30%. Puxa, atordoa, imobiliza, levanta e PROVOCA os monstros para levar o dano.',
   skills:[
@@ -1763,8 +1763,8 @@ const castMs = (cls, i, x) => {
     case 'barrage': t = 200 + hits * 130 + 200; break;
     case 'dash': t = 450; break;
     case 'dashBack': t = s.blast ? 520 : 400; break;
-    case 'shieldThrow': t = 300 + 2 * ((s.range || 10) / 16 * 1000) + 2000; break;   // ida + 2 s girando + volta
-    case 'shieldBeam': t = 250 + (s.dur || 3) * 1000; break;                          // raio canalizado
+    case 'shieldThrow': t = 300 + 2 * ((s.range || 10) / (s.fspd || 16) * 1000) + (s.spin || 2) * 1000; break;   // ida + giro + volta
+    case 'shieldBeam': t = 250 + (s.beam || 3) * 1000; break;                          // raio canalizado
     case 'daggerFan': t = 450; break;
     case 'starJump': t = 100 + (Math.max(1, x.n || 1) - 1) * 520 + 500; break;
     case 'chainPull': t = s.gust ? 900 : 700; break;

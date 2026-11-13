@@ -325,15 +325,15 @@ export class WorldRoom extends Room<WorldState> {
       case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * (sk.fan ? 60 : 190) + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); break;
       case "aoeSelf": this.later(sk.delay || 200, () => { const q = this.playerOf(s); this.hitArea(s, sk.delay && q ? q.x : px, sk.delay && q ? q.z : pz, sk.radius, mult, so); }); break;
       case "shieldThrow": {                 // escudo voa (perfura), gira 2s no alcance máximo (área) e volta
-        const SPD = 16, tOut = (sk.range / SPD) * 1000, sx = p.x, sz = p.z, ex = sx + ux * sk.range, ez = sz + uz * sk.range;
+        const SPD = (sk as any).fspd || 16, SPIN = ((sk as any).spin || 2) * 1000, NT = Math.max(1, Math.floor(SPIN / 400)), tOut = (sk.range / SPD) * 1000, sx = p.x, sz = p.z, ex = sx + ux * sk.range, ez = sz + uz * sk.range;
         const seen1 = new Set<Sim>(), seen2 = new Set<Sim>();
         for (let t = 0; t <= tOut; t += 100) this.later(300 + t, () => { const f = t / tOut; this.hitNear(s, sx + (ex - sx) * f, sz + (ez - sz) * f, 1.8, mult, so, seen1); });
-        for (let k = 1; k <= 5; k++) this.later(300 + tOut + k * 400, () => this.hitArea(s, ex, ez, 3.4, mult * 0.45, so));
-        for (let t = 0; t <= tOut; t += 100) this.later(300 + tOut + 2000 + t, () => { const q = this.playerOf(s); if (!q) return; const f = t / tOut; this.hitNear(s, ex + (q.x - ex) * f, ez + (q.z - ez) * f, 1.8, mult, so, seen2); });
+        for (let k = 1; k <= NT; k++) this.later(300 + tOut + k * 400, () => this.hitArea(s, ex, ez, 3.4, mult * 0.45 * 5 / NT, so));   // mesmo dano total do giro antigo (5 pulsos), em menos tempo
+        for (let t = 0; t <= tOut; t += 100) this.later(300 + tOut + SPIN + t, () => { const q = this.playerOf(s); if (!q) return; const f = t / tOut; this.hitNear(s, ex + (q.x - ex) * f, ez + (q.z - ez) * f, 1.8, mult, so, seen2); });
         break;
       }
       case "shieldBeam": {                  // raio fixo na direção do golpe por 3s (perfurante)
-        for (let k = 0; k < 10; k++) this.later(350 + k * 300, () => { const q = this.playerOf(s); if (q && !q.dead) this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.5, mult, so); });
+        { const NB = Math.max(1, Math.round(((sk as any).beam || 3) * 1000 / 300)); for (let k = 0; k < NB; k++) this.later(350 + k * 300, () => { const q = this.playerOf(s); if (q && !q.dead) this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.5, mult * 10 / NB, so); }); }   // mesmo dano total do raio antigo (10 pulsos), em menos tempo
         break;
       }
       case "aoeMulti": for (let h = 0; h < sk.hits; h++) this.later(200 + h * 200, () => this.hitArea(s, p.x, p.z, sk.radius, mult, so)); break;

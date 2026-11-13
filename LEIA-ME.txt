@@ -1,5 +1,11 @@
-ATUALIZAÇÃO 1.60 — COR DO EQUIPAMENTO PELA LINHA DO ITEM (corrige "tudo roxo")
-Pacote CUMULATIVO. Em relação à 1.59 mudam index.html e rules.js (os DOIS são obrigatórios; se a 1.58 ainda não foi instalada, envie também o WorldRoom.ts).
+ATUALIZAÇÃO 1.61 — HELL CRASHER + ESCUDO VOADOR E RAIO DO ESCUDO MAIS RÁPIDOS
+Pacote CUMULATIVO. Em relação à 1.60 mudam index.html, rules.js e WorldRoom.ts (os TRÊS são obrigatórios).
+
+O QUE MUDOU NA 1.61 (Cavaleiro Pesado)
+• Hell Crasher substitui o Impacto Sísmico (mesmo nível 12, recarga, mana, dano em área pela DEFESA e lentidão): o cavaleiro salta e crava o escudo no chão, que fica marcado com um enorme brasão de escudo em brasa por ~2 s. Outros jogadores também veem a marca.
+• Escudo Voador: alcance 12 → 8; o escudo voa 50% mais rápido e gira 0,8 s no fim (antes 2 s). Duração total 3,8 s → ~1,8 s. O dano total do giro foi mantido (menos pulsos, mais fortes).
+• Raio do Escudo: 3 s → 1,5 s. Duração total 3,25 s → 1,75 s. O dano total foi mantido (metade dos pulsos, cada um com o dobro).
+• A trava "uma habilidade por vez" (1.58) acompanha os tempos novos.
 
 O QUE MUDOU NA 1.60
 • Causa do "tudo roxo": itens sem conjunto de monstro (como os dos pacotes de evento, que são épicos) eram pintados pela cor da RARIDADE — épico = roxo, em qualquer nível.
@@ -29,7 +35,7 @@ Guerreiro: Golpe Poderoso 650 • Giro de Lâmina 700 • Investida 450 • Grit
 Arqueiro: Tiro Preciso 250 • Chuva de Flechas 900 • Tiro Explosivo Evasivo 520 • Foco Mortal 500 • Vontade do Vento 580 • Rajada Reunidora 900 • Tempestade de Flechas 900 • Flecha Dilacerante 700
 Mago: Bola de Fogo 250 • Nova Gélida 450 • Escudo Arcano 500 • Meteoro 850 • Raio Arcano 650 • Cura Arcana 500 • Tempestade de Gelo 900 • Apocalipse 1690
 Assassino: Corte Rápido 400 • Passo Sombrio 450 • Chuva de Adagas 450 • Dança das Lâminas 700 • Marca da Morte 500 • Véu Sombrio 500 • Manto Fumaça 500 • Estrela Sombria 600
-Cavaleiro Pesado: Golpe de Escudo 400 • Investida do Escudo 450 • Postura Defensiva 500 • Bastião 500 • Impacto Sísmico 1000 • Vontade de Ferro 500 • Escudo Voador 3800 • Raio do Escudo 3250
+Cavaleiro Pesado: Golpe de Escudo 400 • Investida do Escudo 450 • Postura Defensiva 500 • Bastião 500 • Hell Crasher 1000 • Vontade de Ferro 500 • Escudo Voador 1767 • Raio do Escudo 1750
 Tanque: Gancho de Corrente 950 • Pisão Sísmico 600 • Provocar 500 • Correntes de Aço 700 • Golpe Ascendente 1100 • Muralha de Ferro 500 • Sentença do Colosso 600 (+ enquanto rola)
 Pierrot: Estocada 400 • Pirueta Giratória 450 • Passo de Bailarino 450 • Truque da Sorte 500 • Estocada Tripla 680 • Clones Ilusórios 500 • Redemoinho Circense 1150 • Grand Finale 400
 Para ajustar um tempo: função castMs no rules.js.
@@ -67,6 +73,6 @@ COMO VOLTAR ATRÁS
 Suba novamente o index.html da 1.53 no GitHub (ou abra com ?org=0).
 
 INSTALAÇÃO
-1) Envie index.html e rules.js (e WorldRoom.ts, se ainda não instalou a 1.58) para a raiz do repositório no GitHub. Pode enviar o pacote todo.
-2) Aguarde o Render terminar o deploy (o servidor reinicia por causa do rules.js).
+1) Envie index.html, rules.js e WorldRoom.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo.
+2) Aguarde o Render terminar o deploy (o servidor reinicia).
 3) No navegador, Ctrl+F5.
