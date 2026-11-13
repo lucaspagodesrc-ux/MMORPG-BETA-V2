@@ -1,12 +1,15 @@
-ATUALIZAÇÃO 1.55 — TESTE: MODELOS ORGÂNICOS (opcional, desligado por padrão)
+ATUALIZAÇÃO 1.56 — VISUAL HAND-PAINTED: PERSONAGENS E MONSTROS ORGÂNICOS
 Pacote CUMULATIVO (base 1.53). Muda só o index.html; rules.js e o servidor continuam iguais à 1.53.
 
 COMO FUNCIONA
-• Nesta versão o modo orgânico já vem LIGADO. Para desligar: abra com ?org=0 no endereço (ou no console: localStorage.setItem('org','0') e Ctrl+F5).
+• O visual novo já vem LIGADO. Para voltar ao antigo: abra com ?org=0 no endereço (ou no console: localStorage.setItem('org','0') e Ctrl+F5).
 
-O QUE O MODO ORGÂNICO FAZ
-• As 7 classes ganham corpo esculpido (sem formas geométricas), texturas pintadas de pano/metal/couro, rosto pintado, capuzes/elmos e armas modeladas.
-• Braços e pernas continuam articulados: caminhada, golpes e habilidades animam normalmente; espada, escudo e armas ficam presas às mãos (escudo voador continua funcionando).
+ARQUIVOS E TEXTURAS
+• Não há arquivos de imagem para subir: todas as texturas pintadas (pano, metal, couro, pele, rosto, pedra, gelo, pelo) são geradas pelo código dentro do index.html. A estrutura do repositório não muda.
+
+NOVIDADES DA 1.56
+• Proporção estilizada: cabeça maior e corpo mais compacto nas 7 classes; contorno mais marcado.
+• Monstros orgânicos no jogo: slime, lobo, golem, orc e yeti (e as variações que usam esses modelos). Os demais monstros continuam com o modelo antigo.
 
 NOVIDADES DESTA REVISÃO
 • Rosto: o olho não aparece mais pela nuca.
@@ -17,7 +20,7 @@ NOVIDADES DESTA REVISÃO
 
 LIMITAÇÕES DO TESTE
 • Arma, escudo, acessórios e as auras/partículas de aprimoramento ainda NÃO aparecem no modo orgânico.
-• Monstros ainda são os antigos.
+• Os monstros novos não têm pernas/braços animados (só o pulo/ataque do corpo inteiro).
 • Braços/pernas são peças rígidas; a pose é a mesma para todas as classes.
 • Verificado só offline.
 
