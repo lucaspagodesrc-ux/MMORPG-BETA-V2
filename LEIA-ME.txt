@@ -1,15 +1,25 @@
-ATUALIZAÇÃO 1.53 — PVP: SEM ABSORÇÃO E RENASCER NA CIDADE
-Pacote CUMULATIVO: contém tudo da 1.52 e anteriores. Se a 1.52 já está instalada, mudam só index.html, rules.js e pvp.ts.
+ATUALIZAÇÃO 1.55 — TESTE: MODELOS ORGÂNICOS (opcional, desligado por padrão)
+Pacote CUMULATIVO (base 1.53). Muda só o index.html; rules.js e o servidor continuam iguais à 1.53.
 
-O QUE MUDOU
-1) Absorção de HP e de MP agora só funciona contra MONSTROS. Contra jogadores (duelo e Arena PK) não recupera nada, nem vida nem mana.
-2) Arena PK: quem cai NÃO renasce mais sozinho no mesmo lugar depois de 5 s. A tela de queda mostra o botão "🏠 Voltar à cidade"; ao clicar, o jogador sai da Arena, volta para a cidade e renasce com 70% da vida e 50% da mana. Não perde nada (como antes). Enquanto não clicar, continua caído.
-   Os textos da Arena (janela do Guardião e o aviso ao entrar) foram atualizados.
+COMO TESTAR
+• Abra o jogo com  ?org=1  no endereço (ex.: https://SEU-SITE/?org=1)  — ou, no console do navegador (F12):  localStorage.setItem('org','1')  e Ctrl+F5.
+• Para desligar: tire o ?org=1 e rode  localStorage.removeItem('org').
+• Sem isso, o jogo fica IDÊNTICO ao de antes.
 
-NÃO MUDOU
-• Duelo: continua sendo uma luta sem perdas; quem perde mantém a vida e a mana que tinha antes do duelo (ninguém morre de verdade). Se quiser que o perdedor do duelo também precise voltar à cidade, é só pedir.
+O QUE O MODO ORGÂNICO FAZ
+• As 7 classes ganham corpo esculpido (sem formas geométricas), texturas pintadas de pano/metal/couro, rosto pintado, capuzes/elmos e armas modeladas.
+• Braços e pernas continuam articulados: caminhada, golpes e habilidades animam normalmente; espada, escudo e armas ficam presas às mãos (escudo voador continua funcionando).
+
+LIMITAÇÕES DO TESTE
+• Os visuais de equipamento (armas/armaduras/auras trocadas pelo jogador) NÃO aparecem no modo orgânico.
+• Monstros ainda são os antigos.
+• Braços/pernas são peças rígidas (sem dobra suave); a pose é a mesma para todas as classes.
+• Verificado só offline (sem outros jogadores / servidor).
+
+COMO VOLTAR ATRÁS
+Suba novamente o index.html da 1.53 no GitHub (ou apenas não use ?org=1).
 
 INSTALAÇÃO
-1) Envie index.html, rules.js e pvp.ts para a raiz do repositório no GitHub (substituindo). Pode enviar o pacote todo, se preferir.
-2) Aguarde o Render terminar o deploy (o servidor reinicia por causa do pvp.ts e do rules.js).
-3) No navegador, Ctrl+F5.
+1) Envie index.html para a raiz do repositório no GitHub (substituindo).
+2) Aguarde o Render terminar o deploy.
+3) No navegador, Ctrl+F5 e abra com ?org=1.
