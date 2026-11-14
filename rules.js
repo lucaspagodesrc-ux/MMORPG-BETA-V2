@@ -532,6 +532,26 @@ for(const k in MT)MT[k].id=k;
     {text:'Derrote o Ifrit Acorrentado',rain:'Correntes em Brasa',big:'Explosão Infernal'},{text:'Sele a Fenda de Lava'},
     {text:'Derrote o Devorador de Lava',big:'Mar de Lava',sh:'O Devorador absorveu o calor do vulcão! Derrote os Cultistas para quebrar o escudo!'},
     {text:'Derrote Pyraxis, o Dragão Ancestral',rain:'Meteoros',big:'Sopro Ancestral',nova:'Nova de Fogo'}])); }
+/* v1.75 — Aurora, faixa Nv 25–50: novos monstros nas bordas do primeiro mapa (ponte entre o Demônio Nv 24 e Solara Nv 50) */
+const auMob=(base,o)=>{const L=(o.lv[0]+o.lv[1])/2,f=(L-24)/26,B0=MT[base],lerp=(a,b)=>Math.round(a+(b-a)*f);
+ return Object.assign({},B0,{model:B0.model||base,boss:false,hp:lerp(2300,3300),atk:lerp(110,330),def:lerp(60,74),xp:Math.round(xpNeed(L)*.021),gold:[lerp(120,230),lerp(216,390)],aggro:9,resp:15,leash:20,eq:.14,pot:.06},o);};
+Object.assign(MT,{
+ au_lobo:auMob('lobo',{n:'Lobo Sombrio',lv:[25,29],tint:'#3a3248',sc:1.35,eva:.25,mats:{couro:.45,garra:.2}}),
+ au_orc:auMob('orc',{n:'Orc Berserker',lv:[30,34],tint:'#a83a2a',sc:1.12,mats:{presa:.45,couro:.2}}),
+ au_esp:auMob('esqueleto',{n:'Cavaleiro Espectral',lv:[35,39],tint:'#6a8ad8',sc:1.2,mats:{osso:.45,selo:.12}}),
+ au_ara:auMob('aranha',{n:'Aranha Venenosa',lv:[40,44],tint:'#6a2a8a',sc:1.2,mats:{seda:.45,veneno:.2}}),
+ au_gra:auMob('golem',{n:'Golem de Granito',lv:[45,49],tint:'#8a8a92',sc:.6,boss:false,rng:2.5,atkInt:1700,spd:2.4,h:3.4,mats:{nucleo:.3,cristal:.3}}),
+ au_tita:Object.assign({},MT.golem,{n:'Titã de Granito',lv:[50,50],model:MT.golem.model||'golem',tint:'#b0a890',sc:1.35,boss:true,hp:30000,atk:420,def:115,xp:Math.round(xpNeed(50)*.4),gold:[3000,4500],resp:400,leash:24,eq:1,pot:1,rb:3,matMax:3,mats:{nucleo:1,cristal:1,escama:1}})
+});
+Object.assign(OG,{
+ au_lobo:{sf:'do Lobo Sombrio',col:'#5a4a72',col2:'#221a30',el:'shadow',ft:'fur'},
+ au_orc:{sf:'do Berserker',col:'#c84a2a',col2:'#5a1a10',el:'fire',ft:'horns'},
+ au_esp:{sf:'Espectral',col:'#8aa8ff',col2:'#2a3a6a',el:'ice',ft:'skull'},
+ au_ara:{sf:'da Viúva Venenosa',col:'#9a4ac8',col2:'#3a1250',el:'poison',ft:'stinger'},
+ au_gra:{sf:'de Granito',col:'#a8a8b0',col2:'#4a4a52',el:'fire',ft:'rock'},
+ au_tita:{sf:'do Titã',col:'#d8c8a0',col2:'#5a5040',el:'fire',ft:'rock'}});
+for(const k in MT)MT[k].id=k;
+
 const ZONES=[
  {t:'slime',x:-24,z:-14,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
  {t:'lobo',x:18,z:-20,r:9,n:10,col:'#4b5a45',name:'Floresta dos Lobos'},
@@ -799,22 +819,30 @@ NPCS.push(
  {id:'vc_drakon',name:'Sábio Drakon',icon:'🐉',x:-600,z:44,col:'#b0452a',tabs:SHOPT,greet:'O Dragão Ancestral dormiu por mil anos na caldeira. Ele acordou com fome.',hat:'#6a1408',camp:true,shop:'gelo'});
 /* v1.73: Comandante Valen (Vila Aurora) — missões do Nv 25 ao 49, uma a cada 2 níveis (13 no total).
    need = nível mínimo para aceitar. Os alvos são os monstros mais fortes do primeiro mapa. */
+ZONES.push(
+ {t:'au_lobo',x:15,z:-62,r:9,n:10,col:'#3a3248',name:'Bosque Sombrio'},
+ {t:'au_orc',x:62,z:-64,r:9,n:10,col:'#7a2a1a',name:'Colina dos Berserkers'},
+ {t:'au_esp',x:-66,z:30,r:9,n:9,col:'#3a4a7a',name:'Ruínas Assombradas'},
+ {t:'au_ara',x:34,z:64,r:9,n:9,col:'#4a1a5a',name:'Ninho Venenoso'},
+ {t:'au_gra',x:-68,z:-34,r:9,n:9,col:'#5a5a62',name:'Pedreira Antiga'},
+ {t:'au_tita',x:-70,z:-54,r:3,n:1,col:'#8a8070',name:'Covil do Titã'});
+Object.assign(QNAME,{au_lobo:'Lobos Sombrios',au_orc:'Orcs Berserkers',au_esp:'Cavaleiros Espectrais',au_ara:'Aranhas Venenosas',au_gra:'Golens de Granito',au_tita:'Titã de Granito'});
 NPCS.push({id:'valen',name:'Comandante Valen',icon:'⚔️',x:-13.4,z:-3.6,col:'#9a6a2a',tabs:['missoes'],greet:'Você já não é um novato. Aurora ainda precisa de alguém forte até você seguir para Solara.'});
 { const SL=['weapon','armor','helmet','boots','ring'];
   const L=[
-   [25,'demonio',25,'Brasas do Leste','Os demônios flamejantes voltaram a se multiplicar a leste. Elimine 25.'],
-   [27,'yeti',30,'Avalanche ao Norte','Os yetis desceram das montanhas e bloqueiam a estrada. Elimine 30.'],
-   [29,'orc',35,'Fim da Horda','A horda orc se reagrupou no nordeste. Elimine 35 orcs.'],
+   [25,'au_lobo',25,'Uivos no Bosque','Lobos sombrios tomaram o Bosque Sombrio, ao sul. Elimine 25.'],
+   [27,'au_lobo',35,'Matilha Sombria','A matilha cresceu e já ataca as carroças. Elimine 35 Lobos Sombrios.'],
+   [29,'au_orc',30,'Fúria Orc','Berserkers acamparam na colina a sudeste. Elimine 30.'],
    [31,'dragao',1,'Fogo no Ninho','O Dragão Rubro despertou de novo no ninho. Derrote-o.'],
-   [33,'aranha',40,'Teias na Gruta','A gruta a oeste está tomada por aranhas gigantes. Elimine 40.'],
-   [35,'golem',1,'O Guardião de Pedra','O Golem Ancião voltou a vagar ao sul. Derrote-o.'],
-   [37,'esqueleto',45,'Cemitério Inquieto','Os mortos do cemitério não descansam. Elimine 45 esqueletos.'],
-   [39,'demonio',45,'Portões em Brasa','Mais demônios atravessam a fenda. Elimine 45 antes que ela se abra de vez.'],
-   [41,'yeti',50,'Rei das Neves','Uma manada inteira de yetis ameaça as caravanas. Elimine 50.'],
+   [33,'au_orc',40,'Colina dos Berserkers','Os berserkers não recuam. Elimine mais 40.'],
+   [35,'au_esp',30,'Ruínas Assombradas','Cavaleiros espectrais vagam pelas ruínas a oeste. Elimine 30.'],
+   [37,'au_esp',40,'Juramento Quebrado','Liberte as almas presas nas ruínas: elimine 40 Cavaleiros Espectrais.'],
+   [39,'au_ara',35,'O Ninho Venenoso','Aranhas venenosas infestam o nordeste. Elimine 35.'],
+   [41,'au_ara',45,'Veneno nas Veias','O veneno já chegou aos poços da vila. Elimine 45 Aranhas Venenosas.'],
    [43,'dragao',2,'Escamas Rubras','Preciso de escamas frescas para os escudos da guarda. Derrote o Dragão Rubro 2 vezes.'],
-   [45,'orc',55,'Muralha de Escudos','Os orcs construíram uma muralha de escudos. Elimine 55 deles.'],
-   [47,'golem',2,'Pedra Ancestral','Derrote o Golem Ancião 2 vezes e traga seus núcleos de pedra.'],
-   [49,'dragao',3,'A Última Chama','Prove que está pronto para Solara: derrote o Dragão Rubro 3 vezes.']];
+   [45,'au_gra',40,'A Pedreira Viva','As pedras da Pedreira Antiga ganharam vida. Elimine 40 Golens de Granito.'],
+   [47,'au_gra',50,'Coração de Granito','Os golens não param de surgir. Elimine mais 50 para chegar ao covil.'],
+   [49,'au_tita',1,'O Titã de Granito','Prove que está pronto para Solara: derrote o Titã de Granito no covil da pedreira.']]
   L.forEach(([rec,tg,qty,t,d],i)=>QUESTS.push({id:'av'+(i+1),npc:'valen',t,d,tg,qty,rec,need:rec,
     rw:{xp:Math.round(xpNeed(rec)*(i===12?1.8:1.2)),   /* v1.74: XP dobrado */gold:rec*300,...(i%2===0?{eq:{slot:SL[(i/2)%5],ilvl:rec+1,rar:i>=8?3:2}}:{pot:{hp:10}}),...(i===4||i===8||i===12?{sp:1}:{})}})); }
 
@@ -1456,6 +1484,7 @@ function newChar(cls, name) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(INV_SIZE).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
   c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; } c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
+  c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }
@@ -1521,6 +1550,7 @@ function cleanItem(it) {
 }
 /** Atualiza personagens antigos para as regras atuais. Nunca apaga o personagem: só corrige/ajusta. */
 function migrate(c) {
+  if (c.tut === undefined) c.tut = 99;   // v1.75: personagens que já existiam não fazem o tutorial
   if (!c.sk || !Array.isArray(c.sk)) { c.sk = Array(8).fill(0); c.sk[0] = 1; if (c.sp === undefined) c.sp = c.level; }
   while (c.sk.length < 9) c.sk.push(0); if (c.sp === undefined) c.sp = 0;
   if (c.cls === 'tanque' && !c.tkv) {            // Campo de Atração foi removido: Sentença do Colosso passa de 7 para 6
@@ -1635,6 +1665,7 @@ function breakReturn(it) {
   if (it.plus > 0) { add('ferro', Math.max(1, Math.floor(fe / 2))); add('essencia', Math.floor(es / 2)); }   // 50% do material de aprimoramento
   return Object.keys(acc).map(id => ({ k: 'mat', id, n: Math.min(99, acc[id]) }));
 }
+const TUT_ITEM = 6, TUT_END = 9;
 function act(sess, m, ctx) {
   const c = sess.c, stash = sess.stash, out = [], spawn = [];
   const T = s => out.push({ toast: s }), L = s => out.push({ log: s }), L2 = L, F = s => out.push({ sfx: s });
@@ -1854,6 +1885,11 @@ function act(sess, m, ctx) {
     c.gold -= SPEC_RESET; const was = specOf(c); delete c.spec; if (c.title && /^sp:/.test(c.title)) c.title = '';
     T('Caminho reconsagrado.'); L(`<span style="color:#c9a8ff">🔄 Você deixou o Caminho ${was ? was.n : ''}. Escolha outro com o Mestre dos Caminhos.</span>`); return done();
   }
+  if (t === 'tut') {   // v1.75: tutorial guiado — o cliente avisa a etapa; o servidor só dá os presentes uma vez
+    const n = Number.isInteger(m.s) ? Math.max(0, Math.min(99, m.s)) : -1; if (n < 0 || (c.tut || 0) >= 99) return done();
+    if (n >= TUT_ITEM && n < 99 && !c.tutI) { c.tutI = 1; const it = genItem('boots', 1, 1, c.cls); it.req = 1; if (!addItem(c.inv, it)) spawn.push({ item: it, life: 0 }); }
+    if (n >= TUT_END && n < 99 && !c.tutR) { c.tutR = 1; c.gold = Math.min(GOLD_MAX, c.gold + 500); addItem(c.inv, { k: 'pot', id: 'hp', n: 5 }); T('🎓 Tutorial concluído! +500 💰 e 5 poções'); F('questDone'); }
+    c.tut = Math.max(c.tut || 0, n); return done(); }
   if (t === 'dwsync') { dwSync(c); return done(); }
   if (t === 'dwclaim' || t === 'dwchest') {
     dwSync(c); const w = m.w ? 1 : 0, box = w ? c.wq : c.dq, i = m.i, give = it => { if (!addItem(c.inv, it)) spawn.push({ item: it, life: 0 }); };

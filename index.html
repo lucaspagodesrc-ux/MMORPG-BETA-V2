@@ -20,6 +20,17 @@
   .lbl .pb{width:70px;height:6px;background:#3a2830;border:1px solid #000;border-radius:5px;margin:2px auto 0;overflow:hidden}
   .lbl .pb i{display:block;height:100%;background:#e45b65;width:100%}
   .lbl .pn span{color:#ffd27a;font-weight:600}
+#tutBox{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:60;width:min(430px,92vw);padding:11px 14px 10px;background:linear-gradient(180deg,rgba(28,24,44,.97),rgba(16,14,28,.97));border:2px solid #d4a62a;border-radius:12px;color:#f1ead8;box-shadow:0 6px 22px rgba(0,0,0,.55);font-size:13.5px;line-height:1.4;display:none}
+  #tutBox .th{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#d4a62a;letter-spacing:1px;font-weight:800;text-transform:uppercase;margin-bottom:3px}
+  #tutBox .tt{font-size:16px;font-weight:800;color:#fff;margin-bottom:3px}#tutBox .pb{height:4px;background:#3a3350;border-radius:3px;margin-top:8px;overflow:hidden}#tutBox .pb i{display:block;height:100%;background:#d4a62a}
+  #tutBox button{background:none;border:1px solid #6a5a8a;color:#bfb4d8;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}
+  #tutArrow{position:fixed;z-index:61;pointer-events:none;font-size:40px;line-height:1;color:#ffd24a;text-shadow:0 0 6px #000,0 2px 0 #000;display:none;animation:tutB .7s ease-in-out infinite alternate;transform:translate(-50%,-100%)}
+  @keyframes tutB{from{margin-top:-10px}to{margin-top:2px}}
+  #tutEdge{position:fixed;z-index:61;pointer-events:none;font-size:34px;color:#ffd24a;text-shadow:0 0 6px #000;display:none}
+  .lbl.tutw{font-size:38px;color:#ffd24a;text-shadow:0 0 6px #000,0 2px 0 #000;animation:tutB .7s ease-in-out infinite alternate;pointer-events:none}
+  .tutHL{outline:3px solid #ffd24a !important;outline-offset:2px;box-shadow:0 0 14px #ffd24a !important;animation:tutP 1s ease-in-out infinite alternate}
+  @keyframes tutP{from{outline-color:#ffd24a}to{outline-color:#fff3b0}}
+  
 .lbl.bub{white-space:normal;width:max-content;max-width:230px;margin-top:-44px;padding:5px 9px;background:rgba(255,253,244,.96);color:#2a2230;border:2px solid #3a2a20;border-radius:12px;font-size:12.5px;font-weight:600;line-height:1.3;text-align:center;text-shadow:none;box-shadow:0 2px 8px rgba(0,0,0,.45);overflow-wrap:anywhere;transition:opacity .35s;pointer-events:none}
   .lbl.bub::after{content:'';position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border:7px solid transparent;border-top-color:#3a2a20;border-bottom:0}
   .lbl.bub::before{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(255,253,244,.96);border-bottom:0;z-index:1}
@@ -428,7 +439,7 @@
   <div id="target" class="panel"><b id="targetName">Criatura</b><div id="targetBar"><div id="targetFill"></div></div></div>
   <div id="buffs"></div>
   <div id="buffwrap"><div id="buffbar"></div><div id="partybar"></div></div>
-  <div id="skillbar"></div>
+  <div id="skillbar"></div><div id="tutBox"></div><div id="tutArrow">⬇</div><div id="tutEdge">➤</div>
   <div id="log" class="panel cwin"><div class="cwh" data-cw="log"><span>📜 Mensagens do jogo</span><button title="Minimizar">–</button></div><div class="cwb" id="logBody"></div></div>
   <div id="chatBox" class="panel cwin"><div class="cwh" data-cw="chatBox"><span>💬 Chat</span><span class="cwk">Enter = falar • Tab = trocar destino</span><button title="Minimizar">–</button></div><div class="cwb" id="chatLog"></div><div class="cwi" id="chatRow"><span id="chatTo" title="Tab ou clique: trocar destino">Geral</span><input id="chatIn" maxlength="200" placeholder="Digite e aperte Enter • Esc fecha" autocomplete="off"></div></div>
   <div id="menu">
@@ -5265,6 +5276,7 @@ function hitArea(c,r,mult,opts){for(const m of nearMonsters(c,r))playerHit(m,mul
 const rk=i=>(S.sk&&S.sk[i])||0;
 function skStat(i){return RULES.skStat(S.cls,i,rk(i));}
 function castSkill(i){
+ TUT.cast=performance.now();
  if(!S||P.dead)return;const C=CLASSES[S.cls];if(!C.skills[i])return;
  if(!rk(i)){toast(S.level>=C.skills[i].lv?'Aprenda esta habilidade em K':'Habilidade disponível no nível '+C.skills[i].lv);return;}
  if(P.barbUntil&&performance.now()<P.barbUntil){toast('😡 Metamorfose: só o ataque básico funciona');return;}
@@ -6335,6 +6347,57 @@ function updateSkillbar(now){
  for(const el of POTEL){const k=el.dataset.pot,pc=have(k)+have(k+'2');el.querySelector('.cnt').textContent=pc;el.style.opacity=pc?1:.45;}
  renderBuffs(now);
 }
+/* ===== v1.75: TUTORIAL GUIADO (primeiros minutos). S.tut = etapa atual (99 = concluído/pulado); o servidor dá as botas (etapa 6) e o prêmio final (9) uma vez só. ===== */
+const TUT={i:-1,at:0,cast:0,k0:0,sk0:0,p0:null,hl:null,wl:null,sent:-1};
+const tutNpc=id=>{const n=NPCS.find(q=>q.id===id);return n&&n.pos?n.pos:null;};
+const tutMon=t=>{let b=null,bd=1e9;for(const m of monsters)if(m.alive&&m.T&&m.T.id===t){const d=hyp(m.pos,P.pos);if(d<bd){bd=d;b=m;}}if(b)return b.pos;const z=ZONES.find(q=>q.t===t);return z?{x:z.x,y:0,z:z.z}:null;};
+const tutWin=w=>{const e=$('win-'+w);return !!e&&e.style.display==='block';};
+const tutSk=()=>(S.sk||[]).reduce((a,b)=>a+(b||0),0);
+const tutQ1=()=>S.quests&&S.quests.q1;
+const tutCap=()=>!!(dlg&&dlg.npc&&dlg.npc.id==='capitao');
+const TUTS=[
+ {t:'Bem-vindo a Valdoria!',d:()=>'Clique no chão para andar (no celular, toque na tela). Dê uma volta pela vila.',ok:()=>TUT.p0&&hyp(P.pos,TUT.p0)>3},
+ {t:'Fale com o Capitão',d:()=>'O <b>Capitão Aldric</b> tem uma missão para você. Siga a seta e clique nele.',w:()=>tutNpc('capitao'),ok:()=>tutCap()||!!tutQ1()},
+ {t:'Aceite a missão',d:()=>tutCap()?'Clique em <b>Aceitar</b> na missão "Caça às Gosmas".':'Clique de novo no <b>Capitão Aldric</b> e aceite a missão.',el:()=>document.querySelector('[data-act="qa"][data-id="q1"]'),w:()=>tutCap()?null:tutNpc('capitao'),ok:()=>!!tutQ1()},
+ {t:'Primeiro combate',d:()=>'Siga a seta até o <b>Pântano das Gosmas</b> e clique numa gosma para atacar. Seu personagem continua atacando até ela cair.',w:()=>tutMon('slime'),ok:()=>(S.kills||0)>TUT.k0},
+ {t:'Use uma habilidade',d:()=>'Perto de um monstro, aperte <b>1</b> no teclado (ou toque no primeiro botão da barra de habilidades, embaixo).',el:()=>document.querySelector('#skillbar [data-slot="0"]'),ok:()=>TUT.cast>TUT.at},
+ {t:'Abra a mochila',d:()=>'Clique no botão <b>🎒</b> do menu (ou aperte <b>I</b>).',el:()=>document.querySelector('#menu [data-win="inv"]'),ok:()=>tutWin('inv')||!!(S.eq&&S.eq.boots)},
+ {t:'Equipe um item',d:()=>tutWin('inv')?'Você ganhou <b>botas novas</b>! Clique nelas na mochila para equipar.':'Você ganhou <b>botas novas</b>! Abra a mochila (<b>🎒</b> ou <b>I</b>) e clique nelas para equipar.',
+  el:()=>{if(!tutWin('inv'))return document.querySelector('#menu [data-win="inv"]');const i=S.inv.findIndex(it=>it&&it.k==='eq'&&it.slot==='boots');if(i<0)return null;if(INVTAB!==Math.floor(i/IPG)){INVTAB=Math.floor(i/IPG);renderInv();}return document.querySelector('#invGrid [data-inv="'+i+'"]');},ok:()=>!!(S.eq&&S.eq.boots)},
+ {t:'Melhore uma habilidade',d:()=>tutWin('skill')?'Clique no botão de <b>melhorar</b> de uma habilidade para usar seu ponto.':'Você tem <b>pontos de habilidade</b>! Abra <b>Habilidades</b> (📖 ou tecla <b>K</b>).',
+  el:()=>tutWin('skill')?document.querySelector('#skillBody [data-act="skup"]:not([disabled])'):document.querySelector('#menu [data-win="skill"]'),ok:()=>tutSk()>TUT.sk0||!RULES.canSkillUp(S)},
+ {t:'Complete a missão',d:()=>{const q=tutQ1();const n=q?q.n:0;return n>=6?'Missão cumprida! Volte ao <b>Capitão Aldric</b> e clique em <b>Entregar</b>.':`Elimine as gosmas do pântano (<b>${n}/6</b>) e depois volte ao Capitão Aldric.`;},
+  el:()=>document.querySelector('[data-act="qt"][data-id="q1"]:not([disabled])'),w:()=>{const q=tutQ1();if(document.querySelector('[data-act="qt"][data-id="q1"]:not([disabled])'))return null;return q&&q.n>=6?tutNpc('capitao'):tutMon('slime');},ok:()=>!!(tutQ1()&&tutQ1().done)}];
+function tutSend(n){if(TUT.sent===n)return;TUT.sent=n;ACT({t:'tut',s:n});}
+function tutEnter(i){TUT.i=i;TUT.at=performance.now();TUT.k0=S.kills||0;TUT.sk0=tutSk();if(!TUT.p0)TUT.p0={x:P.pos.x,z:P.pos.z};
+ if(i>=TUTS.length){tutEnd(true);return;}if(i===7&&tutWin('inv'))setWin('inv',false);   // a mochila aberta cobre o botão de Habilidades
+ if(i>0){tutSend(i);try{AUD.sfx('questDone');}catch(e){}}}
+function tutEnd(win){if(win){tutSend(TUTS.length);logMsg('<span style="color:#ffd24a">🎓 Tutorial concluído! Agora é com você: siga as missões (📜, tecla Q) e explore Valdoria.</span>');}
+ TUT.i=-2;$('tutBox').style.display='none';$('tutArrow').style.display='none';$('tutEdge').style.display='none';if(TUT.hl){TUT.hl.classList.remove('tutHL');TUT.hl=null;}if(TUT.wl){TUT.wl.remove();TUT.wl=null;}}
+function tutTick(){
+ if(TUT.i===-2||!S)return;
+ if(TUT.i===-1){if(S.tut===undefined||S.tut>=99||S.gm)return;if(TOKEN&&!NET.room)return;tutEnter(Math.min(S.tut||0,TUTS.length));return;}
+ if(S.tut>=99){tutEnd(false);return;}
+ const T=TUTS[TUT.i];if(!T)return;
+ if(performance.now()-TUT.at>700&&T.ok()){tutEnter(TUT.i+1);return;}
+ const b=$('tutBox'),txt=T.d();b.style.display='block';
+ const h=`<div class="th"><span>🎓 Tutorial • ${TUT.i+1}/${TUTS.length}</span><button data-tut="skip">Pular tutorial</button></div><div class="tt">${T.t}</div><div>${txt}</div><div class="pb"><i style="width:${Math.round(TUT.i/TUTS.length*100)}%"></i></div>`;
+ if(b.__h!==h){b.innerHTML=h;b.__h=h;}
+ const el=T.el?T.el():null,vis=!!el&&el.offsetParent!==null;
+ if(TUT.hl&&TUT.hl!==el){TUT.hl.classList.remove('tutHL');TUT.hl=null;}
+ if(vis){if(TUT.hl!==el){el.classList.add('tutHL');TUT.hl=el;}const r=el.getBoundingClientRect(),a=$('tutArrow');a.style.display='block';a.style.left=(r.left+r.width/2)+'px';a.style.top=(r.top-4)+'px';}else $('tutArrow').style.display='none';
+}
+function tutFrame(){
+ if(TUT.i<0||!S)return;const T=TUTS[TUT.i];const w=T&&T.w?T.w():null;const e=$('tutEdge');
+ if(!w){if(TUT.wl)TUT.wl.style.display='none';e.style.display='none';return;}
+ if(!TUT.wl)TUT.wl=mkLabel('⬇','tutw');
+ place(TUT.wl,{x:w.x,y:0,z:w.z},4.5);
+ const s=scr(w.x,1.5,w.z),W=innerWidth,H=innerHeight,inside=s.x>40&&s.x<W-40&&s.y>90&&s.y<H-60;
+ if(inside){e.style.display='none';return;}
+ const c=scr(P.pos.x,1.2,P.pos.z),ang=Math.atan2(s.y-c.y,s.x-c.x),R=Math.min(W,H)*.36;
+ e.style.display='block';e.style.left=(W/2+Math.cos(ang)*Math.min(R*1.25,W/2-30)-17)+'px';e.style.top=(H/2+Math.sin(ang)*R-17)+'px';e.style.transform=`rotate(${ang}rad)`;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-tut="skip"]');if(!b)return;tutSend(99);tutEnd(false);toast('Tutorial pulado. Fale com o Capitão Aldric para começar as missões.');});
+setInterval(()=>{try{tutTick();}catch(err){console.warn('tut',err);}},250);
 const wildName=p=>{const r=regionOf(p);return r===5?'🌋 Terras Ardentes de Vulcânia':r===3?'❄️ Terras Geladas da Nevasca':r?'🏜️ Deserto de Solara':'Terras Selvagens';};
 function zoneName(){if(P.pos.x>1650)return '🏟️ Arena PK';if(P.pos.x>450)return DG.cur?DG.cur.icon+' '+DG.cur.name:'🏺 Cripta das Areias';{const t=townAt(P.pos);if(t)return t.name;}for(const z of ZONES)if(Math.hypot(P.pos.x-z.x,P.pos.z-z.z)<z.r+5)return z.name;return wildName(P.pos);}
 function updateHud(){
@@ -7291,7 +7354,7 @@ engine.runRenderLoop(()=>{
  if(PROF)PROF.t=now;
  if(PAUSED&&S){scene.render();return;}
  if(S){
-  updSnow();pf('neve');updatePlayer(dt,now);pf('jogador');updateMonsters(dt,now);pf('monstros');updateLife(dt,now);pf('vida');updateNet(dt,now);updBubbles(now);pkTick(now);pf('rede');updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);pf('outros');
+  updSnow();pf('neve');updatePlayer(dt,now);pf('jogador');updateMonsters(dt,now);pf('monstros');updateLife(dt,now);pf('vida');updateNet(dt,now);updBubbles(now);tutFrame();pkTick(now);pf('rede');updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);pf('outros');
   const t=camera.target;t.x+=(P.pos.x-t.x)*.15;t.y=.6;t.z+=(P.pos.z-t.z)*.15;
  }
  if(!S&&PV.on&&PV.o){if(!PV.drag)PV.rot+=dt*.55;PV.o.root.rotation.y=PV.rot;}
