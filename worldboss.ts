@@ -20,7 +20,7 @@ export const wbNow = () => {
   return t + shiftMs;
 };
 const LATE_MS = 8 * 60_000;                            // servidor ligado tarde: ainda nasce se a janela abriu há menos que isso
-const cx = (x: number) => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const cx = (x: number) => (x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
 const fmt = (n: number) => Math.round(n).toLocaleString("pt-BR");
 const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;

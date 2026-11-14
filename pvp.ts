@@ -8,8 +8,8 @@ const R: any = require("./rules.js");
 
 const PV = R.PVP, DU = R.DUEL, AR = R.ARENA;
 const now = () => Date.now();
-const cxOf = (x: number) => (x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);
-const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }];
+const cxOf = (x: number) => (x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }, { x: -600, z: 5 }];
 const toMail = (items: any[]) => items.map((it) => (it.k === "eq" ? { item: it, qty: 1 } : { item: { k: it.k, id: it.id }, qty: it.n }));
 
 type Pv = {

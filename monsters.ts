@@ -7,7 +7,7 @@ const MT: Record<string, any> = R.MT, ZONES: any[] = R.ZONES;
 const MAP = 80;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const ri = (a: number, b: number) => Math.floor(rnd(a, b + 1));
-const cxOf = (x: number) => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
+const cxOf = (x: number) => (x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
 const clampX = (x: number, ref: number) => { const c = cxOf(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
 const clampZ = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 const safe = (x: number, z: number) => R.inTown(x, z);

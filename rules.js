@@ -460,6 +460,78 @@ DUNGEONS.push({
   ]
 });
 
+/* ====================== v1.70 — VULCÂNIA (lava) — níveis 100 a 130 ======================
+   Região nova (centro em x = -600). Portal perto do Ninho do Dragão, na região da Vila Aurora (Nv 100+).
+   Os equipamentos que caem aqui têm o visual DRACÔNICO (comum/incomum) ou SOLAR (raro/épico — mais raro): OG.vset = 1. */
+const vcMob=(base,o)=>{const L=(o.lv[0]+o.lv[1])/2,k=L-100,B0=MT[base];return Object.assign({},B0,{model:B0.model||base,eva:B0.eva||0,boss:false,hp:Math.round(16000+k*750),atk:Math.round(950+k*21),def:Math.round(240+k*5.2),xp:Math.round(xpNeed(L)/55),gold:[Math.round(1500+k*60),Math.round(2400+k*90)],aggro:9,resp:15,leash:20,eq:.17,pot:.07,mats:{}},o);};
+const vcBoss=(base,o)=>{const L=o.lv[0],k=L-100,B0=MT[base];return Object.assign({},B0,{model:B0.model||base,boss:true,hp:Math.round(320000+k*16000),atk:Math.round(1500+k*24),def:Math.round(300+k*5),xp:Math.round(xpNeed(L)*.45),gold:[30000+k*1200,45000+k*1800],resp:400,leash:26,eq:1,pot:1,rb:3,matMax:3,mats:{}},o);};
+Object.assign(MT,{
+ vc_sal:vcMob('cobra',{n:'Salamandra de Magma',lv:[100,104],tint:'#ff7a2a',sc:1.15}),
+ vc_esc:vcMob('escorpiao',{n:'Escorpião de Obsidiana',lv:[105,109],tint:'#5a2a3a',sc:1.15}),
+ vc_gol:vcMob('golem',{n:'Golem de Lava',lv:[110,114],tint:'#ff5a1a',sc:.62,rng:2.6,atkInt:1700,spd:2.4,h:3.6}),
+ vc_ele:vcMob('elemental',{n:'Elemental de Fogo',lv:[115,119],tint:'#ff3a1a',rng:5.5,atkInt:1700}),
+ vc_dem:vcMob('demonio',{n:'Demônio Infernal',lv:[120,124],tint:'#b01a1a',sc:1.15}),
+ vc_cav:vcMob('esqueleto',{n:'Cavaleiro das Cinzas',lv:[125,129],tint:'#ff9a4a',sc:1.25}),
+ vc_colosso:vcBoss('colosso',{n:'Colosso de Magma',lv:[112,112],tint:'#ff6a2a',sc:1.25}),
+ vc_ifrit:vcBoss('demonio',{n:'Ifrit, Senhor das Chamas',lv:[122,122],tint:'#ffb02a',sc:1.9,rng:4,atkInt:1600,h:6}),
+ vc_dragao:vcBoss('dragao',{n:'Dragão Vulcânico Ancestral',lv:[130,130],tint:'#ff4a10',sc:1.15})
+});
+Object.assign(OG,{
+ vc_sal:{sf:'da Salamandra',col:'#ff8a3a',col2:'#a03a10',el:'fire',ft:'hood',vset:1},
+ vc_esc:{sf:'de Obsidiana',col:'#8a4a5a',col2:'#2a1218',el:'shadow',ft:'stinger',vset:1},
+ vc_gol:{sf:'do Golem de Lava',col:'#ff6a2a',col2:'#5a2410',el:'fire',ft:'rock',vset:1},
+ vc_ele:{sf:'da Chama Viva',col:'#ff4a2a',col2:'#8a1a0a',el:'fire',ft:'crystals',vset:1},
+ vc_dem:{sf:'do Inferno',col:'#d02a2a',col2:'#5a0a0a',el:'fire',ft:'horns',vset:1},
+ vc_cav:{sf:'das Cinzas',col:'#ffb06a',col2:'#6a4a3a',el:'fire',ft:'skull',vset:1},
+ vc_colosso:{sf:'do Colosso de Magma',col:'#ff7a3a',col2:'#4a1a0a',el:'fire',ft:'rock',vset:1},
+ vc_ifrit:{sf:'de Ifrit',col:'#ffc04a',col2:'#a04a0a',el:'fire',ft:'horns',vset:1},
+ vc_dragao:{sf:'do Dragão Ancestral',col:'#ff5a1a',col2:'#6a1408',el:'fire',ft:'spikes',vset:1}});
+/* ---- calabouços de Vulcânia: mesma planta e mecânicas do Santuário do Sol e do Abismo (já testadas), com monstros, nomes e nível próprios ---- */
+Object.assign(MT,{
+ /* Fornalha dos Titãs (Nv 104+) */
+ dg_fa:dg2m('vc_esc',[104,106],{h:1,a:1,d:1.1},{n:'Escorpião da Fornalha',tint:'#7a2a2a'}),
+ dg_fb:dg2m('vc_ele',[105,107],{h:.85,a:1.15,d:.8},{n:'Brasa Viva',tint:'#ff6a1a',rng:5.5,atkInt:1700}),
+ dg_fc:dg2m('vc_sal',[106,108],{h:.7,a:.9,d:.9},{n:'Salamandra Rubra',tint:'#ff3a2a',spd:3.9}),
+ dg_fd:dg2m('vc_gol',[107,109],{h:1.1,a:1.1,d:1.1},{n:'Sentinela de Basalto',tint:'#8a5a4a'}),
+ dg_fm1:dg2b('vc_colosso',108,{h:10,a:1.5,d:1.5,xd:8},{n:'Mestre da Forja',tint:'#ffa04a',sc:1.3,rng:3.8,atkInt:1800}),
+ dg_fm2:dg2b('vc_ifrit',110,{h:13,a:1.55,d:1.4,xd:6.5},{n:'Arauto das Brasas',tint:'#ff7a2a',sc:1.5,rng:5,atkInt:1700}),
+ dg_fboss:dg2b('vc_colosso',112,{h:24,a:1.9,d:1.7,xd:4.2},{n:'Vulcano, o Titã da Fornalha',tint:'#ff4a1a',sc:1.7,rng:5,atkInt:1700}),
+ /* Caldeira do Dragão Ancestral (Nv 118+) */
+ dg_ka:dg2m('vc_cav',[118,120],{h:1,a:1,d:1},{n:'Guarda de Cinzas',tint:'#ffb06a'}),
+ dg_kb:dg2m('vc_sal',[119,121],{h:.9,a:1.05,d:.9},{n:'Serpe de Lava',tint:'#ff5a1a',spd:3.8}),
+ dg_kc:dg2m('sacerdote',[120,122],{h:.85,a:1.2,d:.85},{n:'Cultista da Chama',tint:'#ff7a3a',rng:5.5,atkInt:1700}),
+ dg_kd:dg2m('vc_dem',[121,123],{h:1.6,a:1.15,d:1.3,x:1.4},{n:'Carrasco Infernal',tint:'#a01a1a'}),
+ dg_kclone:dg2m('vc_dem',[122,122],{h:.6,a:.9,d:.8,x:.5},{n:'Eco de Fogo',tint:'#ff8a3a',sc:1.0}),
+ dg_kcrys:dg2m('golem',[120,120],{h:2.2,a:0,d:1.2,x:1.2},{n:'Núcleo de Magma',model:'crystal',tint:'#ff5a1a',node:true,rng:0,atkInt:999999,spd:0,aggro:0,h:3.4}),
+ dg_km1:dg2b('vc_ifrit',122,{h:10,a:1.4,d:1.5,xd:8},{n:'Ifrit Acorrentado',tint:'#ffb02a',sc:1.6,rng:3.6,atkInt:1600}),
+ dg_km2:dg2b('vc_colosso',124,{h:12,a:1.5,d:1.4,xd:6.5},{n:'Devorador de Lava',tint:'#c03a1a',sc:1.4,rng:4.4,atkInt:1800}),
+ dg_kboss:dg2b('vc_dragao',128,{h:22,a:1.8,d:1.6,xd:4.2},{n:'Pyraxis, o Dragão Ancestral',tint:'#ff3a08',sc:1.25,rng:5.4,atkInt:1700})});
+OG.dg_fa=OG.vc_esc;OG.dg_fb=OG.vc_ele;OG.dg_fc=OG.vc_sal;OG.dg_fd=OG.vc_gol;OG.dg_fm1=OG.vc_colosso;OG.dg_fm2=OG.vc_ifrit;OG.dg_fboss={sf:'de Vulcano',col:'#ff5a2a',col2:'#5a1408',el:'fire',ft:'rock',vset:1};
+OG.dg_ka=OG.vc_cav;OG.dg_kb=OG.vc_sal;OG.dg_kc=OG.vc_ele;OG.dg_kd=OG.vc_dem;OG.dg_kclone=OG.vc_dem;OG.dg_kcrys=OG.vc_gol;OG.dg_km1=OG.vc_ifrit;OG.dg_km2=OG.vc_colosso;OG.dg_kboss={sf:'de Pyraxis',col:'#ff4a10',col2:'#6a1408',el:'fire',ft:'spikes',vset:1};
+for(const k in MT)MT[k].id=k;
+{ const clone=(src,map,o,texts)=>{let j=JSON.stringify(DUNGEONS.find(d=>d.id===src));for(const a in map)j=j.split('"'+a+'"').join('"'+map[a]+'"');const d=Object.assign(JSON.parse(j),o);d.start={x:d.cx,z:d.start.z};
+   d.stages.forEach((s,i)=>{const t=texts[i]||{};Object.assign(s,t);if(s.hz){s.hz.c='#ff7a2a';s.hz.name=t.hzn||'Erupção';}if(s.bad)s.bad.c='#ff7a2a';if(s.mech){for(const k of ['rain','big','nova'])if(s.mech[k]){s.mech[k].c='#ff6a1a';if(t[k])s.mech[k].name=t[k];}if(s.mech.shield&&t.sh)s.mech.shield.text=t.sh;}});
+   (o.objn||[]).forEach((n,i)=>{if(d.objs[i]&&n){d.objs[i].name=n;if(d.objs[i].col)d.objs[i].col=['#ff5a1a','#ffb02a','#ff8a3a','#d03a1a','#ffd24a','#ff6a1a'][i%6];}});delete d.objn;return d;};
+  DUNGEONS.push(clone('solar',{dg_sa:'dg_fa',dg_sb:'dg_fb',dg_sc:'dg_fc',dg_sd:'dg_fd',dg_sm1:'dg_fm1',dg_sm2:'dg_fm2',dg_sboss:'dg_fboss'},
+   {id:'fornalha',name:'Fornalha dos Titãs',icon:'⚒️',reg:-600,minLevel:104,price:1500000,time:2700,ilvl:[106,114],cx:750,theme:'lava',
+    desc:'A forja onde os titãs moldavam montanhas: 8 salas, runas de fogo que mudam de ordem, uma bigorna para defender e três guardiões incandescentes. Itens DRACÔNICOS e SOLARES com SLOTS caem aqui. Tempo limite: 45 min.',
+    titles:{1:'Aprendiz da Fornalha',10:'Ferreiro dos Titãs',50:'Senhor da Bigorna',100:'Lenda da Fornalha'},
+    cm:['dg_fm1','dg_fm2','dg_fboss'],mm:['dg_fa','dg_fb','dg_fc','dg_fd'],
+    objn:['Runa da Brasa','Runa da Chama','Runa da Cinza','Runa do Magma','Estela da Têmpera','Bigorna dos Titãs']},
+   [{text:'Elimine os Escorpiões da Fornalha'},{text:'Atravesse a Galeria de Fogo: elimine as Brasas Vivas',hzn:'Jatos de Lava'},{text:'Acenda as runas na ordem da estela'},{text:'Defenda a Bigorna dos Titãs'},
+    {text:'Fale com a Estátua do Ferreiro Antigo',name:'Estátua do Ferreiro Antigo',ask:'"Forasteiro... as sentinelas de basalto guardam o coração da forja. Destrua 14 delas e eu abrirei o portão."',wait:'"Ainda ouço o passo das sentinelas..."',fin:'"A forja reconhece sua força. O Mestre aguarda."'},
+    {text:'Derrote o Mestre da Forja',rain:'Fagulhas da Forja',big:'Martelada Sísmica'},{text:'Derrote o Arauto das Brasas',rain:'Chuva de Brasas',sh:'O Arauto se cobriu de chamas! Apague as Brasas Vivas para quebrar o escudo!'},
+    {text:'Derrote Vulcano, o Titã da Fornalha',rain:'Lanças de Magma',big:'Erupção Titânica',nova:'Nova Incandescente',sh:'Vulcano ergueu um escudo de magma! Apague as brasas!'}]));
+  DUNGEONS.push(clone('abismo',{dg_va:'dg_ka',dg_vb:'dg_kb',dg_vc:'dg_kc',dg_vd:'dg_kd',dg_vclone:'dg_kclone',dg_vcrys:'dg_kcrys',dg_vm1:'dg_km1',dg_vm2:'dg_km2',dg_vboss:'dg_kboss'},
+   {id:'caldeira',name:'Caldeira do Dragão Ancestral',icon:'🌋',reg:-600,minLevel:118,price:3500000,time:3300,ilvl:[120,130],cx:1050,theme:'magma',
+    desc:'O coração do vulcão: núcleos de magma para destruir, runas que mudam de ordem, uma fenda de lava para selar e três senhores do fogo — o último é o próprio Dragão Ancestral. Itens DRACÔNICOS e SOLARES com SLOTS caem aqui. Tempo limite: 55 min.',
+    titles:{1:'Explorador da Caldeira',10:'Domador de Chamas',50:'Ruína dos Dragões',100:'Lenda da Caldeira'},
+    cm:['dg_km1','dg_km2','dg_kboss'],mm:['dg_ka','dg_kb','dg_kc','dg_kd'],
+    objn:['Runa Rubra','Runa Âmbar','Runa Carmesim','Runa Dourada','Monólito das Chamas','Fenda de Lava']},
+   [{text:'Elimine os Guardas de Cinzas'},{text:'Cruze a Ponte de Basalto: elimine as Serpes de Lava',hzn:'Gêiser de Lava'},{text:'Destrua os Núcleos de Magma'},{text:'Ative as runas na ordem do monólito'},
+    {text:'Derrote o Ifrit Acorrentado',rain:'Correntes em Brasa',big:'Explosão Infernal'},{text:'Sele a Fenda de Lava'},
+    {text:'Derrote o Devorador de Lava',big:'Mar de Lava',sh:'O Devorador absorveu o calor do vulcão! Derrote os Cultistas para quebrar o escudo!'},
+    {text:'Derrote Pyraxis, o Dragão Ancestral',rain:'Meteoros',big:'Sopro Ancestral',nova:'Nova de Fogo'}])); }
 const ZONES=[
  {t:'slime',x:-24,z:-14,r:8,n:10,col:'#3f7a55',name:'Pântano das Gosmas'},
  {t:'lobo',x:18,z:-20,r:9,n:10,col:'#4b5a45',name:'Floresta dos Lobos'},
@@ -497,6 +569,18 @@ const ZONES=[
  {t:'wb_s',x:236,z:4,r:11,n:1,wb:1,col:'#6a4a1a',name:'☠️ Arena do Escorpião-Rei'},
  {t:'wb_n',x:-236,z:2,r:11,n:1,wb:1,col:'#3a5a8a',name:'☠️ Arena do Wendigo'}];
 
+ /* v1.70 — Vulcânia (centro em x=-600) */
+ZONES.push(
+ {t:'vc_sal',x:-572,z:-24,r:9,n:10,col:'#a03a10',name:'Charco de Magma'},
+ {t:'vc_esc',x:-630,z:-22,r:9,n:10,col:'#3a1a22',name:'Campos de Obsidiana'},
+ {t:'vc_gol',x:-634,z:22,r:10,n:9,col:'#7a2a10',name:'Pedreira Incandescente'},
+ {t:'vc_ele',x:-564,z:24,r:10,n:10,col:'#b02a10',name:'Fendas Ardentes'},
+ {t:'vc_dem',x:-602,z:-52,r:10,n:9,col:'#6a0a0a',name:'Portões do Inferno'},
+ {t:'vc_cav',x:-550,z:-48,r:10,n:9,col:'#6a4a3a',name:'Ruínas de Cinzas'},
+ {t:'vc_colosso',x:-652,z:-50,r:4,n:1,col:'#4a1a0a',name:'Cratera do Colosso'},
+ {t:'vc_ifrit',x:-656,z:38,r:4,n:1,col:'#a04a0a',name:'Trono de Ifrit'},
+ {t:'vc_dragao',x:-596,z:60,r:5,n:1,col:'#6a1408',name:'Caldeira do Dragão Ancestral'},
+ {t:'espantalho',x:-600,z:28,r:7,n:9,grid:4,col:'#8a5a4a',name:'🌾 Campo de Treino de Vulcânia'});
 const Q=(id,npc,t,d,tg,qty,rec,xp,gold,x)=>({id,npc,t,d,tg,qty,rec,rw:{xp:Math.max(20,Math.round(xpNeed(rec)*(qty===1?1:.025*qty+.05))),gold:Math.round(gold*.6),...(x||{})}});
 const E=(slot,ilvl,rar)=>({eq:{slot,ilvl,rar}});
 const QUESTS=[
@@ -572,6 +656,25 @@ const QUESTS=[
  Q('h1','hamid','Relíquias Perdidas','Os sacerdotes guardam relíquias. Elimine 25.','sacerdote',25,71,14500,42000,E('boots',72,3)),
  Q('h2','hamid','A Maldição Eterna','Quebre a maldição: derrote o Faraó Imortal outra vez.','farao',1,74,20000,60000,{...E('weapon',76,3),sp:2})];
 const QNAME={slime:'gosmas',lobo:'lobos',goblin:'goblins',esqueleto:'esqueletos',golem:'Golem Ancião',aranha:'aranhas',orc:'orcs',yeti:'yetis',demonio:'demônios',dragao:'Dragão Rubro',escorpiao:'escorpiões',mumia:'múmias',cobra:'najas',elemental:'elementais',chacal:'chacais',sacerdote:'sacerdotes',colosso:'Colosso de Obsidiana',farao:'Faraó Imortal',lobo_polar:'lobos polares',barbaro:'bárbaros',esq_gelo:'esqueletos congelados',aranha_cristal:'aranhas de cristal',yeti_anciao:'yetis anciões',espectro:'espectros glaciais',golem_gelo:'Golem de Gelo Eterno',yeti_rei:'Yeti Rei',dragao_gelo:'Dragão Glacial'};
+
+Object.assign(QNAME,{vc_sal:'salamandras de magma',vc_esc:'escorpiões de obsidiana',vc_gol:'golens de lava',vc_ele:'elementais de fogo',vc_dem:'demônios infernais',vc_cav:'cavaleiros das cinzas',vc_colosso:'Colosso de Magma',vc_ifrit:'Ifrit',vc_dragao:'Dragão Vulcânico Ancestral'});
+QUESTS.push(
+ Q('vcm1','vc_ignis','Terra em Chamas','Vulcânia precisa de heróis. Elimine 20 salamandras de magma.','vc_sal',20,100,0,300000,{sp:1}),
+ Q('vcm2','vc_ignis','Pedra que Anda','Os golens de lava ameaçam o acampamento. Elimine 25.','vc_gol',25,110,0,450000,{sp:1}),
+ Q('vcm3','vc_ignis','Portões Abertos','O inferno transborda. Elimine 30 demônios infernais.','vc_dem',30,120,0,650000,{sp:2}),
+ Q('vcp1','vc_pyra','Couro que Não Queima','Preciso de couro de salamandra. Elimine 30.','vc_sal',30,101,0,320000,E('boots',104,3)),
+ Q('vcp2','vc_pyra','O Charco Ferve','Elas não param de nascer. Elimine 45 salamandras.','vc_sal',45,103,0,380000,{sp:1}),
+ Q('vco1','vc_obsid','Ferrões Negros','Os escorpiões de obsidiana tomaram a mina. Elimine 30.','vc_esc',30,105,0,400000,E('ring',108,3)),
+ Q('vco2','vc_obsid','Mina Livre','Limpe os campos: elimine 45 escorpiões.','vc_esc',45,107,0,460000,{sp:1}),
+ Q('vcg1','vc_magnus','Amostras Vivas','Quero estudar os golens de lava. Elimine 30.','vc_gol',30,111,0,500000,E('armor',114,3)),
+ Q('vcg2','vc_magnus','O Colosso Desperta','A cratera treme: derrote o Colosso de Magma.','vc_colosso',1,112,0,700000,{...E('helmet',114,3),sp:2}),
+ Q('vcc1','vc_cinder','Chamas Rebeldes','Os elementais não ouvem mais os xamãs. Elimine 30.','vc_ele',30,115,0,560000,E('weapon',118,3)),
+ Q('vcc2','vc_cinder','Fendas Seladas','Acalme as fendas: elimine 45 elementais de fogo.','vc_ele',45,117,0,620000,{sp:1}),
+ Q('vcv1','vc_vulkar','Exorcismo','Mande-os de volta: elimine 30 demônios infernais.','vc_dem',30,121,0,680000,E('boots',124,3)),
+ Q('vcv2','vc_vulkar','O Senhor das Chamas','Ifrit comanda as hordas. Derrote-o no trono!','vc_ifrit',1,122,0,900000,{...E('armor',124,3),sp:2}),
+ Q('vca1','vc_ashen','Guerreiros Esquecidos','Dê descanso aos cavaleiros das cinzas. Elimine 30.','vc_cav',30,125,0,760000,E('ring',128,3)),
+ Q('vca2','vc_ashen','Fim da Última Batalha','Elimine 45 cavaleiros das cinzas.','vc_cav',45,127,0,840000,{sp:1}),
+ Q('vcd1','vc_drakon','O Dragão Ancestral','Nada vive na caldeira além dele. Derrote o Dragão Vulcânico Ancestral!','vc_dragao',1,130,0,1500000,{...E('weapon',130,3),sp:3}));
 
 const RECIPES=[
  {id:'pot_hp',n:'Poção de Vida ×3',icon:'🧪',d:'Cura rápida.',ing:{erva:3,gosma:1},gold:0,out:(cls)=>({k:'pot',id:'hp',n:3})},
@@ -675,6 +778,25 @@ const NPCS=[
  {id:'arena_s',name:'Mestra Kalila, da Arena',icon:'🏟️',x:311,z:1.5,col:'#c0792a',tabs:['arena'],greet:'Na areia da arena os fracos caem e os fortes viram lenda. Quer provar o seu valor?',hat:'#7a4a14',banner:'#e08a2a',arena:true},
  {id:'arena_n',name:'Mestre Bjarn, da Arena',icon:'🏟️',x:-289.5,z:2.5,col:'#5a78d0',tabs:['arena'],greet:'Aqui no frio a gente resolve as diferenças na arena. Sem rancor: quem cai, volta.',hat:'#2a3e6a',banner:'#5a8ad0',arena:true},
  {id:'arena_g',name:'Guardião da Arena',icon:'🏟️',x:1800,z:-31,col:'#a03a2a',tabs:['arena'],greet:'Quem cai precisa voltar à cidade para renascer, sem perder nada. Para sair, fale comigo (só fora de combate).',hat:'#5a1c14',banner:'#d4552a',arena:true}];
+/* v1.70 — Vulcânia: portal (perto do Ninho do Dragão), acampamento e portais dos dois calabouços */
+NPCS.push(
+ {id:'portal_e',name:'🌋 Portal de Vulcânia (Nv 100+)',icon:'🌋',x:-48,z:60,col:'#ff6a2a',tabs:[],greet:'',portal:{name:'Forte de Vulcânia',lvl:100,to:{x:-600,z:-7}}},
+ {id:'portal_f',name:'🌀 Portal para a Vila Aurora',icon:'🌀',x:-600,z:-11,col:'#ffcf6b',tabs:[],greet:'',portal:{name:'Vila Aurora (Ninho do Dragão)',lvl:0,to:{x:-48,z:56}}},
+ {id:'guarda_lava',name:'Vigia das Fornalhas',icon:'🗝️',x:-609,z:6,col:'#a04a2a',tabs:['dungeon'],greet:'Dois lugares queimam mais que o resto de Vulcânia: a Fornalha dos Titãs, a noroeste, e a Caldeira do Dragão Ancestral, a sudeste. Compre o ingresso comigo e fale com o portal.',hat:'#ff8a3a'},
+ {id:'dg_fornalha',name:'⚒️ Fornalha dos Titãs (Nv 104+)',icon:'⚒️',x:-668,z:-70,col:'#ff7a2a',tabs:[],greet:'',dungeon:'fornalha'},
+ {id:'dg_caldeira',name:'🌋 Caldeira do Dragão Ancestral (Nv 118+)',icon:'🌋',x:-532,z:68,col:'#ff3a10',tabs:[],greet:'',dungeon:'caldeira'},
+ {id:'bau4',name:'Baú do Aventureiro',icon:'📦',x:-594.5,z:5,col:'#8a6a43',tabs:['bau'],greet:'O mesmo baú das outras cidades: seus itens guardados aqui são compartilhados com todos os seus personagens.',chest:true},
+ {id:'ferreiro_lava',name:'Brakk, o Ferreiro da Lava',icon:'🔨',x:-608,z:-3,col:'#8a3a1a',tabs:['forja','aprimorar','quebrar'],greet:'Aqui a forja nunca apaga. Aprimoro equipamentos — e você também pode quebrar itens direto pela mochila.',hat:'#3a1a10',smith:true},
+ {id:'mercador4',name:'Ember, a Mercadora das Cinzas',icon:'💰',x:-592,z:-3,col:'#c05a2a',tabs:['comprar','vender'],greet:'Poções superiores e capas! No calor de Vulcânia, ninguém luta sem elas.',hat:'#ffd0a0',shop:'gelo'},
+ {id:'gemas_v',name:'Lapidário Rubro',icon:'💎',x:-605.5,z:5,col:'#d03a2a',tabs:['comprar','engastar'],greet:'Gemas nascidas do magma. Vendo pergaminhos, amplio engastes e encaixo gemas no seu equipamento.',hat:'#5a1010',shop:'scr',gem:true},
+ {id:'vc_ignis',name:'Comandante Ignis',icon:'🛡️',x:-606,z:-8,col:'#a8452a',tabs:['missoes'],greet:'O Forte de Vulcânia é a última linha antes do fogo. Cumpra as missões principais e mostre do que é feito.',hat:'#5a2418'},
+ {id:'vc_pyra',name:'Caçadora Pyra',icon:'🦎',x:-584,z:-14,col:'#c06a3a',tabs:SHOPT,greet:'Salamandra boa é salamandra fria. Cuidado: elas cospem magma.',hat:'#7a3a1a',camp:true,shop:'gelo'},
+ {id:'vc_obsid',name:'Mineiro Obsid',icon:'⛏️',x:-620,z:-13,col:'#5a4a5a',tabs:SHOPT,greet:'A obsidiana daqui corta até aço. Pena que os escorpiões pensam o mesmo.',hat:'#2a1a22',camp:true,shop:'gelo'},
+ {id:'vc_magnus',name:'Geólogo Magnus',icon:'🪨',x:-622,z:14,col:'#8a6a4a',tabs:SHOPT,greet:'Pedras que andam, pedras que queimam... este vulcão está acordando.',hat:'#5a4a3a',camp:true,shop:'gelo'},
+ {id:'vc_cinder',name:'Xamã Cinder',icon:'🔥',x:-578,z:13,col:'#d05a2a',tabs:SHOPT,greet:'O fogo tem voz. Ultimamente, ele só grita.',hat:'#8a1a0a',camp:true,shop:'gelo'},
+ {id:'vc_vulkar',name:'Exorcista Vulkar',icon:'✝️',x:-600,z:-34,col:'#6a3a5a',tabs:SHOPT,greet:'Os portões se abriram há três luas. Desde então, não dormimos.',hat:'#2a1a2a',camp:true,shop:'gelo'},
+ {id:'vc_ashen',name:'Cronista Ashen',icon:'📜',x:-562,z:-34,col:'#9a8a7a',tabs:SHOPT,greet:'Estes cavaleiros caíram defendendo um reino que já virou cinza.',hat:'#5a5048',camp:true,shop:'gelo'},
+ {id:'vc_drakon',name:'Sábio Drakon',icon:'🐉',x:-600,z:44,col:'#b0452a',tabs:SHOPT,greet:'O Dragão Ancestral dormiu por mil anos na caldeira. Ele acordou com fome.',hat:'#6a1408',camp:true,shop:'gelo'});
 // Cidades mais espaçadas: os NPCs que ficavam dentro das zonas seguras antigas (raio 11 / 13) são afastados do centro na mesma proporção
 // em que a zona segura cresceu (Aurora 11→15; Solara e Nevasca 13→17,5). NPCs de fora (missões, portais de calabouço) não mudam.
 { const OLD = [{ x: 0, r: 11, k: 15 / 11 }, { x: 300, r: 13, k: 17.5 / 13 }, { x: -300, r: 13, k: 17.5 / 13 }];
@@ -685,7 +807,7 @@ const NPCS=[
 /* ====================== FUNÇÕES DE REGRA ====================== */
 const MON_TOWN_R = 15;
 R.TOWN_R = MON_TOWN_R;
-R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
+R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }, { x: -600, z: 0, r: 15 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
@@ -729,6 +851,10 @@ function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   else if (slot === 'bracelet') { it.name = tier > 6 ? XN.bracelet[tier - 7] : BRN[tier]; it.atk = Math.round((1 + ilvl * .45) * mult * j()); it.def = Math.round((1 + ilvl * .3) * mult * j()); it.icon = '📿'; }
   else if (slot === 'earring') { it.name = tier > 6 ? XN.earring[tier - 7] : ERN[tier]; it.hp = Math.round(ilvl * 5 * mult); it.def = Math.round((1 + ilvl * .25) * mult * j()); it.icon = '🧿'; }
   else { it.name = tier > 6 ? XN.ring[tier - 7] : RN[tier]; it.atk = Math.round((1 + ilvl * .6) * mult * j()); it.hp = Math.round(ilvl * 4 * mult); it.icon = '💍'; }
+  if (mo && OG[mo] && OG[mo].vset) {   // v1.70 — Vulcânia: Dracônico (comum/incomum) ou Solar (raro/épico), no lugar do nome por nível
+    const sol = rar >= 2, L = { weapon: [WN[it.cls] || [], (XN.weapon[it.cls] || [])], shield: [SHN, XN.shield], armor: [AN, XN.armor], helmet: [HN, XN.helmet], boots: [BN, XN.boots], bracelet: [BRN, XN.bracelet], earring: [ERN, XN.earring], ring: [RN, XN.ring] }[slot];
+    if (L) it.name = (sol ? L[1][0] : L[0][6]) || it.name;
+  }
   if (mo && OG[mo]) { it.mo = mo; it.name += ' ' + OG[mo].sf; }
   if (rar >= 2) { if (!it.mo) it.name += ' ' + pick(SUF); const st = ['str', 'agi', 'int', 'vit']; for (let n = 0; n < rar - 1; n++) { const s = pick(st); it.bon[s] = (it.bon[s] || 0) + Math.max(1, Math.round(ilvl / 3)); } }
   if (rar === 3) it.name = '★ ' + it.name;
@@ -1053,11 +1179,16 @@ const TIERC2 = ['#7d6f52', '#553314', '#4d5562', '#234a7a', '#0f6a5a', '#1a1858'
 function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar + '|' + (it.ilvl || 0)); } return o.join(';'); }
 /** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
 function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
+const UP_DROP = { ferro: .15, essencia: .04 };   // chance por monstro comum (chefes: ferro garantido, essência 60%)
 function rollLoot(T, mlvl, cls, luck) {
   luck = luck || 0;
   const out = [];
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
-  for (const id in T.mats) if (Math.random() < T.mats[id]) out.push({ k: 'mat', id, n: ri(1, T.matMax || 2) });
+  /* v1.70: materiais de CRIAÇÃO não caem mais dos monstros — vêm de QUEBRAR equipamentos. Todo monstro pode deixar só os de APRIMORAMENTO (Minério de Ferro e Essência Arcana), com chance menor que antes. */
+  if (!T.chest && !T.dummy) {
+    if (Math.random() < (T.boss ? 1 : UP_DROP.ferro)) out.push({ k: 'mat', id: 'ferro', n: T.boss ? ri(3, 6) : ri(1, 2) });
+    if (Math.random() < (T.boss ? .6 : UP_DROP.essencia)) out.push({ k: 'mat', id: 'essencia', n: T.boss ? ri(1, 3) : 1 });
+  }
   if (Math.random() < T.eq * (1 + luck / 100) * (T.dg ? 1.3 : 1)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + (T.dg ? .35 : 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .022 * lk ? 2 : Math.random() < .11 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(T.dg ? 1 : 0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.dg) dgAttrBoost(it); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
   if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
   if (T.boss && !T.chest && Math.random() < (T.dg ? .035 : .02) * (1 + luck / 100)) out.push(rollScroll(cls, mlvl));   // pergaminho de opção: chance mínima em chefes
@@ -1102,9 +1233,9 @@ const dayKey = t => Math.floor((t - RESET_UTC_MS) / 86400e3);
 const weekKey = t => Math.floor((dayKey(t) + 3) / 7);                  // a semana começa na segunda-feira, 04:00
 const dayEnd = t => (dayKey(t) + 1) * 86400e3 + RESET_UTC_MS;
 const weekEnd = t => ((weekKey(t) + 1) * 7 - 3) * 86400e3 + RESET_UTC_MS;
-const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca' };
-const regOf = x => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
-const bandReg = L => (L < 50 ? 0 : L < 75 ? 300 : -300);
+const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca', '-600': 'Vulcânia' };
+const regOf = x => (x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const bandReg = L => (L < 50 ? 0 : L < 75 ? 300 : L < 100 ? -300 : -600);
 const dwGold = L => Math.round((4000 + L * L * 45) / 100) * 100;      // ouro-base por nível (nível 100 ≈ 454 mil)
 const DWT = {   // q(L, semanal) = quantidade • rw = peso da recompensa • min = nível mínimo
   kill:  { i: '⚔️', t: 'Caçada', d: n => `Derrote ${n} monstros em qualquer lugar.`, ev: 'kill', q: (L, w) => w ? 220 + Math.round(L * 3) : 24 + Math.round(L * .36), rw: 1 },
@@ -1290,8 +1421,10 @@ function cleanBar(b) {
   for (let i = 0; i < 16; i++) { const v = Math.floor(b[i]); if (v >= 0 && v < 9 && !seen.has(v)) { o[i] = v; seen.add(v); } }
   return o;
 }
+/* v1.70: tamanho da mochila e do baú (cada um aparece em 2 abas) */
+const INV_SIZE = 48, STASH_SIZE = 80;
 function newChar(cls, name) {
-  const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(24).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
+  const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(INV_SIZE).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
   c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; } c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
@@ -1310,7 +1443,7 @@ function gmChar(cls, old) {
   if (cls === 'cavaleiro') c.eq.shield = mk('shield');
   for (const k in c.eq) c.eq[k] = cleanItem(c.eq[k]);
   c.tb = 1; c.title = 'bright';
-  c.inv = Array(24).fill(null); c.inv[0] = { k: 'pot', id: 'hp', n: 99 }; c.inv[1] = { k: 'pot', id: 'mp', n: 99 };
+  c.inv = Array(INV_SIZE).fill(null); c.inv[0] = { k: 'pot', id: 'hp', n: 99 }; c.inv[1] = { k: 'pot', id: 'mp', n: 99 };
   c.bar = defBar(); c.v = R.VERSION;
   if (cls === 'tanque') { c.tkv = 1; c.sk[7] = 0; c.bar = [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1]; }
   if (cls === 'pierrot') { c.prv = 1; c.sk[7] = 0; c.bar = [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1]; }
@@ -1372,7 +1505,7 @@ function migrate(c) {
     c.sp = (c.sp || 0) + rf; c.sk[7] = 0; if (Array.isArray(c.bar)) c.bar = c.bar.map(v => v === 7 ? -1 : v);
   }
   c.bar = cleanBar(c.bar);
-  c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
+  c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < INV_SIZE) c.inv.push(null);   // v1.70: mochila dobrada (48 espaços, em 2 abas)
   for (const k of ['dq', 'wq']) { const b = c[k]; if (!(b && typeof b === 'object' && Array.isArray(b.q))) delete c[k]; else { b.k = Math.floor(b.k) || 0; b.pts = Math.max(0, Math.floor(b.pts) || 0); b.ch = [0, 1, 2].map(i => b.ch && b.ch[i] ? 1 : 0);
     b.q = b.q.slice(0, 8).filter(q => q && DWT[q.id]).map(q => ({ id: q.id, n: Math.max(0, Math.floor(q.n) || 0), need: Math.max(1, Math.floor(q.need) || 1), done: q.done ? 1 : 0, got: q.got ? 1 : 0, xp: Math.max(0, Math.floor(q.xp) || 0), gold: Math.max(0, Math.floor(q.gold) || 0), ...(q.reg !== undefined ? { reg: Number(q.reg) || 0 } : {}) })); } }
   c.id = c.id || ('c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); c.name = typeof c.name === 'string' ? c.name : CLASSES[c.cls].n;   // nome vazio = o jogador ainda vai escolher (não preencher)
@@ -1403,7 +1536,7 @@ function migrate(c) {
   purgeExp(c);
   return c;
 }
-function migrateStash(st) { st = Array.isArray(st) ? st : []; st = st.slice(0, 40).map(cleanItem); while (st.length < 40) st.push(null); return st; }
+function migrateStash(st) { st = Array.isArray(st) ? st : []; st = st.slice(0, STASH_SIZE).map(cleanItem); while (st.length < STASH_SIZE) st.push(null); return st; }   // v1.70: baú dobrado (80 espaços, em 2 abas)
 
 
 /* ====================== EVENTO: BÔNUS DE BOAS-VINDAS, INAUGURAÇÃO E NATAL ======================
@@ -1456,6 +1589,10 @@ function breakReturn(it) {
   const acc = {}, add = (id, n) => { if (n > 0 && MATS[id]) acc[id] = (acc[id] || 0) + n; };
   const rc = brkRecipe(it);
   if (rc) { for (const id in rc.ing) add(id, rc.ing[id]); }
+  else if (it.mo && MT[it.mo] && Object.keys(MT[it.mo].mats || {}).some(id => id !== 'ferro' && id !== 'essencia' && MATS[id])) {
+    /* v1.70: os materiais de criação que antes caíam do monstro agora saem ao quebrar os equipamentos que ele deixa (mais raridade = mais material) */
+    Object.keys(MT[it.mo].mats).filter(id => id !== 'ferro' && id !== 'essencia' && MATS[id]).forEach((id, i) => add(id, i ? 1 + it.rar : 2 + it.rar * 2));
+  }
   else {
     const b = BRK_BR.find(x => it.ilvl < x.to), base = (it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * .5 * .38;
     add(b.m[0], Math.max(1, Math.round(base * .6 / MATS[b.m[0]].v)));
@@ -1483,7 +1620,7 @@ function act(sess, m, ctx) {
   const DW = ev => { const o = dwEv(c, ev); if (o.length) out.push(...o); };
 
   if (t === 'break') {
-    if (!npcFor('quebrar')) return fail('Procure um ferreiro para quebrar itens.');
+    /* v1.70: quebrar não precisa mais de ferreiro — pode ser feito direto pela mochila */
     const ii = Array.isArray(m.inv) ? [...new Set(m.inv)].filter(i => intIn(i, 0, c.inv.length)) : [];
     const si = Array.isArray(m.st) ? [...new Set(m.st)].filter(i => intIn(i, 0, stash.length)) : [];
     const inv2 = c.inv.map(x => x && { ...x }), ret = [], rm = [];
@@ -1789,7 +1926,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);
