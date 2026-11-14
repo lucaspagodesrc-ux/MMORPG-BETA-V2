@@ -20,6 +20,10 @@
   .lbl .pb{width:70px;height:6px;background:#3a2830;border:1px solid #000;border-radius:5px;margin:2px auto 0;overflow:hidden}
   .lbl .pb i{display:block;height:100%;background:#e45b65;width:100%}
   .lbl .pn span{color:#ffd27a;font-weight:600}
+.lbl.bub{white-space:normal;width:max-content;max-width:230px;margin-top:-44px;padding:5px 9px;background:rgba(255,253,244,.96);color:#2a2230;border:2px solid #3a2a20;border-radius:12px;font-size:12.5px;font-weight:600;line-height:1.3;text-align:center;text-shadow:none;box-shadow:0 2px 8px rgba(0,0,0,.45);overflow-wrap:anywhere;transition:opacity .35s;pointer-events:none}
+  .lbl.bub::after{content:'';position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border:7px solid transparent;border-top-color:#3a2a20;border-bottom:0}
+  .lbl.bub::before{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(255,253,244,.96);border-bottom:0;z-index:1}
+  .lbl.bub.pt{border-color:#2a7a9a}.lbl.bub.pt::after{border-top-color:#2a7a9a}
   .lbl.drop{font-size:11px;padding:1px 5px;background:rgba(0,0,0,.55);border-radius:4px}
   .fl{position:absolute;left:0;top:0;font-weight:800;font-size:15px;text-shadow:0 1px 3px #000,0 0 5px #000;will-change:transform}
   .fl.big{font-size:22px}
@@ -6599,6 +6603,19 @@ document.addEventListener('mousemove',e=>{
 /* =================== SAVE / START =================== */
 const NEWSTASH=()=>Array(RULES.STASH_SIZE).fill(null);
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* emojis por atalho no chat: :) :D ;) :( :P :O <3 xD :'( 8) >:( :| :* o/ (y) (n) ^^ :3 */
+const EMO=[[">:(",'😠'],[":'(",'😢'],[':)','🙂'],[':-)','🙂'],[':D','😄'],[':-D','😄'],[';)','😉'],[';-)','😉'],[':(','🙁'],[':-(','🙁'],[':P','😛'],[':p','😛'],[':O','😮'],[':o','😮'],['<3','❤️'],['</3','💔'],['xD','😆'],['XD','😆'],['8)','😎'],['B)','😎'],[':|','😐'],[':*','😘'],['o/','👋'],['\\o/','🙌'],['(y)','👍'],['(Y)','👍'],['(n)','👎'],['(N)','👎'],['^^','😊'],['^_^','😊'],[':3','😺'],[':v','😋'],['zzz','😴'],['T_T','😭'],['-_-','😑'],[':s','😕'],[':S','😕'],['(h)','😇'],['(6)','😈'],['(k)','💋'],['(f)','🌹'],['(*)','⭐'],['(fogo)','🔥'],['(ok)','👌'],['(gg)','🏆'],['(kkk)','🤣']];
+const EMO_RE=new RegExp('(^|\\s)('+EMO.map(e=>e[0]).sort((a,b)=>b.length-a.length).map(t=>t.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&')).join('|')+')(?=\\s|$)','g'),EMO_M=new Map(EMO);
+const emo=t=>String(t).replace(EMO_RE,(m,a,b)=>a+(EMO_M.get(b)||b)).replace(EMO_RE,(m,a,b)=>a+(EMO_M.get(b)||b));
+/* balão de fala sobre a cabeça de quem falou (chat geral e de grupo); some sozinho */
+const BUB=new Map();
+function bubSay(name,text,party){if(!name||!text)return;let b=BUB.get(name);if(!b){b={el:mkLabel('','bub')};BUB.set(name,b);}
+ b.el.innerHTML=esc(emo(text));b.el.classList.toggle('pt',!!party);b.el.style.opacity=1;b.until=performance.now()+Math.min(9000,3500+String(text).length*70);}
+function updBubbles(now){if(!BUB.size)return;
+ for(const [name,b] of BUB){if(now>b.until){b.el.remove();BUB.delete(name);continue;}
+  let pos=null,dead=false;if(S&&name===S.name){pos=P.pos;dead=P.dead;}else if(NET.others)for(const o of NET.others.values())if(o.name===name){if(o.root&&o.d<30){pos=o.root.position;dead=o.dead;}break;}
+  if(!pos||dead){b.el.style.display='none';continue;}
+  place(b.el,pos,3.0);b.el.style.opacity=b.until-now<400?Math.max(0,(b.until-now)/400):1;}}
 function save(){if(!ACC||TOKEN)return;try{if(S&&P.root)S.pos={x:P.pos.x,z:P.pos.z};localStorage.setItem(SAVE_KEY,JSON.stringify(ACC));}catch(e){}}   // online o servidor é quem salva
 const migrate=c=>RULES.migrate(c);
 const dropDefName=c=>{if(!c.nmOk&&!c.gm&&/^(Guerreiro|Arqueiro|Mago|Assassino|Cavaleiro|Cavaleiro Pesado|Tanque|Pierrot) \d+$/.test(c.name||''))c.name='';return c;};
@@ -6719,7 +6736,7 @@ async function netJoin(){
   const cl=new Colyseus.Client((SRV||location.origin).replace(/^http/,'ws'));
   const room=await cl.joinOrCreate('world',{token:TOKEN,charId:S.id,x:P.pos.x,z:P.pos.z});
   NET.room=room;NET.lv=S.level;
-  room.onMessage('chat',m=>{if(m.kind==='w'&&m.from){const nm=String(m.from).replace(/^para\s+/,'');chatContact(nm);}const c=m.kind==='w'?'#e08cff':m.kind==='p'?'#7fe0ff':m.kind==='gd'?(m.sys?'#7fbf8a':'#8be07f'):m.kind==='sys'?'#9fb0c2':m.kind==='wb'?'#ffb347':'#cbd6e2';(m.kind==='wb'?logMsg:chatMsg)(`<span style="color:${c}${m.kind==='wb'?';font-weight:600':''}">${m.kind==='w'?'[Sussurro] ':m.kind==='p'?'[Grupo] ':m.kind==='gd'?'[Guilda] ':''}${m.from?'<b>'+esc(m.from)+'</b>: ':''}${esc(m.text)}</span>`);});
+  room.onMessage('chat',m=>{if(m.kind==='w'&&m.from){const nm=String(m.from).replace(/^para\s+/,'');chatContact(nm);}const c=m.kind==='w'?'#e08cff':m.kind==='p'?'#7fe0ff':m.kind==='gd'?(m.sys?'#7fbf8a':'#8be07f'):m.kind==='sys'?'#9fb0c2':m.kind==='wb'?'#ffb347':'#cbd6e2';(m.kind==='wb'?logMsg:chatMsg)(`<span style="color:${c}${m.kind==='wb'?';font-weight:600':''}">${m.kind==='w'?'[Sussurro] ':m.kind==='p'?'[Grupo] ':m.kind==='gd'?'[Guilda] ':''}${m.from?'<b>'+esc(m.from)+'</b>: ':''}${esc(m.kind==='sys'?m.text:emo(m.text))}</span>`);if((m.kind==='g'||m.kind==='p')&&m.from)bubSay(m.from,m.text,m.kind==='p');});
   room.onMessage('correct',m=>{if(hyp(P.pos,m)>3){P.pos.x=m.x;P.pos.z=m.z;P.moveTo=null;}});
   room.onMessage('sync',m=>{
    if(!m||!m.c)return;S=m.c;if(ACC){const i=ACC.chars.findIndex(c=>c.id===S.id);if(i>=0)ACC.chars[i]=S;ACC.stash=m.st||ACC.stash;}
@@ -7272,7 +7289,7 @@ engine.runRenderLoop(()=>{
  if(PROF)PROF.t=now;
  if(PAUSED&&S){scene.render();return;}
  if(S){
-  updSnow();pf('neve');updatePlayer(dt,now);pf('jogador');updateMonsters(dt,now);pf('monstros');updateLife(dt,now);pf('vida');updateNet(dt,now);pkTick(now);pf('rede');updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);pf('outros');
+  updSnow();pf('neve');updatePlayer(dt,now);pf('jogador');updateMonsters(dt,now);pf('monstros');updateLife(dt,now);pf('vida');updateNet(dt,now);updBubbles(now);pkTick(now);pf('rede');updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);pf('outros');
   const t=camera.target;t.x+=(P.pos.x-t.x)*.15;t.y=.6;t.z+=(P.pos.z-t.z)*.15;
  }
  if(!S&&PV.on&&PV.o){if(!PV.drag)PV.rot+=dt*.55;PV.o.root.rotation.y=PV.rot;}
