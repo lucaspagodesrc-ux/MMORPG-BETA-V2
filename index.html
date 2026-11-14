@@ -31,7 +31,8 @@
   .tutHL{outline:3px solid #ffd24a !important;outline-offset:2px;box-shadow:0 0 14px #ffd24a !important;animation:tutP 1s ease-in-out infinite alternate}
   @keyframes tutP{from{outline-color:#ffd24a}to{outline-color:#fff3b0}}
   
-.lbl.bub{white-space:normal;width:max-content;max-width:230px;margin-top:-44px;padding:5px 9px;background:rgba(255,253,244,.96);color:#2a2230;border:2px solid #3a2a20;border-radius:12px;font-size:12.5px;font-weight:600;line-height:1.3;text-align:center;text-shadow:none;box-shadow:0 2px 8px rgba(0,0,0,.45);overflow-wrap:anywhere;transition:opacity .35s;pointer-events:none}
+.qdoneBar{display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px;padding:7px 10px;border-radius:8px;background:rgba(111,220,127,.08);border:1px solid rgba(111,220,127,.3);color:#9fe0a8;font-weight:700;font-size:13px;cursor:pointer;user-select:none}.qdoneBar:hover{background:rgba(111,220,127,.16)}.qdoneBar span{font-size:12px;color:#cfe8d2}
+  .lbl.bub{white-space:normal;width:max-content;max-width:230px;margin-top:-44px;padding:5px 9px;background:rgba(255,253,244,.96);color:#2a2230;border:2px solid #3a2a20;border-radius:12px;font-size:12.5px;font-weight:600;line-height:1.3;text-align:center;text-shadow:none;box-shadow:0 2px 8px rgba(0,0,0,.45);overflow-wrap:anywhere;transition:opacity .35s;pointer-events:none}
   .lbl.bub::after{content:'';position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border:7px solid transparent;border-top-color:#3a2a20;border-bottom:0}
   .lbl.bub::before{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(255,253,244,.96);border-bottom:0;z-index:1}
   .lbl.bub.pt{border-color:#2a7a9a}.lbl.bub.pt::after{border-top-color:#2a7a9a}
@@ -6209,6 +6210,7 @@ function usePortal(n){
  ring(g.to.x,g.to.z,2.8,'#b58cff',800);AUD.sfx('teleport');toast('🌀 '+g.name);logMsg(`<span style="color:#c9a8ff">🌀 Você atravessou o portal para <b>${g.name}</b>.</span>`);
  if(NET.room)NET.room.send('portal',{id:n.id});save();
 }
+var QDONE_OPEN=(()=>{try{return localStorage.getItem('qdoneOpen')==='1';}catch(e){return false;}})();   // missões concluídas: minimizadas por padrão
 function renderDialog(){
  if(!dlg)return;const n=dlg.npc;
  if(dlg.tab==='guilda'&&document.activeElement&&/^gd/.test(document.activeElement.id||''))return;   // digitando o nome da guilda: não recria os campos
@@ -6283,17 +6285,21 @@ function renderDialog(){
   const rows=S.inv.map((it,i)=>it?`<div class="row2${SELL.has(i)?' sel':''}" data-act="selsell" data-id="${i}"><div class="ri" data-inv="${i}" style="border-color:${col(it)}">${ico(it)}</div><div class="rt"><b style="color:${col(it)==='#455568'?'#fff':col(it)}">${nm(it)}${it.n>1?' ×'+it.n:''}</b></div><div class="rb"><div class="ok">💰 ${fmt(sellPrice(it))}</div><button data-act="sell" data-id="${i}">Vender</button>${it.n>1?`<button data-act="sellall" data-id="${i}">Tudo</button>`:''}</div></div>`:'').join('');
   h+='<p class="muted">Clique nas linhas (ou nos itens da mochila) para selecionar vários e vender de uma vez.</p>'+(rows||'<p class="muted">Mochila vazia.</p>')+sellBarHtml();
  }else{
-  h+=npcQuests(n.id).map((q,i)=>{if(!questUnlocked(q))return'';const st=S.quests[q.id];
+  const qDone=npcQuests(n.id).filter(q=>S.quests[q.id]&&S.quests[q.id].done);   // v1.76: concluídas ficam num grupo que pode ser minimizado
+  h+=npcQuests(n.id).map((q,i)=>{if(!questUnlocked(q))return'';const st=S.quests[q.id];if(st&&st.done)return'';
    if(!st&&!questLvOk(q))return `<div class="row2 dim"><div class="ri">🔒</div><div class="rt"><b>${q.t}</b><small>Próxima missão: disponível a partir do nível ${q.need}.</small></div></div>`;
    if(st&&st.done)return `<div class="row2 dim"><div class="ri">✅</div><div class="rt"><b>${q.t}</b><small>Concluída</small></div></div>`;
    if(!st)return `<div class="row2"><div class="ri">❗</div><div class="rt"><b>${q.t}</b> <small style="display:inline">(Nv ${q.rec}+)</small><small>${q.d}</small><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qa" data-id="${q.id}">Aceitar</button></div></div>`;
    const ready=st.n>=q.qty;
    return `<div class="row2"><div class="ri">${ready?'❓':'📜'}</div><div class="rt"><b>${q.t}</b><small>${q.d}</small><div class="ing ${ready?'ok':''}">${st.n}/${q.qty} ${QNAME[q.tg]}</div><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qt" data-id="${q.id}" ${ready?'':'disabled'}>Entregar</button></div></div>`;}).join('');
+  if(qDone.length){h+=`<div class="qdoneBar" data-act="qdone">✅ Missões concluídas (${qDone.length}) <span>${QDONE_OPEN?'▾ Ocultar':'▸ Mostrar'}</span></div>`;
+   if(QDONE_OPEN)h+=qDone.map(q=>`<div class="row2 dim"><div class="ri">✅</div><div class="rt"><b>${q.t}</b><small>Concluída</small></div></div>`).join('');}
  }
  $('dialog').innerHTML=h+'</div>';
 }
 $('dialog').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled||!S)return;const a=b.dataset.act,id=b.dataset.id;
+ if(a==='qdone'){QDONE_OPEN=!QDONE_OPEN;try{localStorage.setItem('qdoneOpen',QDONE_OPEN?'1':'0');}catch(e){}renderDialog();return;}
  if(a==='close')return closeDialog();
  if(a==='tab'){dlg.tab=id;if(id==='vender'||id==='quebrar')setWin('inv',true);BRK.clear();return renderDialog();}
  const npc=dlg.npc.id;
