@@ -1277,13 +1277,15 @@ const DCH = [{ n: 'Bronze', need: 2, g: 2 }, { n: 'Prata', need: 4, g: 4 }, { n:
 const WCH = [{ n: 'Bronze', need: 10, g: 14 }, { n: 'Prata', need: 22, g: 30 }, { n: 'Ouro', need: 36, g: 60 }];      // baú da semana: pontos (diária = 1, semanal = 4)
 const dwHash = (a, b, c) => { let h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 2147483647)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return (h ^ (h >>> 16)) >>> 0; };
 const dwRng = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+/** v1.74: XP das diárias/semanais — diária ≈ meio nível, semanal ≈ 1,5 nível (do nível ATUAL; o peso da missão vale no máx. ×1,3) */
+const dwXp = (L, w, id) => Math.max(10, Math.round(xpNeed(Math.max(1, L | 0)) * (w ? 1.5 : .5) * Math.min(1.3, (DWT[id] && DWT[id].rw) || 1)));
 function dwGen(c, w, key) {
   const L = Math.max(1, c.level | 0), rng = dwRng(dwHash(key, Math.floor(L / 25), w ? 7 : 3));
   const pool = Object.keys(DWT).filter(k => k !== 'kill' && L >= (DWT[k].min || 0)), ids = ['kill'];
   for (let n = w ? 3 : 4; n > 0 && pool.length; n--) ids.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
   const q = ids.map(id => {
     const T = DWT[id], need = Math.max(1, T.q(L, w)), o = { id, n: 0, need, done: 0, got: 0,
-      xp: Math.max(10, Math.round(xpNeed(L) * (w ? .2 : .025) * T.rw)), gold: Math.round(dwGold(L) * (w ? 8 : 1) * T.rw / 100) * 100 };
+      xp: dwXp(L, w, id), gold: Math.round(dwGold(L) * (w ? 8 : 1) * T.rw / 100) * 100 };
     if (id === 'reg') o.reg = bandReg(L);
     return o; });
   return { k: key, q, pts: 0, ch: [0, 0, 0] };
@@ -1293,6 +1295,7 @@ function dwSync(c, now) {
   now = now || Date.now(); const dk = dayKey(now), wk = weekKey(now);
   if (!c.dq || c.dq.k !== dk) c.dq = dwGen(c, 0, dk);
   if (!c.wq || c.wq.k !== wk) c.wq = dwGen(c, 1, wk);
+  for (const w of [0, 1]) for (const q of (w ? c.wq : c.dq).q) if (!q.got) q.xp = Math.max(q.xp || 0, dwXp(c.level, w, q.id));   // missões antigas / subiu de nível: XP acompanha o nível atual
   return c;
 }
 /** um evento do jogo (abate, calabouço, aprimorar...) avança as missões do dia e da semana */
