@@ -28,7 +28,7 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).
 type Part = { acc: number; sid: string; name: string; cls: string; lv: number; dmg: number };
 type Boss = {
   d: any; s: Sim; live: boolean; slot: number; startedAt: number; endsAt: number; parts: Map<number, Part>; pool: number; floor: number;
-  rainAt: number; aggroAt: number; rankAt: number; big: Set<number>; enraged: boolean; done: number; warned: Set<string>; kills: number;
+  rainAt: number; aggroAt: number; rankAt: number; big: Set<number>; enraged: boolean; done: number; warned: Set<string>; kills: number; resume?: boolean;
 };
 
 export class WorldBosses {
@@ -50,6 +50,9 @@ export class WorldBosses {
     try {
       const r = await pool.query("select id,slot,kills from wb_state");
       for (const x of r.rows) { const b = this.list.find((q) => q.d.id === x.id); if (b) { b.done = Number(x.slot) || 0; b.kills = x.kills || 0; } }
+      // v1.75: o servidor reiniciou (atualização) com o chefe vivo? done === janela atual (sem a marca +1 de "luta encerrada") → ele volta a nascer
+      const now = wbNow();
+      for (const b of this.list) { const cur = R.wbCur(b.d, now); if (cur && b.done === cur) b.resume = true; }
     } catch (e) { console.error("[chefes] carregar", e); }
     this.ready = true;
   }
@@ -74,6 +77,7 @@ export class WorldBosses {
       const d = b.d;
       if (b.live) { this.liveTick(b, now); continue; }
       const cur = R.wbCur(d, now);
+      if (cur && b.resume && b.done === cur) { b.resume = false; this.spawn(b, cur, now, false, true); continue; }   // v1.75: volta depois de um reinício
       if (cur && b.done < cur) {                                       // janela aberta e ainda não atendida
         if (now - cur <= LATE_MS) this.spawn(b, cur, now, false);
         else { b.done = cur; this.save(b); }                           // servidor estava desligado: pula esta janela
@@ -99,11 +103,11 @@ export class WorldBosses {
     this.spawn(b, now, now, true); return true;
   }
 
-  private spawn(b: Boss, slot: number, now: number, forced: boolean) {
+  private spawn(b: Boss, slot: number, now: number, forced: boolean, resumed = false) {
     const d = b.d, s = b.s, m = s.m, T = s.T;
     this.room.sim.respawn(s, Date.now());                                                    // o simulador de monstros usa o relógio real
     const life = (Number(process.env.WB_LIFE) || d.life) * 60_000;                          // WB_LIFE (minutos) só para testes
-    b.live = true; b.slot = slot; b.startedAt = now; b.endsAt = forced ? now + life : Math.max(slot + life, now + Math.min(life, 10 * 60_000));
+    b.live = true; b.slot = slot; b.startedAt = now; b.endsAt = forced ? now + life : resumed ? Math.max(slot + life, now + Math.min(life, 3 * 60_000)) : Math.max(slot + life, now + Math.min(life, 10 * 60_000));
     b.parts.clear(); b.pool = 0; b.big.clear(); b.enraged = false;
     b.floor = Math.round(T.hp * HPX); m.lvl = d.lv; m.maxHp = b.floor; m.hp = b.floor; s.atk = T.atk; s.def = T.def; s.noResp = true;
     s.contrib.clear(); s.aggro = null; s.returning = false; s.slamAt = Date.now() + 14_000;
@@ -178,7 +182,7 @@ export class WorldBosses {
   /* ---------- fim da luta ---------- */
   killed(s: Sim) {
     const b = this.byMid.get(s.m.id); if (!b || !b.live) return;
-    b.live = false; b.kills++; this.save(b);
+    b.live = false; b.kills++; if (b.done === b.slot) b.done = b.slot + 1; this.save(b);   // +1 = luta desta janela encerrada
     const d = b.d, L = d.lv, T = s.T, all = [...b.parts.values()].sort((a, c) => c.dmg - a.dmg);
     const total = all.reduce((a, p) => a + p.dmg, 0) || 1, el = all.filter((p) => p.dmg >= total * 0.004);
     const secs = Math.round((wbNow() - b.startedAt) / 1000);
@@ -229,6 +233,7 @@ export class WorldBosses {
   /** passou o tempo: o chefe some; quem lutou ganha um prêmio de consolação */
   private despawn(b: Boss) {
     const d = b.d, m = b.s.m; b.live = false; m.alive = false; b.s.aggro = null; b.s.noResp = true;
+    if (b.done === b.slot) { b.done = b.slot + 1; this.save(b); }   // +1 = luta desta janela encerrada
     const all = [...b.parts.values()], total = all.reduce((a, p) => a + p.dmg, 0) || 1, el = all.filter((p) => p.dmg >= total * 0.004);
     this.say(`💨 ${d.name} se retirou para as sombras... ninguém conseguiu derrotá-lo a tempo. Quem lutou recebeu um prêmio de consolação no Correio.`, { k: "lose", id: d.id });
     for (const p of el) {
