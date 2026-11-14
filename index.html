@@ -3571,9 +3571,9 @@ const GLB=(()=>{
  return{build,anim,gear,load,ready,FILES,setOf};
 })();
 
-/* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago, dano mágico),
+/* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago e Pierrot, dano mágico),
    capa (demais). Tecido animado (balança parado e abre para trás ao correr). A = medidas do modelo: ombro (sx, sy), cabeça (hy, hr), costas (bz). */
-const capeLook=cls=>cls==='assassino'||cls==='arqueiro'?'a':cls==='mago'?'m':'p';
+const capeLook=cls=>cls==='assassino'||cls==='arqueiro'?'a':cls==='mago'||cls==='pierrot'?'m':'p';   // Pierrot é classe mágica: dragona azul (cachecol), igual ao Mago
 function CAPE(o,parent,ap,A){
  clearGear(o);const cp=ap.cape;if(!cp||!parent)return;
  const kind=capeLook(o.cls),arm=ap.armor,pl=arm?arm.plus:0,ael=arm?gcols(arm)[2]:'gold';
