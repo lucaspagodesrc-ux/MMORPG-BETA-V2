@@ -16,7 +16,7 @@ export type Sim = {
   m: Monster; T: any; zone: any; atk: number; def: number; bs: number;
   sx: number; sz: number; aggro: string | null; returning: boolean;
   atkAt: number; slowUntil: number; stunUntil: number; rootUntil: number; liftUntil: number; tauntUntil: number; slamAt: number; wanderAt: number; wx: number; wz: number; deadAt: number;
-  markUntil: number; slot?: number; lastDmgAt?: number; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
+  markUntil: number; slot?: number; lastDmgAt?: number; decoy?: string; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
   xpp?: Map<string, number>;   // fração da vida do monstro já paga em XP por golpe (por jogador)
   inst: number; noResp: boolean; tier: number;   // instância de dungeon (0 = mundo), sem renascimento, nível do baú
   home?: number; lazy?: boolean; immune?: boolean; side?: number;   // dungeons em grade: sala de origem (etapa em que acorda) • criado durante a luta • escudo do chefe • lado preferido p/ contornar paredes
@@ -40,6 +40,8 @@ export class MonsterSim {
   byId = new Map<number, Sim>();
   /* v1.68: os monstros não vão mais no estado sincronizado (cada jogador recebe só os que estão perto, pela mensagem "mo") */
   mons = new Map<string, Monster>();
+  /* v1.69: iscas (clone do Florete Voador do Pierrot): os monstros atraídos perseguem e "atacam" o clone em vez do jogador */
+  decoys = new Map<string, { c: { x: number; z: number }; inst: number; until: number }>();
   constructor(private state: WorldState, private hooks: Hooks) {
     let id = 0;
     for (const zone of ZONES) for (let i = 0; i < zone.n; i++) {     // mesma ordem do navegador => mesmos ids
@@ -123,6 +125,16 @@ export class MonsterSim {
     if (o.lift && !s.boss) s.liftUntil = Math.max(s.liftUntil, now + o.lift);
     if (o.pull && !s.boss) { const dx = px - s.m.x, dz = pz - s.m.z, d = Math.hypot(dx, dz) || 1; if (d > 2) { s.m.x += (dx / d) * (d - 2); s.m.z += (dz / d) * (d - 2); } }
   }
+  /** Isca: os monstros perto do clone (ou que já perseguiam o dono) passam a focar o clone por `ms`. O clone pode se mover (c é o próprio objeto dele). */
+  lure(key: string, c: { x: number; z: number }, inst: number, ms: number, r: number, owner: string) {
+    this.decoys.set(key, { c, inst, until: Date.now() + ms });
+    for (const s of this.list) {
+      if (!s.m.alive || s.inst !== inst || s.T.chest || s.T.node || s.T.dummy || s.T.wb) continue;
+      const d = Math.hypot(s.m.x - c.x, s.m.z - c.z);
+      if (d > r && !(s.aggro === owner && d < r * 2)) continue;
+      s.decoy = key; if (!s.aggro) { s.aggro = owner; s.returning = false; }
+    }
+  }
   /** Provocar: o monstro passa a focar este jogador. */
   taunt(s: Sim, sid: string, ms: number) {
     if (!s.m.alive || s.T.chest) return;
@@ -152,6 +164,7 @@ export class MonsterSim {
   update(dt: number) {
     const now = Date.now(), players = this.state.players;
     /* v1.68: monstro sem nenhum jogador por perto (fora do que dá para ver na tela, mesmo com o zoom todo aberto) fica parado: não anda nem gasta tráfego */
+    for (const [k, d] of this.decoys) if (now >= d.until) this.decoys.delete(k);
     const near: { x: number; z: number; i: number }[] = []; players.forEach((p) => near.push({ x: p.x, z: p.z, i: p.inst || 0 }));
     const awake = (m: Monster, inst: number) => { for (const q of near) if (q.i === inst && Math.abs(q.x - m.x) < ACTIVE_R && Math.abs(q.z - m.z) < ACTIVE_R) return true; return false; };
     for (const s of this.list) {
@@ -184,7 +197,13 @@ export class MonsterSim {
 
       let tx: number | null = null, tz: number | null = null, sp = 0, stop = 0.2;
       const sl = now < s.slowUntil ? 0.4 : 1;
-      if (s.aggro && cur) {
+      let dq: { x: number; z: number } | null = null;                 // isca (clone do Pierrot) que este monstro está focando
+      if (s.decoy) { const dc = this.decoys.get(s.decoy); if (dc && now < dc.until && dc.inst === s.inst) dq = dc.c; else s.decoy = undefined; }
+      if (dq) {
+        const dP = Math.hypot(dq.x - m.x, dq.z - m.z);
+        tx = dq.x; tz = dq.z; sp = rooted ? 0 : T.spd * sl; stop = T.rng * 0.85;
+        if (dP <= T.rng && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); }   // golpeia o clone (não fere ninguém)
+      } else if (s.aggro && cur) {
         const dP = Math.hypot(cur.x - m.x, cur.z - m.z);
         tx = cur.x; tz = cur.z; sp = rooted ? 0 : T.spd * sl; stop = T.rng * 0.85;
         if (dP <= T.rng && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); this.hooks.hit(s.aggro, s.atk * rnd(0.85, 1.15), m.id); }

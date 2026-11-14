@@ -119,8 +119,6 @@ export class Pvp {
     this.damage(s, ts, d, !!r.crit);
     // v1.53: a Absorção de HP/MP não funciona contra jogadores (duelo e Arena), só em monstros
     this.cc(ts, o);
-    const cl = s.clone;                                                                   // Pierrot: os clones atacam junto
-    if (!o.noClone && cl && cl.until > t) for (let n = 0; n < cl.n; n++) room.later(110 + n * 80, () => this.hit(s, q, mult * cl.mult, { noClone: true, basic: o.basic }));
   }
   dot(s: any, q: any, dmg: number, slow = 0) {
     const room = this.room, ts = q.pv; if (!this.foes(s).includes(q)) return;

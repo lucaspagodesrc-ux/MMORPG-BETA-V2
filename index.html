@@ -2125,7 +2125,7 @@ function animLimbs(o,px,pz,now,sa,melee){
  L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
  const a=Math.min(1,L.spd/3.5);L.ph+=L.spd*dt*2.4;
  const s=Math.sin(L.ph),cs=Math.cos(L.ph);
- const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,DUR={shield:300,jump:800,beam:750,throw:450,spin:700,stomp:600,sumo:1100,stab:600,sky:700}[kind]||260;
+ const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,DUR={shield:300,jump:800,beam:750,throw:450,spin:700,spin3:1500,stomp:600,sumo:1100,stab:600,sky:700}[kind]||260;
  const sw=(now-(sa||0))/DUR,act=sw>0&&sw<1,at=act?Math.sin(sw*Math.PI):0;
  const idl=Math.sin(now/700+L.ph0)*.035*(1-a);
  const Lg=L.leg;
@@ -3393,8 +3393,8 @@ const GLB=(()=>{
   if(!C[cls]||C[cls].st===0){load(cls);ORG.build(cls,o,r);const g=o.orgG;try{g.setEnabled(false);}catch(e){}o._gw=1;WAIT.push({o,r,g,cls});return true;}   /* v1.68: o boneco antigo fica escondido; só aparece se o modelo novo falhar */
   return false;}
  /* animação: escolhe e posiciona os clipes pelo estado do personagem (andar/parado/golpe/habilidade) */
- const KA={shield:'Shield',throw:'Throw',beam:'Cast',jump:'Jump',stomp:'Jump',sky:'Jump',spin:'Attack',stab:'Attack',both:'Attack',sumo:'Attack'};
- const DUR={shield:300,jump:800,beam:750,throw:450,spin:700,stomp:600,sumo:1100,stab:600,sky:700};
+ const KA={shield:'Shield',throw:'Throw',beam:'Cast',jump:'Jump',stomp:'Jump',sky:'Jump',spin:'Attack',spin3:'Attack',stab:'Attack',both:'Attack',sumo:'Attack'};
+ const DUR={shield:300,jump:800,beam:750,throw:450,spin:700,spin3:1500,stomp:600,sumo:1100,stab:600,sky:700};
  /* aplica a mistura dos clipes nos ossos: W = [[clipe, peso, quadro], ...] */
  const QA=new BABYLON.Quaternion(),VA=new BABYLON.Vector3();
  function flipW(L){const T=L.top,par=T.parent;if(!par)return;const V3=BABYLON.Vector3,all=T.getDescendants(false);all.forEach(n=>n.computeWorldMatrix&&n.computeWorldMatrix(true));
@@ -3429,14 +3429,15 @@ const GLB=(()=>{
   const fa=act?Math.min(1,sw/.08,(1-sw)/.12):0;
   L.ph+=(L.spd*dt)/(1.6*(SCALE[L.cls]||1));            // passos acompanham a distância andada
   const W=[],set=(n,w,f)=>{const g=AG[n];if(!g||!(w>1e-3))return;W.push([n,w,g.from+(g.to-g.from)*f]);};
-  if(clip)set(clip,fa,Math.max(0,Math.min(.999,sw)));
+  if(clip)set(clip,fa,kind==='spin3'?(sw*3)%1:Math.max(0,Math.min(.999,sw)));
   set('Walk',(1-fa)*a,(L.ph%1+1)%1);
   set('Idle',(1-fa)*(1-a),((now/2000+L.ph0)%1+1)%1);
   pose(L,W);
   if(kind==='jump'){if(act){o.root.position.y=sw<.8?3*Math.sin(Math.PI*sw/.8):0;o._jy=1;}else if(o._jy){o.root.position.y=0;o._jy=0;}}
   else if(o._jy){o.root.position.y=0;o._jy=0;}
-  if(kind==='spin'&&act){if(o._sbA!==sa){o._sbA=sa;o._sb=o.root.rotation.y;}o.root.rotation.y=o._sb+sw*Math.PI*4;}
-  else if(kind==='spin'&&o._sbA===sa&&o._sbD!==sa&&sw>=1){o._sbD=sa;o.root.rotation.y=o._sb;}
+  const spn=kind==='spin'?2:kind==='spin3'?3:0;   /* voltas completas: Pirueta 2, Redemoinho Circense 3 (em 1,5 s) */
+  if(spn&&act){if(o._sbA!==sa){o._sbA=sa;o._sb=o.root.rotation.y;}o.root.rotation.y=o._sb+sw*Math.PI*2*spn;}
+  else if(spn&&o._sbA===sa&&o._sbD!==sa&&sw>=1){o._sbD=sa;o.root.rotation.y=o._sb;}
  }
  /* conjuntos por nível do item (até 100): Ferro, Dourado, Sombrio, Dracônico, Solar. Sem item no espaço: Ferro.
     número do conjunto no arquivo: 1 Dourado, 2 Ferro, 3 Sombrio, 4 Solar, 5 Dracônico */
@@ -4847,7 +4848,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(/^\?dbg/.test(location.search))window.__G={updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
+if(/^\?dbg/.test(location.search))window.__G={get CLN(){return CLN;},updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;}};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -4980,18 +4981,109 @@ function hookFx(owner,m,color,cb){
   links.forEach((l,i)=>{const u=(i+.5)/N,p=V3.Lerp(a,h,u);p.y+=Math.sin(u*Math.PI)*sag;l.position.copyFrom(p);l.rotation.set(Math.PI/2,yaw,(i%2)*Math.PI/2);});
  },done:()=>{parts.forEach(p=>{try{p.dispose();}catch(e){}});try{if(owner.hookN)owner.hookN.setEnabled(true);}catch(e){}}});
 }
-/* Clones do Pierrot: sombras que giram ao redor do dono e repetem seus golpes */
-const CLONES=[];
-function spawnClones(owner,cls,n,dur){
- for(let i=CLONES.length-1;i>=0;i--)if(CLONES[i].owner===owner){CLONES[i].root.dispose();CLONES.splice(i,1);}
- for(let j=0;j<n;j++){const o={cls,swingAt:0},r=buildModel(cls,o);r.getChildMeshes().forEach(m=>{m.visibility=.5;});CLONES.push({owner,o,root:r,j,n,until:performance.now()+dur*1000});}
- const p=owner.pos||owner.root.position;ring(p.x,p.z,3,'#c79bff',700);
+/* ===== v1.69 — PIERROT: clones, florete voador e florete cravado =====
+   O servidor simula os clones (posição, alvo, golpes) e manda "cl" 10x/s; aqui é só a parte visual.
+   Os bonecos dos clones ficam GUARDADOS e são reaproveitados: criar um boneco na hora do lançamento era o que travava o jogo
+   (cada boneco tem dezenas de malhas e a versão antiga ainda era semitransparente, o que obrigava a placa de vídeo a compilar sombreadores novos). */
+const CLN={act:new Map(),pool:new Map(),warmAt:0,last:0,pm:null};
+const clOwner=by=>(NET.room&&by===NET.room.sessionId)?P:remoteOf(by);
+const clCls=ow=>ow===P?(S?S.cls:'pierrot'):ow.cls;
+const clApStr=ow=>ow===P?(S?RULES.apOf(S):''):(ow.ap||'');
+/* marcação: anel no chão + seta em cima (verde = você, rosa = clone). Só o dono vê. */
+function clMark(col){
+ const n=new BABYLON.TransformNode('clmk',scene),m=fxMat(col);
+ const t=staticMesh(B.CreateTorus('clmr',{diameter:1.7,thickness:.1,tessellation:28},scene));t.material=m;t.parent=n;t.position.y=.09;
+ const a=staticMesh(B.CreateCylinder('clma',{height:.42,diameterTop:.4,diameterBottom:0,tessellation:4},scene));a.material=m;a.parent=n;a.position.y=3.05;n._a=a;
+ n.setEnabled(false);return n;}
+/* cria um boneco de clone (escondido). Devolve null se o modelo da classe ainda está baixando. */
+function clRigNew(ow){
+ const cls=clCls(ow);if(GLBMODE&&GLB.FILES[cls]&&!GLB.ready(cls)){GLB.load(cls);return null;}
+ const o={cls,swingAt:0,isClone:1};let r=null;quiet(()=>{r=buildModel(cls,o);o.root=r;});
+ const sh=r.getChildren(n=>n.name==='sh',true)[0];
+ const g={o,root:r,ap:null,busy:false,mk:null,sh};r.setEnabled(false);return g;}
+function clPool(ow){let L=CLN.pool.get(ow);if(!L){L=[];CLN.pool.set(ow,L);}return L;}
+function clTake(ow){
+ const L=clPool(ow);let g=L.find(x=>!x.busy);
+ if(!g){const t=performance.now();if(L.length>=5||t<(CLN.buildAt||0))return null;CLN.buildAt=t+180;g=clRigNew(ow);if(!g)return null;L.push(g);}   /* sem boneco livre: cria no máximo um a cada 0,18 s (nunca vários no mesmo quadro) */
+ const ap=clApStr(ow);if(g.ap!==ap){g.ap=ap;try{quiet(()=>applyGear(g.o,parseAp(ap)));}catch(e){}}
+ g.busy=true;g.root.setEnabled(true);g.o.limbs&&(g.o.limbs.t=0);
+ if(ow===P){if(!g.mk){g.mk=clMark('#ff3df0');g.mk.parent=g.root;}g.mk.setEnabled(true);}else if(g.mk)g.mk.setEnabled(false);
+ return g;}
+function clFree(g){if(!g)return;g.busy=false;try{g.root.setEnabled(false);g.root.position.y=0;}catch(e){}}
+function clDrop(key,c){if(c.rig){const p=c.rig.root.position;ring(p.x,p.z,1.3,'#c79bff',320);clFree(c.rig);c.rig=null;}CLN.act.delete(key);}
+function clPoolFree(ow){const L=CLN.pool.get(ow);if(!L)return;for(const g of L){try{clearGear(g.o);}catch(e){}try{g.root.dispose();}catch(e){}}CLN.pool.delete(ow);}
+/* mensagem do servidor: [j, tipo, x*10, z*10, alvo, nº de golpes, décimos de segundo restantes, (alvo jogador)] */
+function netCl(m){
+ const now=performance.now(),seen=new Set();
+ for(const a of m.c||[]){const key=m.by+'|'+a[0];seen.add(key);let c=CLN.act.get(key);
+  if(!c){c={by:m.by,j:a[0],k:a[1],x:a[2]/10,z:a[3]/10,sw:a[5],sw0:a[5],rig:null,spin:0,face:0};CLN.act.set(key,c);}
+  c.x=a[2]/10;c.z=a[3]/10;c.tid=a[4];c.sw=a[5];c.until=now+a[6]*100+200;c.ptid=a[7]||null;c.seenAt=now;}
+ for(const [key,c] of CLN.act)if(c.by===m.by&&!seen.has(key))clDrop(key,c);
 }
+function netClSpin(m){const now=performance.now();for(const j of m.c||[]){const c=CLN.act.get(m.by+'|'+j);if(!c)continue;c.spin=now+450;c.spin0=now;ring(c.x,c.z,m.r||3,'#ff4a8a',420);}}
 function updateClones(now){
- for(let i=CLONES.length-1;i>=0;i--){const c=CLONES[i],ow=c.owner,ok=ow===P?!!S:NET.others.has(ow.id);
-  if(!ok||now>c.until||!ow.root||ow.root.isDisposed()){c.root.dispose();CLONES.splice(i,1);continue;}
-  const op=ow.root.position,a=now*.0016+c.j*Math.PI*2/c.n;c.root.position.set(op.x+Math.cos(a)*1.9,0,op.z+Math.sin(a)*1.9);c.root.rotation.y=ow.root.rotation.y;
-  if(c.o.limbs){c.o.limbs.t=0;animLimbs(c.o,0,0,now,(ow.swingAt||0)+c.j*90,MELEE.has(ow.cls||(ow===P&&S?S.cls:'')));}}
+ const dt=Math.min(.1,(now-(CLN.last||now))/1000);CLN.last=now;
+ /* aquecimento: o Pierrot já entra no mundo com os bonecos dos clones prontos (um a cada 0,4 s, sem travar) */
+ if(S&&P.root&&TOKEN&&now>CLN.warmAt){CLN.warmAt=now+400;
+  let ow=null;if(S.cls==='pierrot'&&clPool(P).length<4)ow=P;
+  else{let tot=0;for(const L of CLN.pool.values())tot+=L.length;if(tot<28)for(const o of NET.others.values())if(o.cls==='pierrot'&&o.rig&&o.d<30&&clPool(o).length<4){ow=o;break;}}   /* outros Pierrots por perto: também deixa os clones deles prontos */
+  if(ow&&now>=(CLN.buildAt||0)){const g=clRigNew(ow);if(g){CLN.buildAt=now+180;clPool(ow).push(g);const ap=clApStr(ow);g.ap=ap;try{quiet(()=>applyGear(g.o,parseAp(ap)));}catch(e){}}}}
+ for(const ow of CLN.pool.keys()){if(ow===P?!S:(!NET.others.has(ow.nid)||!ow.root||ow.root.isDisposed())){for(const [key,c] of CLN.act)if(clOwner(c.by)===ow||!clOwner(c.by)){c.rig=null;CLN.act.delete(key);}clPoolFree(ow);}}
+ let mine=0;
+ for(const [key,c] of CLN.act){
+  const ow=clOwner(c.by);
+  if(!ow||!ow.root||now>c.until||now-c.seenAt>900){clDrop(key,c);continue;}
+  if(!c.rig){c.rig=clTake(ow);if(!c.rig)continue;c.rig.root.position.set(c.x,0,c.z);c.rig.root.rotation.y=ow.root.rotation.y;ring(c.x,c.z,1.5,'#c79bff',380);}
+  const r=c.rig.root,p=r.position,dx=c.x-p.x,dz=c.z-p.z,d=Math.hypot(dx,dz);
+  if(d>8){p.x=c.x;p.z=c.z;}else if(d>.001){const k=Math.min(1,dt*14);p.x+=dx*k;p.z+=dz*k;}
+  const tg=c.ptid?ptOf(c.ptid):(c.tid?monsters.find(x=>x.id===c.tid):null);
+  if(now<c.spin)r.rotation.y=c.face+(now-c.spin0)/450*Math.PI*2;
+  else{if(tg&&tg.pos&&Math.hypot(tg.pos.x-p.x,tg.pos.z-p.z)<4)c.face=Math.atan2(tg.pos.x-p.x,tg.pos.z-p.z);else if(d>.15)c.face=Math.atan2(dx,dz);else if(c.k==='o'&&!tg)c.face=ow.root.rotation.y;r.rotation.y=c.face;}
+  if(c.sw!==c.sw0){c.sw0=c.sw;c.rig.o.swingAt=now;c.rig.o.swKind=null;}
+  if(c.rig.o.limbs)animLimbs(c.rig.o,p.x,p.z,now,c.rig.o.swingAt||0,true);
+  if(ow===P){mine++;if(c.rig.mk)c.rig.mk._a.position.y=3.05+Math.sin(now*.006+c.j)*.12;}
+ }
+ /* marcação do personagem verdadeiro enquanto houver clone seu */
+ if(mine&&P.root&&!P.dead){if(!CLN.pm)CLN.pm=clMark('#3dff8a');const n=CLN.pm;n.setEnabled(true);n.position.set(P.pos.x,0,P.pos.z);n._a.position.y=3.15+Math.sin(now*.006)*.12;}
+ else if(CLN.pm&&CLN.pm.isEnabled())CLN.pm.setEnabled(false);
+}
+/* ---- florete: mostrar/esconder a arma na mão, florete voando e florete cravado no chão ---- */
+function foilShow(o,on){try{if(!o)return;if(o.glbTop){if(!o._wn||o._wnT!==o.glbTop){o._wnT=o.glbTop;o._wn=o.glbTop.getDescendants(false).filter(n=>/^(Sword|Weapon)$/.test(n.name));}o._wn.forEach(n=>n.setEnabled(on));}else if(o.hand&&o.hand.getChildMeshes)o.hand.getChildMeshes().forEach(m=>{m.isVisible=on;});}catch(e){}}
+function foilNode(col){
+ const n=new BABYLON.TransformNode('foil',scene),mk=(m,y,mt)=>{m.parent=n;m.position.y=y;m.material=mt;m.isPickable=false;return m;};
+ mk(B.CreateCylinder('fb',{height:1.45,diameterTop:.012,diameterBottom:.07,tessellation:6},scene),.72,fxMat('#f2f6fb'));
+ mk(B.CreateCylinder('fg',{height:.05,diameter:.34,tessellation:10},scene),0,fxMat('#e7b54e'));
+ mk(B.CreateCylinder('fh',{height:.3,diameter:.07,tessellation:6},scene),-.17,fxMat('#6a3d1c'));
+ mk(B.CreateSphere('fp',{diameter:.12,segments:6},scene),-.34,fxMat(col||'#e7b54e'));
+ return n;}
+/* o florete voa de `from` até (ex,ez) e some; onEnd é chamado na chegada */
+function foilFlyFx(o,from,ex,ez,col,onEnd){
+ const W0=180,sx=from.x,sz=from.z,d=Math.hypot(ex-sx,ez-sz),fly=Math.max(60,d/22*1000),yaw=Math.atan2(ex-sx,ez-sz);
+ later(W0,()=>{foilShow(o,false);
+  const piv=new BABYLON.TransformNode('foilp',scene),n=foilNode(col);n.parent=piv;n.rotation.x=Math.PI/2;piv.rotation.y=yaw;piv.position.set(sx,1.25,sz);
+  fx.push({t0:performance.now(),dur:fly,upd:t=>{piv.position.set(sx+(ex-sx)*t,1.25,sz+(ez-sz)*t);n.rotation.y=t*Math.PI*6;if(Math.random()<.5)spark(piv.position.x,1.25,piv.position.z,col,.7);},
+   done:()=>{piv.dispose();ring(ex,ez,1.6,col,380);foilShow(o,true);if(onEnd)onEnd();}});});
+}
+/* florete cravado no chão (Passo de Bailarino) */
+function foilPlant(x,z,col){const n=foilNode(col);n.rotation.z=Math.PI;n.rotation.x=.14;n.position.set(x,1.38,z);ring(x,z,1.1,col,400);
+ const g=staticMesh(B.CreateTorus('fpr',{diameter:1.2,thickness:.06,tessellation:24},scene));g.material=fxMat(col);g.parent=null;g.position.set(x,.08,z);n._g=g;return n;}
+function foilPlantMove(n,x,z){if(!n)return;n.position.x=x;n.position.z=z;if(n._g)n._g.position.set(x,.08,z);}
+function foilPlantOff(n){if(!n||n._off)return;n._off=1;try{ring(n.position.x,n.position.z,.9,'#ffd27a',300);if(n._g)n._g.dispose();n.dispose();}catch(e){}}
+/* o próprio jogador: salto para a frente deixando o florete; e a troca de lugar */
+function foilStepMe(s,dx,dz){
+ const now=performance.now(),x0=P.pos.x,z0=P.pos.z;
+ if(P.foil){foilPlantOff(P.foil.node);P.foil=null;}
+ const F={x:x0,z:z0,until:now+s.dur*1000,used:0,node:foilPlant(x0,z0,s.color)};P.foil=F;foilShow(P,false);
+ later(s.dur*1000,()=>{if(P.foil===F){P.foil=null;foilShow(P,true);}foilPlantOff(F.node);});
+ for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);
+ P.moveTo=null;P.root.rotation.y=Math.atan2(dx,dz);let done=0;const T=300,dist=s.range;
+ fx.push({t0:now,dur:T,upd:t=>{if(P.dead)return;const st=(t-done)*dist;done=t;P.pos.x+=dx*st;P.pos.z+=dz*st;collide(P.pos,.4);clampMap(P.pos);P.pos.y=Math.sin(Math.PI*t)*1.5;},done:()=>{P.pos.y=0;ring(P.pos.x,P.pos.z,1.6,s.color,350);}});
+ floatText('💃 de novo = trocar de lugar',P.pos,s.color);
+}
+function foilSwapMe(){
+ const F=P.foil;if(!F||F.used)return false;const ox=P.pos.x,oz=P.pos.z;F.used=1;
+ ring(ox,oz,1.4,'#ffd27a',350);P.pos.x=F.x;P.pos.z=F.z;P.pos.y=0;P.moveTo=null;F.x=ox;F.z=oz;foilPlantMove(F.node,ox,oz);ring(P.pos.x,P.pos.z,1.8,'#ffd27a',420);
+ camera.target.copyFromFloats(P.pos.x,.6,P.pos.z);AUD.sfx('combo',null,{n:1});return true;
 }
 function playerHit(m,mult,opts){
  if(TOKEN)return;   // online: quem calcula o dano é o servidor
@@ -5057,6 +5149,7 @@ function castSkill(i){
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');return;}
  const s=skStat(i),now=performance.now();
  if(s.type==='daggerFan'&&P.dag&&P.dag.st==='stuck'){P.dag.recall();if(NET.room)NET.room.send('cast',{i});return;}
+ if(s.type==='foilStep'&&P.foil&&!P.foil.used&&now<P.foil.until&&!PAUSED){if(foilSwapMe()&&NET.room)NET.room.send('cast',{i});return;}   /* Passo de Bailarino de novo: troca de lugar com o florete */
  if(PAUSED)return;
  if(s.ward&&PKS.mode==='duel'){toast('🔰 A Égide do Guardião não funciona em duelo');return;}
  if(P.roll)return;
@@ -5064,7 +5157,7 @@ function castSkill(i){
  if(S.cls!=='assassino'&&now<(P.actUntil||0)){const w=P.actUntil-now;if(w<400&&!P.qSk){P.qSk=1;later(w+15,()=>{P.qSk=0;castSkill(i);});}return;}
  if(now<P.cd[i])return;
  if(P.mp<s.mp){toast('Mana insuficiente');return;}
- const off=!['buff','dashBack','heal','clone','transform'].includes(s.type);
+ const off=!['buff','dashBack','heal','clone','transform','foilStep'].includes(s.type);
  if(PKS.mode){const bl=pkCastBlock(off);if(bl){toast(bl);return;}}
  if(off&&inTown(P.pos)){toast('Combate proibido na zona segura');return;}
  let tgt=null;
@@ -5075,12 +5168,14 @@ function castSkill(i){
   selectMonster(tgt);P.root.rotation.y=Math.atan2(tgt.pos.x-P.pos.x,tgt.pos.z-P.pos.z);
  }
  let dirx=0,dirz=1;
- if(s.type==='shieldThrow'||s.type==='shieldBeam'||s.type==='daggerFan'||s.type==='roll'||s.type==='stab3'){const t0=curTgt()||nearestMonster(s.range);if(t0){dirx=t0.pos.x-P.pos.x;dirz=t0.pos.z-P.pos.z;}else{dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}const dl=Math.hypot(dirx,dirz)||1;dirx/=dl;dirz/=dl;P.root.rotation.y=Math.atan2(dirx,dirz);}
+ let ft=null;   /* Florete Voador: alvo opcional (o clone nasce ao lado dele) */
+ if(s.type==='shieldThrow'||s.type==='shieldBeam'||s.type==='daggerFan'||s.type==='roll'||s.type==='stab3'||s.type==='foilThrow'){const t0=curTgt()||nearestMonster(s.range);if(t0&&s.type==='foilThrow'&&hyp(P.pos,t0.pos)<=s.range)ft=t0;if(t0){dirx=t0.pos.x-P.pos.x;dirz=t0.pos.z-P.pos.z;}else{dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}const dl=Math.hypot(dirx,dirz)||1;dirx/=dl;dirz/=dl;P.root.rotation.y=Math.atan2(dirx,dirz);}
+ if(s.type==='foilStep'){dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}
  let stars=[];
  if(s.type==='starJump'){stars=pickStar(s.range,s.jumps||5);if(!stars.length){toast('Sem alvo próximo');return;}}
  if(s.type==='chainPull'&&tgt)stars=pickGrab(tgt,s.radius,s.cnt);
  P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.actUntil=now+RULES.animMs(S.cls,i);P.skUntil=now+RULES.castMs(S.cls,i,{dist:tgt?hyp(P.pos,tgt.pos):0,n:stars.length,hits:s.hits});P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
- if(NET.room)NET.room.send('cast',pkCastMsg(i,tgt,stars,dirx,dirz));
+ if(NET.room)NET.room.send('cast',pkCastMsg(i,tgt||ft,stars,dirx,dirz));
  if(C.combo){
   const prevOk=P.lastSkill>=0&&now-P.lastSkillAt<3500;
   if(!(now-P.cstAt<4500))P.cst=0;
@@ -5119,12 +5214,20 @@ function castSkill(i){
   case 'thunder':thunderFx(tgt,s.radius,s.dotDur,s.color);offlineRay(tgt,s,700,so);break;
   case 'arcRay':arcRayFx(P.pos,tgt,s.radius,s.dotDur,s.color);offlineRay(tgt,s,350,so);break;
   case 'roll':startRoll(s,dirx,dirz);break;
-  case 'aoeMulti':
-   for(let h=0;h<s.hits;h++)later(200+h*200,()=>{if(P.dead)return;ring(P.pos.x,P.pos.z,s.radius,s.color,420);P.swingAt=performance.now();hitArea(P.pos,s.radius,s.mult,so);});break;
+  case 'aoeMulti':{
+   const gap=s.gap||200,t0=s.gap?150:200;
+   for(let h=0;h<s.hits;h++)later(t0+h*gap,()=>{if(P.dead)return;ring(P.pos.x,P.pos.z,s.radius,s.color,420);if(!s.anim)P.swingAt=performance.now();
+    if(s.maxT){for(const m of nearMonsters(P.pos,s.radius).sort((a,b)=>hyp(a.pos,P.pos)-hyp(b.pos,P.pos)).slice(0,s.maxT))playerHit(m,s.mult,so);}else hitArea(P.pos,s.radius,s.mult,so);});
+   break;}
+  case 'foilThrow':{   /* Florete Voador: parado, lança o florete; no fim do alcance nasce o clone (o servidor cria) */
+   const x0=P.pos.x,z0=P.pos.z,d=ft?Math.min(s.range,Math.max(1.2,hyp(P.pos,ft.pos)-1.3)):s.range,ex=x0+dirx*d,ez=z0+dirz*d;
+   P.moveTo=null;foilFlyFx(P,{x:x0,z:z0},ex,ez,s.color,()=>{if(!TOKEN)for(const m of monsters){if(!m.alive)continue;const rx=m.pos.x-x0,rz=m.pos.z-z0,t=rx*dirx+rz*dirz,pd=Math.abs(rx*dirz-rz*dirx);if(t>=-.5&&t<=d+.5&&pd<=1.2+.5*m.bs)playerHit(m,s.mult,so);}});
+   break;}
+  case 'foilStep':foilStepMe(s,dirx,dirz);break;
   case 'taunt':
    for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);ring(P.pos.x,P.pos.z,s.radius,s.color,700);ring(P.pos.x,P.pos.z,s.radius*.6,s.color,500);floatText('📢 Provocar!',P.pos,s.color,true);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: inimigos próximos agora focam você!</span>`);break;
   case 'clone':
-   addBuff('clone',s.clones,s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: ${s.clones} clone(s) por ${Math.round(s.dur)}s!</span>`);break;
+   addBuff('clone',s.clones,s.dur,s);ring(P.pos.x,P.pos.z,2.6,s.color,700);logMsg(`<span style="color:${s.color}">${s.i} ${s.n}: ${s.clones} clones por ${Math.round(s.dur)}s — <span style="color:#3dff8a">● você</span> / <span style="color:#ff3df0">● clone</span></span>`);break;
   case 'aoeTarget':{
    const c={x:tgt.pos.x,z:tgt.pos.z};
    if(s.balls)apoBalls(c,s,(gx,gz)=>hitArea(c,s.radius,s.mult/s.balls,so));
@@ -5164,7 +5267,7 @@ function renderSkills(){
  C.skills.forEach((s,i)=>{
   const r=rk(i),locked=S.level<s.lv,cost=RULES.skCost(r),st=skStat(i);
   const bp=bar.indexOf(i),keyTxt=bp<0?'sem atalho':(bp>=8?'Shift+'+(bp-7):'tecla '+(bp+1));
-  h+=`<div class="row2 ${locked&&!r?'dim':''}${SELSK===i?' picked':''}"${r?` draggable="true" data-dragsk="${i}"`:''}><div class="ri"${r?` data-pick="${i}" title="Clique para escolher e depois clique em um número"`:''}>${s.i}</div><div class="rt"><b>${s.n}</b> <small style="display:inline">• Rank ${r}/${MAXRANK}${locked?' • Nv '+s.lv:''} • ${keyTxt}</small><small>${s.d}</small><small>Mana ${st.mp} • Recarga ${st.cd.toFixed(1)}s${st.mult?' • Dano ×'+st.mult.toFixed(1):''}${st.pct?' • Cura '+Math.round(st.pct*100)+'%':''}${st.radius?' • Área '+st.radius.toFixed(1):''}${st.hits?' • '+st.hits+' golpes':''}${st.stun?' • Atordoa '+(st.stun/1000).toFixed(1)+'s':''}${st.root?' • Imobiliza '+(st.root/1000).toFixed(1)+'s':''}${st.lift?' • Levanta '+(st.lift/1000).toFixed(1)+'s':''}${st.pull?' • Puxa':''}${st.clones?' • '+st.clones+' clone(s) • '+Math.round(st.cloneMult*100)+'% do dano cada':''}${s.after?' • Combo após: '+s.after.map(j=>C.skills[j].n).join(' / '):''}${st.defMult?' • +'+Math.round(st.defMult*100)+'% DEF em dano':''}${st.buffs&&st.buffs.defdmg?' • DEF→dano '+Math.round(st.buffs.defdmg*100)+'%':''}</small></div><div class="rb">${r>=MAXRANK?'<span class="ok">Máx</span>':`<button data-act="skup" data-id="${i}" ${locked||S.sp<cost?'disabled':''}>${r?'Melhorar':'Aprender'} (${cost})</button>`}</div></div>`;
+  h+=`<div class="row2 ${locked&&!r?'dim':''}${SELSK===i?' picked':''}"${r?` draggable="true" data-dragsk="${i}"`:''}><div class="ri"${r?` data-pick="${i}" title="Clique para escolher e depois clique em um número"`:''}>${s.i}</div><div class="rt"><b>${s.n}</b> <small style="display:inline">• Rank ${r}/${MAXRANK}${locked?' • Nv '+s.lv:''} • ${keyTxt}</small><small>${s.d}</small><small>Mana ${st.mp} • Recarga ${st.cd.toFixed(1)}s${st.mult?' • Dano ×'+st.mult.toFixed(1):''}${st.pct?' • Cura '+Math.round(st.pct*100)+'%':''}${st.radius?' • Área '+st.radius.toFixed(1):''}${st.hits?' • '+st.hits+' golpes':''}${st.cloneMult?' • '+st.clones+(st.clones>1?' clones':' clone')+' ('+Math.round(st.cloneMult*100)+'% do ataque básico)':''}${st.dur&&st.cloneMult?' • Dura '+st.dur+'s':''}${st.stun?' • Atordoa '+(st.stun/1000).toFixed(1)+'s':''}${st.root?' • Imobiliza '+(st.root/1000).toFixed(1)+'s':''}${st.lift?' • Levanta '+(st.lift/1000).toFixed(1)+'s':''}${st.pull?' • Puxa':''}${st.clones?' • '+st.clones+' clone(s) • '+Math.round(st.cloneMult*100)+'% do dano cada':''}${s.after?' • Combo após: '+s.after.map(j=>C.skills[j].n).join(' / '):''}${st.defMult?' • +'+Math.round(st.defMult*100)+'% DEF em dano':''}${st.buffs&&st.buffs.defdmg?' • DEF→dano '+Math.round(st.buffs.defdmg*100)+'%':''}</small></div><div class="rb">${r>=MAXRANK?'<span class="ok">Máx</span>':`<button data-act="skup" data-id="${i}" ${locked||S.sp<cost?'disabled':''}>${r?'Melhorar':'Aprender'} (${cost})</button>`}</div></div>`;
  });
  if(S.gm)h+=`<div class="row2" style="border-color:#ffd54a"><div class="ri">✨</div><div class="rt"><b>Buff do GM</b> <small style="display:inline">• habilidade exclusiva de GM</small><small>Buffa jogadores por 5 min: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa. Quem recebe ganha estrelas girando ao redor. Também pelo clique em um jogador no mapa.</small><small>Usar: <button data-gmk="self">Em mim</button> <button data-gmk="near">Por perto (raio 30)</button> <button data-gmk="all">Todos online</button></small></div></div>`;
  $('skillBody').innerHTML=h;
@@ -6473,7 +6576,7 @@ async function startFlow(){
 const NET={room:null,others:new Map(),lv:0,tm:0,stop:false,off:0,ack:false,inst:0};
 const sharedNow=()=>Date.now()+NET.off;   // relógio do servidor: todos veem os NPCs no mesmo ponto
 const PCOL={tanque:'#4b5a6b',pierrot:'#d6336c',guerreiro:'#b5543a',arqueiro:'#4a9a5a',mago:'#6a4ab5',assassino:'#3a3a4a',cavaleiro:'#8a95a5'};
-function killRemote(o){pkGone(o);disposeGm(o);if(o.px){o.px.dispose();o.px=null;}try{clearGear(o);}catch(e){}try{o.root.dispose();}catch(e){}o.label.remove();}
+function killRemote(o){pkGone(o);disposeGm(o);if(o.foil){foilPlantOff(o.foil.node);o.foil=null;}if(o.px){o.px.dispose();o.px=null;}try{clearGear(o);}catch(e){}try{o.root.dispose();}catch(e){}o.label.remove();}
 function clearOthers(){for(const o of NET.others.values())killRemote(o);NET.others.clear();}
 async function netJoin(){
  if(!ONLINE||!TOKEN||!window.Colyseus||NET.room||!S)return;
@@ -6509,7 +6612,7 @@ async function netJoin(){
   room.onMessage('mat',m=>{const mo=monsters.find(x=>x.id===m.id);if(!mo||!mo.alive)return;mo.lungeAt=performance.now();AUD.mon(mo.type,'attack',spat(mo.pos,mo.T.boss?45:28));});
   room.onMessage('slam',m=>{if((m.inst||0)!==(NET.inst||0))return;ring(m.x,m.z,m.r,m.c||'#ff3b3b',m.t||1000);const mo=monsters.find(x=>x.T.boss&&hyp(x.pos,m)<3);if(mo)AUD.mon(mo.type,'slam',spat(mo.pos,45));});
   room.onMessage('fx',m=>remoteSkill(m));
-  room.onMessage('clones',m=>{const own=m.by===room.sessionId?P:remoteOf(m.by);if(!own)return;if(own!==P)own.id=m.by;spawnClones(own,own===P?S.cls:own.cls,m.n,m.dur);});
+  room.onMessage('cl',netCl);room.onMessage('clspin',netClSpin);room.onMessage('clones',()=>{});
   room.onMessage('dgenter',m=>enterDungeonLocal(m));
   room.onMessage('dgleave',m=>leaveDungeonLocal(m));
   room.onMessage('dgmsg',m=>dgMsg(m));
@@ -6570,7 +6673,7 @@ const RIGFX=new Set(['shieldThrow','shieldBeam','daggerFan','cloak','starJump','
 function remoteSkill(m){
  const o=remoteOf(m.by);if(!o||!S)return;const C=CLASSES[o.cls],s=C.skills[m.i];if(!s)return;
  const far=hyp(P.pos,o.root.position)>34;if(far)return;
- if(m.rc){if(o.dag&&o.dag.st==='stuck')o.dag.recall();return;}
+ if(m.rc){if(s.type==='foilStep'){if(o.foil){foilPlantMove(o.foil.node,m.fx,m.fz);ring(m.fx,m.fz,1.4,s.color,350);ring(m.x,m.z,1.8,s.color,420);}return;}if(o.dag&&o.dag.st==='stuck')o.dag.recall();return;}
  if(m.pid){const tg=NET.room&&m.pid===NET.room.sessionId?P:remoteOf(m.pid),tp=tg===P?P.pos:(tg&&tg.root.position);if(tp)ring(tp.x,tp.z,2.6,s.color,700);return;}
  const mo=m.tid?monsters.find(x=>x.id===m.tid):(m.ptid?ptOf(m.ptid):null),now=performance.now(),from=o.root.position;o.swingAt=now;if(!o.rig&&(RIGFX.has(s.type)||(s.type==='single'&&(s.proj||(C.ranged?C.proj:null))==='hook'))){AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));skillFx(s,from,mo?mo.pos:null);return;}o.swKind=s.anim||null;o.swKA=now;if(m.dx||m.dz)o.root.rotation.y=Math.atan2(m.dx,m.dz);
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
@@ -6592,7 +6695,9 @@ function remoteSkill(m){
   case 'arcRay':if(mo)arcRayFx(from,mo,s.radius,s.dotDur,s.color);break;
   case 'roll':rollRemote(o,s.dur);break;
   case 'transform':barbFx(o,s.dur);break;
-  case 'aoeMulti':for(let h=0;h<s.hits;h++)later(200+h*200,()=>ring(from.x,from.z,s.radius,s.color,420));break;
+  case 'aoeMulti':{const gap=s.gap||200,t0=s.gap?150:200;for(let h=0;h<s.hits;h++)later(t0+h*gap,()=>{const q=o.root.position;ring(q.x,q.z,s.radius,s.color,420);});break;}
+  case 'foilThrow':{const dx=m.dx||0,dz=m.dz||1,d=mo?Math.min(s.range,Math.max(1.2,hyp(from,mo.pos)-1.3)):s.range;foilFlyFx(o,{x:from.x,z:from.z},from.x+dx*d,from.z+dz*d,s.color,null);break;}
+  case 'foilStep':{if(o.foil)foilPlantOff(o.foil.node);const F={node:foilPlant(m.x,m.z,s.color)};o.foil=F;foilShow(o,false);later(s.dur*1000,()=>{if(o.foil===F){o.foil=null;foilShow(o,true);}foilPlantOff(F.node);});break;}
   case 'taunt':ring(from.x,from.z,s.radius,s.color,700);break;
   case 'aoeTarget':if(mo){const c={x:mo.pos.x,z:mo.pos.z};
    if(s.balls)apoBalls(c,s,null);

@@ -193,7 +193,9 @@ export class Dungeons {
     for (const sid of inst.members) {
       const s = this.h.sess.get(sid), p = this.h.state.players.get(sid); if (!s || !p || p.dead) continue;
       if (Math.hypot(p.x - sim.m.x, p.z - sim.m.z) > 45) continue;
-      const items = R.dgChestLoot(inst.def, sim.tier, s.c.cls, R.luckOf(s.c, (s.buffs.luck && s.buffs.luck.until > Date.now()) ? s.buffs.luck.val : 0));
+      const fin = sid === sim.lastHitBy && (sim as any).lhSk && s.c.cls === "pierrot" ? R.FINISH_LUCK : 0;      // v1.69: golpe final do Pierrot com habilidade: mais sorte no baú
+      const items = R.dgChestLoot(inst.def, sim.tier, s.c.cls, R.luckOf(s.c, ((s.buffs.luck && s.buffs.luck.until > Date.now()) ? s.buffs.luck.val : 0) + fin));
+      if (fin) s.client.send("res", { ok: true, out: [{ log: `<span style="color:#6fdc7f">🍀 Golpe final do Pierrot: +${Math.round(fin * 100)}% de sorte neste baú!</span>` }] });
       for (const it of items) this.h.addDrop(s, it, sim.m.x, sim.m.z, 0);
       s.client.send("res", { ok: true, out: [{ toast: "🎁 O baú se abriu!" }, { sfx: "rare" }] });
     }

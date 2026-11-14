@@ -36,6 +36,8 @@ const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }];   // pontos
 const NPC_REACH = 8, PICK_REACH = 7, HIT_SLACK = 4;  // folgas por causa da latência
 
 type Buff = { val: number; until: number };
+/* v1.69 — clone do Pierrot. k: "o" = Clones Ilusórios (giram em volta do dono e avançam nos monstros), "d" = clone do Florete Voador (isca: os monstros focam nele). tid = alvo (id do monstro ou "p"+sessão em PvP) */
+type PClone = { j: number; k: "o" | "d"; x: number; z: number; tid: any; next: number; busy: number; sw: number; until: number; mult: number; inst: number; seek: number };
 type Sess = {
   client: Client; acc: AuthUser; charId: string; c: any; stash: any[]; potAt?: number;
   t: number; budget: number; lastChat: number; lastRecall: number; lastPortal: number; lastRevive: number;
@@ -43,7 +45,8 @@ type Sess = {
   tokens: number; tokT: number;
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
   seen: Set<number>; busyUntil: number; skUntil?: number;
-  partyId: number; ward?: { v: number; until: number }; clone?: { n: number; mult: number; until: number };
+  partyId: number; ward?: { v: number; until: number };
+  cls?: PClone[]; clAt?: number; foil?: { x: number; z: number; inst: number; until: number; used: boolean };   // v1.69 Pierrot: clones vivos e florete cravado no chão (Passo de Bailarino)
   mv?: Map<number, string>;                                    // v1.68: monstros que este jogador está vendo (último estado enviado)
   pv?: any; px?: any; noDuel?: boolean; tpAt?: number;      // PvP (duelo / Arena PK): estado, alvo-proxy, "não aceitar duelos", último teleporte
 };
@@ -132,6 +135,69 @@ export class WorldRoom extends Room<WorldState> {
       }
       const rm: number[] = []; for (const id of mv.keys()) if (!seen.has(id)) { rm.push(id); mv.delete(id); }
       if (f.length || u.length || rm.length) s.client.send("mo", rm.length ? { f, u, r: rm } : { f, u });
+    }
+  }
+  /* ---------- v1.69: clones do Pierrot ---------- */
+  private nearSend(p: any, type: string, msg: any) {
+    for (const o of this.sess.values()) { const q = this.state.players.get(o.client.sessionId); if (q && (q.inst || 0) === (p.inst || 0) && Math.abs(q.x - p.x) < ACTIVE_R && Math.abs(q.z - p.z) < ACTIVE_R) o.client.send(type, msg); }
+  }
+  private cloneAdd(s: Sess, k: "o" | "d", items: { j: number; x: number; z: number; tid: any }[], sk: any) {
+    const now = Date.now(), p = this.playerOf(s), sid = s.client.sessionId; if (!p) return;
+    s.cls = (s.cls || []).filter((c) => c.k !== k && now < c.until);                      // lançar de novo substitui os clones do mesmo tipo
+    for (const it of items) {
+      const c: PClone = { j: it.j, k, x: it.x, z: it.z, tid: it.tid, next: now + 250, busy: 0, sw: 0, until: now + sk.dur * 1000, mult: sk.cloneMult || 0.5, inst: p.inst || 0, seek: sk.seek || 7 };
+      s.cls.push(c);
+      if (k === "d") this.sim.lure("d" + sid, c, c.inst, sk.dur * 1000, 9, sid);        // os monstros passam a focar o clone
+    }
+    s.clAt = 0; this.clonesSend(s, p, now);
+  }
+  private clonesSend(s: Sess, p: any, now: number) {
+    s.clAt = now + 100;
+    this.nearSend(p, "cl", { by: s.client.sessionId, c: (s.cls || []).map((c) => { const a: any[] = [c.j, c.k, Math.round(c.x * 10), Math.round(c.z * 10), typeof c.tid === "number" ? c.tid : 0, c.sw, Math.max(0, Math.round((c.until - now) / 100))]; if (typeof c.tid === "string") a.push(c.tid.slice(1)); return a; }) });
+  }
+  /** IA dos clones (a cada passo do servidor): escolhem alvos, andam até eles e dão ataques básicos; sem alvo, os Ilusórios giram em volta do dono. */
+  private clonesTick(now: number, dt: number) {
+    for (const s of this.sess.values()) {
+      let L = s.cls; if (!L || !L.length) continue;
+      const p = this.playerOf(s);
+      if (!p || p.dead) { s.cls = []; if (p) this.clonesSend(s, p, now); continue; }
+      const n0 = L.length; L = s.cls = L.filter((c) => now < c.until && c.inst === (p.inst || 0));
+      if (!L.length) { if (n0) this.clonesSend(s, p, now); continue; }
+      const duel = !!(s.pv && s.pv.mode === "duel"), inst = p.inst || 0, F: any[] = [];
+      if (!duel) for (const sim of this.sim.list) {
+        if (!sim.m.alive || sim.inst !== inst || sim.immune || sim.T.node || Math.abs(sim.m.x - p.x) > 24 || Math.abs(sim.m.z - p.z) > 24) continue;
+        if (sim.inst && this.dg.dormant(sim)) continue;
+        F.push(sim);
+      }
+      if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) F.push(q);                   // outros jogadores: só em duelo ou na Arena PK
+      const idOf = (f: any) => (f.pv ? "p" + f.sid : f.m.id), by = new Map<any, any>(); for (const f of F) by.set(idOf(f), f);
+      const dist = (x: number, z: number, f: any) => Math.hypot(f.m.x - x, f.m.z - z);
+      const orb = L.filter((c) => c.k === "o");
+      if (orb.length) {                     // cada clone num monstro diferente; se houver menos monstros que clones, eles dividem
+        const seek = orb[0].seek, cand = F.filter((f) => dist(p.x, p.z, f) <= seek + 0.5 * (f.bs || 1)).sort((a, b) => dist(p.x, p.z, a) - dist(p.x, p.z, b));
+        const ids = new Set(cand.map(idOf)), cnt = new Map<any, number>();
+        for (const c of orb) { if (c.tid != null && !ids.has(c.tid)) c.tid = null; if (c.tid != null) cnt.set(c.tid, (cnt.get(c.tid) || 0) + 1); }
+        const free = cand.filter((f) => !cnt.get(idOf(f)));
+        for (const c of orb) if (c.tid == null && cand.length) { const f = free.shift() || cand.reduce((a, b) => ((cnt.get(idOf(a)) || 0) <= (cnt.get(idOf(b)) || 0) ? a : b)); c.tid = idOf(f); cnt.set(c.tid, (cnt.get(c.tid) || 0) + 1); }
+        for (const c of orb) { if (!free.length) break; if ((cnt.get(c.tid) || 0) > 1) { cnt.set(c.tid, (cnt.get(c.tid) || 0) - 1); c.tid = idOf(free.shift()); cnt.set(c.tid, 1); } }
+      }
+      const st = this.stats(s), iv = 900 / ((st.atkSpd || 1) * (1 + this.buff(s, "aspd")));
+      for (const c of L) {
+        if (c.k === "d") {
+          if (c.tid != null && !by.has(c.tid)) c.tid = null;
+          if (c.tid == null) { let b: any = null, bd = 7; for (const f of F) { const d = dist(c.x, c.z, f); if (d < bd) { bd = d; b = f; } } if (b) c.tid = idOf(b); }
+        }
+        const f = c.tid != null ? by.get(c.tid) : null;
+        if (f) {
+          const reach = 1.3 + 0.5 * (f.bs || 1), dx = f.m.x - c.x, dz = f.m.z - c.z, d = Math.hypot(dx, dz);
+          if (d > reach) { const stp = Math.min(11 * dt, d - reach * 0.9); c.x += (dx / d) * stp; c.z += (dz / d) * stp; }
+          else if (now >= c.next && now >= c.busy) { c.next = now + iv; c.sw++; this.later(120, () => this.hit(s, f, c.mult, { basic: true, clone: true })); }
+        } else if (c.k === "o") {
+          const a = now * 0.0016 + c.j * 6.2832 / Math.max(1, orb.length), gx = p.x + Math.cos(a) * 1.9, gz = p.z + Math.sin(a) * 1.9, dx = gx - c.x, dz = gz - c.z, d = Math.hypot(dx, dz);
+          if (d > 14) { c.x = gx; c.z = gz; } else if (d > 0.01) { const stp = Math.min(16 * dt, d); c.x += (dx / d) * stp; c.z += (dz / d) * stp; }
+        }
+      }
+      if (now >= (s.clAt || 0)) this.clonesSend(s, p, now);
     }
   }
   /* ---------- grupos ---------- */
@@ -241,13 +307,12 @@ export class WorldRoom extends Room<WorldState> {
     const buffs = { dmg: this.buff(s, "dmg"), defdmg: this.buff(s, "defdmg"), crit: this.buff(s, "crit"), combo: this.buff(s, "combo"), flat: this.buff(s, "flat") };
     const r = R.hitDamage(this.stats(s), { mult, basic: o.basic, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: Date.now() < sim.markUntil, buffs }, { def: sim.def * (1 - (o.pierce || 0)), hp: sim.m.hp, maxHp: sim.m.maxHp });
     const hp0 = sim.m.hp;
+    (sim as any).lhSk = !o.basic || !!o.clone;                  // v1.69: o último golpe foi de habilidade (ou de clone)? vale para a sorte do Pierrot em chefes e baús
     const died = this.sim.damage(sid, sim, r.dmg, o.slow || 0);
     this.broadcast("dmg", { id: sim.m.id, d: r.dmg, c: r.crit ? 1 : 0, by: sid });
     this.hitXp(s, sim, Math.min(r.dmg, hp0), o);                // XP a cada golpe (não só ao matar)
     if (died) { this.onKill(sim); return; }
     if (o.stun || o.root || o.lift || o.pull) this.sim.cc(sim, o, p.x, p.z);
-    const cl = s.clone;                                         // Pierrot: os clones atacam junto
-    if (!o.noClone && cl && cl.until > Date.now()) for (let n = 0; n < cl.n; n++) this.later(110 + n * 80, () => this.hit(s, sim, mult * cl.mult, { noClone: true, basic: o.basic }));
   }
   private hitNear(s: Sess, x: number, z: number, r: number, mult: number, o: any, seen: Set<Sim>) {
     const inst = this.playerOf(s)?.inst || 0;
@@ -270,6 +335,14 @@ export class WorldRoom extends Room<WorldState> {
     const inst = this.playerOf(s)?.inst || 0;
     for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, { ...o, aoe: true });
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) if (Math.hypot(q.m.x - x, q.m.z - z) <= r + 0.5) this.hit(s, q, mult, o);
+  }
+  /** Área com limite de alvos: só os `max` mais próximos do centro são atingidos. */
+  private hitAreaMax(s: Sess, x: number, z: number, r: number, mult: number, o: any, max: number) {
+    const inst = this.playerOf(s)?.inst || 0, L: { q: any; d: number }[] = [];
+    for (const sim of this.sim.list) { if (!sim.m.alive || sim.inst !== inst || cx(sim.m.x) !== cx(x)) continue; const d = Math.hypot(sim.m.x - x, sim.m.z - z); if (d <= r + 0.5 * sim.bs) L.push({ q: sim, d }); }
+    if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) { const d = Math.hypot(q.m.x - x, q.m.z - z); if (d <= r + 0.5) L.push({ q, d }); }
+    L.sort((a, b) => a.d - b.d);
+    for (const e of L.slice(0, max)) this.hit(s, e.q, mult, e.q.pv ? o : { ...o, aoe: true });
   }
   private dot(s: Sess, sim: Sim, dmg: number, slow = 0) {                     // dano contínuo fixo
     if ((sim as any).pv) return this.pvp.dot(s, sim as any, dmg, slow);
@@ -344,10 +417,12 @@ export class WorldRoom extends Room<WorldState> {
       if (!sim.lazy) gpAdd(s, T.boss ? R.GP.boss : R.GP.kill);                          // Pontos de Guilda
       this.touch(s); this.sync(s); this.res(s, out);
       const gf = this.stats(s).gf || 0;                               // bônus de conjunto: mais ouro dos monstros
-      if (!sim.lazy || Math.random() < 0.5) for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck")))) { if (it.k === "gold" && gf) it.n = Math.round(it.n * (1 + gf)); this.addDrop(s, it, mx, mz, 0); }
+      const fin = T.boss && sid === sim.lastHitBy && (sim as any).lhSk && c.cls === "pierrot" ? R.FINISH_LUCK : 0;   // v1.69: golpe final do Pierrot com habilidade em chefe: mais sorte no drop
+      if (fin) this.res(s, [{ log: `<span style="color:#6fdc7f">🍀 Golpe final do Pierrot: +${Math.round(fin * 100)}% de sorte neste drop!</span>` }], false);
+      if (!sim.lazy || Math.random() < 0.5) for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck") + fin))) { if (it.k === "gold" && gf) it.n = Math.round(it.n * (1 + gf)); this.addDrop(s, it, mx, mz, 0); }
       if (!sim.inst) {                                                  // ingresso de dungeon: drop raro (0,3% comum / 4% chefe) — vem a dungeon da região onde o monstro morreu
         const reg = R.regOf(mx), cand = R.DUNGEONS.filter((d: any) => (d.reg || 300) === reg && mlvl >= d.minLevel - 8);
-        if (cand.length && Math.random() < (T.boss ? 0.04 : 0.003) * (1 + R.luckOf(c, this.buff(s, "luck")))) this.addDrop(s, { k: "tix", id: cand[Math.floor(Math.random() * cand.length)].id, n: 1 }, mx, mz, 0);
+        if (cand.length && Math.random() < (T.boss ? 0.04 : 0.003) * (1 + R.luckOf(c, this.buff(s, "luck") + fin))) this.addDrop(s, { k: "tix", id: cand[Math.floor(Math.random() * cand.length)].id, n: 1 }, mx, mz, 0);
       }
     });
     if (sim.inst) this.dg.onKill(sim);
@@ -360,6 +435,12 @@ export class WorldRoom extends Room<WorldState> {
     const rank = c.sk[i] || 0; if (!rank || c.level < C.skills[i].lv) return;
     if (s.form && Date.now() < s.form) return;                         // Metamorfose: só ataque básico
     if (this.isPaused(p)) return;
+    if (C.skills[i].type === "foilStep" && s.foil && !s.foil.used && Date.now() < s.foil.until) {   // Passo de Bailarino de novo: troca de lugar com o florete cravado
+      const f = s.foil; if ((p.inst || 0) !== f.inst || cx(f.x) !== cx(p.x)) { s.foil = undefined; return; }
+      const ox = p.x, oz = p.z; p.x = f.x; p.z = f.z; f.x = ox; f.z = oz; f.used = true; s.tpAt = Date.now(); s.t = Date.now();
+      this.broadcast("fx", { by: s.client.sessionId, i, rc: 1, x: p.x, z: p.z, fx: ox, fz: oz }, { except: s.client });
+      return;
+    }
     if (c.cls !== "assassino" && Date.now() < s.busyUntil - 220) return;   // uma habilidade só depois do fim da animação da outra
     if (!(C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck") && Date.now() < (s.skUntil || 0) - 250) return;   // vale para todas as classes: tempo de exibição da habilidade anterior (R.castMs)
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
@@ -379,7 +460,7 @@ export class WorldRoom extends Room<WorldState> {
       this.broadcast("fx", { by: s.client.sessionId, i, pid: String(m.pid), x: p.x, z: p.z }, { except: s.client });
       return;
     }
-    const off = !["buff", "dashBack", "heal", "clone", "transform"].includes(sk.type);
+    const off = !["buff", "dashBack", "heal", "clone", "transform", "foilStep"].includes(sk.type);
     if (off && R.inTown(p.x, p.z)) return;
     if ((sk as any).ward && s.pv && s.pv.mode === "duel") return;       // Égide: não funciona em duelo
     let tgt: Sim | undefined;
@@ -411,8 +492,14 @@ export class WorldRoom extends Room<WorldState> {
     }
     let ux = 0, uz = 1;                    // direção da habilidade (Escudo Voador / Raio do Escudo)
     if (Number.isFinite(m?.dx) && Number.isFinite(m?.dz)) { const dl = Math.hypot(m.dx, m.dz); if (dl > 0.01) { ux = m.dx / dl; uz = m.dz / dl; } }
-    const pq: any = tgt && (tgt as any).pv ? tgt : star.find((q: any) => q.pv);          // alvo jogador (PvP)
-    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt && !(tgt as any).pv ? tgt.m.id : 0, ptid: pq ? pq.sid : undefined, x: p.x, z: p.z, dx: ux, dz: uz, n: sk.dag || 0, tids: star.filter((q: any) => !q.pv).map((q) => q.m.id) }, { except: s.client });
+    let ft: any = null;                    // Florete Voador: alvo opcional (o clone nasce ao lado dele)
+    if (sk.type === "foilThrow") {
+      ft = (s.pv && s.pv.mode && m?.pid) ? this.pvp.target(s, String(m.pid)) : this.sim.byId.get(Number(m?.tid));
+      if (ft && (!ft.m.alive || ft.inst !== p.inst || cx(ft.m.x) !== cx(p.x) || Math.hypot(ft.m.x - p.x, ft.m.z - p.z) > sk.range + HIT_SLACK)) ft = null;
+      if (ft) { const dl = Math.hypot(ft.m.x - p.x, ft.m.z - p.z); if (dl > 0.01) { ux = (ft.m.x - p.x) / dl; uz = (ft.m.z - p.z) / dl; } }
+    }
+    const pq: any = tgt && (tgt as any).pv ? tgt : ft && ft.pv ? ft : star.find((q: any) => q.pv);          // alvo jogador (PvP)
+    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt && !(tgt as any).pv ? tgt.m.id : ft && !ft.pv ? ft.m.id : 0, ptid: pq ? pq.sid : undefined, x: p.x, z: p.z, dx: ux, dz: uz, n: sk.dag || 0, tids: star.filter((q: any) => !q.pv).map((q) => q.m.id) }, { except: s.client });
     const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec, stun: sk.stun, root: sk.root, lift: sk.lift, pull: sk.pull, forceCrit: sk.forceCrit, pierce: sk.pierce };
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
@@ -432,13 +519,41 @@ export class WorldRoom extends Room<WorldState> {
         { const NB = Math.max(1, Math.round(((sk as any).beam || 3) * 1000 / 300)); for (let k = 0; k < NB; k++) this.later(350 + k * 300, () => { const q = this.playerOf(s); if (q && !q.dead) this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.5, mult * 10 / NB, so); }); }   // mesmo dano total do raio antigo (10 pulsos), em menos tempo
         break;
       }
-      case "aoeMulti": for (let h = 0; h < sk.hits; h++) this.later(200 + h * 200, () => this.hitArea(s, p.x, p.z, sk.radius, mult, so)); break;
+      case "aoeMulti": {
+        const gap = (sk as any).gap || 200, t0 = (sk as any).gap ? 150 : 200, maxT = (sk as any).maxT || 0;
+        for (let h = 0; h < sk.hits; h++) this.later(t0 + h * gap, () => { if (p.dead) return; if (maxT) this.hitAreaMax(s, p.x, p.z, sk.radius, mult, so, maxT); else this.hitArea(s, p.x, p.z, sk.radius, mult, so); });
+        if ((sk as any).cloneSpin) this.later(t0 + gap, () => {             // Redemoinho Circense: cada clone ativo dá 1 giro com 20% do dano
+          const tn = Date.now(), L = (s.cls || []).filter((c) => tn < c.until); if (!L.length || p.dead) return;
+          for (const c of L) { c.busy = tn + 500; this.hitAreaMax(s, c.x, c.z, sk.radius, mult * (sk as any).cloneSpin, { ...so, clone: true }, maxT || 99); }
+          this.nearSend(p, "clspin", { by: s.client.sessionId, r: sk.radius, c: L.map((c) => c.j) });
+        });
+        break;
+      }
+      case "foilThrow": {                   // Florete Voador: o florete voa (fere quem estiver no caminho) e, ao chegar, vira um clone-isca por 2s
+        const d = ft ? Math.min(sk.range, Math.max(1.2, Math.hypot(ft.m.x - px, ft.m.z - pz) - 1.3)) : sk.range, inst0 = p.inst || 0;
+        const e: any = { x: clampX(px + ux * d, px), z: clampZ(pz + uz * d, p.inst), inst: p.inst }; this.dgClamp(e, px, pz);
+        const W0 = 180, fly = Math.max(60, (d / 22) * 1000), seen = new Set<Sim>();
+        for (let t = 0; t <= fly; t += 80) this.later(W0 + t, () => { const f = t / fly; this.hitNear(s, px + (e.x - px) * f, pz + (e.z - pz) * f, 1.2, mult, so, seen); });
+        this.later(W0 + fly, () => {
+          const q = this.playerOf(s); if (!q || q.dead || (q.inst || 0) !== inst0) return;
+          this.cloneAdd(s, "d", [{ j: 3, x: e.x, z: e.z, tid: ft && ft.m.alive ? (ft.pv ? "p" + ft.sid : ft.m.id) : null }], sk);
+        });
+        break;
+      }
+      case "foilStep":                      // Passo de Bailarino: o florete fica cravado onde o jogador estava; o salto em si é feito pelo cliente (folga de movimento)
+        s.foil = { x: p.x, z: p.z, inst: p.inst || 0, until: now + sk.dur * 1000, used: false }; s.budget = BURST;
+        for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);
+        break;
       case "taunt": {
         for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);
         for (const sim of this.sim.list) if (sim.m.alive && sim.inst === p.inst && cx(sim.m.x) === cx(p.x) && Math.hypot(sim.m.x - px, sim.m.z - pz) <= sk.radius) this.sim.taunt(sim, s.client.sessionId, sk.dur * 1000);
         break;
       }
-      case "clone": s.clone = { n: sk.clones, mult: sk.cloneMult, until: now + sk.dur * 1000 }; this.broadcast("clones", { by: s.client.sessionId, n: sk.clones, dur: sk.dur }); break;
+      case "clone": {                       // Clones Ilusórios: 3 clones em volta do dono
+        const n = sk.clones || 3;
+        this.cloneAdd(s, "o", Array.from({ length: n }, (_, j) => { const a = now * 0.0016 + j * 6.2832 / n; return { j, x: p.x + Math.cos(a) * 1.9, z: p.z + Math.sin(a) * 1.9, tid: null }; }), sk);
+        break;
+      }
       case "aoeTarget": { const tx = tgt!.m.x, tz = tgt!.m.z; if (sk.balls) { for (let k = 0; k < sk.balls; k++) this.later(600 + k * sk.gap, () => this.hitArea(s, tx, tz, sk.radius, mult / sk.balls, so)); break; }
         this.later(sk.meteor ? 600 : 650, () => this.hitArea(s, tx, tz, sk.radius, mult, so)); break; }
       case "barrage": case "dash": {
@@ -562,6 +677,7 @@ export class WorldRoom extends Room<WorldState> {
     this.setSimulationInterval(() => {
       const now = Date.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (this.clients.length) this.sim.update(dt);
+      this.clonesTick(now, dt);
       if (now > sweepAt) {
         sweepAt = now + 2000;
         let ch = false;

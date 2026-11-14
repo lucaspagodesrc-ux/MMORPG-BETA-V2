@@ -115,16 +115,16 @@ const CLASSES={
    {n:'Golpe Ascendente',i:'⏫',lv:12,cd:15,mp:28,type:'aoeSelf',mult:.8,radius:4.5,lift:1600,delay:600,anim:'sumo',color:'#ffd27a',d:'Bate mãos e pés no chão como um lutador de sumô e lança os inimigos para o alto, atordoados. Alvos com esquiva alta podem escapar.'},
    {n:'Muralha de Ferro',i:'🧱',lv:15,cd:180,cdMin:180,cdAlly:360,mp:30,type:'buff',ally:1,buffs:{shield:.5,evade:.1},evMin:.1,evMax:.3,fixBuff:1,dur:20,fixDur:1,color:'#7fa6d9',d:'Buff de 20s: -50% de dano recebido e +10% de esquiva (até +30% no nível máximo). Recarga 180s. Também pode ser lançada em outro jogador (clique no personagem dele), com recarga de 360s.'},
    {n:'Sentença do Colosso',i:'🗿',lv:25,cd:40,mp:55,type:'roll',mult:.6,radius:2.4,range:10,dur:4,fixDur:1,stun:500,color:'#fff2a8',d:'Rola pelo mapa por 4s batendo nos monstros. Ao bater em parede, pedra ou árvore, ricocheteia e muda de sentido.'}]}, pierrot:{n:'Pierrot',i:'🤡',wi:'🤺',main:'agi',base:{str:3,agi:12,int:4,vit:4},range:2.6,ranged:false,
-  d:'Palhaço acrobata: frágil, mas com CRÍTICO alto e muita SORTE (mais raros, slots e épicos +0~+4). Giros, estocadas e CLONES.',
+  d:'Palhaço acrobata: frágil, mas com CRÍTICO alto e muita SORTE (mais raros, slots e épicos +0~+4). Florete, estocadas e CLONES. Golpe final de habilidade em chefe ou baú: +50% de sorte no drop.',
   skills:[
-   {n:'Estocada',i:'🤺',lv:1,cd:2.5,mp:6,type:'single',mult:2.1,range:3.4,color:'#ff6b9a',d:'Estocada veloz de florete.'},
-   {n:'Pirueta Giratória',i:'🌀',lv:3,cd:6,mp:14,type:'aoeSelf',mult:1.5,radius:3.6,color:'#ff9ad0',d:'Gira golpeando todos ao redor.'},
-   {n:'Passo de Bailarino',i:'💃',lv:5,cd:8,mp:12,type:'dash',mult:1.6,range:10,color:'#ffd27a',d:'Desliza até o alvo e o atravessa com uma estocada.'},
+   /* v1.69 — Pierrot refeito: recargas fixas (cdMin = cd), clones que atacam sozinhos, Grand Finale removido (7 habilidades) */
+   {n:'Estocada',i:'🤺',lv:1,cd:4,cdMin:4,mp:6,type:'single',mult:2.1,range:3.4,color:'#ff6b9a',d:'Estocada veloz de florete.'},
+   {n:'Florete Voador',i:'🗡️',lv:3,cd:8,cdMin:8,mp:14,type:'foilThrow',anim:'throw',mult:.9,range:9,dur:2,fixDur:1,cloneN:1,cloneMult:1,color:'#ff9ad0',d:'Parado, arremessa o florete (fere quem estiver no caminho). No fim do alcance surge um CLONE seu que ataca o alvo por 2s — os monstros passam a focar o clone. Uma marca mostra quem é o clone e quem é você.'},
+   {n:'Passo de Bailarino',i:'💃',lv:5,cd:10,cdMin:10,mp:12,type:'foilStep',range:7,dur:3,fixDur:1,buffs:{haste:.2},fixBuff:1,color:'#ffd27a',d:'Crava o florete no chão e salta para a frente (+20% de velocidade por 3s). Use de novo em até 3s para TROCAR de lugar com o florete. Depois de 3s o florete some.'},
    {n:'Truque da Sorte',i:'🍀',lv:8,cd:30,mp:20,type:'buff',buffs:{crit:.3,luck:.6},dur:15,color:'#6fdc7f',d:'+30% crítico e +60% de SORTE nos drops por 15s.'},
-   {n:'Estocada Tripla',i:'⚔️',lv:12,cd:8,mp:22,type:'multi',hits:3,mult:1.15,range:3.6,color:'#ff6b9a',d:'Três estocadas seguidas no alvo.'},
-   {n:'Clones Ilusórios',i:'👥',lv:15,cd:30,mp:30,type:'clone',cloneMult:.25,dur:15,color:'#c79bff',d:'Cria clones que atacam junto com você. +1 clone a cada 4 ranks (rank 1, 5, 9, 13, 17).'},
-   {n:'Redemoinho Circense',i:'🎪',lv:20,cd:16,mp:38,type:'aoeMulti',hits:4,mult:.95,radius:4.4,color:'#ff4a8a',d:'Um furacão de lâminas: vários giros em sequência.'},
-   {n:'Grand Finale',i:'🎭',lv:25,cd:24,mp:45,type:'single',mult:6.5,range:3.6,forceCrit:true,color:'#ffe28a',d:'Golpe final teatral: CRÍTICO garantido.'}]}
+   {n:'Estocada Tripla',i:'⚔️',lv:12,cd:6,cdMin:6,mp:22,type:'multi',hits:3,fixHits:1,mult:1.15,range:3.6,color:'#ff6b9a',d:'Três estocadas seguidas no alvo (sempre 3 golpes).'},
+   {n:'Clones Ilusórios',i:'👥',lv:15,cd:40,cdMin:40,mp:30,type:'clone',cloneN:3,cloneMult:.5,seek:9,dur:5,fixDur:1,color:'#c79bff',d:'3 clones giram ao seu redor por 5s. Quando um monstro entra no raio de ação, eles avançam e dão ataques básicos — cada clone escolhe um monstro diferente (se houver só um, todos atacam o mesmo).'},
+   {n:'Redemoinho Circense',i:'🎪',lv:20,cd:12,cdMin:12,mp:38,type:'aoeMulti',anim:'spin3',hits:3,fixHits:1,gap:500,maxT:3,cloneSpin:.2,mult:.95,radius:4.4,color:'#ff4a8a',d:'3 giros em 1,5s; cada giro fere até 3 monstros. Cada clone ativo também dá 1 giro, com 20% do seu dano.'}]}
 };
 /* Elemento visual de cada habilidade (efeitos no chão, partículas): wind, fire, ice, water, lightning, earth, poison, shadow, holy, blood, steel, arcane, nature, circus */
 const SKFX={guerreiro:['steel','wind','wind','fire','earth','blood','fire','steel'],arqueiro:['wind','water','wind','fire','wind','ice','lightning','shadow'],
@@ -984,6 +984,8 @@ function chkTitles(c, out) {
 const skCost = r => r < 3 ? 1 : r < 10 ? 2 : 3;
 /** Sorte nos drops (só o Pierrot tem). `boost` = buff temporário (+60% = .6). */
 const luckOf = (c, boost) => c.cls === 'pierrot' ? Math.round(stats(c).luck * (1 + (boost || 0)) * 10) / 10 : 0;
+/** Pierrot: sorte extra no drop de CHEFE ou BAÚ quando o golpe final foi dele, com uma habilidade (ou com um clone). Soma com o Truque da Sorte. */
+const FINISH_LUCK = .5;
 /** Há alguma habilidade que o jogador pode melhorar agora? (usado para mostrar o aviso de pontos) */
 const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && (c.sk[i] || 0) < MAXRANK && c.sp >= skCost(c.sk[i] || 0));
 
@@ -998,7 +1000,7 @@ function skStat(cls, i, rank) {
   if (s.flatMin != null) bf.flat = s.flatMin + (s.flatMax - s.flatMin) * Math.min(1, k / (MAXRANK - 1));
   if (s.evMin != null && bf.evade != null) bf.evade = s.evMin + (s.evMax - s.evMin) * Math.min(1, k / (MAXRANK - 1));
   const cc = x => x ? Math.round(x * Math.min(1.6, 1 + .05 * k)) : 0;
-  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) * (AOE_T[s.type] ? AOE_K : 1) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? (s.radius + ph(k, .25, .1)) * (s.mult ? AOE_R : 1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneMult ? 1 + Math.floor(k / 4) : 0, cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
+  return { ...s, mult: s.mult ? s.mult * (1 + ph(k, .2, .08)) * (AOE_T[s.type] ? AOE_K : 1) : 0, mp: Math.round(s.mp * (1 + ph(k, .06, .03))), cd: s.cdMin != null ? s.cd - (s.cd - s.cdMin) * Math.min(1, k / (MAXRANK - 1)) : s.cd * (1 - Math.min(.5, ph(k, .04, .015))), radius: s.radius ? (s.radius + ph(k, .25, .1)) * (s.mult ? AOE_R : 1) : 0, pct: s.pct ? (s.fixPct ? s.pct : Math.min(.9, s.pct * (1 + ph(k, .15, .05)))) : 0, dur: s.dur ? (s.fixDur ? s.dur : s.dur * (1 + ph(k, .1, .03))) : 0, buffs: s.buffs ? bf : null, dag: s.dagMax ? s.dagMin + Math.round((s.dagMax - s.dagMin) * Math.min(1, k / (MAXRANK - 1))) : 0, slow: s.slow ? s.slow * (1 + ph(k, .1, .03)) : 0, defMult: s.defMult ? s.defMult * (1 + ph(k, .2, .08)) : 0, hits: s.hits ? (s.fixHits ? s.hits : s.hits + (k >= 4 ? 1 : 0) + (k >= 10 ? 1 : 0) + (k >= 16 ? 1 : 0)) : 0, stun: s.fixStun ? s.stun : cc(s.stun), root: cc(s.root), lift: cc(s.lift), clones: s.cloneN || (s.cloneMult ? 1 + Math.floor(k / 4) : 0), cloneMult: s.cloneMult ? s.cloneMult * (1 + ph(k, .05, .02)) : 0 };
 }
 
 /** Dano de um golpe. d = stats(); o = {mult, defMult, exec, marked, buffs:{dmg,defdmg,crit,combo}}; mon = {def, hp, maxHp}. */
@@ -1290,7 +1292,7 @@ function cleanBar(b) {
 }
 function newChar(cls, name) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(24).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
-  c.bar = defBar(); c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
+  c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; } c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
@@ -1311,6 +1313,7 @@ function gmChar(cls, old) {
   c.inv = Array(24).fill(null); c.inv[0] = { k: 'pot', id: 'hp', n: 99 }; c.inv[1] = { k: 'pot', id: 'mp', n: 99 };
   c.bar = defBar(); c.v = R.VERSION;
   if (cls === 'tanque') { c.tkv = 1; c.sk[7] = 0; c.bar = [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1]; }
+  if (cls === 'pierrot') { c.prv = 1; c.sk[7] = 0; c.bar = [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1]; }
   return c;
 }
 /** Limites máximos possíveis de um equipamento (para detectar itens editados). */
@@ -1363,6 +1366,10 @@ function migrate(c) {
     c.sp = (c.sp || 0) + rf; c.sk[6] = c.sk[7] || 0; c.sk[7] = 0;
     const b0 = Array.isArray(c.bar) ? c.bar : defBar(), isDef = b0.slice(0, 8).every((v, i) => v === i);
     c.bar = isDef ? [0, 1, 2, 3, 4, 5, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1] : b0.map(v => v === 6 ? -1 : v === 7 ? 6 : v);
+  }
+  if (c.cls === 'pierrot' && !c.prv) {           // v1.69: Grand Finale foi removido — devolve os pontos gastos nele e tira da barra
+    c.prv = 1; const old = c.sk[7] || 0; let rf = 0; for (let r = 0; r < old; r++) rf += skCost(r);
+    c.sp = (c.sp || 0) + rf; c.sk[7] = 0; if (Array.isArray(c.bar)) c.bar = c.bar.map(v => v === 7 ? -1 : v);
   }
   c.bar = cleanBar(c.bar);
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < 24) c.inv.push(null);
@@ -1730,7 +1737,7 @@ const arenaPrize = (c, i) => {
   return { gold: ARENA.prize[i] || 0, items };
 };
 
-const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, stomp: 600, sumo: 1100, stab: 600, sky: 700, charge: 700, blast: 420 };
+const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, spin3: 1500, stomp: 600, sumo: 1100, stab: 600, sky: 700, charge: 700, blast: 420 };
 /* cores dos conjuntos: cada conjunto (origem) fica com uma cor própria e bem diferente das outras, para dar para reconhecer a peça pelo visual.
    A cor original é mantida quando já é única; quando parece com a de um conjunto anterior, o matiz é girado até ficar distinta. colO/col2O guardam as originais. */
 (() => {
@@ -1761,7 +1768,9 @@ const castMs = (cls, i, x) => {
     case 'multi': t = s.fan ? 580 + fly : (hits - 1) * 190 + 300 + (pr ? fly : 0); break;
     case 'stab3': t = 650; break;
     case 'aoeSelf': t = s.delay ? s.delay + 350 : 450; break;
-    case 'aoeMulti': t = 200 + hits * 200 + 150; break;
+    case 'aoeMulti': t = s.gap ? hits * s.gap : 200 + hits * 200 + 150; break;
+    case 'foilThrow': t = 250 + (s.range || 9) / 22 * 1000; break;                    // arremesso + voo do florete
+    case 'foilStep': t = 350; break;
     case 'aoeTarget': t = s.balls ? (s.balls - 1) * (s.gap || 420) + 850 : s.meteor ? 850 : 900; break;
     case 'barrage': t = 200 + hits * 130 + 200; break;
     case 'dash': t = 450; break;
@@ -1780,7 +1789,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);
