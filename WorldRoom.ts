@@ -386,7 +386,7 @@ export class WorldRoom extends Room<WorldState> {
     let k = 1 + this.partyBonus(s);
     if (o.aoe) k += 0.1;
     if (!o.basic && !o.dot && sim.inst) k += 0.2;
-    const x = R.xpFor(T, sim.m.lvl, s.c.level) * 0.5 * frac * k * (sim.lazy ? 0.35 : 1);
+    const x = R.xpFor(T, sim.m.lvl, s.c.level) * 1.0 * frac * k * (sim.lazy ? 0.35 : 1);   // v1.73: XP por golpe dobrado (era 0.5)
     (s as any).xpAcc = ((s as any).xpAcc || 0) + x;
     const now = Date.now(); if (now - ((s as any).xpAt || 0) >= 700) this.flushXp(s);
   }

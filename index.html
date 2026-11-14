@@ -2278,7 +2278,7 @@ function mkLabel(html,cls){const d=document.createElement('div');d.className='lb
 /* =================== NPCs (Hand-Painted: rosto, cabelo, roupas e adereços por função) =================== */
 const NPCL={   // id: [kit, pele, cabelo, cor do cabelo, barba, cor da barba, rosto extra]
  gemas_a:['sage','#eec6a2','bun','#a070d0'],gemas_s:['merchant','#c89868','short','#1a1210','full','#1a1210'],gemas_n:['seer','#f0d0b8','long','#e8f0ff'],
- ferreiro:['smith','#d8a47c','short','#3a2418','full','#3a2418'],mercador:['merchant','#f0c8a0','ponytail','#7a4a22'],capitao:['captain','#e0b088','short','#5a3a22','stubble','#5a3a22'],
+ ferreiro:['smith','#d8a47c','short','#3a2418','full','#3a2418'],mercador:['merchant','#f0c8a0','ponytail','#7a4a22'],capitao:['captain','#e0b088','short','#5a3a22','stubble','#5a3a22'],valen:['soldier','#c89868','short','#8a8a90','full','#8a8a90'],
  mestre:['mage','#eec6a2','long','#c8c8d8','long','#c8c8d8'],elda:['elder','#f0d0b0','bun','#d8d8dc'],lyra:['ranger','#e8c098','ponytail','#a0602a'],brum:['soldier','#d8a47c','short','#2a1c14','full','#2a1c14'],
  anselmo:['priest','#f0d0b0','bald','#d8d8d8','goatee','#d8d8d8'],kira:['explorer','#c89a72','ponytail','#3a2418'],torg:['orc','#6fa04a','mohawk','#2a2a22','','','orc'],
  yuki:['hermit','#e0c0a0','long','#e8eef5','long','#e8eef5'],vulkan:['mage','#d09878','spiky','#e8501a','goatee','#e8501a'],orion:['sage','#e8c4a0','short','#c8c8d8','long','#c8c8d8'],
@@ -5755,6 +5755,7 @@ $('win-char').addEventListener('click',e=>{
 function rwText(rw){return `${rw.xp} XP • ${rw.gold} 💰`+(rw.pot?' • 🧪×'+rw.pot.hp:'')+(rw.sp?' • ⭐'+rw.sp+' pt hab.':'')+(rw.eq?` • ${RAR[rw.eq.rar].n} ${SLOTS[rw.eq.slot]} Nv${rw.eq.ilvl}`:'');}
 const npcQuests=id=>QUESTS.filter(q=>q.npc===id);
 function questUnlocked(q){const l=npcQuests(q.npc),i=l.indexOf(q);return i===0||!!(S.quests[l[i-1].id]&&S.quests[l[i-1].id].done);}
+const questLvOk=q=>!q.need||S.level>=q.need;   // v1.73: missões com nível mínimo (Comandante Valen)
 /* ---- missões: Principais • Diárias • Semanais (• Chefes de Mundo) ---- */
 const QW={tab:'main',last:0};
 const fmtTm=sec=>{const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return d>0?`${d}d ${h}h`:h>0?`${h}h ${m}min`:`${Math.max(1,m)} min`;};
@@ -6271,6 +6272,7 @@ function renderDialog(){
   h+='<p class="muted">Clique nas linhas (ou nos itens da mochila) para selecionar vários e vender de uma vez.</p>'+(rows||'<p class="muted">Mochila vazia.</p>')+sellBarHtml();
  }else{
   h+=npcQuests(n.id).map((q,i)=>{if(!questUnlocked(q))return'';const st=S.quests[q.id];
+   if(!st&&!questLvOk(q))return `<div class="row2 dim"><div class="ri">🔒</div><div class="rt"><b>${q.t}</b><small>Próxima missão: disponível a partir do nível ${q.need}.</small></div></div>`;
    if(st&&st.done)return `<div class="row2 dim"><div class="ri">✅</div><div class="rt"><b>${q.t}</b><small>Concluída</small></div></div>`;
    if(!st)return `<div class="row2"><div class="ri">❗</div><div class="rt"><b>${q.t}</b> <small style="display:inline">(Nv ${q.rec}+)</small><small>${q.d}</small><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qa" data-id="${q.id}">Aceitar</button></div></div>`;
    const ready=st.n>=q.qty;
@@ -6392,7 +6394,7 @@ function mbQuestInfo(n){
  for(const q of l){const st=S.quests[q.id];
   if(st&&st.done)continue;
   if(st)o.push(`${st.n>=q.qty?'❓':'📜'} <b>${q.t}</b> — ${st.n}/${q.qty}`+(st.n>=q.qty?' (entregar aqui)':''));
-  else if(questUnlocked(q))o.push(`❗ <b>${q.t}</b> — disponível (Nv ${q.rec})`);}
+  else if(questUnlocked(q))o.push(questLvOk(q)?`❗ <b>${q.t}</b> — disponível (Nv ${q.rec})`:`🔒 <b>${q.t}</b> — a partir do Nv ${q.need}`);}
  return o;}
 function mbDraw(){
  if(!MB.open||!S)return;const cv=$('mbC'),c=cv.getContext('2d'),W=MB.BW,rg=regionOf(P.pos),cx=REGX[rg],k=W/(2*MAP),pr=(x,z)=>[W/2+z*k,W/2+(x-cx)*k];
@@ -6497,7 +6499,7 @@ function drawMini(){
 }
 function updateNpcMarkers(){
  for(const n of NPCS){let mark='';const l=npcQuests(n.id);
-  for(const q of l){if(!S.quests[q.id]&&questUnlocked(q)&&!mark)mark='❗';}
+  for(const q of l){if(!S.quests[q.id]&&questUnlocked(q)&&questLvOk(q)&&!mark)mark='❗';}
   for(const q of l){const st=S.quests[q.id];if(st&&!st.done&&st.n>=q.qty)mark='❓';}
   if(n.id==='evento'&&RULES.evtOn()&&RULES.EVT.lvs.some(L=>S.level>=L&&!((S.evt&&S.evt.got)||{})[L]))mark='🎁';   // pacote de presente disponível
   n.mark=mark;}

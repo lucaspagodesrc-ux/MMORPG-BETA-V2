@@ -797,6 +797,27 @@ NPCS.push(
  {id:'vc_vulkar',name:'Exorcista Vulkar',icon:'✝️',x:-600,z:-34,col:'#6a3a5a',tabs:SHOPT,greet:'Os portões se abriram há três luas. Desde então, não dormimos.',hat:'#2a1a2a',camp:true,shop:'gelo'},
  {id:'vc_ashen',name:'Cronista Ashen',icon:'📜',x:-562,z:-34,col:'#9a8a7a',tabs:SHOPT,greet:'Estes cavaleiros caíram defendendo um reino que já virou cinza.',hat:'#5a5048',camp:true,shop:'gelo'},
  {id:'vc_drakon',name:'Sábio Drakon',icon:'🐉',x:-600,z:44,col:'#b0452a',tabs:SHOPT,greet:'O Dragão Ancestral dormiu por mil anos na caldeira. Ele acordou com fome.',hat:'#6a1408',camp:true,shop:'gelo'});
+/* v1.73: Comandante Valen (Vila Aurora) — missões do Nv 25 ao 49, uma a cada 2 níveis (13 no total).
+   need = nível mínimo para aceitar. Os alvos são os monstros mais fortes do primeiro mapa. */
+NPCS.push({id:'valen',name:'Comandante Valen',icon:'⚔️',x:-13.4,z:-3.6,col:'#9a6a2a',tabs:['missoes'],greet:'Você já não é um novato. Aurora ainda precisa de alguém forte até você seguir para Solara.'});
+{ const SL=['weapon','armor','helmet','boots','ring'];
+  const L=[
+   [25,'demonio',25,'Brasas do Leste','Os demônios flamejantes voltaram a se multiplicar a leste. Elimine 25.'],
+   [27,'yeti',30,'Avalanche ao Norte','Os yetis desceram das montanhas e bloqueiam a estrada. Elimine 30.'],
+   [29,'orc',35,'Fim da Horda','A horda orc se reagrupou no nordeste. Elimine 35 orcs.'],
+   [31,'dragao',1,'Fogo no Ninho','O Dragão Rubro despertou de novo no ninho. Derrote-o.'],
+   [33,'aranha',40,'Teias na Gruta','A gruta a oeste está tomada por aranhas gigantes. Elimine 40.'],
+   [35,'golem',1,'O Guardião de Pedra','O Golem Ancião voltou a vagar ao sul. Derrote-o.'],
+   [37,'esqueleto',45,'Cemitério Inquieto','Os mortos do cemitério não descansam. Elimine 45 esqueletos.'],
+   [39,'demonio',45,'Portões em Brasa','Mais demônios atravessam a fenda. Elimine 45 antes que ela se abra de vez.'],
+   [41,'yeti',50,'Rei das Neves','Uma manada inteira de yetis ameaça as caravanas. Elimine 50.'],
+   [43,'dragao',2,'Escamas Rubras','Preciso de escamas frescas para os escudos da guarda. Derrote o Dragão Rubro 2 vezes.'],
+   [45,'orc',55,'Muralha de Escudos','Os orcs construíram uma muralha de escudos. Elimine 55 deles.'],
+   [47,'golem',2,'Pedra Ancestral','Derrote o Golem Ancião 2 vezes e traga seus núcleos de pedra.'],
+   [49,'dragao',3,'A Última Chama','Prove que está pronto para Solara: derrote o Dragão Rubro 3 vezes.']];
+  L.forEach(([rec,tg,qty,t,d],i)=>QUESTS.push({id:'av'+(i+1),npc:'valen',t,d,tg,qty,rec,need:rec,
+    rw:{xp:Math.round(xpNeed(rec)*(i===12?.9:.6)),gold:rec*300,...(i%2===0?{eq:{slot:SL[(i/2)%5],ilvl:rec+1,rar:i>=8?3:2}}:{pot:{hp:10}}),...(i===4||i===8||i===12?{sp:1}:{})}})); }
+
 // Cidades mais espaçadas: os NPCs que ficavam dentro das zonas seguras antigas (raio 11 / 13) são afastados do centro na mesma proporção
 // em que a zona segura cresceu (Aurora 11→15; Solara e Nevasca 13→17,5). NPCs de fora (missões, portais de calabouço) não mudam.
 { const OLD = [{ x: 0, r: 11, k: 15 / 11 }, { x: 300, r: 13, k: 17.5 / 13 }, { x: -300, r: 13, k: 17.5 / 13 }];
@@ -1756,6 +1777,7 @@ function act(sess, m, ctx) {
     const list = QUESTS.filter(x => x.npc === q.npc), qi = list.indexOf(q);
     if (!(qi === 0 || (c.quests[list[qi - 1].id] && c.quests[list[qi - 1].id].done))) return fail();
     const st = c.quests[q.id];
+    if (t === 'qa' && q.need && c.level < q.need) return fail('Missão disponível a partir do nível ' + q.need + '.');
     if (t === 'qa') { if (st) return fail(); c.quests[q.id] = { n: 0, done: false }; F('questAccept'); T('Missão aceita!'); return done(); }
     if (!st || st.done || st.n < q.qty) return fail();
     st.done = true; F('questDone'); c.gold += q.rw.gold; if (q.rw.sp) c.sp += q.rw.sp;
