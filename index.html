@@ -907,7 +907,9 @@ const REGX=[0,SC.x,600,SN.x,1800,VC.x];   // centro de cada região (índice = r
 const townAt=(p,pad)=>TOWNZ.find(t=>Math.hypot(p.x-t.x,p.z-t.z)<t.r+(pad||0));
 const inTown=p=>!!townAt(p);const regionOf=p=>p.x>1650?4:p.x<-450?5:p.x<-150?3:p.x>450?2:p.x>150?1:0;
 const getBuff=n=>{const b=P.buffs[n];return b&&b.until>performance.now()?b.val:0;};
-const addBuff=(n,val,dur,sk)=>{P.buffs[n]={val,until:performance.now()+dur*1000,dur,i:sk&&sk.i,nm:sk&&sk.n,col:sk&&sk.color,d:sk&&sk.d};};
+const BUFF_SHEET={crit:1,dmg:1,evade:1,aspd:1,luck:1,flat:1};   // buffs que aparecem na janela do personagem (C)
+const addBuff=(n,val,dur,sk)=>{P.buffs[n]={val,until:performance.now()+dur*1000,dur,i:sk&&sk.i,nm:sk&&sk.n,col:sk&&sk.color,d:sk&&sk.d};
+ if(BUFF_SHEET[n]){const rc=()=>{try{if(S&&$('win-char').style.display==='block')renderChar();}catch(e){}};setTimeout(rc,0);setTimeout(rc,dur*1000+60);}};
 
 /* =================== ITENS =================== */
 const rarRoll=RULES.rarRoll;
@@ -5700,20 +5702,22 @@ function renderChar(){
  if(S.pts>0)h+=`<div class="stat"><span class="ok">Pontos disponíveis</span><b class="ok">${S.pts}</b></div>`;
  for(const k of['str','agi','int','vit'])h+=`<div class="stat"><span>${STN[k]}${C.main===k?' ⭐':''}</span><span><b>${d[k]}</b>${S.pts>0?`<button data-stat="${k}">+</button>`:''}</span></div>`;
  const E=S.cls==='mago'||S.cls==='pierrot'?'M':'E',cap=Math.min(d.critCap||52,95);
+ const bC=getBuff('crit')*100,bD=getBuff('dmg')*100,bE=getBuff('evade')*100,bA=getBuff('aspd'),bL=getBuff('luck'),bF=getBuff('flat'),BT=x=>` <span style="color:#6fdc7f;font-size:11px">(${x} buff)</span>`;
  {const R1=(n,v,u,tip,on)=>`<div class="stat"${tip?` title="${tip}"`:''}${on===false?' style="opacity:.55"':''}><span>${n}</span><b>${v}${u||''}</b></div>`;
   const pc=x=>(x*1).toFixed(1),z=x=>!(x>0),o=[],df=[],sp=[],ex=[];
-  o.push(R1('Ataque',E==='E'?Math.round(d.dmg):'—','','Dano base das classes físicas',E==='E'));
-  o.push(R1('Ataque Mágico',E==='M'?Math.round(d.dmg):'—','','Dano base das classes mágicas',E==='M'));
+  const atkV=Math.round((d.dmg+bF)*(1+bD/100)),atkB=(bD||bF)?BT('+'+(bD?pc(bD)+'%':'')+(bD&&bF?' ':'')+(bF?'+'+Math.round(bF):'')):'';
+  o.push(R1('Ataque',E==='E'?atkV+atkB:'—','','Dano base das classes físicas (já com buffs ativos)',E==='E'));
+  o.push(R1('Ataque Mágico',E==='M'?atkV+atkB:'—','','Dano base das classes mágicas (já com buffs ativos)',E==='M'));
   o.push(R1('Amp. Espada',E==='E'?pc(d.amp*100):'—',E==='E'?'%':'','Aumenta o dano das HABILIDADES físicas',E==='E'&&d.amp>0));
   o.push(R1('Amp. Mágica',E==='M'?pc(d.amp*100):'—',E==='M'?'%':'','Aumenta o dano das HABILIDADES mágicas',E==='M'&&d.amp>0));
-  o.push(R1('Taxa Crítica',pc(Math.min(d.crit,cap)),'%','Chance de acerto crítico por golpe. Bruta: '+pc(d.crit)+'% • limite: '+cap.toFixed(0)+'%'));
+  o.push(R1('Taxa Crítica',pc(Math.min(d.crit+bC,cap))+'%'+(bC?BT('+'+pc(bC)+'%'):''),'','Chance de acerto crítico por golpe (já com buffs). Bruta: '+pc(d.crit+bC)+'% • limite: '+cap.toFixed(0)+'%'));
   o.push(R1('Dano Crítico','+'+pc((d.critMul-1)*100),'%','Quanto o dano a mais aumenta quando o golpe é crítico (×'+d.critMul.toFixed(2)+')'));
   o.push(R1('Taxa Crítica Máxima',cap.toFixed(0),'%','Limite da Taxa Crítica: 52% de base, sobe com o atributo Taxa Crítica Máxima (até 95%)'));
   o.push(R1('Perfuração',pc(d.pen*100),'%','Ignora essa parte da defesa do alvo',d.pen>0));
   o.push(R1('Acerto',pc(d.acc),'%','Reduz a Evasão do adversário (PvP)',d.acc>0));
   o.push(R1('Dano Adicional','+'+Math.round(d.add),'','Dano fixo somado a cada golpe, depois da defesa',d.add>0));
   df.push(R1('HP',d.maxHp));df.push(R1('MP',d.maxMp));df.push(R1('Defesa',Math.round(d.def)));
-  df.push(R1('Evasão',pc(d.dodge),'%','Chance de esquivar do ataque'));
+  df.push(R1('Evasão',pc(d.dodge+bE)+'%'+(bE?BT('+'+pc(bE)+'%'):''),'','Chance de esquivar do ataque (já com buffs)'));
   df.push(R1('Taxa de Defesa',pc(d.drate*100),'%','Chance de bloquear o ataque por completo',d.drate>0));
   df.push(R1('Redução de Danos',Math.round(d.rdmg),'','Valor fixo tirado de cada golpe recebido (mín. 1)',d.rdmg>0));
   df.push(R1('Resist. à Taxa Crítica',pc(d.rcrit),'%','Reduz a chance de críticos do adversário (PvP)',d.rcrit>0));
@@ -5732,7 +5736,7 @@ function renderChar(){
   sp.push(R1('Ignorar Redução de Danos',Math.round(d.ignRdmg),'','Diminui a Redução de Danos do adversário (PvP)',d.ignRdmg>0));
   sp.push(R1('Ignorar Acerto',pc(d.ignAcc),'%','Reduz o Acerto do adversário contra você (PvP)',d.ignAcc>0));
   sp.push(R1('Ignorar Bloqueio',pc(d.ignBlock),'%','Diminui a Taxa de Defesa do adversário (PvP)',d.ignBlock>0));
-  if(d.luck>0)ex.push(R1('🍀 Sorte (drops)',d.luck.toFixed(1)));ex.push(R1('Vel. de ataque','×'+d.atkSpd.toFixed(2)));
+  if(d.luck>0||bL)ex.push(R1('🍀 Sorte (drops)',d.luck.toFixed(1)+(bL?BT('+'+Math.round(bL*100)+'%'):'')));ex.push(R1('Vel. de ataque','×'+(d.atkSpd*(1+bA)).toFixed(2)+(bA?BT('+'+Math.round(bA*100)+'%'):'')));
   if(d.rhp)ex.push(R1('Regeneração de HP',(d.rhp*100).toFixed(2),'%/s'));if(d.gf)ex.push(R1('Ouro obtido','+'+(d.gf*100).toFixed(0),'%'));
   const H=t=>`<div class="dsec" style="margin:8px 0 2px">${t}</div>`;
   h+=H('⚔ Atributos ofensivos')+o.join('')+H('🛡 Atributos defensivos')+df.join('')+H('✨ Atributos especiais')+sp.join('')+H('📊 Outros')+ex.join('');

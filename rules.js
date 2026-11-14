@@ -916,7 +916,7 @@ const GEMS = [
   { id: 'a_lhpl',  cat: 'a', g: 2, n: 'Gema do Cálice Vital',           o: 'Aumento do Limite de Absorção de HP',     k: 'lhpLim',   v: .2,  sc: 1, d: 'A cada golpe, recupera esse tanto de HP por monstro atingido. Só funciona com pelo menos 2% de Aumento de Absorção de HP.' },
   { id: 'a_lmpl',  cat: 'a', g: 1, n: 'Gema do Cálice Arcano',          o: 'Aumento do Limite de Absorção de MP',     k: 'lmpLim',   v: .15, sc: 1, d: 'A cada golpe, recupera esse tanto de MP por monstro atingido. Só funciona com pelo menos 2% de Aumento de Absorção de MP.' }];
 /** Teto da SOMA de cada bônus (todas as gemas equipadas) • GCAPL = teto por nível do personagem */
-const GCAP = { ampE: 45, ampM: 45, crit: 30, cdmg: 60, cmax: 20, pen: 30, drate: 25, eva: 12, lhp: 10, lmp: 6, rhp: 3, acc: 30, ignPen: 30, ignAcc: 30, ignRcrit: 30, ignRcdmg: 40, ignBlock: 25, rcrit: 30, rcdmg: 40, ramp: 40, lhpUp: 6, lmpUp: 3 };
+const GCAP = { ampE: 45, ampM: 45, crit: 40, cdmg: 120, cmax: 20, pen: 30, drate: 25, eva: 12, lhp: 10, lmp: 6, rhp: 3, acc: 30, ignPen: 30, ignAcc: 30, ignRcrit: 30, ignRcdmg: 40, ignBlock: 25, rcrit: 30, rcdmg: 40, ramp: 40, lhpUp: 6, lmpUp: 3 };
 const GCAPL = { hp: 20, mp: 15, def: 4, rdmg: 1.5, ignRdmg: 1.5, lhpLim: 1.2, lmpLim: .9 };
 const CRIT_CAP = 52;   // taxa crítica máxima base (%) — sobe com "Taxa Crítica Máxima", no máximo 95%
 const GEMD = {};
@@ -1068,9 +1068,9 @@ function stats(c) {
     maxHp: Math.round((50 + st.vit * 10 + c.level * 8 + hp) * (tk ? 1.3 : kn ? 1.15 : as ? .9 : pr ? .85 : 1) * (1 + sb('hpP') / 100)) + (gm ? 1000 : 0),
     maxMp: Math.round((30 + st.int * 5 + c.level * 3 + (C.main === 'int' ? 20 : 0) + (kn ? 25 : as ? 20 : tk ? 15 : pr ? 10 : 0) + G.mp) * (1 + sb('mpP') / 100)) + (gm ? 1000 : 0),
     dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1) * (1 + sb('dmgP') / 100) + (gm ? 200 : 0),
-    luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: (pr ? 2.1 : 1.7) + (G.cdmg + sb('cdmg')) / 100,
+    luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: (pr ? 1.15 : 1.1) + (G.cdmg + sb('cdmg')) / 100,   // v1.72: base baixa (+10%, Pierrot +15%); o Dano Crítico vem das gemas
     // Retornos decrescentes: crítico/esquiva/velocidade nunca disparam, por mais pontos que se invista.
-    crit: 3 + (as ? 6 : 0) + (pr ? 11 : 0) + 10 * st.agi / (st.agi + 400) + G.crit + sb('crit'),   // v1.71: AGI dá bem pouco crítico (máx. ~10%); o forte são as gemas
+    crit: 3 + (as ? 3 : 0) + (pr ? 5 : 0) + 10 * st.agi / (st.agi + 400) + G.crit + sb('crit'),   // v1.71: AGI dá bem pouco crítico (máx. ~10%); o forte são as gemas
     dodge: 25 * st.agi / (st.agi + 250) + G.eva + sb('eva'),
     atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) * (1 + sb('aspd') / 100),
     // novos (gemas/conjuntos): amp de habilidades, penetração, dano adicional, teto de crítico, redução de dano, absorção e regeneração
