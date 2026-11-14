@@ -30,12 +30,16 @@ export type Hooks = {
   walk?: (inst: number, x: number, z: number, margin: number) => boolean;   // dungeon em grade: o monstro pode pisar aqui? (margem = folga até a parede)
 };
 
+export const ACTIVE_R = 64;   // metade do lado do quadrado "visível" em volta de cada jogador (zoom máximo + folga)
+
 export class MonsterSim {
   frozen = new Set<number>();                            // instâncias de dungeon pausadas
   hidden = new Map<string, number>();                    // jogadores invisíveis (Manto Fumaça): sessionId → até quando
   noAggro = new Set<string>();                           // jogadores que os monstros ignoram enquanto duelam (duelo justo): sessionId
   list: Sim[] = [];
   byId = new Map<number, Sim>();
+  /* v1.68: os monstros não vão mais no estado sincronizado (cada jogador recebe só os que estão perto, pela mensagem "mo") */
+  mons = new Map<string, Monster>();
   constructor(private state: WorldState, private hooks: Hooks) {
     let id = 0;
     for (const zone of ZONES) for (let i = 0; i < zone.n; i++) {     // mesma ordem do navegador => mesmos ids
@@ -47,7 +51,7 @@ export class MonsterSim {
       this.respawn(s, Date.now());
       if (T.wb) { s.noResp = true; m.alive = false; }                  // chefe de mundo: só nasce no horário (worldboss.ts)
       this.list.push(s); this.byId.set(m.id, s);
-      state.monsters.set(String(m.id), m);
+      this.mons.set(String(m.id), m);
     }
   }
 
@@ -59,13 +63,13 @@ export class MonsterSim {
     m.lvl = ri(T.lv[0], T.lv[1]); const k = m.lvl - T.lv[0];
     m.maxHp = Math.max(5, Math.round(T.hp * (1 + k * 0.2) * (Number(process.env.DG_HPX) || 1))); m.hp = m.maxHp; s.atk = T.atk * (1 + k * 0.14); s.def = T.def * (1 + k * 0.1);
     m.x = x; m.z = z; m.rot = 0; m.alive = !hidden;
-    this.list.push(s); this.byId.set(m.id, s); this.state.monsters.set(String(m.id), m);
+    this.list.push(s); this.byId.set(m.id, s); this.mons.set(String(m.id), m);
     return s;
   }
   /** Chamado quando o baú aparece (chefe morreu). */
   reveal(s: Sim) { s.m.hp = s.m.maxHp; s.m.alive = true; s.contrib.clear(); s.xpp?.clear(); }
   removeInst(inst: number) {
-    this.list = this.list.filter((s) => { if (s.inst !== inst) return true; this.byId.delete(s.m.id); this.state.monsters.delete(String(s.m.id)); return false; });
+    this.list = this.list.filter((s) => { if (s.inst !== inst) return true; this.byId.delete(s.m.id); this.mons.delete(String(s.m.id)); return false; });
   }
 
   respawn(s: Sim, now: number) {
@@ -147,6 +151,9 @@ export class MonsterSim {
 
   update(dt: number) {
     const now = Date.now(), players = this.state.players;
+    /* v1.68: monstro sem nenhum jogador por perto (fora do que dá para ver na tela, mesmo com o zoom todo aberto) fica parado: não anda nem gasta tráfego */
+    const near: { x: number; z: number; i: number }[] = []; players.forEach((p) => near.push({ x: p.x, z: p.z, i: p.inst || 0 }));
+    const awake = (m: Monster, inst: number) => { for (const q of near) if (q.i === inst && Math.abs(q.x - m.x) < ACTIVE_R && Math.abs(q.z - m.z) < ACTIVE_R) return true; return false; };
     for (const s of this.list) {
       const { m, T } = s;
       if (s.inst && this.frozen.has(s.inst)) continue;
@@ -161,6 +168,7 @@ export class MonsterSim {
       const lifted = now < s.liftUntil, stunned = lifted || now < s.stunUntil, rooted = now < s.rootUntil;
       const fl = (stunned ? 1 : 0) | (rooted ? 2 : 0) | (lifted ? 4 : 0) | (s.immune ? 8 : 0); if (m.st !== fl) m.st = fl;
       if (stunned) continue;                    // atordoado/levantado: não anda nem ataca
+      if (!s.aggro && !s.returning && !awake(m, s.inst)) continue;   // ninguém por perto: parado
       let tgt: { id: string; x: number; z: number } | null = null, best = Infinity;
       players.forEach((p, id) => {
         if (p.dead || p.inst !== s.inst || safe(p.x, p.z) || cxOf(p.x) !== cxOf(m.x)) return;

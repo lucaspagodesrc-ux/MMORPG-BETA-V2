@@ -4,7 +4,7 @@ import { auctionMsg, auctionSweep } from "./auction";
 import { mailMsg, mailNotify, mailSweep } from "./mail";
 import { tradeMsg, tradeLeave } from "./trade";
 import { verifyToken, loadCharacter, loadStash, saveChar, saveStash, AuthUser } from "./auth";
-import { MonsterSim, Sim } from "./monsters";
+import { MonsterSim, Sim, ACTIVE_R } from "./monsters";
 import { Dungeons } from "./dungeon";
 import { WorldBosses, wbNow } from "./worldboss";
 import { guildMsg, guildAnswer, guildJoin, guildLeave, guildChat, gpAdd, gpFromOut, guildDispose } from "./guild";
@@ -44,6 +44,7 @@ type Sess = {
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
   seen: Set<number>; busyUntil: number; skUntil?: number;
   partyId: number; ward?: { v: number; until: number }; clone?: { n: number; mult: number; until: number };
+  mv?: Map<number, string>;                                    // v1.68: monstros que este jogador está vendo (último estado enviado)
   pv?: any; px?: any; noDuel?: boolean; tpAt?: number;      // PvP (duelo / Arena PK): estado, alvo-proxy, "não aceitar duelos", último teleporte
 };
 type WDrop = { id: number; item: any; x: number; z: number; exp: number; life: number; inst: number; owner: string; party: number; free: number };
@@ -110,6 +111,27 @@ export class WorldRoom extends Room<WorldState> {
         if (!s.seen.has(d.id)) { s.seen.add(d.id); s.client.send("drop", { id: d.id, item: d.item, x: d.x, z: d.z, life: d.life ? Math.max(1000, d.exp - 3000 - now) : 0, lock: this.canPick(d, s) ? 0 : Math.max(0, d.free - now) }); }
       }
       for (const id of [...s.seen]) if (!vis.has(id)) { s.seen.delete(id); s.client.send("drm", { id }); }
+    }
+  }
+  /* v1.68: cada jogador recebe só os monstros perto dele (10x por segundo, só o que mudou). Formato compacto:
+     f = entrou na visão [id, tipo, nível, vidaMáx, instância, x*10, z*10, giro*40, vida, vivo, estado]; u = mudou [id, x*10, z*10, giro*40, vida, vivo, estado]; r = saiu da visão [id] */
+  private sendMonsters() {
+    const VR = ACTIVE_R;
+    for (const s of this.sess.values()) {
+      const p = this.state.players.get(s.client.sessionId); if (!p) continue;
+      const mv = s.mv || (s.mv = new Map()), f: any[] = [], u: any[] = [], seen = new Set<number>();
+      for (const sim of this.sim.list) {
+        const m = sim.m; if ((m.inst || 0) !== (p.inst || 0) || Math.abs(m.x - p.x) > VR || Math.abs(m.z - p.z) > VR) continue;
+        seen.add(m.id);
+        const x = Math.round(m.x * 10), z = Math.round(m.z * 10), r = Math.round(m.rot * 40), hp = Math.round(m.hp * 10) / 10, al = m.alive ? 1 : 0, st = m.st || 0;
+        const sig = x + "," + z + "," + r + "," + hp + "," + al + "," + st + "," + m.lvl + "," + m.maxHp, old = mv.get(m.id);
+        if (old === sig) continue;
+        if (old === undefined || !old.endsWith("," + m.lvl + "," + m.maxHp)) f.push([m.id, m.type, m.lvl, m.maxHp, m.inst || 0, x, z, r, hp, al, st]);
+        else u.push([m.id, x, z, r, hp, al, st]);
+        mv.set(m.id, sig);
+      }
+      const rm: number[] = []; for (const id of mv.keys()) if (!seen.has(id)) { rm.push(id); mv.delete(id); }
+      if (f.length || u.length || rm.length) s.client.send("mo", rm.length ? { f, u, r: rm } : { f, u });
     }
   }
   /* ---------- grupos ---------- */
@@ -536,7 +558,7 @@ export class WorldRoom extends Room<WorldState> {
     this.dg = new Dungeons(this);
     this.wb = new WorldBosses(this);
     this.pvp = new Pvp(this);
-    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0, gmAt = 0, wbAt = 0, ptAt = 0;
+    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0, gmAt = 0, wbAt = 0, ptAt = 0, mvAt = 0;
     this.setSimulationInterval(() => {
       const now = Date.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (this.clients.length) this.sim.update(dt);
@@ -552,6 +574,7 @@ export class WorldRoom extends Room<WorldState> {
       if (this.sess.size) this.pvp.tick();
       if (now > saveAt) { saveAt = now + 12_000; for (const s of this.sess.values()) { if (s.partyId && now - (s.c.seen || 0) > 60_000) s.dirty = true; if (s.dirty) this.save(s); } }
       if (now > ptAt) { ptAt = now + 5000; this.partyTick(); }
+      if (now > mvAt) { mvAt = now + 100; this.sendMonsters(); }
     }, 50);
 
     this.onMessage("move", (client, m) => {

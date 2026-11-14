@@ -16,7 +16,7 @@ export class Player extends Schema {
   gt = "";         // sigla da guilda (aparece ao lado do nome)
   sp = "";         // Caminho de especialização escolhido (nível 100): id
 }
-defineTypes(Player, { name: "string", cls: "string", level: "number", x: "number", z: "number", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8", hp: "uint32", mhp: "uint32", gt: "string", sp: "string" });
+defineTypes(Player, { name: "string", cls: "string", level: "number", x: "float32", z: "float32", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8", hp: "uint32", mhp: "uint32", gt: "string", sp: "string" });
 
 // Monstro simulado no servidor: todos os jogadores veem o mesmo monstro, na mesma posição e com a mesma vida.
 export class Monster extends Schema {

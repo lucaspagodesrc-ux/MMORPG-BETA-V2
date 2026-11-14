@@ -5218,7 +5218,7 @@ function syncMon(m,sm,dt,now){
  m.hp=sm.hp;m.maxHp=sm.maxHp;{const w=(m.hp/m.maxHp*100)+'%';if(m.pfw!==w){m.pfw=w;m.pf.style.width=w;}}
  const dx=sm.x-p.x,dz=sm.z-p.z,d=Math.hypot(dx,dz);
  if(d>10){p.x=sm.x;p.z=sm.z;}else{const k=Math.min(1,dt*12);p.x+=dx*k;p.z+=dz*k;}
- m.moving=d>.04;if(m.moving)m.root.rotation.y=sm.rot;
+ if(d>.04)m.mvT=now;m.moving=now-(m.mvT||0)<260;if(d>.04)m.root.rotation.y=sm.rot;   /* v1.68: atualizações a 10/s — continua "andando" entre uma e outra */
  const hs=now-(m.hitAt||0)<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
  m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs&&(!m.lod||m.lod.st===0))animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);
  m.ly=(m.ly||0)+(((sm.st&4)?1.7+Math.sin(now*.012)*.12:0)-(m.ly||0))*Math.min(1,dt*10);
@@ -5235,10 +5235,16 @@ function spawnDg(type,slot,key){
  m.plate=mkLabel('<div class="pn"></div><div class="pb"><i></i></div>','plate');m.pn=m.plate.querySelector('.pn');m.pf=m.plate.querySelector('i');
  root.setEnabled(false);m.plate.style.display='none';monsters.push(m);DGV.set(key,m);return m;
 }
+/* v1.68: o servidor manda só os monstros perto de você (mensagem "mo"); servidor antigo: usa o estado sincronizado */
+const NETM=new Map();
+function netMo(d){
+ for(const a of d.f||[]){NETM.set(String(a[0]),{id:a[0],type:a[1],lvl:a[2],maxHp:a[3],inst:a[4],x:a[5]/10,z:a[6]/10,rot:a[7]/40,hp:a[8],alive:!!a[9],st:a[10]});}
+ for(const a of d.u||[]){const o=NETM.get(String(a[0]));if(!o)continue;o.x=a[1]/10;o.z=a[2]/10;o.rot=a[3]/40;o.hp=a[4];o.alive=!!a[5];o.st=a[6];}
+ for(const id of d.r||[])NETM.delete(String(id));}
 function netMonsters(dt,now){
- const st=NET.room.state;if(!st||!st.monsters)return;
- for(const m of monsters){if(m.dg)continue;const sm=st.monsters.get(String(m.id));if(sm)syncMon(m,sm,dt,now);}
- if(NET.inst)st.monsters.forEach(sm=>{
+ const st=NET.room.state,MS=(NETM.size||!st||!st.monsters||!st.monsters.size)?NETM:st.monsters;
+ for(const m of monsters){if(m.dg)continue;const sm=MS.get(String(m.id));if(sm)syncMon(m,sm,dt,now);}
+ if(NET.inst)MS.forEach(sm=>{
   if(sm.inst!==NET.inst)return;const slot=sm.id-NET.inst*200,key=sm.type+'|'+slot;let m=DGV.get(key);
   if(!m){if(!sm.alive)return;m=spawnDg(sm.type,slot,key);}
   m.id=sm.id;syncMon(m,sm,dt,now);
@@ -6509,6 +6515,7 @@ async function netJoin(){
   room.onMessage('dgmsg',m=>dgMsg(m));
   room.onMessage('dg',m=>{const pv=DG.st;DG.st=m;setPaused(!!m.paused);P.dgMaxZ=m.maxZ;if(DG.cur&&DG.cur.rooms)dgApplyStage(m,pv);else DG.gates.forEach((g,i)=>g.setEnabled(!m.done&&i>=m.stage));if(DG.exit2){const was=DG.exit2.root.isEnabled(false);DG.exit2.root.setEnabled(!!m.done);if(m.done&&!was){ring(DG.exit2.pos.x,DG.exit2.pos.z,3.2,'#d4a62a',900);AUD.sfx('teleport');}}updDgHud();});
   room.onMessage('party',m=>{PARTY=m;NET.hpL=null;renderParty();});
+  NETM.clear();room.onMessage('mo',netMo);
   room.onMessage('pinv',m=>showInvite(m.from));
   room.onMessage('matk',m=>remoteBasic(m));pkBind(room);
   room.onLeave(code=>{NET.room=null;PARTY=null;pkReset();GU.st=null;GU.g=null;guClose();clearOthers();if(code===4001){toast('Sua conta entrou em outro lugar.');return;}if(!NET.stop){toast('Conexão perdida. Reconectando...');setTimeout(netJoin,3000);}});
