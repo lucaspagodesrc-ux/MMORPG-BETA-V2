@@ -932,6 +932,9 @@ const schoolOf = cls => (cls === 'mago' || cls === 'pierrot') ? 'M' : 'E';
 const XA = { cdmg: { p: .10, v: [8, 10, 16], n: 'Dano Crítico' }, amp: { p: .05, v: [4, 6, 8], n: 'Técnica de Amp.' }, cmax: { p: .05, v: [1, 2, 3], n: 'Taxa Crítica Máxima' } };
 const XA_W = [.5, .85, 1];
 const xaOk = (k, v) => (k === 'cdmg' && XA.cdmg.v.includes(v)) || ((k === 'ampE' || k === 'ampM') && XA.amp.v.includes(v)) || (k === 'cmax' && XA.cmax.v.includes(v));
+/** v1.71: Dano Crítico e Técnica de Amp. dos itens de chefe valem 30% do número sorteado (o forte agora são as gemas). Taxa Crítica Máxima não muda. */
+const XA_K = { cdmg: .3, ampE: .3, ampM: .3, cmax: 1 };
+const xaEff = (k, v) => Math.round(v * (XA_K[k] || 1) * 10) / 10;
 const xaName = k => k === 'cdmg' ? 'Dano Crítico' : k === 'cmax' ? 'Taxa Crítica Máxima' : k === 'ampM' ? 'Técnica de Amp. Mágica' : 'Técnica de Amp. Espada';
 /** Rola os atributos de item de um equipamento dropado por chefe (cada um é sorteado separadamente). */
 function rollBossAttr(it, cls) {
@@ -947,7 +950,7 @@ function rollBossAttr(it, cls) {
 /** soma dos bônus das gemas dos itens EQUIPADOS (já com os tetos) */
 function gemTotals(c) {
   const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0, acc: 0, ignPen: 0, ignAcc: 0, ignRcrit: 0, ignRcdmg: 0, ignBlock: 0, ignRdmg: 0, rdmg: 0, rcrit: 0, rcdmg: 0, ramp: 0, lhpUp: 0, lmpUp: 0, lhpLim: 0, lmpLim: 0 };
-  for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; if (it.xa) for (const x in it.xa) if (x in t && xaOk(x, it.xa[x])) t[x] += it.xa[x];   // atributo de item (drop de chefe)
+  for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; if (it.xa) for (const x in it.xa) if (x in t && xaOk(x, it.xa[x])) t[x] += xaEff(x, it.xa[x]);   // atributo de item (drop de chefe)
     if (!Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g) t[g.k] += gemVal(g, it.ilvl); } }
   for (const k in GCAP) t[k] = Math.min(t[k], GCAP[k]);
   for (const k in GCAPL) t[k] = Math.min(t[k], GCAPL[k] * Math.max(1, c.level || 1));
@@ -978,14 +981,16 @@ const SETB = {
 const BLAB = { dmgP: ['Dano', '%'], hpP: ['Vida máxima', '%'], mpP: ['Mana máxima', '%'], defP: ['Defesa', '%'], aspd: ['Velocidade de ataque', '%'], gf: ['Ouro obtido', '%'], crit: ['Taxa Crítica', '%'], cdmg: ['Dano Crítico', '%'], ampX: ['Amp. de habilidades', '%'], pen: ['Perfuração', '%'], eva: ['Evasão', '%'], drate: ['Taxa de Defesa', '%'], rhp: ['Regeneração de HP', '%/s'], lhp: ['Absorção de HP', '%'], lmp: ['Absorção de MP', '%'] };
 /** quanto o conjunto vale: origens de monstros mais fortes dão bônus maiores (0,5× a 1,6×) */
 const setTf = key => { const m = MT[key]; const L = m && m.lv ? m.lv[0] : 30; return Math.max(.5, Math.min(1.6, .5 + L / 90)); };
-const setVal = (v, tf) => Math.round(v * tf * 10) / 10;
+/** v1.71: bônus de conjunto de Taxa Crítica, Dano Crítico e Amp. de habilidades valem só 30% (o forte agora são as gemas) */
+const SET_SOFT = { crit: .3, cdmg: .3, ampX: .3 };
+const setVal = (v, tf, k) => Math.round(v * tf * (SET_SOFT[k] || 1) * 10) / 10;
 function setCounts(c) { const n = {}; for (const k in c.eq) { const it = c.eq[k]; if (it && it.mo && OGK[it.mo]) n[OGK[it.mo]] = (n[OGK[it.mo]] || 0) + 1; } return n; }
 /** conjuntos do personagem: tot = soma dos bônus ativos • act = lista de conjuntos com ≥ 2 peças */
 function setBonus(c) {
   const tot = {}, act = [], cnt = setCounts(c);
   for (const key in cnt) {
     const n = cnt[key]; if (n < 2) continue; const og = OG[key], tf = setTf(key), on = [];
-    for (const t of SETB[og.el] || []) if (n >= t.n) { on.push(t.n); for (const k in t.b) tot[k] = (tot[k] || 0) + setVal(t.b[k], tf); }
+    for (const t of SETB[og.el] || []) if (n >= t.n) { on.push(t.n); for (const k in t.b) tot[k] = (tot[k] || 0) + setVal(t.b[k], tf, k); }
     act.push({ key, name: og.sf, el: og.el, n, on, tf });
   }
   return { tot, act };
@@ -993,7 +998,7 @@ function setBonus(c) {
 /** descrição de um conjunto (para a janela de item): cada degrau com o texto do bônus */
 function setInfo(key, have) {
   const og = OG[OGK[key] || key]; if (!og) return null; const tf = setTf(OGK[key] || key);
-  return { name: 'Conjunto ' + og.sf, col: og.col, tiers: (SETB[og.el] || []).map(t => ({ n: t.n, on: have >= t.n, txt: Object.keys(t.b).map(k => '+' + setVal(t.b[k], tf) + (BLAB[k][1] === '%/s' ? '%/s' : '%') + ' ' + BLAB[k][0]).join(' • ') })) };
+  return { name: 'Conjunto ' + og.sf, col: og.col, tiers: (SETB[og.el] || []).map(t => ({ n: t.n, on: have >= t.n, txt: Object.keys(t.b).map(k => '+' + setVal(t.b[k], tf, k) + (BLAB[k][1] === '%/s' ? '%/s' : '%') + ' ' + BLAB[k][0]).join(' • ') })) };
 }
 
 /* ---------- lojas (preço e item dependem do personagem c) ---------- */
@@ -1065,7 +1070,7 @@ function stats(c) {
     dmg: (st[C.main] * (tk ? .8 : 1.0) + atk + c.level * 1.2) * (tk ? .85 : pr ? .85 : 1) * (1 + sb('dmgP') / 100) + (gm ? 200 : 0),
     luck: pr ? Math.round((10 + c.level * .3 + st.agi * .05) * 10) / 10 : 0, critMul: (pr ? 2.1 : 1.7) + (G.cdmg + sb('cdmg')) / 100,
     // Retornos decrescentes: crítico/esquiva/velocidade nunca disparam, por mais pontos que se invista.
-    crit: 3 + (as ? 6 : 0) + (pr ? 11 : 0) + 38 * st.agi / (st.agi + 200) + G.crit + sb('crit'),   // v1.62: base, bônus de classe e AGI reduzidos; gemas e conjuntos iguais
+    crit: 3 + (as ? 6 : 0) + (pr ? 11 : 0) + 10 * st.agi / (st.agi + 400) + G.crit + sb('crit'),   // v1.71: AGI dá bem pouco crítico (máx. ~10%); o forte são as gemas
     dodge: 25 * st.agi / (st.agi + 250) + G.eva + sb('eva'),
     atkSpd: (1 + .8 * st.agi / (st.agi + 300)) * (as ? 1.2 : 1) * (1 + sb('aspd') / 100),
     // novos (gemas/conjuntos): amp de habilidades, penetração, dano adicional, teto de crítico, redução de dano, absorção e regeneração
@@ -1926,7 +1931,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);
