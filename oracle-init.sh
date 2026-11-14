@@ -12,7 +12,7 @@ DUCKDNS_TOKEN=""                # o "token" que aparece no topo do site do DuckD
 DATABASE_URL=""                 # copie do Render (Environment) ou do Neon — começa com postgresql://
 JWT_SECRET=""                   # copie do Render (Environment). Se trocar, todos precisam entrar de novo
 GM_USER="GM123"
-GM_PASS="GMSRC"
+GM_PASS=""   # defina a sua senha aqui antes de usar (não deixe senha no GitHub)
 ALLOWED_ORIGINS=""              # endereço da página no Cloudflare, ex.: https://meujogo.pages.dev (vazio = aceita qualquer)
 # =====================================================================================
 set -u

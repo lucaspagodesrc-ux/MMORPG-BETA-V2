@@ -24,7 +24,7 @@ read -rp "3) DATABASE_URL antigo do Render/Neon (para copiar as contas; Enter = 
 read -rp "4) JWT_SECRET do Render (Enter = gerar um novo; aí todos fazem login de novo): " JWT_SECRET
 read -rp "5) Endereço da página no Cloudflare (ex.: https://meujogo.pages.dev; Enter = aceitar qualquer): " ALLOWED_ORIGINS
 read -rp "6) Usuário GM [GM123]: " GM_USER; GM_USER=${GM_USER:-GM123}
-read -rp "7) Senha GM [GMSRC]: " GM_PASS; GM_PASS=${GM_PASS:-GMSRC}
+GM_PASS=""; while [ -z "$GM_PASS" ]; do read -rp "7) Senha GM (obrigatória, sem espaços): " GM_PASS; done
 [ -z "$JWT_SECRET" ] && JWT_SECRET=$(openssl rand -hex 32)
 echo "============================================================================"
 echo "Instalando... pode levar ~10 min. Não feche esta janela."

@@ -14,9 +14,10 @@ const SECRET =
     return crypto.randomBytes(32).toString("hex");
   })();
 
-// Conta GM (testes e eventos). Pode ser trocada por variáveis de ambiente no Render (GM_USER / GM_PASS).
+// Conta GM (testes e eventos). Usuário e senha vêm SÓ das variáveis do servidor (/etc/mmorpg.env: GM_USER / GM_PASS).
+// Sem GM_PASS definida, o login de GM fica desligado (nenhuma senha fica escrita no código).
 const GM_USER = (process.env.GM_USER || "GM123").toLowerCase();
-const GM_PASS = process.env.GM_PASS || "GMSRC";
+const GM_PASS = process.env.GM_PASS || "";
 async function ensureGm(accountId: number) {
   const cur = await pool.query("select id,class,data from characters where account_id=$1", [accountId]);
   for (const cls of CLASSES) {
@@ -79,7 +80,7 @@ authRouter.post("/register", limit, async (req, res) => {
 authRouter.post("/login", limit, async (req, res) => {
   const { username, password } = req.body || {};
   const isGm = String(username || "").toLowerCase() === GM_USER;
-  if (isGm && String(password || "") !== GM_PASS) return res.status(401).json({ error: "Usuário ou senha inválidos." });
+  if (isGm && (!GM_PASS || String(password || "") !== GM_PASS)) return res.status(401).json({ error: "Usuário ou senha inválidos." });
   let r = await pool.query("select id,username,pass_hash from accounts where lower(username)=lower($1)", [String(username || "")]);
   if (isGm) {
     if (!r.rows[0]) { await pool.query("insert into accounts(username,pass_hash) values($1,$2) on conflict do nothing", [String(username), await bcrypt.hash(GM_PASS, 10)]); r = await pool.query("select id,username,pass_hash from accounts where lower(username)=lower($1)", [String(username)]); }
