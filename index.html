@@ -3470,6 +3470,25 @@ function limbGear(L,c,sp,fin){
    e é trocado sozinho. Animações do Blender (Idle, Walk, Attack, Shield, Jump, Cast, Throw, Hit, Death) são tocadas quadro a quadro
    pelo próprio relógio do jogo, então ficam sincronizadas com os golpes e habilidades. Desligar: ?glb=0 */
 const GLBMODE=ORGMODE&&!(/[?&]glb=0/.test(location.search)||(()=>{try{return localStorage.getItem('glb')==='0';}catch(e){return false;}})());
+
+/* v1.76: o mago usa o chapéu pontudo em todos os trajes. Os conjuntos Ferro (2), Solar (4) e Dracônico (5) não tinham chapéu:
+   copia o chapéu do conjunto Dourado (1) e pinta com as cores do traje (textura em tons de cinza × cor). */
+const HATC={2:['#aeb8c8','#4a6a9a'],4:['#fff4dc','#f0c050'],5:['#c03a2a','#f0c050']},HATGRAY=new Map();
+function hatGray(t,cb){if(!t||!t.readPixels){cb(null);return;}let e=HATGRAY.get(t);if(e){if(e.tex)cb(e.tex);else e.q.push(cb);return;}
+ e={tex:null,q:[cb]};HATGRAY.set(t,e);
+ const go=()=>{try{Promise.resolve(t.readPixels()).then(buf=>{if(!buf){e.q.forEach(f=>f(null));return;}const sz=t.getSize(),src=new Uint8Array(buf.buffer||buf),d=new Uint8Array(src.length);let mx=1;
+   for(let i=0;i<src.length;i+=4){const g=src[i]*.3+src[i+1]*.59+src[i+2]*.11;if(g>mx)mx=g;}const k=255/mx;
+   for(let i=0;i<src.length;i+=4){const g=Math.min(255,(src[i]*.3+src[i+1]*.59+src[i+2]*.11)*k);d[i]=d[i+1]=d[i+2]=g;d[i+3]=255;}
+   const rt=BABYLON.RawTexture.CreateRGBATexture(d,sz.width,sz.height,scene,true,t.invertY,BABYLON.Texture.TRILINEAR_SAMPLINGMODE);rt.wrapU=t.wrapU;rt.wrapV=t.wrapV;
+   e.tex=rt;e.q.forEach(f=>f(rt));e.q=[];}).catch(()=>{e.q.forEach(f=>f(null));});}catch(err){e.q.forEach(f=>f(null));}};
+ if(t.isReady())go();else t.onLoadObservable.addOnce(go);}
+function magoHats(o){const H=o.glbParts&&o.glbParts.Helm;if(!H||!H['1'])return;
+ const src=H['1'].filter(n=>n.material&&n.getTotalVertices&&n.getTotalVertices()>0);if(!src.length)return;
+ for(const k in HATC){(H[k]||[]).forEach(n=>n.setEnabled(false));
+  H[k]=src.map(n=>{const c=n.clone(n.name+'_hat'+k,n.parent,true);let up=n.parent;while(up&&/^Helm1/.test(up.name||''))up=up.parent;if(up!==n.parent)c.setParent(up);c.skeleton=n.skeleton;c.isPickable=false;c.alwaysSelectAsActiveMesh=true;
+   const trim=/Trim/.test(n.material.name),m=n.material.clone(n.material.name+'_hat'+k);m.albedoColor=C3.FromHexString(HATC[k][trim?1:0]).toLinearSpace();
+   const t0=n.material.albedoTexture;m.albedoTexture=null;c.material=m;hatGray(t0,g=>{if(g)m.albedoTexture=g;});
+   try{GINK_(c,.012);}catch(e){}c.setEnabled(false);return c;});}}
 const GLB=(()=>{
  const FILES={cavaleiro:'cavaleiro.glb',guerreiro:'guerreiro.glb',tanque:'tanque.glb',assassino:'assassino.glb',arqueiro:'arqueiro.glb',mago:'mago.glb',pierrot:'pierrot.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
@@ -3507,6 +3526,7 @@ const GLB=(()=>{
   o.hand=(cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||by('hand.R')||top;o.handL=by('hand.L')||top;
   /* peças de cada conjunto: o nó do glTF e as malhas com pele (ficam em outro lugar da hierarquia, mas com o mesmo nome no começo) */
   o.glbParts={};for(const n of all){const mm=/^(Armor|Boots|Helm|Shield)([1-5])(?:$|_)/.exec(n.name);if(mm){const g=(o.glbParts[mm[1]]=o.glbParts[mm[1]]||{});(g[mm[2]]=g[mm[2]]||[]).push(n);}}
+  if(cls==='mago')magoHats(o);   /* v1.76: chapéu pontudo em todos os trajes do mago */
   o.shieldN=by('Shield2')||by('Shield')||null;showSets(o,{});
   if(!o.wMat)o.wMat=mat('wm','#cfd6dd',null,null,'metal');
   top.onDisposeObservable.add(()=>{for(const a of I.animationGroups)try{a.dispose();}catch(e){}for(const s of I.skeletons)try{s.dispose();}catch(e){}});
@@ -5431,6 +5451,16 @@ function usePot(kind){
  if(!pid){toast('Sem '+POTS[kind].n);return;}
  P.potCd=now+(PKS.mode?RULES.PVP.potCd:3000);ACT({t:'pot',kind:pid});
 }
+
+/* v1.76: poção de MP automática — quando a mana zera (ou não dá para lançar nem a habilidade mais barata), usa uma poção de MP da mochila.
+   Só funciona se houver poção; respeita a recarga normal das poções. A poção de HP continua manual. */
+function autoMpTick(){
+ if(!S||!P||P.dead||P.mp===undefined)return;const now=performance.now();if(now<(P.potCd||0))return;
+ const C=CLASSES[S.cls];let need=Infinity;for(let i=0;i<C.skills.length;i++){const r=S.sk[i]||0;if(r>0){const m=RULES.skStat?RULES.skStat(S.cls,i,r).mp:C.skills[i].mp;if(m>0)need=Math.min(need,m);}}
+ if(!isFinite(need))need=1;if(P.mp>=need)return;
+ if(!S.inv.some(it=>it&&it.k==='pot'&&(it.id==='mp'||it.id==='mp2')))return;
+ usePot('mp');if(now<(P.potCd||0))floatText('🧪 MP automático',P.pos,'#6fb8ff');}
+setInterval(()=>{try{autoMpTick();}catch(e){}},300);
 
 /* =================== IA DOS MONSTROS =================== */
 /* Monstros compartilhados: a posição, a vida e o estado vêm do servidor; aqui só se desenha. */
