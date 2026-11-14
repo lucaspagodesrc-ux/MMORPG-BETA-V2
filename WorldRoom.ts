@@ -47,7 +47,10 @@ type Sess = {
   pv?: any; px?: any; noDuel?: boolean; tpAt?: number;      // PvP (duelo / Arena PK): estado, alvo-proxy, "não aceitar duelos", último teleporte
 };
 type WDrop = { id: number; item: any; x: number; z: number; exp: number; life: number; inst: number; owner: string; party: number; free: number };
-type Party = { id: number; leader: string; members: string[] };
+type POff = { cid: string; n: string; cls: string; lv: number; since: number };
+/* v1.68: quem cai/sai do jogo continua no grupo como OFFLINE por 3 minutos (off); key = identificação que sobrevive à reinicialização do servidor (gravada no personagem) */
+type Party = { id: number; key: string; leader: string; members: string[]; off: POff[] };
+const PARTY_OFF_MS = 180_000;
 
 export class WorldRoom extends Room<WorldState> {
   maxClients = 100;
@@ -58,6 +61,7 @@ export class WorldRoom extends Room<WorldState> {
   private pvp!: Pvp;
   private parties = new Map<number, Party>();
   private partySeq = 0;
+  private deadParty = new Map<string, number>();   // grupos desfeitos (key → quando), para não serem recriados por quem volta
   private invites = new Map<string, { from: string; until: number }>();
   private wd = new Map<number, WDrop>();            // drops do mundo (visíveis a todos)
   private wdSeq = 0;
@@ -111,20 +115,76 @@ export class WorldRoom extends Room<WorldState> {
   /* ---------- grupos ---------- */
   partyOf(s: Sess): Party | undefined { return s.partyId ? this.parties.get(s.partyId) : undefined; }
   private sendParty(pt: Party) {
-    const members = pt.members.map((sid) => { const p = this.state.players.get(sid); return p ? { n: p.name, cls: p.cls, lv: p.level, dg: p.inst > 0 ? 1 : 0 } : null; }).filter(Boolean);
+    if (!pt.members.includes(pt.leader) && pt.members.length) pt.leader = pt.members[0];
+    const members: any[] = pt.members.map((sid) => { const p = this.state.players.get(sid); return p ? { n: p.name, cls: p.cls, lv: p.level, dg: p.inst > 0 ? 1 : 0 } : null; }).filter(Boolean);
+    for (const o of pt.off) members.push({ n: o.n, cls: o.cls, lv: o.lv, dg: 0, off: 1, left: Math.max(0, Math.ceil((o.since + PARTY_OFF_MS - Date.now()) / 1000)) });
     const leader = this.state.players.get(pt.leader)?.name || "";
-    for (const sid of pt.members) this.sess.get(sid)?.client.send("party", { leader, members });
+    /* fotografia do grupo gravada em cada membro online: permite remontar o grupo depois que o servidor reinicia */
+    const list = [...pt.members.map((sid) => { const x = this.sess.get(sid), p = this.state.players.get(sid); return x && p ? { cid: x.charId, n: p.name, cls: p.cls, lv: p.level } : null; }).filter(Boolean), ...pt.off.map((o) => ({ cid: o.cid, n: o.n, cls: o.cls, lv: o.lv }))];
+    const lc = this.sess.get(pt.leader)?.charId || "";
+    for (const sid of pt.members) { const x = this.sess.get(sid); if (!x) continue; x.c.pty = { key: pt.key, lc, list }; x.dirty = true; x.client.send("party", { leader, members }); }
+  }
+  private newPartyKey() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  /* jogador caiu/saiu do jogo: fica no grupo como offline (o grupo continua existindo mesmo que todos estejam offline, até vencer o prazo) */
+  private partyOffline(sid: string) {
+    const s = this.sess.get(sid); if (!s) return; const pt = this.partyOf(s); s.partyId = 0; if (!pt) return;
+    pt.members = pt.members.filter((x) => x !== sid);
+    if (pt.members.some((x) => this.sess.get(x)?.charId === s.charId)) { this.sendParty(pt); return; }   // entrou de novo por outra conexão
+    const p = this.state.players.get(sid);
+    pt.off = pt.off.filter((o) => o.cid !== s.charId);
+    pt.off.push({ cid: s.charId, n: p?.name || s.c.name || "Jogador", cls: p?.cls || s.c.cls, lv: p?.level || s.c.level, since: Date.now() });
+    for (const m of pt.members) this.sysTo(this.sess.get(m), `${p?.name || "Um membro"} ficou offline. Sai do grupo se não voltar em 3 minutos.`);
+    this.sendParty(pt);
+  }
+  /* a cada 5 s: tira do grupo quem passou 3 minutos offline */
+  private partyTick() {
+    const now = Date.now();
+    for (const [k, t] of this.deadParty) if (now - t > 30 * 60_000) this.deadParty.delete(k);
+    for (const pt of [...this.parties.values()]) {
+      const gone = pt.off.filter((o) => now - o.since >= PARTY_OFF_MS); if (!gone.length) continue;
+      pt.off = pt.off.filter((o) => now - o.since < PARTY_OFF_MS);
+      for (const g of gone) for (const m of pt.members) this.sysTo(this.sess.get(m), `${g.n} saiu do grupo (ficou offline por 3 minutos).`);
+      if (pt.members.length + pt.off.length < 2 || !pt.members.length && !pt.off.length) {
+        for (const m of pt.members) { const o = this.sess.get(m); if (o) { o.partyId = 0; delete o.c.pty; o.dirty = true; o.client.send("party", null); this.sysTo(o, "O grupo foi desfeito."); } }
+        this.parties.delete(pt.id); this.deadParty.set(pt.key, now); continue;
+      }
+      if (pt.members.length) this.sendParty(pt);
+    }
+  }
+  /* quem entra no jogo volta para o grupo em que estava (se voltou dentro de 3 minutos, ou se o servidor reiniciou nesse meio tempo) */
+  private partyRejoin(s: Sess) {
+    const pk = s.c.pty, sid = s.client.sessionId; if (!pk || !pk.key) return;
+    const now = Date.now(), name = this.state.players.get(sid)?.name || s.c.name;
+    let pt = [...this.parties.values()].find((x) => x.key === pk.key);
+    if (pt) {
+      const old = pt.members.find((x) => x !== sid && this.sess.get(x)?.charId === s.charId);   // a conexão antiga ainda não saiu: troca por esta
+      if (old) { pt.members = pt.members.filter((x) => x !== old); const o = this.sess.get(old); if (o) o.partyId = 0; }
+      else {
+        const i = pt.off.findIndex((o) => o.cid === s.charId);
+        if (i < 0 || pt.members.length >= 6) { delete s.c.pty; s.dirty = true; return; }
+        pt.off.splice(i, 1);
+      }
+    } else {
+      if (this.deadParty.has(pk.key) || now - (s.c.seen || 0) > PARTY_OFF_MS + 60_000 || !Array.isArray(pk.list)) { delete s.c.pty; s.dirty = true; return; }
+      const off = pk.list.filter((o: any) => o && o.cid && o.cid !== s.charId).slice(0, 5).map((o: any) => ({ cid: String(o.cid), n: String(o.n || "?"), cls: String(o.cls || ""), lv: +o.lv || 1, since: now }));
+      if (!off.length) { delete s.c.pty; s.dirty = true; return; }
+      pt = { id: ++this.partySeq, key: pk.key, leader: sid, members: [], off }; this.parties.set(pt.id, pt);
+    }
+    pt.members.push(sid); s.partyId = pt.id;
+    if (pk.lc === s.charId || !this.sess.has(pt.leader)) pt.leader = sid;
+    for (const m of pt.members) if (m !== sid) this.sysTo(this.sess.get(m), `${name} voltou e continua no grupo.`);
+    this.sendParty(pt);
   }
   private sysTo(s: Sess | undefined, text: string) { s?.client.send("chat", { kind: "sys", text }); }
   private partyLeave(sid: string, note?: string) {
-    const s = this.sess.get(sid); if (!s) return; const pt = this.partyOf(s); s.partyId = 0;
+    const s = this.sess.get(sid); if (!s) return; const pt = this.partyOf(s); s.partyId = 0; delete s.c.pty; s.dirty = true;
     s.client.send("party", null);
     if (!pt) return;
     pt.members = pt.members.filter((x) => x !== sid);
     const nm = this.state.players.get(sid)?.name || "Jogador";
-    if (pt.members.length < 2) {
-      for (const m of pt.members) { const o = this.sess.get(m); if (o) { o.partyId = 0; o.client.send("party", null); this.sysTo(o, "O grupo foi desfeito."); } }
-      this.parties.delete(pt.id); return;
+    if (pt.members.length + pt.off.length < 2 || !pt.members.length) {
+      for (const m of pt.members) { const o = this.sess.get(m); if (o) { o.partyId = 0; delete o.c.pty; o.dirty = true; o.client.send("party", null); this.sysTo(o, "O grupo foi desfeito."); } }
+      this.parties.delete(pt.id); this.deadParty.set(pt.key, Date.now()); return;
     }
     if (pt.leader === sid) { pt.leader = pt.members[0]; }
     for (const m of pt.members) this.sysTo(this.sess.get(m), note || `${nm} saiu do grupo.`);
@@ -135,7 +195,7 @@ export class WorldRoom extends Room<WorldState> {
   private playerOf(s: Sess) { return this.state.players.get(s.client.sessionId)!; }
 
   async save(s: Sess) {
-    if (s.saving) return; s.saving = true; s.dirty = false;
+    if (s.saving) return; s.saving = true; s.dirty = false; s.c.seen = Date.now();
     try {
       const p = this.state.players.get(s.client.sessionId);
       if (p) { const h = R.arenaIn(p.x) ? (s.pv?.home || TOWNS[0]) : p; s.c.pos = { x: Math.round(h.x * 100) / 100, z: Math.round(h.z * 100) / 100 }; }   // na Arena PK salva o lugar de onde veio
@@ -476,7 +536,7 @@ export class WorldRoom extends Room<WorldState> {
     this.dg = new Dungeons(this);
     this.wb = new WorldBosses(this);
     this.pvp = new Pvp(this);
-    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0, gmAt = 0, wbAt = 0;
+    let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0, gmAt = 0, wbAt = 0, ptAt = 0;
     this.setSimulationInterval(() => {
       const now = Date.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (this.clients.length) this.sim.update(dt);
@@ -490,7 +550,8 @@ export class WorldRoom extends Room<WorldState> {
       if (now > dgAt) { dgAt = now + 1000; this.dg.tick(now); }
       if (now > wbAt) { wbAt = now + 1000; if (this.clients.length) this.wb.tick(wbNow()); }
       if (this.sess.size) this.pvp.tick();
-      if (now > saveAt) { saveAt = now + 12_000; for (const s of this.sess.values()) if (s.dirty) this.save(s); }
+      if (now > saveAt) { saveAt = now + 12_000; for (const s of this.sess.values()) { if (s.partyId && now - (s.c.seen || 0) > 60_000) s.dirty = true; if (s.dirty) this.save(s); } }
+      if (now > ptAt) { ptAt = now + 5000; this.partyTick(); }
     }, 50);
 
     this.onMessage("move", (client, m) => {
@@ -673,7 +734,7 @@ export class WorldRoom extends Room<WorldState> {
       if (t === s) return;
       const pt = this.partyOf(s);
       if (pt && pt.leader !== client.sessionId) return this.sysTo(s, "Só o líder do grupo pode convidar.");
-      if (pt && pt.members.length >= 6) return this.sysTo(s, "O grupo está cheio (6 jogadores).");
+      if (pt && pt.members.length + pt.off.length >= 6) return this.sysTo(s, "O grupo está cheio (6 jogadores).");
       if (t.partyId) return this.sysTo(s, "Esse jogador já está em um grupo.");
       this.invites.set(t.client.sessionId, { from: client.sessionId, until: Date.now() + 30_000 });
       t.client.send("pinv", { from: this.state.players.get(client.sessionId)?.name });
@@ -686,8 +747,8 @@ export class WorldRoom extends Room<WorldState> {
       if (!m?.ok) return this.sysTo(f, `${this.state.players.get(client.sessionId)?.name} recusou o convite.`);
       if (s.partyId) return;
       let pt = this.partyOf(f);
-      if (!pt) { pt = { id: ++this.partySeq, leader: iv.from, members: [iv.from] }; this.parties.set(pt.id, pt); f.partyId = pt.id; }
-      if (pt.members.length >= 6) return this.sysTo(s, "O grupo está cheio.");
+      if (!pt) { pt = { id: ++this.partySeq, key: this.newPartyKey(), leader: iv.from, members: [iv.from], off: [] }; this.parties.set(pt.id, pt); f.partyId = pt.id; }
+      if (pt.members.length + pt.off.length >= 6) return this.sysTo(s, "O grupo está cheio.");
       pt.members.push(client.sessionId); s.partyId = pt.id;
       const nm = this.state.players.get(client.sessionId)?.name;
       for (const sid of pt.members) this.sysTo(this.sess.get(sid), `${nm} entrou no grupo.`);
@@ -696,7 +757,9 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("pleave", (client) => this.partyLeave(client.sessionId));
     this.onMessage("pkick", (client, m) => {
       const s = this.S(client); const pt = s && this.partyOf(s); if (!s || !pt || pt.leader !== client.sessionId) return;
-      const t = this.findByName(String(m?.name || "")); if (!t || t === s || t.partyId !== pt.id) return;
+      const nm = String(m?.name || ""), oi = pt.off.findIndex((o) => o.n.toLowerCase() === nm.toLowerCase());
+      if (oi >= 0) { const o = pt.off.splice(oi, 1)[0]; for (const x of pt.members) this.sysTo(this.sess.get(x), `${o.n} foi removido do grupo.`); if (pt.members.length + pt.off.length < 2) { this.partyLeave(client.sessionId, ""); return; } this.sendParty(pt); return; }
+      const t = this.findByName(nm); if (!t || t === s || t.partyId !== pt.id) return;
       this.sysTo(t, "Você foi removido do grupo."); this.partyLeave(t.client.sessionId, `${this.state.players.get(t.client.sessionId)?.name} foi removido do grupo.`);
     });
 
@@ -781,6 +844,7 @@ export class WorldRoom extends Room<WorldState> {
     R.dwSync(c);                                                // missões diárias/semanais do período atual
     this.sync(s);
     guildJoin(this, s);                                         // guilda: carrega e avisa
+    this.partyRejoin(s);                                        // v1.68: volta para o grupo em que estava
     this.pvp.claim(s).catch(() => {});                          // prêmio do ranking da Arena da semana passada (uma vez)
     client.send("wbs", this.wb.snapshot());                     // situação dos chefes de mundo
     this.broadcast("chat", { kind: "sys", text: `${p.name} entrou no mundo.` }, { except: client });
@@ -791,7 +855,7 @@ export class WorldRoom extends Room<WorldState> {
     { const so = this.sess.get(client.sessionId); if (so) guildLeave(this, so); }
     const p = this.state.players.get(client.sessionId), s = this.sess.get(client.sessionId);
     if (p) this.broadcast("chat", { kind: "sys", text: `${p.name} saiu do mundo.` }, { except: client });
-    if (s) { this.pvp.leaveGame(s); this.dg.leave(s, false); for (const dd of this.wd.values()) if (dd.owner === client.sessionId) dd.owner = ""; this.partyLeave(client.sessionId); this.invites.delete(client.sessionId); s.saving = false; await this.save(s); }
+    if (s) { this.pvp.leaveGame(s); this.dg.leave(s, false); for (const dd of this.wd.values()) if (dd.owner === client.sessionId) dd.owner = ""; this.partyOffline(client.sessionId); this.invites.delete(client.sessionId); s.saving = false; await this.save(s); }
     this.state.players.delete(client.sessionId);
     this.sess.delete(client.sessionId);
     for (const sim of this.sim.list) sim.contrib.delete(client.sessionId);

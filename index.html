@@ -3400,11 +3400,14 @@ const GLB=(()=>{
  function flipW(L){const T=L.top,par=T.parent;if(!par)return;const V3=BABYLON.Vector3,all=T.getDescendants(false);all.forEach(n=>n.computeWorldMatrix&&n.computeWorldMatrix(true));
   const F=V3.TransformNormal(new V3(0,0,1),par.getWorldMatrix());F.y=0;if(F.lengthSquared()<1e-6)return;F.normalize();   /* frente do personagem = +Z do nó dele */
   for(const n of all){if(!/^(Sword|Weapon|WeaponL)$/.test(n.name)||L.cls==='arqueiro'||L.cls==='mago'||!n.parent)continue;
-   const pts=[];for(const m of [n,...n.getChildMeshes(false)]){if(!m.getBoundingInfo||!m.getTotalVertices||!m.getTotalVertices())continue;m.computeWorldMatrix(true);pts.push(...m.getBoundingInfo().boundingBox.vectorsWorld.map(v=>v.clone()));}
-   if(pts.length<2)continue;let A=pts[0],B=pts[1],bd=-1;for(let a=0;a<pts.length;a++)for(let b=a+1;b<pts.length;b++){const d=V3.DistanceSquared(pts[a],pts[b]);if(d>bd){bd=d;A=pts[a];B=pts[b];}}
-   const H=n.parent.getAbsolutePosition();if(V3.DistanceSquared(A,H)<V3.DistanceSquared(B,H)){const t=A;A=B;B=t;}   /* A = ponta, B = cabo */
+   /* eixo da arma pelos vértices reais: ponta = vértice mais longe da mão; cabo = vértice mais longe da ponta (fica no centro do cabo, então o giro mantém a arma na mão) */
+   const pts=[];for(const m of [n,...n.getChildMeshes(false)]){if(!m.getVerticesData||!m.getTotalVertices||!m.getTotalVertices())continue;m.computeWorldMatrix(true);const wm=m.getWorldMatrix(),pv=m.getVerticesData(BABYLON.VertexBuffer.PositionKind);if(!pv)continue;for(let q=0;q<pv.length;q+=3)pts.push(V3.TransformCoordinates(new V3(pv[q],pv[q+1],pv[q+2]),wm));}
+   if(pts.length<2)continue;const H=n.parent.getAbsolutePosition();let A=pts[0],bd=-1;for(const v of pts){const d=V3.DistanceSquared(v,H);if(d>bd){bd=d;A=v;}}
+   let B=pts[0];bd=-1;for(const v of pts){const d=V3.DistanceSquared(v,A);if(d>bd){bd=d;B=v;}}   /* A = ponta, B = fim do cabo */
    const ax=A.subtract(B),dir=ax.clone();dir.y=0;if(dir.lengthSquared()<1e-6)continue;dir.normalize();if(V3.Dot(dir,F)>-.2)continue;   /* só as que apontam para trás */
-   const t=Math.max(0,Math.min(1,V3.Dot(H.subtract(B),ax)/ax.lengthSquared())),C=B.add(ax.scale(t));   /* ponto da arma mais perto da mão: eixo do giro */
+   /* eixo do giro = centro do cabo (onde a mão segura): entre o fim do cabo e a guarda (a parte mais larga na metade de trás) */
+   const Lx=ax.length(),u=ax.scale(1/Lx);let tg=-1,rg=0;for(const v of pts){const w=v.subtract(B),t=V3.Dot(w,u);if(t<0||t>Lx*.5)continue;const r=w.subtract(u.scale(t)).length();if(r>rg){rg=r;tg=t;}}
+   const tH=Math.max(0,Math.min(Lx,V3.Dot(H.subtract(B),u))),C=B.add(u.scale(tg>0&&rg>.02?tg*.5:tH));
    const W=n.getWorldMatrix().clone(),R=BABYLON.Matrix.Translation(-C.x,-C.y,-C.z).multiply(BABYLON.Matrix.RotationY(Math.PI)).multiply(BABYLON.Matrix.Translation(C.x,C.y,C.z));
    const Lm=W.multiply(R).multiply(n.parent.getWorldMatrix().clone().invert()),sc=new V3(),rq=new BABYLON.Quaternion(),ps=new V3();Lm.decompose(sc,rq,ps);
    n.scaling.copyFrom(sc);if(!n.rotationQuaternion)n.rotationQuaternion=rq;else n.rotationQuaternion.copyFrom(rq);n.position.copyFrom(ps);n.computeWorldMatrix(true);}}
@@ -4445,7 +4448,7 @@ function renderParty(){
  const b=$('partyBody');if(!b)return;
  const me=S&&S.name,lead=PARTY&&PARTY.leader===me;
  let h='';
- if(PARTY){h+=`<div class="muted" style="margin-bottom:6px">Membros (${PARTY.members.length}/6)</div>`+PARTY.members.map(m=>`<div class="row2"><div class="ri">${(CLASSES[m.cls]||{}).i||'👤'}</div><div class="rt"><b>${m.n===PARTY.leader?'👑 ':''}${esc(m.n)}</b> <small style="display:inline">Nv ${m.lv}${m.dg?' • 🏺 na dungeon':''}</small></div>${lead&&m.n!==me?`<div class="rb"><button data-kick="${esc(m.n)}">Expulsar</button></div>`:''}</div>`).join('');}
+ if(PARTY){h+=`<div class="muted" style="margin-bottom:6px">Membros (${PARTY.members.length}/6)</div>`+PARTY.members.map(m=>`<div class="row2"><div class="ri">${(CLASSES[m.cls]||{}).i||'👤'}</div><div class="rt"><b>${m.n===PARTY.leader?'👑 ':''}${esc(m.n)}</b> <small style="display:inline">Nv ${m.lv}${m.dg?' • 🏺 na dungeon':''}${m.off?' • <span style="color:#9aa3ad">⚫ offline</span>':''}</small></div>${lead&&m.n!==me?`<div class="rb"><button data-kick="${esc(m.n)}">Expulsar</button></div>`:''}</div>`).join('');}
  else h+='<p class="muted">Você não está em um grupo. Convide alguém pelo nome — ao aceitar, vocês formam um grupo (até 6). Em grupo, quem tem ingresso entra na mesma dungeon.</p>';
  if(!PARTY||lead)h+=`<div style="display:flex;gap:6px;margin-top:8px"><input id="pInv" maxlength="16" placeholder="Nome do jogador" style="flex:1;min-width:0;background:#0b1320;border:1px solid var(--line);color:#fff;border-radius:6px;padding:6px"><button data-pinv="1">Convidar</button></div>`;
  if(PARTY)h+='<div style="margin-top:8px"><button data-pleave="1">Sair do grupo</button> <span class="muted">Chat do grupo: /p mensagem</span></div>';
@@ -4741,6 +4744,7 @@ function renderPartyBar(){
  for(const m of PARTY.members){let el=PBEL.get(m.n);
   if(!el){el=document.createElement('div');el.className='pm';el.dataset.n=m.n;el.innerHTML='<div class="pn"><span></span><small></small></div><div class="pl"><i></i></div>';pb.appendChild(el);PBEL.set(m.n,el);}
   let hp,mx;const me=m.n===S.name;
+  if(m.off&&!me){const nm=el.querySelector('span'),sm=el.querySelector('small'),bar=el.querySelector('i');const t=((CLASSES[m.cls]||{}).i||'👤')+' '+(m.n===PARTY.leader?'👑':'')+m.n;if(nm.textContent!==t)nm.textContent=t;if(sm.textContent!=='offline')sm.textContent='offline';bar.style.width='100%';bar.style.background='#5b6370';el.style.opacity=.6;const tip='⚫ Offline — sai do grupo se não voltar em 3 minutos';if(el.title!==tip)el.title=tip;continue;}   /* v1.68: membro offline: barra cinza */
   if(me){hp=P.hp;mx=D().maxHp;}else{const p=byName.get(m.n);hp=p?p.hp:0;mx=p&&p.mhp?p.mhp:0;if(p&&!mx){hp=1;mx=1;}}
   const f=mx>0?Math.max(0,Math.min(1,hp/mx)):0,nm=el.querySelector('span'),sm=el.querySelector('small'),bar=el.querySelector('i');
   const t=((CLASSES[m.cls]||{}).i||'👤')+' '+(m.n===PARTY.leader?'👑':'')+m.n;if(nm.textContent!==t)nm.textContent=t;
@@ -6517,6 +6521,7 @@ async function netJoin(){
 const quiet=fn=>{const b=scene._blockMaterialDirtyMechanism;scene._blockMaterialDirtyMechanism=true;try{return fn();}finally{scene._blockMaterialDirtyMechanism=b;}};   // (campo interno: o setter público remarcaria TODOS os materiais ao liberar)
 const RP={Rin:46,Rout:60,cache:new Map(),t:0,gate:0,order:[],n0:0,n2:0};
 function mkRemote(p,id){const o={nid:id,cls:PCOL[p.cls]?p.cls:'mago',swingAt:0,lv:-1,tier:-1,want:2,rig:null,px:null,pxk:null,d:0,dirty:1};
+ if(typeof GLBMODE!=='undefined'&&GLBMODE&&GLB.FILES[o.cls]){o.noPx=1;o.want=0;}   /* v1.68: modelos do Blender sempre com o corpo completo (a versão leve virava uma sombra escura) */
  const r=new BABYLON.TransformNode('rp',scene);r.position.set(p.x,0,p.z);o.root=r;o.name=p.name;o.lv=p.level||-1;o.label=mkLabel('','plate');shadowDisc(r,.7);return o;}
 /* fonte do proxy para uma aparência (classe + equipamento): assada 1x a partir de um boneco temporário e reaproveitada por todos iguais */
 function rpEntry(o,ap){
