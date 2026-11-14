@@ -660,6 +660,7 @@ export class WorldRoom extends Room<WorldState> {
   /* ---------- mensagens ---------- */
   private maintT?: NodeJS.Timeout;
   onCreate() {
+    this.autoDispose = false;   // v1.74: o mundo não é recriado quando o último jogador sai (senão chefes como o Dragão Rubro renasciam na hora)
     this.setState(new WorldState());
     // a cada minuto: anúncios vencidos do leilão voltam por correio; limpa cartas velhas
     this.maintT = setInterval(() => { auctionSweep(this); mailSweep(); }, 60_000); auctionSweep(this);
