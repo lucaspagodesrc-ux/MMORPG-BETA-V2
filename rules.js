@@ -816,7 +816,7 @@ NPCS.push({id:'valen',name:'Comandante Valen',icon:'⚔️',x:-13.4,z:-3.6,col:'
    [47,'golem',2,'Pedra Ancestral','Derrote o Golem Ancião 2 vezes e traga seus núcleos de pedra.'],
    [49,'dragao',3,'A Última Chama','Prove que está pronto para Solara: derrote o Dragão Rubro 3 vezes.']];
   L.forEach(([rec,tg,qty,t,d],i)=>QUESTS.push({id:'av'+(i+1),npc:'valen',t,d,tg,qty,rec,need:rec,
-    rw:{xp:Math.round(xpNeed(rec)*(i===12?.9:.6)),gold:rec*300,...(i%2===0?{eq:{slot:SL[(i/2)%5],ilvl:rec+1,rar:i>=8?3:2}}:{pot:{hp:10}}),...(i===4||i===8||i===12?{sp:1}:{})}})); }
+    rw:{xp:Math.round(xpNeed(rec)*(i===12?1.8:1.2)),   /* v1.74: XP dobrado */gold:rec*300,...(i%2===0?{eq:{slot:SL[(i/2)%5],ilvl:rec+1,rar:i>=8?3:2}}:{pot:{hp:10}}),...(i===4||i===8||i===12?{sp:1}:{})}})); }
 
 // Cidades mais espaçadas: os NPCs que ficavam dentro das zonas seguras antigas (raio 11 / 13) são afastados do centro na mesma proporção
 // em que a zona segura cresceu (Aurora 11→15; Solara e Nevasca 13→17,5). NPCs de fora (missões, portais de calabouço) não mudam.
