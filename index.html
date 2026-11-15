@@ -2121,7 +2121,8 @@ Math.random=__rand0; // volta ao aleatório normal depois de gerar o cenário
 const mBody=m=>((m&&m.root&&m.root._sr)||.8)*((m&&m.bs)||1);   /* raio do corpo = raio da sombra × escala */
 const mReach=m=>Math.max(0,mBody(m)-.9);
 function collideMobs(p,lp){const c=S&&CLASSES[S.cls],rng=c?c.range:2.4;
- for(const m of monsters){if(!m.alive||!m.root||!m.root.isEnabled())continue;const min=Math.min(rng+mReach(m)-.75,Math.max(.4+.55*(m.bs||1),.9*mBody(m)+.35)),dx=p.x-m.pos.x,dz=p.z-m.pos.z;if(Math.abs(dx)>min||Math.abs(dz)>min)continue;
+ for(const m of monsters){if(!m.alive||!m.root||!m.root.isEnabled())continue;const T=m.T||{};if(!T.boss&&!T.chest&&!T.node)continue;   /* v1.89: só chefes (de mapa, de calabouço e do mundo), baús e cristais têm corpo; monstros comuns não prendem o jogador */
+  const min=Math.min(rng+mReach(m)-.75,Math.max(.4+.55*(m.bs||1),.9*mBody(m)+.35)),dx=p.x-m.pos.x,dz=p.z-m.pos.z;if(Math.abs(dx)>min||Math.abs(dz)>min)continue;
   const d=Math.hypot(dx,dz);if(d>=min)continue;
   if(lp&&Math.abs(lp.x-p.x)+Math.abs(lp.z-p.z)<3){const d0=Math.hypot(lp.x-m.pos.x,lp.z-m.pos.z);if(d0<min){if(d<d0&&d>1e-4){p.x=m.pos.x+dx/d*d0;p.z=m.pos.z+dz/d*d0;}continue;}}   /* já estava encostado (o monstro veio até ele): fica parado, só não entra mais */
   if(d>1e-4){p.x=m.pos.x+dx/d*min;p.z=m.pos.z+dz/d*min;}else{const a=P.root?P.root.rotation.y+Math.PI:0;p.x=m.pos.x+Math.sin(a)*min;p.z=m.pos.z+Math.cos(a)*min;}}}
