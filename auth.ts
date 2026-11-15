@@ -126,14 +126,14 @@ const NAME_USED = "Esse nome já está em uso. Escolha outro.";
 
 authRouter.post("/chars", authed, async (req, res) => {
   const u = (req as any).user as AuthUser;
-  const { cls, name } = req.body || {};
+  const { cls, name, fem } = req.body || {};
   const nm = cleanName(name);
   if (!CLASSES.includes(cls)) return res.status(400).json({ error: "Classe inválida." });
   if (nameErr(nm)) return res.status(400).json({ error: nameErr(nm) });
   if (await nameTaken(nm)) return res.status(409).json({ error: NAME_USED });
   const n = await pool.query("select count(*)::int as n from characters where account_id=$1", [u.id]);
   if (n.rows[0].n >= 6 && u.username.toLowerCase() !== GM_USER) return res.status(400).json({ error: "Limite de 6 personagens." });
-  const c = R.newChar(cls, nm); c.nmOk = 1;
+  const c = R.newChar(cls, nm, fem === true || fem === 1 ? 1 : 0); c.nmOk = 1;   // v1.77: masculino/feminino (só aparência)
   try { await saveChar(u.id, c); } catch (e: any) { if (e?.code === "23505") return res.status(409).json({ error: NAME_USED }); throw e; }
   res.json({ char: c });
 });

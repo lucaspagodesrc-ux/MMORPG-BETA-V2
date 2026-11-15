@@ -1480,11 +1480,12 @@ function cleanBar(b) {
 }
 /* v1.70: tamanho da mochila e do baú (cada um aparece em 2 abas) */
 const INV_SIZE = 48, STASH_SIZE = 80;
-function newChar(cls, name) {
+function newChar(cls, name, fem) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(INV_SIZE).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
   c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; } c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
+  if (fem) c.fem = 1;   // v1.77: personagem feminino (só aparência; escolhido na criação, não muda depois)
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }

@@ -302,6 +302,7 @@
   #selMid .vlogo{margin-top:4px}
   #selCap{margin-top:6px;text-align:center;text-shadow:0 2px 6px #000;pointer-events:none}#selCap b{font-size:22px;color:#fff}#selCap small{display:block;color:#cbd6e2;margin-top:2px}
   #selAct{margin-top:auto;width:min(460px,100%);background:rgba(13,20,31,.92);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;cursor:default}
+  .sexSel{display:flex;gap:8px}.sexSel button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:#0e1722;color:#cfd8e3;font-weight:700;font-size:14px;cursor:pointer}.sexSel button.on{border-color:var(--gold);background:#3b3014;color:#ffe28a}
   #selAct input{padding:9px;border-radius:8px;border:1px solid var(--line);background:#0e1722;color:#fff;font-size:15px;text-align:center}
   #selAct button.go{padding:12px;border-radius:10px;border:1px solid var(--gold);background:#3b3014;color:#ffe28a;font-weight:800;font-size:16px;cursor:pointer}#selAct button.go:hover{background:#4d3f1a}#selAct button.go:disabled{opacity:.4;cursor:not-allowed}
   .opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(18,28,41,.95);cursor:pointer;position:relative;transition:.12s}
@@ -3490,9 +3491,11 @@ function magoHats(o){const H=o.glbParts&&o.glbParts.Helm;if(!H||!H['1'])return;
    const t0=n.material.albedoTexture;m.albedoTexture=null;c.material=m;hatGray(t0,g=>{if(g)m.albedoTexture=g;});
    try{GINK_(c,.012);}catch(e){}c.setEnabled(false);return c;});}}
 const GLB=(()=>{
- const FILES={cavaleiro:'cavaleiro.glb',guerreiro:'guerreiro.glb',tanque:'tanque.glb',assassino:'assassino.glb',arqueiro:'arqueiro.glb',mago:'mago.glb',pierrot:'pierrot.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
+ const FILES={cavaleiro:'cavaleiro.glb',guerreiro:'guerreiro.glb',tanque:'tanque.glb',assassino:'assassino.glb',arqueiro:'arqueiro.glb',mago:'mago.glb',pierrot:'pierrot.glb',
+  /* v1.77: versões femininas (só aparência) */
+  cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='167';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ let ldr=null,IPC=null;const GLBV='177';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -3501,13 +3504,15 @@ const GLB=(()=>{
   if(C[cls])return C[cls].p;const e=C[cls]={st:0,ct:null};
   e.p=loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',FILES[cls]+'?v='+GLBV,scene,null,'.glb')).then(ct=>{
     e.ct=ct;e.st=1;ct.animationGroups.forEach(a=>a.stop());
-    for(const w of WAIT.splice(0))if(w.o.cls===cls||w.cls===cls)swap(w);else WAIT.push(w);
-   }).catch(err=>{e.st=-1;console.warn('GLB',cls,err);for(const w of WAIT.splice(0)){if(w.cls===cls){w.o._gw=0;try{w.g.setEnabled(true);if(w.o.gap)ORG.gear(w.o,w.o.gap);}catch(e){}}else WAIT.push(w);}});
+    for(const w of WAIT.splice(0))if(w.cls===cls)swap(w);else WAIT.push(w);
+   }).catch(err=>{e.st=-1;console.warn('GLB',cls,err);
+    if(/_f$/.test(cls)){const base=cls.slice(0,-2);for(const w of WAIT.splice(0)){if(w.cls===cls){w.cls=base;if(ready(base))swap(w);else{WAIT.push(w);load(base);}}else WAIT.push(w);}return;}   /* v1.77: sem o arquivo feminino, usa o masculino */
+    for(const w of WAIT.splice(0)){if(w.cls===cls){w.o._gw=0;try{w.g.setEnabled(true);if(w.o.gap)ORG.gear(w.o,w.o.gap);}catch(e){}}else WAIT.push(w);}});
   return e.p;}
  const ready=cls=>!!(C[cls]&&C[cls].st===1);
  /* monta uma cópia do modelo dentro de r */
- function inst(cls,o,r){
-  const ct=C[cls].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true});
+ function inst(key,o,r){
+  const ct=C[key].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true}),cls=key.replace(/_f$/,'');   /* key = arquivo (cls ou cls_f) */
   const top=new BABYLON.TransformNode('glb',scene);top.parent=r;const S=SCALE[cls]||1;top.scaling.setAll(S);
   const root=I.rootNodes[0];root.parent=top;
   const all=root.getDescendants(false),by=n=>all.find(x=>x.name===n);
@@ -3537,10 +3542,12 @@ const GLB=(()=>{
   if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
   inst(w.cls,o,r);const ap=o.gap;o.gsig=null;if(ap)gear(o,ap);
   if(o.rig===r)r.getChildMeshes().forEach(m=>{if(!m.metadata)m.metadata={t:'p',ref:o};});}
+ /* v1.77: arquivo do modelo pela classe e sexo (cai para o masculino se o feminino não existir/falhar) */
+ const key=(cls,fem)=>{const k=cls+'_f';return fem&&FILES[k]&&!(C[k]&&C[k].st===-1)?k:cls;};
  function build(cls,o,r){
-  if(!FILES[cls])return false;
-  if(ready(cls)){inst(cls,o,r);return true;}
-  if(!C[cls]||C[cls].st===0){load(cls);ORG.build(cls,o,r);const g=o.orgG;try{g.setEnabled(false);}catch(e){}o._gw=1;WAIT.push({o,r,g,cls});return true;}   /* v1.68: o boneco antigo fica escondido; só aparece se o modelo novo falhar */
+  if(!FILES[cls])return false;const k=key(cls,o&&o.fem);
+  if(ready(k)){inst(k,o,r);return true;}
+  if(!C[k]||C[k].st===0){load(k);ORG.build(cls,o,r);const g=o.orgG;try{g.setEnabled(false);}catch(e){}o._gw=1;WAIT.push({o,r,g,cls:k});return true;}   /* v1.68: o boneco antigo fica escondido; só aparece se o modelo novo falhar */
   return false;}
  /* animação: escolhe e posiciona os clipes pelo estado do personagem (andar/parado/golpe/habilidade) */
  const KA={shield:'Shield',throw:'Throw',beam:'Cast',jump:'Jump',stomp:'Jump',sky:'Jump',spin:'Attack',spin3:'Attack',stab:'Attack',both:'Attack',sumo:'Attack'};
@@ -3604,7 +3611,7 @@ const GLB=(()=>{
   CAPE(o,o.glbTop,ap,tk?{sx:.5,sy:1.56,hy:1.95,hr:.4,bz:-.52,R:y=>y>.95&&y<1.7?.46:0,len:1.3}:pl?{sx:.4,sy:1.56,hy:1.95,hr:.4,bz:-.44,R:y=>y>.95&&y<1.7?.38:0,len:1.3}:{sx:.36,sy:1.54,hy:1.88,hr:.32,bz:-.34,R:y=>y>.95&&y<1.65?.3:0,len:1.25});
  }
  /* cada classe é baixada só quando aparece um personagem dela */
- return{build,anim,gear,load,ready,FILES,setOf};
+ return{build,anim,gear,load,ready,FILES,setOf,key};
 })();
 
 /* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago e Pierrot, dano mágico),
@@ -3801,7 +3808,7 @@ function buildModel(cls,o){
  return r;
 }
 const SK_=h=>CH.SK(h);
-function buildPlayer(cls){if(P.root)P.root.dispose();const r=buildModel(cls,P);P.root=r;P.pos=r.position;}
+function buildPlayer(cls){if(P.root)P.root.dispose();P.fem=S&&S.fem?1:0;const r=buildModel(cls,P);P.root=r;P.pos=r.position;}
 /* =================== APARÊNCIA DOS ITENS (origem do monstro, brilho, efeitos +7) =================== */
 const EL={
  fire:{n:'Chamas',c1:'#ffd45a',c2:'#ff5a1a',c3:'#401000',up:1.5,sz:[.16,.36],life:[.35,.7],add:1},
@@ -5151,8 +5158,8 @@ function clMark(col){
  n.setEnabled(false);return n;}
 /* cria um boneco de clone (escondido). Devolve null se o modelo da classe ainda está baixando. */
 function clRigNew(ow){
- const cls=clCls(ow);if(GLBMODE&&GLB.FILES[cls]&&!GLB.ready(cls)){GLB.load(cls);return null;}
- const o={cls,swingAt:0,isClone:1};let r=null;quiet(()=>{r=buildModel(cls,o);o.root=r;});
+ const cls=clCls(ow),fem=ow===P?(S&&S.fem?1:0):(ow.fem||0),gk=GLBMODE?GLB.key(cls,fem):cls;if(GLBMODE&&GLB.FILES[cls]&&!GLB.ready(gk)){GLB.load(gk);return null;}
+ const o={cls,swingAt:0,isClone:1,fem};let r=null;quiet(()=>{r=buildModel(cls,o);o.root=r;});
  const sh=r.getChildren(n=>n.name==='sh',true)[0];
  const g={o,root:r,ap:null,busy:false,mk:null,sh};r.setEnabled(false);return g;}
 function clPool(ow){let L=CLN.pool.get(ow);if(!L){L=[];CLN.pool.set(ow,L);}return L;}
@@ -6726,14 +6733,14 @@ function loadAcc(){
  try{const o=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(o&&CLASSES[o.cls]&&o.inv&&o.eq&&o.alloc)acc.chars.push(dropDefName(migrate(o)));}catch(e){}
  return acc;
 }
-const newChar=(cls,name)=>RULES.newChar(cls,name);
+const newChar=(cls,name,fem)=>RULES.newChar(cls,name,fem?1:0);
 function play(c){if(!c||!c.name){alert("Escolha um nome para o personagem antes de entrar.");return;}
  pvHide();S=c;dirty();RULES.dwSync(S);buildPlayer(S.cls);
  const p=S.pos||{x:0,z:5};P.pos.set(p.x,0,p.z);if(Math.hypot(p.x,p.z)<2)P.pos.set(0,0,5);
  P.hp=D().maxHp;P.mp=D().maxMp;P.dead=false;P.cd=Array(8).fill(0);P.cdMax=Array(8).fill(1);P.lastSkill=-1;P.cst=0;P.buffs={};P.moveTo=null;P.atkTarget=null;P.interact=null;P.sel=null;
  updWeaponVisual();buildSkillbar();camera.target.copyFromFloats(P.pos.x,.6,P.pos.z);
  $('select').style.display='none';$('ui').style.display='block';$('audioFab').style.display='none';
- $('pName').textContent=S.name.toUpperCase();$('pClass').textContent='• '+CLASSES[S.cls].n.toUpperCase();
+ $('pName').textContent=S.name.toUpperCase();$('pClass').textContent='• '+clsName(S.cls,S.fem).toUpperCase();
  updateNpcMarkers();refreshUI();save();
  logMsg('Bem-vindo, <b>'+esc(S.name)+'</b>! Fale com o <b>Capitão Aldric</b> para começar. Guarde itens no <b>Baú</b> da cidade.','#ffe28a');
  toast('Clique no chão para andar • H para ajuda');netJoin();
@@ -6748,31 +6755,35 @@ function pvStage(){if(PV.stage)return;const r=new BABYLON.TransformNode('pvstage
  put(B.CreateTorus('pvr2',{diameter:3.4,thickness:.04,tessellation:40},scene),-.01,fxMat('#7a5a2a'));
  put(B.CreateDisc('pvg',{radius:2.4,tessellation:40},scene),-.02,fxMat('#2a3d57')).rotation.x=Math.PI/2;}
 function maxAp(cls){const a=(m,p,r)=>({mo:m,plus:p,rar:r}),F='farao',ap={weapon:a(F,10,3),armor:a(F,10,3),helmet:a(F,10,3),boots:a(F,10,3),ring:a(F,10,3),ring2:a('dragao',10,3),bracelet:a(F,10,3),bracelet2:a('dragao',10,3),earring:a(F,10,3),earring2:a('dragao',10,3),cape:a('',0,0)};if(cls==='cavaleiro')ap.shield=a('dragao',10,3);return ap;}
-function pvShow(cls,ap){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}
- const o={cls,swingAt:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);r.rotation.y=PV.rot;o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();}
+function pvShow(cls,ap,fem){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}
+ const o={cls,swingAt:0,fem:fem?1:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);r.rotation.y=PV.rot;o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();}
 function pvCam(){const nar=window.innerWidth<860;zoom=nar?3.4:2.8;setOrtho();camera.target.copyFromFloats(PV.x,nar?.5:.7,PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
 function pvHide(){PV.on=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
-const SEL={t:null,id:null};
+const SEL={t:null,id:null,fem:0};
+/* v1.77: nomes das classes na versão feminina (só aparência; atributos iguais) */
+const FEMN={cavaleiro:'Cavaleira',guerreiro:'Guerreira',tanque:'Guardiã',assassino:'Assassina',arqueiro:'Arqueira',mago:'Maga',pierrot:'Pierrette'};
+const clsName=(k,fem)=>fem&&FEMN[k]?FEMN[k]:CLASSES[k].n;
 function renderSelect(){
  if(!ACC)ACC=loadAcc();const full=ACC.chars.length>=6;
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
- $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${CLASSES[c.cls].n} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
+ $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${clsName(c.cls,c.fem)}${c.fem?' ♀':''} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
  $('secChars').textContent='Seus personagens ('+ACC.chars.length+'/6)';
  $('selNote').textContent=full?'Limite de 6 personagens. Exclua um para criar outro.':'O baú da cidade é compartilhado entre todos os seus personagens.';
  const info=$('clsInfo'),cap=$('selCap'),act=$('selAct');
  if(SEL.t==='cls'){const c=CLASSES[SEL.id];
   info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo (+10, brilho e efeitos). É só visual: o personagem novo começa sem esses itens.</p>`;
-  cap.innerHTML=`<b>${c.i} ${c.n}</b><small>Prévia: equipamento máximo (apenas visual)</small>`;
-  act.innerHTML=`<input id="newName" maxlength="16" value="" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${c.n} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
+  const nm0=$('newName')?$('newName').value:'',cn=clsName(SEL.id,SEL.fem);
+  cap.innerHTML=`<b>${c.i} ${cn}</b><small>Prévia: equipamento máximo (apenas visual)</small>`;
+  act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${cn} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
  else if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c){SEL.t=null;return renderSelect();}
   info.innerHTML='<p class="muted">Selecione uma classe aqui para criar outro personagem e ver a prévia dela.</p>';
-  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${CLASSES[c.cls].n} • Nível ${c.level} • com os itens equipados</small>`;
+  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${clsName(c.cls,c.fem)} • Nível ${c.level} • com os itens equipados</small>`;
   act.innerHTML=c.name?`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>`:`<input id="newName" maxlength="16" value="" placeholder="Escolha o nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo">✔ Confirmar nome e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
  else{info.innerHTML='<p class="muted">Clique em uma classe para ver a descrição e a prévia.</p>';cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em uma classe (esquerda) ou em um personagem seu (direita)</small>';act.style.display='none';return;}
  act.style.display='flex';
 }
 function selPick(t,id){SEL.t=t;SEL.id=id;if(!ACC)ACC=loadAcc();
- if(t==='cls')pvShow(id,maxAp(id));else{const c=ACC.chars.find(x=>x.id===id);if(c)pvShow(c.cls,parseAp(RULES.apOf(c)));}
+ if(t==='cls')pvShow(id,maxAp(id),SEL.fem);else{const c=ACC.chars.find(x=>x.id===id);if(c)pvShow(c.cls,parseAp(RULES.apOf(c)),c.fem);}
  renderSelect();}
 function showSelect(){
  if(!ACC)ACC=loadAcc();SEL.t=null;SEL.id=null;
@@ -6784,6 +6795,7 @@ $('select').addEventListener('click',e=>{
  if(del){e.stopPropagation();if(confirm('Excluir este personagem permanentemente? (O baú compartilhado não é afetado.)')){const id=del.dataset.del;(async()=>{try{if(TOKEN)await api('chars/'+encodeURIComponent(id),'DELETE');ACC.chars=ACC.chars.filter(c=>c.id!==id);save();if(SEL.id===id){SEL.t=null;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}}renderSelect();}catch(er){alert(er.message);}})();}return;}
  const pl=e.target.closest('[data-play]');if(pl){selPick('chr',pl.dataset.play);return;}
  const cl=e.target.closest('[data-cls]');if(cl){selPick('cls',cl.dataset.cls);return;}
+ const sx=e.target.closest('[data-sex]');if(sx&&SEL.t==='cls'){SEL.fem=+sx.dataset.sex?1:0;pvShow(SEL.id,maxAp(SEL.id),SEL.fem);renderSelect();return;}   /* v1.77: masculino/feminino na criação */
  if(e.target.closest('#selGo')){
   const nmMsg=t=>{const m=$('nameMsg');if(m)m.textContent=t||'';if(t&&!m)alert(t);};
   const readName=()=>(($('newName')&&$('newName').value)||'').replace(/[\u0000-\u001f<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,16);
@@ -6797,7 +6809,7 @@ $('select').addEventListener('click',e=>{
    if(name.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
    if(taken(name)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}
    $('selGo').disabled=true;nmMsg('');
-   (async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name})).char;}else{c=newChar(k,name);c.nmOk=1;}ACC.chars.push(c);play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
+   (async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name,fem:!!SEL.fem})).char;}else{c=newChar(k,name,SEL.fem);c.nmOk=1;}ACC.chars.push(c);play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
 });
 {const m=$('selMid');m.addEventListener('pointerdown',e=>{if(e.target.closest('#selAct'))return;PV.drag=e.clientX;});window.addEventListener('pointermove',e=>{if(PV.drag!==false&&PV.drag!==undefined&&PV.drag!==null){PV.rot+=(e.clientX-PV.drag)*.012;PV.drag=e.clientX;}});window.addEventListener('pointerup',()=>{PV.drag=false;});}
 window.addEventListener('beforeunload',()=>{save();});
@@ -6882,13 +6894,13 @@ async function netJoin(){
 /* criar muitos materiais/malhas com a cena grande é lento porque cada mudança de material varre todas as malhas; bloqueamos isso durante a montagem */
 const quiet=fn=>{const b=scene._blockMaterialDirtyMechanism;scene._blockMaterialDirtyMechanism=true;try{return fn();}finally{scene._blockMaterialDirtyMechanism=b;}};   // (campo interno: o setter público remarcaria TODOS os materiais ao liberar)
 const RP={Rin:46,Rout:60,cache:new Map(),t:0,gate:0,order:[],n0:0,n2:0};
-function mkRemote(p,id){const o={nid:id,cls:PCOL[p.cls]?p.cls:'mago',swingAt:0,lv:-1,tier:-1,want:2,rig:null,px:null,pxk:null,d:0,dirty:1};
+function mkRemote(p,id){const o={nid:id,cls:PCOL[p.cls]?p.cls:'mago',fem:p.fm?1:0,swingAt:0,lv:-1,tier:-1,want:2,rig:null,px:null,pxk:null,d:0,dirty:1};
  if(typeof GLBMODE!=='undefined'&&GLBMODE&&GLB.FILES[o.cls]){o.noPx=1;o.want=0;}   /* v1.68: modelos do Blender sempre com o corpo completo (a versão leve virava uma sombra escura) */
  const r=new BABYLON.TransformNode('rp',scene);r.position.set(p.x,0,p.z);o.root=r;o.name=p.name;o.lv=p.level||-1;o.label=mkLabel('','plate');shadowDisc(r,.7);return o;}
 /* fonte do proxy para uma aparência (classe + equipamento): assada 1x a partir de um boneco temporário e reaproveitada por todos iguais */
 function rpEntry(o,ap){
- const k=o.cls+'|'+(ap||''),c=RP.cache;let en=c.get(k);if(en){en.last=performance.now();return en;}
- const t={cls:o.cls,swingAt:0};let r=null;
+ const k=o.cls+(o.fem?'_f':'')+'|'+(ap||''),c=RP.cache;let en=c.get(k);if(en){en.last=performance.now();return en;}
+ const t={cls:o.cls,fem:o.fem,swingAt:0};let r=null;
  quiet(()=>{try{r=buildModel(t.cls,t);t.root=r;applyGear(t,parseAp(ap));en=PX.bake(r,k);}catch(e){console.warn('proxy',e);en=null;}try{clearGear(t);}catch(e){}try{if(r)r.dispose();}catch(e){}});
  if(en){en.last=performance.now();c.set(k,en);if(c.size>24){let w=null;for(const x of c.values())if(x.uses<=0&&(!w||x.last<w.last))w=x;if(w){c.delete(w.key);PX.free(w);}}}
  return en;}

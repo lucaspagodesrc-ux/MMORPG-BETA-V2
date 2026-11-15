@@ -958,7 +958,7 @@ export class WorldRoom extends Room<WorldState> {
     for (const [sid, o] of this.sess)            // uma sessão por conta
       if (o.acc.id === a.acc.id) { this.clients.find((cl) => cl.sessionId === sid)?.leave(4001); }
     const c = a.c, p = new Player();
-    p.name = c.name; p.cls = c.cls; p.level = c.level;
+    p.name = c.name; p.cls = c.cls; p.level = c.level; p.fm = c.fem ? 1 : 0;
     const pos = c.pos && Number.isFinite(c.pos.x) && Number.isFinite(c.pos.z) ? c.pos : { x: Number.isFinite(options?.x) ? options.x : 0, z: Number.isFinite(options?.z) ? options.z : 5 };
     if (pos.x > 1650) { pos.x = 0; pos.z = 5; }                 // caiu dentro da Arena PK (queda do servidor etc.): volta para Aurora
     p.x = clampX(pos.x, pos.x); p.z = clampZ(pos.z, pos.x > 450 ? 1 : 0);
