@@ -3587,8 +3587,8 @@ const GLB=(()=>{
  function load(cls){
   if(C[cls])return C[cls].p;const e=C[cls]={st:0,ct:null};
   e.p=loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',FILES[cls]+'?v='+(/^fz_/.test(cls)?FZV:GLBV),scene,null,'.glb')).then(ct=>{
-    e.ct=ct;e.st=1;ct.animationGroups.forEach(a=>a.stop());
-    for(const w of WAIT.splice(0))if(w.cls===cls)swap(w);else WAIT.push(w);
+    e.ct=ct;ct.animationGroups.forEach(a=>a.stop());
+    return warm(cls).then(()=>{e.st=1;for(const w of WAIT.splice(0))if(w.cls===cls)swap(w);else WAIT.push(w);});   /* v1.89: shaders compilados antes de o modelo aparecer */
    }).catch(err=>{e.st=-1;console.warn('GLB',cls,err);
     if(/_f$/.test(cls)){const base=cls.slice(0,-2);for(const w of WAIT.splice(0)){if(w.cls===cls){w.cls=base;if(ready(base))swap(w);else{WAIT.push(w);load(base);}}else WAIT.push(w);}return;}   /* v1.77: sem o arquivo feminino, usa o masculino */
     for(const w of WAIT.splice(0)){if(w.cls===cls){w.o._gw=0;try{w.g.setEnabled(true);if(w.o.gap)ORG.gear(w.o,w.o.gap);}catch(e){}}else WAIT.push(w);}});
@@ -3625,14 +3625,14 @@ const GLB=(()=>{
  function swap(w){const o=w.o,r=w.r;o._gw=0;if(!r||r.isDisposed()||o.root&&o.root!==r&&o.rig!==r)return;
   try{if(w.g&&!w.g.isDisposed())w.g.dispose();}catch(e){}
   if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
-  inst(w.cls,o,r);const ap=o.gap;o.gsig=null;if(ap)gear(o,ap);
+  quiet(()=>inst(w.cls,o,r));const ap=o.gap;o.gsig=null;if(ap)gear(o,ap);   /* v1.89: montar sem remarcar os materiais da cena inteira (era o que travava quando alguém chegava perto) */
   if(o.rig===r)r.getChildMeshes().forEach(m=>{if(!m.metadata)m.metadata={t:'p',ref:o};});}
  /* v1.77: arquivo do modelo pela classe e sexo (cai para o masculino se o feminino não existir/falhar) */
  const key=(cls,fem)=>{const k=cls+'_f';return fem&&FILES[k]&&!(C[k]&&C[k].st===-1)?k:cls;};
  function build(cls,o,r){
   if(!FILES[cls])return false;const k=key(cls,o&&o.fem);
-  if(ready(k)){inst(k,o,r);return true;}
-  if(!C[k]||C[k].st===0){load(k);ORG.build(cls,o,r);const g=o.orgG;try{g.setEnabled(false);}catch(e){}o._gw=1;WAIT.push({o,r,g,cls:k});return true;}   /* v1.68: o boneco antigo fica escondido; só aparece se o modelo novo falhar */
+  if(ready(k)){quiet(()=>inst(k,o,r));return true;}
+  if(!C[k]||C[k].st===0){load(k);quiet(()=>ORG.build(cls,o,r));const g=o.orgG;try{g.setEnabled(false);}catch(e){}o._gw=1;WAIT.push({o,r,g,cls:k});return true;}   /* v1.68: o boneco antigo fica escondido; só aparece se o modelo novo falhar */
   return false;}
  /* animação: escolhe e posiciona os clipes pelo estado do personagem (andar/parado/golpe/habilidade) */
  const KA={shield:'Shield',throw:'Throw',beam:'Cast',jump:'Jump',stomp:'Jump',sky:'Jump',spin:'Attack',spin3:'Attack',stab:'Attack',both:'Attack',sumo:'Attack'};
@@ -3707,7 +3707,7 @@ const GLB=(()=>{
  /* v1.83: compila os shaders do modelo novo em segundo plano (uma vez por arquivo) antes de aparecer na tela */
  const WARM={};
  function warm(k){if(WARM[k])return WARM[k];const e=C[k];if(!e||!e.ct)return Promise.resolve();
-  for(const pm of e.ct.materials){try{pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);}catch(x){}}   /* mesmas opções que a cópia vai usar */
+  quiet(()=>{for(const pm of e.ct.materials){try{pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);}catch(x){}}});   /* mesmas opções que a cópia vai usar */
   WARM[k]=Promise.all(e.ct.meshes.filter(m=>m.material&&m.getTotalVertices()>0).map(m=>m.material.forceCompilationAsync(m).catch(()=>{}))).catch(()=>{});
   return Promise.race([WARM[k],new Promise(r=>setTimeout(r,1500))]);}
  function gear(o,ap){o.gap=ap;const sig=JSON.stringify(ap);if(o.gsig===sig)return;
@@ -5124,7 +5124,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(/^\?dbg/.test(location.search))window.__G={spawnDrop,get drops(){return drops;},get PETM(){return PETM;},get CLN(){return CLN;},updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;},usePortal};
+if(/^\?dbg/.test(location.search))window.__G={spawnDrop,get drops(){return drops;},get PETM(){return PETM;},get CLN(){return CLN;},updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,killRemote:o=>killRemote(o),nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;},usePortal};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -7125,7 +7125,10 @@ async function startFlow(){
 const NET={room:null,others:new Map(),lv:0,tm:0,stop:false,off:0,ack:false,inst:0};
 const sharedNow=()=>Date.now()+NET.off;   // relógio do servidor: todos veem os NPCs no mesmo ponto
 const PCOL={tanque:'#4b5a6b',pierrot:'#d6336c',guerreiro:'#b5543a',arqueiro:'#4a9a5a',mago:'#6a4ab5',assassino:'#3a3a4a',cavaleiro:'#8a95a5'};
-function killRemote(o){pkGone(o);disposeGm(o);if(o.foil){foilPlantOff(o.foil.node);o.foil=null;}if(o.px){o.px.dispose();o.px=null;}try{clearGear(o);}catch(e){}try{o.root.dispose();}catch(e){}o.label.remove();}
+function killRemote(o){pkGone(o);disposeGm(o);if(o.foil){foilPlantOff(o.foil.node);o.foil=null;}if(o.px){o.px.dispose();o.px=null;}try{clearGear(o);}catch(e){}freeRoot(o);o.label.remove();}
+/* v1.89: ao sair de perto, descarta também os materiais próprios do modelo (antes ficavam acumulados na cena e deixavam tudo mais lento) */
+function freeRoot(o){const r=o.root;if(!r)return;const ms=new Set();try{for(const m of r.getChildMeshes(false))if(m.material)ms.add(m.material);}catch(e){}
+ quiet(()=>{try{r.dispose();}catch(e){}for(const m of ms){try{if(!m.getBindedMeshes().length)m.dispose(false,false);}catch(e){}}});}
 function clearOthers(){for(const o of NET.others.values())killRemote(o);NET.others.clear();}
 async function netJoin(){
  if(!ONLINE||!TOKEN||!window.Colyseus||NET.room||!S)return;
