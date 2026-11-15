@@ -980,12 +980,12 @@ MATS.g_ext = { n: 'Extensor de Slot', i: '🔳', v: Math.round(EXT_PRICE * .1), 
 const PET_IL = 100, PET_MAXSL = 10, PET_EQ = 2, PET_DROP = .0001, PET_DROP_LV = 100;
 const PRAR = [{ n: 'Comum', c: '#cfd6dd' }, { n: 'Incomum', c: '#6fdc7f' }, { n: 'Raro', c: '#5fb4ff' }, { n: 'Lendário', c: '#ffb347' }];
 const PETS = {
-  slime:  { n: 'Slime', i: '🟢', rar: 0, price: 5e7, mv: 'hop', sc: .55, d: 'Vai pulando atrás de você. Coroinha dourada torta em homenagem à Rainha Gosma.' },
-  golem:  { n: 'Mini Golem', i: '🗿', rar: 1, price: 8.5e7, mv: 'walk', sc: .48, d: 'Anda pesado atrás de você, com um cristal azul pulsando no peito.' },
-  coruja: { n: 'Coruja Sábia', i: '🦉', rar: 2, price: 1.15e8, mv: 'fly', sc: .48, d: 'Voa ao seu lado com os óculos redondos, o chapéu de mago e o livro.' },
-  fant:   { n: 'Fantasminha', i: '👻', rar: 2, price: 1.15e8, mv: 'float', sc: .48, d: 'Flutua atrás de você com a lanterna de chama azul.' },
-  drag:   { n: 'Dragãozinho', i: '🐉', rar: 3, price: 1.5e8, mv: 'fly', sc: .48, d: 'Filhote de dragão que voa ao lado do seu ombro.' },
-  fenix:  { n: 'Fênix Solar', i: '🐦', rar: 3, price: 1.5e8, mv: 'fly', sc: .48, d: 'Voa em círculos acima de você com asas de fogo.' }};
+  slime:  { n: 'Slime', i: '🟢', rar: 0, price: 5e7, mv: 'hop', sc: .62, d: 'Vai pulando atrás de você. Coroinha dourada torta em homenagem à Rainha Gosma.' },
+  golem:  { n: 'Mini Golem', i: '🗿', rar: 1, price: 8.5e7, mv: 'walk', sc: .62, d: 'Anda pesado atrás de você, com um cristal azul pulsando no peito.' },
+  coruja: { n: 'Coruja Sábia', i: '🦉', rar: 2, price: 1.15e8, mv: 'fly', sc: .56, d: 'Voa ao seu lado com os óculos redondos, o chapéu de mago e o livro.' },
+  fant:   { n: 'Fantasminha', i: '👻', rar: 2, price: 1.15e8, mv: 'float', sc: .56, d: 'Flutua atrás de você com a lanterna de chama azul.' },
+  drag:   { n: 'Dragãozinho', i: '🐉', rar: 3, price: 1.5e8, mv: 'fly', sc: .56, d: 'Filhote de dragão que voa ao lado do seu ombro.' },
+  fenix:  { n: 'Fênix Solar', i: '🐦', rar: 3, price: 1.5e8, mv: 'fly', sc: .56, d: 'Voa em círculos acima de você com asas de fogo.' }};
 const newPet = id => ({ k: 'pet', id, sl: PETS[id].rar + 2 });
 /** drop raro de mascote: raridade sorteada 40/30/20/10 */
 function rollPet() { const W = [40, 30, 20, 10]; let r = Math.random() * 100, rar = 0; for (; rar < 3; rar++) { if (r < W[rar]) break; r -= W[rar]; } return newPet(pick(Object.keys(PETS).filter(k => PETS[k].rar === rar))); }

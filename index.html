@@ -6500,7 +6500,7 @@ $('titlesBody').addEventListener('click',e=>{const b=e.target.closest('[data-tit
 /* =================== MASCOTES (v1.80) ===================
    Modelos em mascotes.glb (mesma pintura fosca dos personagens). Até 2 por personagem; os outros jogadores veem pelo campo "pt".
    Os seus mascotes pegam o ouro do chão sozinhos e, conforme a configuração (S.pcf), os itens — vão até o item e voltam. */
-const PETV='180',PETM={ct:null,st:0,list:new Map(),pickT:0};
+const PETV='181',PETM={ct:null,st:0,list:new Map(),pickT:0};
 function petLoad(){if(PETM.st)return;PETM.st=1;
  GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','mascotes.glb?v='+PETV,scene,null,'.glb')).then(ct=>{ct.animationGroups.forEach(a=>a.stop());PETM.ct=ct;PETM.st=2;}).catch(e=>{PETM.st=-1;console.warn('mascotes',e);});}
 function petMk(id){
@@ -6510,6 +6510,7 @@ function petMk(id){
  for(const m of root.getChildMeshes(false)){m.isPickable=false;m.alwaysSelectAsActiveMesh=true;const pm=m.material;
   if(pm&&!pm._petOk){pm._petOk=1;pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=GLB.MATTE();pm.albedoColor=new C3(.93,.93,.93);}
   if(m.isEnabled()&&re.test(m.name)||m.parent&&re.test(m.parent.name))try{GINK_(m,.012);}catch(e){}}
+ top._legs=root.getDescendants(false).filter(n=>/_leg[LR]$/.test(n.name)&&re.test(n.name));for(const l of top._legs){l.rotationQuaternion=null;l.rotation.set(0,0,0);}   /* pernas do Mini Golem */
  top.onDisposeObservable.add(()=>{for(const a of I.animationGroups)try{a.dispose();}catch(e){}});
  return top;}
 function petDisposeL(L){for(const n of L.nodes)try{n.top.dispose();}catch(e){}}
@@ -6536,8 +6537,9 @@ function petsTick(dt,now){
    const mv=dd>.08;if(mv)n.yaw=Math.atan2(dx,dz);else n.yaw+=((yaw-n.yaw+Math.PI*3)%(Math.PI*2)-Math.PI)*Math.min(1,dt*3);
    const t=now*.001+n.ph;let y=0,rz2=0;
    if(D.mv==='fly')y=1.35+Math.sin(t*3.2)*.14;else if(D.mv==='float')y=.65+Math.sin(t*2.2)*.12;
-   else if(D.mv==='hop')y=Math.abs(Math.sin(t*(mv?9:4)))*(mv?.38:.12);else{rz2=mv?Math.sin(t*10)*.08:0;}
-   const T=n.top;T.position.set(n.x,y+(op.y||0),n.z);T.rotation.y=n.yaw;T.rotation.z=rz2;
+   else if(D.mv==='hop')y=Math.abs(Math.sin(t*(mv?9:4)))*(mv?.38:.12);else{rz2=mv?Math.sin(t*9)*.05:0;}
+   const T=n.top;if(T._legs&&T._legs.length){n.wp=(n.wp||0)+(mv?dt*9:0);const a=mv?Math.sin(n.wp)*.6:0;T._legs.forEach((l,j)=>{l.rotation.x+=((j?a:-a)-l.rotation.x)*Math.min(1,dt*12);});}   /* passos: uma perna para frente, a outra para trás */
+   T.position.set(n.x,y+(op.y||0),n.z);T.rotation.y=n.yaw;T.rotation.z=rz2;
    if(D.mv==='hop'){const sq=1-Math.abs(Math.cos(t*(mv?9:4)))*.12;T.scaling.set(D.sc/Math.sqrt(sq),D.sc*sq,D.sc/Math.sqrt(sq));}}
   if(ow===P&&now>PETM.pickT){PETM.pickT=now+280;petAutoPick(L,now);}}
  for(const [ow,L] of PETM.list)if(!seen.has(ow)){petDisposeL(L);PETM.list.delete(ow);}
