@@ -45,6 +45,14 @@ async function main() {
     if (!fs.existsSync(file)) { r.status(404).end(); return; }
     r.type("model/gltf-binary").sendFile(file, { maxAge: "1d" });
   });
+  // v1.85: artes das telas de login e de carregamento (tela_*.jpg na mesma pasta) — cache de 7 dias
+  app.get("/telas/:f", (q, r) => {
+    const f = String(q.params.f || "");
+    if (!/^tela_[a-z0-9_-]+\.jpg$/i.test(f)) { r.status(404).end(); return; }
+    const file = path.join(__dirname, f);
+    if (!fs.existsSync(file)) { r.status(404).end(); return; }
+    r.type("image/jpeg").sendFile(file, { maxAge: "7d" });
+  });
   app.get(["/", "/index.html"], (_q, r) => r.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, "index.html")));
   // Música do jogo: qualquer arquivo .mp3 na mesma pasta do index.html (de preferência "tema.mp3"; veja o README).
   // Sem arquivo, o jogo toca uma trilha ambiente provisória.
