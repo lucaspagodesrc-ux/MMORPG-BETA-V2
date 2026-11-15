@@ -907,7 +907,7 @@ const spat=(pos,range)=>{range=range||26;const dx=pos.x-P.pos.x,dz=pos.z-P.pos.z
 const canvas=$("renderCanvas");
 if(!BABYLON.Engine.isSupported()) throw new Error("WebGL não está disponível ou está desativado neste navegador.");
 const engine=new BABYLON.Engine(canvas,true,{powerPreference:'high-performance'});
-const scene=new BABYLON.Scene(engine);
+const scene=new BABYLON.Scene(engine,{useGeometryUniqueIdsMap:true,useMaterialMeshMap:true,useClonedMeshMap:true});   /* v1.83: descartar/criar malhas e materiais sem varrer a cena inteira */
 scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
 scene.skipPointerMovePicking=true;
 
@@ -3517,7 +3517,7 @@ function magoHats(o){const H=o.glbParts&&o.glbParts.Helm;if(!H||!H['1'])return;
    const t0=n.material.albedoTexture;m.albedoTexture=null;c.material=m;hatGray(t0,g=>{if(g)m.albedoTexture=g;});
    try{GINK_(c,.012);}catch(e){}c.setEnabled(false);return c;});}}
 const GLB=(()=>{
- const FZV='182';   /* v1.82: versão dos modelos das fantasias */
+ const FZV='183';   /* v1.83: fantasias com 1 material por peça (3 desenhos em vez de ~20) */
  const FILES={cavaleiro:'cavaleiro.glb',guerreiro:'guerreiro.glb',tanque:'tanque.glb',assassino:'assassino.glb',arqueiro:'arqueiro.glb',mago:'mago.glb',pierrot:'pierrot.glb',
   /* v1.77: versões femininas (só aparência) */
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
@@ -3641,15 +3641,22 @@ const GLB=(()=>{
   const keep=[];if(/^fz_/.test(k)){const seen=new Set();for(const n of old.getDescendants(false)){if((/^(Sword|Weapon|WeaponL|Quiver)$/.test(n.name)||(n===o.shieldN&&!n.skeleton))&&!seen.has(n)&&n.parent){seen.add(n);keep.push({n,par:n.parent.name});}}}
   for(const e of keep)e.n.parent=null;
   disposeGm(o);try{clearGear(o);}catch(e){}if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
-  try{old.dispose();}catch(e){}
-  inst(k,o,r);const all=o.glbTop.getDescendants(false);
+  const oldM=new Set();for(const m of old.getChildMeshes(false))if(m.material&&!keep.some(e=>e.n===m||m.isDescendantOf(e.n)))oldM.add(m.material);
+  quiet(()=>{try{old.dispose();}catch(e){}for(const m of oldM){try{m.dispose(false,false);}catch(e){}}inst(k,o,r);});   /* v1.83: montar com a cena "quieta" — antes travava o jogo de quem estava perto */
+  const all=o.glbTop.getDescendants(false);
   for(const e of keep){e.n.parent=all.find(x=>x.name===e.par)||o.glbTop;e.n.setEnabled(true);}
   if(keep.length){const by=n=>keep.find(e=>e.n.name===n);o.hand=((o.cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||{}).n||o.hand;const sh=keep.find(e=>e.n===o.shieldN||/^Shield/.test(e.n.name));o.shieldN=sh?sh.n:null;}
   o._wn=null;
   if(o.rig===r)r.getChildMeshes().forEach(m=>{if(!m.metadata)m.metadata={t:'p',ref:o};});}
+ /* v1.83: compila os shaders do modelo novo em segundo plano (uma vez por arquivo) antes de aparecer na tela */
+ const WARM={};
+ function warm(k){if(WARM[k])return WARM[k];const e=C[k];if(!e||!e.ct)return Promise.resolve();
+  for(const pm of e.ct.materials){try{pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);}catch(x){}}   /* mesmas opções que a cópia vai usar */
+  WARM[k]=Promise.all(e.ct.meshes.filter(m=>m.material&&m.getTotalVertices()>0).map(m=>m.material.forceCompilationAsync(m).catch(()=>{}))).catch(()=>{});
+  return Promise.race([WARM[k],new Promise(r=>setTimeout(r,1500))]);}
  function gear(o,ap){o.gap=ap;const sig=JSON.stringify(ap);if(o.gsig===sig)return;
   const want=fzKey(o,ap)||key(o.cls,o.fem);
-  if(want!==o.glbKey){if(ready(want))reskin(o,want);else load(want).then(()=>{const t=o.glbTop;if(t&&!t.isDisposed()&&o.gap){o.gsig=null;gear(o,o.gap);}});}   /* enquanto baixa, fica com o modelo atual */
+  if(want!==o.glbKey){if(ready(want))reskin(o,want);else load(want).then(()=>warm(want)).then(()=>{const t=o.glbTop;if(t&&!t.isDisposed()&&o.gap){o.gsig=null;gear(o,o.gap);}});}   /* enquanto baixa, fica com o modelo atual */
   o.gsig=sig;
   if(ap.fz)ap=Object.assign({},ap,{cape:null});   /* com fantasia a capa/manto não aparece */
   showSets(o,ap);
