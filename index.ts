@@ -34,6 +34,7 @@ async function main() {
   app.get("/config.js", (_q, r) => r.type("application/javascript").set("Cache-Control", "no-cache").send("window.GAME_SERVER=window.GAME_SERVER||'';"));
   app.get("/health", async (_q, r) => { await pool.query("select 1"); r.json({ ok: true, t: Date.now(), v: 4 }); });
   app.get("/rules.js", (_q, r) => r.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, "rules.js")));
+  app.get("/lang_en.js", (_q, r) => r.set("Cache-Control", "public, max-age=86400").sendFile(path.join(__dirname, "lang_en.js")));   // v1.88: tradução para inglês (só baixa quem escolhe English)
   app.get("/api/online", async (_q, r) => { const rooms = await matchMaker.query({ name: "world" }); r.json({ rooms: rooms.length, players: rooms.reduce((n: number, x: any) => n + x.clients, 0) }); });
   app.use("/api", authRouter);
   app.get("/colyseus-client/colyseus.js", (_q, r) => r.sendFile(path.join(__dirname, "colyseus-browser.js")));

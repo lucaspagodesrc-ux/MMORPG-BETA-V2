@@ -4,7 +4,7 @@
 # Variável de ambiente no Cloudflare: GAME_SERVER = https://SEUJOGO.duckdns.org
 set -e
 rm -rf dist && mkdir -p dist/colyseus-client dist/modelos dist/audio dist/telas
-cp index.html rules.js dist/
+cp index.html rules.js lang_en.js dist/
 cp colyseus-browser.js dist/colyseus-client/colyseus.js
 for f in *.glb; do [ -f "$f" ] && cp "$f" dist/modelos/; done
 for f in tela_*.jpg; do [ -f "$f" ] && cp "$f" dist/telas/; done   # v1.85: artes do login e da tela de carregamento
