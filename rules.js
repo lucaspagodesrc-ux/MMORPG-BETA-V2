@@ -847,6 +847,83 @@ NPCS.push({id:'valen',name:'Comandante Valen',icon:'⚔️',x:-13.4,z:-3.6,col:'
   L.forEach(([rec,tg,qty,t,d],i)=>QUESTS.push({id:'av'+(i+1),npc:'valen',t,d,tg,qty,rec,need:rec,
     rw:{xp:Math.round(xpNeed(rec)*(i===12?1.8:1.2)),   /* v1.74: XP dobrado */gold:rec*300,...(i%2===0?{eq:{slot:SL[(i/2)%5],ilvl:rec+1,rar:i>=8?3:2}}:{pot:{hp:10}}),...(i===4||i===8||i===12?{sp:1}:{})}})); }
 
+/* v1.86: HISTÓRIA — "O Prisma Partido". Missões principais (📖) em uma única cadeia, do Nv 2 ao 150, passando pelas 4 regiões.
+   A ordem é global (não por NPC): a próxima só abre quando a anterior foi entregue. Não dão pontos de habilidade (para não
+   desequilibrar quem já passou dessas fases — capítulos muito abaixo do seu nível são marcados como vividos no login).
+   As missões antigas dos NPCs viram SECUNDÁRIAS e dão menos XP (×0,6), exceto "Caça às Gosmas" (tutorial). */
+const STORY_ACTS=['Ato I — Os Ecos','Ato II — O Fragmento do Sol','Ato III — O Fragmento do Gelo','Ato IV — O Fragmento da Chama','Ato V — O Prisma do Amanhecer'];
+Object.assign(QNAME,{dg_boss:'Faraó Devorador',dg_sboss:'Sumo-Sacerdote Ra-Tehen',dg_nm2:'Feiticeira da Nevasca',dg_nboss:'Rei do Inverno',dg_vboss:'Arauto do Vazio',dg_vm1:'Duplo Sombrio',dg_vm2:'Devorador de Estrelas',dg_fboss:'Vulcano, o Titã da Fornalha',dg_kboss:'Pyraxis, o Dragão Ancestral'});
+{ const g=r=>r<50?r*250:r<75?r*r*2:r<100?r*r*15:r*r*25;
+  const S=[ // [ato, npc, nível, alvo, qtd, título, texto, prêmio extra]
+  [0,'capitao',2,'slime',8,'O Brilho Desperto','Você é um Despertado: quando cai, a luz te traz de volta à praça. Aurora precisa disso. Comece pelas gosmas: elimine 8.'],
+  [0,'elda',3,'slime',12,'Gosmas que Brilham','Essas gosmas brilham por dentro... é luz do antigo Prisma! Elimine 12 para eu estudar.',{pot:{hp:5}}],
+  [0,'lyra',5,'lobo',12,'Olhos na Floresta','Os lobos enlouqueceram desde que a luz caiu do céu. Elimine 12.'],
+  [0,'brum',8,'goblin',14,'Saqueadores de Luz','Goblins roubam cristais brilhantes na estrada leste. Recupere-os: elimine 14.'],
+  [0,'anselmo',11,'esqueleto',14,'Os Mortos Não Descansam','Uma força chamada Vazio acorda os mortos do cemitério. Destrua 14 esqueletos.',{pot:{hp:5}}],
+  [0,'kira',14,'aranha',14,'O Brilho na Gruta','Vi um estilhaço de luz no fundo do ninho das aranhas. Abra caminho: elimine 14.'],
+  [0,'capitao',15,'golem',1,'O Guardião de Pedra','O Golem Ancião protege o covil onde o estilhaço caiu. Derrote-o e traga a luz.',E('helmet',16,2)],
+  [0,'torg',17,'orc',14,'Pacto com os Orcs','Torg também sente o Vazio, mas só conversa com quem vence seus guerreiros: 14 orcs.'],
+  [0,'yuki',20,'yeti',14,'Frio Fora de Época','Os yetis desceram cedo: algo no norte esfriou demais. Elimine 14.',{pot:{hp:5}}],
+  [0,'vulkan',23,'demonio',14,'Fendas de Fogo','Demônios saem de fendas que antes não existiam. Destrua 14 para selá-las.'],
+  [0,'orion',26,'au_lobo',20,'A Lenda do Prisma','Os livros falam do Prisma do Amanhecer, partido em quatro fragmentos. Lobos sombrios guardam as ruínas: elimine 20.'],
+  [0,'orion',29,'dragao',1,'O Dragão e o Estilhaço','O Dragão Rubro engoliu um estilhaço do Prisma. Derrote-o e recupere a luz.',E('weapon',30,2)],
+  [0,'valen',31,'au_orc',25,'Berserkers Enlouquecidos','A luz roubada deixou os orcs da colina furiosos. Elimine 25 berserkers.',{pot:{hp:10}}],
+  [0,'anselmo',36,'au_esp',25,'Juramento Quebrado','Os cavaleiros espectrais são a antiga Ordem dos Guardiões, presa nas ruínas. Liberte 25.'],
+  [0,'capitao',39,'au_ara',25,'A Confissão de Aldric','Sou o último Guardião vivo. Enquanto conto o resto, o veneno chega aos poços: elimine 25 aranhas venenosas.',{pot:{hp:10}}],
+  [0,'valen',44,'au_gra',30,'A Pedreira Desperta','Os golens de granito protegem o caminho até o Titã. Elimine 30.'],
+  [0,'capitao',49,'au_tita',1,'O Mapa dos Fragmentos','O Titã de Granito guarda o mapa dos quatro fragmentos. Derrote-o — o portal de Solara espera por você.',E('armor',50,3)],
+  [1,'khalid',50,'escorpiao',15,'Areias de Solara','Aldric mandou você? O Fragmento do Sol está aqui, com o Faraó. Primeiro sobreviva às dunas: 15 escorpiões.'],
+  [1,'neferu',53,'mumia',18,'As Bandagens Falam','As bandagens das múmias trazem escritos sobre o Faraó. Elimine 18 e eu traduzo.',{pot:{hp:10}}],
+  [1,'hamid',56,'dg_boss',1,'A Cripta Esquecida','A Cripta das Areias guarda o primeiro selo do Faraó. Derrote o Faraó Devorador lá dentro.'],
+  [1,'zafira',59,'cobra',20,'A Serpente Dourada','As najas douradas servem à serpente que guarda o trono. Elimine 20.'],
+  [1,'ibrahim',62,'elemental',20,'Tempestade Viva','O fragmento enlouqueceu o vento do deserto. Acalme-o: elimine 20 elementais de areia.',{pot:{hp:10}}],
+  [1,'anuket',64,'dg_sboss',1,'O Santuário do Sol','O sumo-sacerdote Ra-Tehen usa a luz do Sol em rituais proibidos. Detenha-o no Santuário do Sol Poente.'],
+  [1,'khalid',66,'colosso',1,'O Colosso Negro','O Colosso de Obsidiana bloqueia o cânion até a pirâmide. Derrube-o.',E('boots',67,3)],
+  [1,'anuket',68,'chacal',20,'Vigília dos Chacais','Os chacais guardam a pirâmide há mil anos. Liberte 20 deles.'],
+  [1,'hamid',71,'sacerdote',20,'O Culto do Faraó','Sacerdotes profanos alimentam o Faraó com almas. Elimine 20.',{pot:{hp:10}}],
+  [1,'khalid',74,'farao',1,'O Faraó Imortal','Ele fez do Fragmento do Sol a própria imortalidade. Derrote o Faraó e tome o fragmento!',E('weapon',75,3)],
+  [2,'astrid',75,'lobo_polar',18,'O Reino Congelado','Valdrak está sob gelo eterno desde que o segundo fragmento caiu. Abra caminho: 18 lobos polares.'],
+  [2,'skadi',78,'barbaro',20,'Bárbaros do Inverno','Os bárbaros adoram o frio e atacam quem tenta quebrá-lo. Elimine 20.',{pot:{hp:10}}],
+  [2,'solveig',81,'dg_nm2',1,'A Princesa de Gelo','Vejo uma princesa presa no próprio feitiço: a Feiticeira da Nevasca. Liberte-a na Cidadela Congelada.'],
+  [2,'hilda',84,'esq_gelo',20,'O Povo de Valdrak','Os esqueletos congelados são o povo de Valdrak. Dê descanso a 20.'],
+  [2,'ingrid',87,'aranha_cristal',20,'Teias de Luz','As aranhas tecem teias com pó do fragmento. Elimine 20 aranhas de cristal.',{pot:{hp:10}}],
+  [2,'leif',89,'golem_gelo',1,'O Golem da Geleira','O Golem de Gelo Eterno nasceu do fragmento. Derrote-o.',E('helmet',90,3)],
+  [2,'solveig',92,'dg_vboss',1,'A Ferida do Mundo','Onde o Prisma se partiu abriu-se o Abismo do Vazio. Desça e derrote o Arauto do Vazio.'],
+  [2,'leif',94,'yeti_anciao',20,'Gigantes da Montanha','Os yetis anciões guardam a trilha até o pico do dragão. Elimine 20.'],
+  [2,'odin',96,'dg_nboss',1,'O Rei do Inverno','O Rei do Inverno não quer soltar Valdrak. Derrote-o no trono da Cidadela.',{pot:{hp:15}}],
+  [2,'solveig',97,'espectro',20,'Almas do Vale','Os espectros glaciais são ecos do Vazio. Elimine 20.'],
+  [2,'astrid',99,'dragao_gelo',1,'O Dragão Glacial','O Fragmento do Gelo bate no peito do Dragão Glacial. Derrote-o e Valdrak verá o sol de novo!',E('armor',100,3)],
+  [3,'vc_ignis',100,'vc_sal',25,'A Terra que Queima','O último fragmento, o da Chama, está aqui — e a Fornalha dos Titãs pode reforjar o Prisma. Elimine 25 salamandras.'],
+  [3,'vc_obsid',104,'vc_esc',25,'Ferrões de Obsidiana','Os escorpiões de obsidiana fecharam a mina que leva à Fornalha. Elimine 25.',{pot:{hp:15}}],
+  [3,'vc_magnus',108,'dg_fboss',1,'A Fornalha dos Titãs','Vulcano, o Titã da Fornalha, não deixa ninguém tocar a bigorna. Derrote-o.'],
+  [3,'vc_magnus',111,'vc_gol',25,'Pedra que Anda','Os golens de lava carregam o calor da Fornalha. Elimine 25.',E('boots',112,3)],
+  [3,'vc_cinder',115,'vc_ele',25,'Chamas Rebeldes','O fragmento enlouqueceu os elementais de fogo. Elimine 25.',{pot:{hp:15}}],
+  [3,'vc_vulkar',120,'vc_ifrit',1,'O Senhor das Chamas','Ifrit roubou parte da chama do fragmento. Derrote-o no trono.'],
+  [3,'vc_vulkar',122,'vc_dem',30,'Portões do Inferno','Sem Ifrit, os demônios infernais estão sem rumo. Elimine 30.'],
+  [3,'vc_ashen',125,'vc_cav',30,'A Ordem nas Cinzas','Os cavaleiros das cinzas eram Guardiões que caíram aqui. Liberte 30.',{pot:{hp:15}}],
+  [3,'vc_drakon',128,'dg_kboss',1,'Pyraxis','Na Caldeira, Pyraxis guarda o caminho até o Dragão Ancestral. Derrote-o.'],
+  [3,'vc_drakon',130,'vc_dragao',1,'O Dragão Ancestral','O Fragmento da Chama arde no peito do Dragão Ancestral. Vença-o!',E('weapon',131,3)],
+  [4,'vc_magnus',132,'vc_ele',40,'Brasas para a Bigorna','Com os quatro fragmentos, posso reforjar o Prisma. A bigorna pede fogo puro: elimine 40 elementais.'],
+  [4,'vc_drakon',134,'vc_dragao',1,'A Escama Ancestral','O Dragão Ancestral renasceu das cinzas. Preciso de uma escama dele para o Prisma.',{pot:{hp:20}}],
+  [4,'vc_magnus',136,'dg_kboss',1,'O Prisma Reforjado','Pyraxis tenta apagar a forja enquanto eu martelo. Segure-o na Caldeira!',E('ring',137,3)],
+  [4,'vc_ashen',138,'vc_cav',40,'Cinzas Corrompidas','O Prisma reforjado assustou o Vazio, que agora possui os cavaleiros das cinzas. Elimine 40.'],
+  [4,'vc_vulkar',140,'vc_dem',45,'O Vazio Abre Portas','O Vazio abre portas no inferno para fugir da luz. Elimine 45 demônios.',{pot:{hp:20}}],
+  [4,'solveig',142,'dg_vm1',1,'O Seu Reflexo','O Vazio criou uma cópia de você no Abismo. Derrote o Duplo Sombrio.'],
+  [4,'solveig',144,'dg_vm2',1,'O Devorador de Estrelas','Ele come a luz do Prisma pelo outro lado da rachadura. Derrote-o no Abismo.',E('helmet',145,3)],
+  [4,'vc_ashen',146,'vc_cav',50,'A Última Vigília','Os Guardiões caídos lutam uma última vez. Dê-lhes paz: 50 cavaleiros das cinzas.'],
+  [4,'capitao',148,'vc_dragao',1,'O Juramento Renovado','Aldric nomeia você Guardião da nova Ordem. O juramento exige vencer o Dragão Ancestral mais uma vez.',{pot:{hp:20}}],
+  [4,'capitao',150,'dg_vboss',1,'Fechar a Rachadura','Com o Prisma do Amanhecer em mãos, desça ao Abismo e derrote o Arauto do Vazio. A luz fará o resto.',E('weapon',151,3)]];
+  S.forEach(([a,npc,rec,tg,qty,t,d,x],i)=>QUESTS.push({id:'hs'+(i+1),main:1,act:a,npc,t,d,tg,qty,rec,need:rec,
+    rw:{xp:Math.round(xpNeed(rec)*(qty===1?1.3:0.9)),gold:g(rec),...(x||{})}})); }
+for (const q of QUESTS) if (!q.main && q.id !== 'q1') q.rw.xp = Math.max(20, Math.round(q.rw.xp * 0.6));   // secundárias: menos XP
+const MAINQ = QUESTS.filter(q => q.main);
+/** Cadeia da missão: principais seguem a ordem da história; secundárias, a ordem de cada NPC. */
+const qChain = q => q.main ? MAINQ : QUESTS.filter(x => x.npc === q.npc && !x.main);
+/** A missão está liberada (a anterior da mesma cadeia foi entregue)? */
+function qOpen(c, q) { const l = qChain(q), i = l.indexOf(q); if (i <= 0) return true; const p = c.quests && c.quests[l[i - 1].id]; return !!(p && p.done); }
+/** Próxima missão da história ainda não entregue (ou null se terminou). */
+const storyNext = c => MAINQ.find(q => !(c.quests && c.quests[q.id] && c.quests[q.id].done)) || null;
+
 // Cidades mais espaçadas: os NPCs que ficavam dentro das zonas seguras antigas (raio 11 / 13) são afastados do centro na mesma proporção
 // em que a zona segura cresceu (Aurora 11→15; Solara e Nevasca 13→17,5). NPCs de fora (missões, portais de calabouço) não mudam.
 { const OLD = [{ x: 0, r: 11, k: 15 / 11 }, { x: 300, r: 13, k: 17.5 / 13 }, { x: -300, r: 13, k: 17.5 / 13 }];
@@ -1669,6 +1746,8 @@ function migrate(c) {
     c.v = R.VERSION; c._respec = true;
   }
   if (!c.evt || typeof c.evt !== 'object' || typeof c.evt.got !== 'object') c.evt = { got: {} };
+  // v1.86: capítulos da história muito abaixo do seu nível (e não iniciados) ficam marcados como vividos, sem recompensa
+  if (c.quests && typeof c.quests === 'object') for (const q of MAINQ) { if (c.quests[q.id]) continue; if (q.need <= c.level - 4) c.quests[q.id] = { n: q.qty, done: true, sk: 1 }; else break; }
   { const ps = Array.isArray(c.pets) ? c.pets.slice(0, PET_EQ).map(x => x ? cleanItem(x) : null).map(x => x && x.k === 'pet' ? x : null) : []; while (ps.length < PET_EQ) ps.push(null); c.pets = ps;   // v1.80: mascotes
     c.pcf = cleanPcf(c.pcf); }
   { const z = c.fzq ? cleanItem(c.fzq) : null; c.fzq = z && z.k === 'fz' ? z : null; c.dia = Math.max(0, Math.min(DIA_MAX, Math.floor(Number(c.dia)) || 0)); }   // v1.82: fantasia equipada e diamantes
@@ -1927,8 +2006,7 @@ function act(sess, m, ctx) {
   }
   if (t === 'qa' || t === 'qt') {
     const q = QUESTS.find(x => x.id === m.id); if (!q) return fail(); const n = npcById(q.npc); if (ctx && ctx.near && !ctx.near(n)) return fail('Chegue perto do NPC.');
-    const list = QUESTS.filter(x => x.npc === q.npc), qi = list.indexOf(q);
-    if (!(qi === 0 || (c.quests[list[qi - 1].id] && c.quests[list[qi - 1].id].done))) return fail();
+    if (!qOpen(c, q)) return fail();
     const st = c.quests[q.id];
     if (t === 'qa' && q.need && c.level < q.need) return fail('Missão disponível a partir do nível ' + q.need + '.');
     if (t === 'qa') { if (st) return fail(); c.quests[q.id] = { n: 0, done: false }; F('questAccept'); T('Missão aceita!'); return done(); }
@@ -1937,7 +2015,9 @@ function act(sess, m, ctx) {
     const give = it => { if (!addItem(c.inv, it)) spawn.push({ item: it, life: 0 }); };
     if (q.rw.pot) give({ k: 'pot', id: 'hp', n: q.rw.pot.hp }); if (q.rw.eq) give(genItem(q.rw.eq.slot, q.rw.eq.ilvl, q.rw.eq.rar, c.cls, c.cls, 0, true));
     L(`<span style="color:#6fdc7f">📜 Missão "${q.t}" concluída! Recompensa recebida.</span>`); T('Missão entregue!');
-    if (gainXp(c, q.rw.xp)) out.push({ lvl: c.level }); return done();
+    if (gainXp(c, q.rw.xp)) out.push({ lvl: c.level });
+    if (q.main) { const nx = storyNext(c), ae = !nx || nx.act !== q.act; L(ae ? `<span style="color:#ffe28a">📖 <b>${STORY_ACTS[q.act]}</b> concluído!${nx ? ' Começa o <b>' + STORY_ACTS[nx.act] + '</b>: fale com ' + npcById(nx.npc).name + ' (Nv ' + nx.need + ').' : ' Você fechou a rachadura do Vazio... por enquanto. A história continua em breve.'}</span>` : `<span style="color:#ffe28a">📖 Próximo capítulo: fale com <b>${npcById(nx.npc).name}</b>${c.level < nx.need ? ' (a partir do Nv ' + nx.need + ')' : ''}.</span>`); }
+    return done();
   }
   if (t === 'socket' || t === 'extend') {
     if (!npcFor('engastar')) return fail('Chegue perto de um Gemólogo.');
@@ -2114,7 +2194,7 @@ const castMs = (cls, i, x) => {
   return Math.round(Math.max(a, t));
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

@@ -5893,8 +5893,13 @@ $('win-char').addEventListener('click',e=>{
  const u=e.target.closest('[data-unequip]');if(u){if(!S.eq[u.dataset.unequip])return;ACT({t:'unequip',slot:u.dataset.unequip});}
 });
 function rwText(rw){return `${rw.xp} XP • ${rw.gold} 💰`+(rw.pot?' • 🧪×'+rw.pot.hp:'')+(rw.sp?' • ⭐'+rw.sp+' pt hab.':'')+(rw.eq?` • ${RAR[rw.eq.rar].n} ${SLOTS[rw.eq.slot]} Nv${rw.eq.ilvl}`:'');}
-const npcQuests=id=>QUESTS.filter(q=>q.npc===id);
-function questUnlocked(q){const l=npcQuests(q.npc),i=l.indexOf(q);return i===0||!!(S.quests[l[i-1].id]&&S.quests[l[i-1].id].done);}
+const npcQuests=id=>QUESTS.filter(q=>q.npc===id&&q.main).concat(QUESTS.filter(q=>q.npc===id&&!q.main));
+function questUnlocked(q){return RULES.qOpen(S,q);}
+/* v1.86: história (missões principais 📖) */
+const npcName=id=>(NPCS.find(n=>n.id===id)||{}).name||'NPC';
+const regName=x=>x>150?'Oásis de Solara':x<-450?'Vulcânia':x<-150?'Vila da Nevasca':'Vila Aurora';
+function storyHint(){const nx=RULES.storyNext(S);if(!nx)return '<span class="ok">📖 História concluída — por enquanto!</span>';const st=S.quests[nx.id];if(st)return '';const n=NPCS.find(x=>x.id===nx.npc)||{x:0};return `📖 <b>${RULES.STORY_ACTS[nx.act]}</b><br>`+(S.level<nx.need?`<span class="muted">Próximo capítulo no Nv ${nx.need}: ${npcName(nx.npc)} (${regName(n.x)})</span>`:`<span style="color:#ffe28a">Fale com ${npcName(nx.npc)} (${regName(n.x)})</span>`);}
+let STORY_OPEN=false;
 const questLvOk=q=>!q.need||S.level>=q.need;   // v1.73: missões com nível mínimo (Comandante Valen)
 /* ---- missões: Principais • Diárias • Semanais (• Chefes de Mundo) ---- */
 const QW={tab:'main',last:0};
@@ -5973,18 +5978,24 @@ function wbHtml(){
 }
 function renderQuest(){
  dwEnsure();
- const tabs=[['main','📜 Principais'],['d','📅 Diárias'],['w','🗓️ Semanais'],['b','☠️ Chefes']],dot=n=>n?`<span class="qdot">${n}</span>`:'';
+ const tabs=[['main','📜 Missões'],['d','📅 Diárias'],['w','🗓️ Semanais'],['b','☠️ Chefes']],dot=n=>n?`<span class="qdot">${n}</span>`:'';
  let h='<div class="qtabs">'+tabs.map(([k,n])=>`<button data-qtab="${k}" class="${QW.tab===k?'on':''}">${n}${k==='d'?dot(dwReady(0)):k==='w'?dot(dwReady(1)):''}</button>`).join('')+'</div>';
  if(QW.tab==='d')h+=dwHtml(0);
  else if(QW.tab==='w')h+=dwHtml(1);
  else if(QW.tab==='b')h+=wbHtml();
- else{const act=QUESTS.filter(q=>S.quests[q.id]&&!S.quests[q.id].done);
-  h+=act.length?act.map(q=>{const st=S.quests[q.id];return `<div class="row2"><div class="ri">📜</div><div class="rt"><b>${q.t}</b><small>${q.d}</small><div class="ing ${st.n>=q.qty?'ok':''}">Progresso: ${st.n}/${q.qty} ${QNAME[q.tg]}</div><small>🎁 ${rwText(q.rw)}</small></div></div>`;}).join(''):'<p class="muted">Nenhuma missão principal ativa. Fale com o Capitão Aldric na cidade.</p>';}
+ else{const act=QUESTS.filter(q=>S.quests[q.id]&&!S.quests[q.id].done),am=act.filter(q=>q.main),sq=act.filter(q=>!q.main);
+  const row=q=>{const st=S.quests[q.id],rd=st.n>=q.qty;return `<div class="row2"><div class="ri">${q.main?'📖':'📜'}</div><div class="rt"><b>${q.t}</b>${q.main?` <small style="display:inline;color:#ffcf6b">${RULES.STORY_ACTS[q.act]}</small>`:''}<small>${q.d}</small><div class="ing ${rd?'ok':''}">Progresso: ${st.n}/${q.qty} ${QNAME[q.tg]}${rd?' — entregue a '+npcName(q.npc):''}</div><small>🎁 ${rwText(q.rw)}</small></div></div>`;};
+  h+='<div class="dwh"><span>📖 História — O Prisma Partido</span></div>'+(am.length?am.map(row).join(''):`<div class="row2 dim"><div class="ri">📖</div><div class="rt">${storyHint()}</div></div>`);
+  h+='<div class="dwh"><span>📜 Secundárias</span></div>'+(sq.length?sq.map(row).join(''):'<p class="muted">Nenhuma missão secundária ativa. Procure os NPCs com ❗ no mapa.</p>');
+  const told=RULES.MAINQ.filter(q=>S.quests[q.id]&&S.quests[q.id].done);
+  if(told.length){h+=`<div class="qdoneBar" data-story="1">📖 A história até aqui (${told.length}/${RULES.MAINQ.length}) <span>${STORY_OPEN?'▾ Ocultar':'▸ Mostrar'}</span></div>`;
+   if(STORY_OPEN){let la=-1;h+=told.map(q=>{const hd=q.act!==la?`<div class="muted" style="margin:6px 0 2px;color:#ffcf6b"><b>${RULES.STORY_ACTS[q.act]}</b></div>`:'';la=q.act;return hd+`<div class="row2 dim"><div class="ri">✅</div><div class="rt"><b>${q.t}</b>${S.quests[q.id].sk?' <small style="display:inline">(vivido)</small>':''}<small>${q.d}</small></div></div>`;}).join('');}}}
  $('questBody').innerHTML=h;
  const qb=$('qBdg');if(qb){const n=dwReady(0)+dwReady(1);qb.textContent=n;qb.style.display=n?'block':'none';}
 }
 $('win-quest').addEventListener('click',e=>{
  const t=e.target.closest('[data-qtab]');if(t){QW.tab=t.dataset.qtab;renderQuest();return;}
+ if(e.target.closest('[data-story]')){STORY_OPEN=!STORY_OPEN;renderQuest();return;}
  const b=e.target.closest('[data-dw]');if(b&&S)ACT({t:b.dataset.dw==='claim'?'dwclaim':'dwchest',w:+b.dataset.w,i:+b.dataset.i});
 });
 setInterval(()=>{if(S&&$('win-quest').style.display==='block'&&QW.tab!=='main')renderQuest();},30000);
@@ -5992,7 +6003,8 @@ $('tracker').addEventListener('click',e=>{const t=e.target.closest('[data-qo]');
 function renderTracker(){
  const act=QUESTS.filter(q=>S.quests[q.id]&&!S.quests[q.id].done);
  const dwl=[0,1].map(w=>{const b=w?S.wq:S.dq;if(!b)return '';const n=b.q.filter(q=>q.done).length,r=dwReady(w);return `<div class="dwt" data-qo="${w?'w':'d'}">${w?'🗓️ Semanais':'📅 Diárias'}: <b class="${r?'ok':''}">${n}/${b.q.length}</b>${r?' 🎁':''}</div>`;}).join('');
- $('tracker').innerHTML=(act.length?act.map(q=>{const st=S.quests[q.id];return `<div><b style="color:#ffe28a">${q.t}</b><br><span class="${st.n>=q.qty?'ok':'muted'}">${st.n>=q.qty?'✔ Entregar a '+((NPCS.find(n=>n.id===q.npc)||{}).name||'NPC'):st.n+'/'+q.qty+' '+QNAME[q.tg]}</span></div>`;}).join(''):'<span class="muted">Sem missões ativas</span>')+dwl+spTrack();
+ act.sort((a,b)=>(b.main|0)-(a.main|0));const sh=storyHint();
+ $('tracker').innerHTML=(sh?`<div>${sh}</div>`:'')+(act.length?act.map(q=>{const st=S.quests[q.id];return `<div><b style="color:${q.main?'#ffcf6b':'#ffe28a'}">${q.main?'📖 ':''}${q.t}</b><br><span class="${st.n>=q.qty?'ok':'muted'}">${st.n>=q.qty?'✔ Entregar a '+((NPCS.find(n=>n.id===q.npc)||{}).name||'NPC'):st.n+'/'+q.qty+' '+QNAME[q.tg]}</span></div>`;}).join(''):'<span class="muted">Sem missões ativas</span>')+dwl+spTrack();
  { const qb=$('qBdg');if(qb){const n=dwReady(0)+dwReady(1);qb.textContent=n;qb.style.display=n?'block':'none';} }
 }
 
@@ -6420,9 +6432,9 @@ function renderDialog(){
   h+=npcQuests(n.id).map((q,i)=>{if(!questUnlocked(q))return'';const st=S.quests[q.id];if(st&&st.done)return'';
    if(!st&&!questLvOk(q))return `<div class="row2 dim"><div class="ri">🔒</div><div class="rt"><b>${q.t}</b><small>Próxima missão: disponível a partir do nível ${q.need}.</small></div></div>`;
    if(st&&st.done)return `<div class="row2 dim"><div class="ri">✅</div><div class="rt"><b>${q.t}</b><small>Concluída</small></div></div>`;
-   if(!st)return `<div class="row2"><div class="ri">❗</div><div class="rt"><b>${q.t}</b> <small style="display:inline">(Nv ${q.rec}+)</small><small>${q.d}</small><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qa" data-id="${q.id}">Aceitar</button></div></div>`;
+   if(!st)return `<div class="row2"><div class="ri">${q.main?'📖':'❗'}</div><div class="rt"><b>${q.t}</b> <small style="display:inline">${q.main?'<span style="color:#ffcf6b">'+RULES.STORY_ACTS[q.act]+'</span> • ':''}(Nv ${q.rec}+)</small><small>${q.d}</small><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qa" data-id="${q.id}">Aceitar</button></div></div>`;
    const ready=st.n>=q.qty;
-   return `<div class="row2"><div class="ri">${ready?'❓':'📜'}</div><div class="rt"><b>${q.t}</b><small>${q.d}</small><div class="ing ${ready?'ok':''}">${st.n}/${q.qty} ${QNAME[q.tg]}</div><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qt" data-id="${q.id}" ${ready?'':'disabled'}>Entregar</button></div></div>`;}).join('');
+   return `<div class="row2"><div class="ri">${ready?'❓':q.main?'📖':'📜'}</div><div class="rt"><b>${q.t}</b><small>${q.d}</small><div class="ing ${ready?'ok':''}">${st.n}/${q.qty} ${QNAME[q.tg]}</div><small>🎁 ${rwText(q.rw)}</small></div><div class="rb"><button data-act="qt" data-id="${q.id}" ${ready?'':'disabled'}>Entregar</button></div></div>`;}).join('');
   if(qDone.length){h+=`<div class="qdoneBar" data-act="qdone">✅ Missões concluídas (${qDone.length}) <span>${QDONE_OPEN?'▾ Ocultar':'▸ Mostrar'}</span></div>`;
    if(QDONE_OPEN)h+=qDone.map(q=>`<div class="row2 dim"><div class="ri">✅</div><div class="rt"><b>${q.t}</b><small>Concluída</small></div></div>`).join('');}
  }
