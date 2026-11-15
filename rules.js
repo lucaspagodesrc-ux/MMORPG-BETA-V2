@@ -860,7 +860,7 @@ R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r:
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.bd ? 0 : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : POTS[it.id].v);
+const sellPrice = it => it.bd ? 0 : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
 const MAXPLUS = 10;
 /** chave de "modelo" do item para o histórico de preços do leilão: itens iguais (nome, nível, raridade, refino, engastes) compartilham o histórico */
 const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
@@ -1091,12 +1091,22 @@ SHOPS.scr = [
   { id: 'g_ext', i: '🔳', n: 'Extensor de Slot', sec: 'Extensor de Slot', d: 'Cria +1 engaste ◇ em um equipamento (até ' + MAX_SLOTS + ' engastes). Use na aba Engastar.', c: () => EXT_PRICE, mk: () => ({ k: 'mat', id: 'g_ext', n: 1 }) }];
 
 /* ---------- inventário ---------- */
-function canAdd(arr, it) { if (it.k === 'mat' || it.k === 'pot') { if (arr.some(s => s && s.k === it.k && s.id === it.id && s.n < 99)) return true; } return arr.includes(null); }
+/* v1.79: itens que empilham até 99 — materiais, poções e ingressos de calabouço */
+const STK = k => k === 'mat' || k === 'pot' || k === 'tix';
+function canAdd(arr, it) { if (STK(it.k)) { if (arr.some(s => s && s.k === it.k && s.id === it.id && s.n < 99)) return true; } return arr.includes(null); }
 function addItem(arr, it) {
-  if (it.k === 'mat' || it.k === 'pot') { for (const s of arr) { if (s && s.k === it.k && s.id === it.id && s.n < 99) { const a = Math.min(99 - s.n, it.n); s.n += a; it.n -= a; if (it.n <= 0) return true; } } }
+  if (STK(it.k)) { for (const s of arr) { if (s && s.k === it.k && s.id === it.id && s.n < 99) { const a = Math.min(99 - s.n, it.n); s.n += a; it.n -= a; if (it.n <= 0) return true; } } }
   const i = arr.indexOf(null); if (i < 0) return false; arr[i] = it; return true;
 }
 const have = (c, id) => c.inv.reduce((a, s) => a + (s && s.id === id && (s.k === 'mat' || s.k === 'pot') ? s.n : 0), 0);
+/* v1.79: ingressos de calabouço são itens da mochila (pilhas de 99). c.tix guarda só o que sobrou de saves antigos sem espaço na mochila */
+const tixHave = (c, id) => ((c.tix && c.tix[id]) || 0) + c.inv.reduce((a, s) => a + (s && s.k === 'tix' && s.id === id ? s.n : 0), 0);
+function tixTake(c, id) {
+  if (c.tix && c.tix[id] > 0) { c.tix[id]--; if (c.tix[id] <= 0) delete c.tix[id]; return true; }
+  for (let i = 0; i < c.inv.length; i++) { const s = c.inv[i]; if (s && s.k === 'tix' && s.id === id) { s.n--; if (s.n <= 0) c.inv[i] = null; return true; } }
+  return false;
+}
+function tixGive(c, id, n = 1) { if (!addItem(c.inv, { k: 'tix', id, n })) { c.tix = c.tix || {}; c.tix[id] = (c.tix[id] || 0) + n; } }
 function take(c, id, n) { for (let i = 0; i < c.inv.length && n > 0; i++) { const s = c.inv[i]; if (s && s.id === id && (s.k === 'mat' || s.k === 'pot')) { const a = Math.min(s.n, n); s.n -= a; n -= a; if (s.n <= 0) c.inv[i] = null; } } }
 
 /* ---------- atributos derivados ---------- */
@@ -1532,6 +1542,7 @@ function cleanItem(it) {
   if (!it || typeof it !== 'object') return null;
   if (it.k === 'mat') return MATS[it.id] && Number.isFinite(it.n) ? { k: 'mat', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k === 'pot') return POTS[it.id] && Number.isFinite(it.n) ? { k: 'pot', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
+  if (it.k === 'tix') return DUNGEONS.some(d => d.id === it.id) && Number.isFinite(it.n) ? { k: 'tix', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
   it.plus = Math.max(0, Math.min(MAXPLUS, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
@@ -1583,7 +1594,9 @@ function migrate(c) {
   c.gm = c.gm ? 1 : 0; c.gmu = (Number(c.gmu) || 0) > Date.now() ? Number(c.gmu) : 0;
   { const dc = {}; if (c.dgc && typeof c.dgc === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.dgc[d.id]); if (n > 0) dc[d.id] = Math.min(9999, n); } c.dgc = dc; c.tb = c.tb ? 1 : 0; if (!c.tb && brightProg(c).ok) c.tb = 1; if (typeof c.title !== 'string' || (c.title && !titleHave(c, c.title))) c.title = ''; }
   { const fr = []; if (Array.isArray(c.fr)) for (const n of c.fr) { if (typeof n === 'string') { const t = n.trim().slice(0, 16); if (t && !fr.some(x => x.toLowerCase() === t.toLowerCase())) fr.push(t); } if (fr.length >= 50) break; } c.fr = fr; }
-  { const tx = {}; if (c.tix && typeof c.tix === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.tix[d.id]); if (n > 0) tx[d.id] = Math.min(5, n); } c.tix = tx; }
+  { const tx = {}; if (c.tix && typeof c.tix === 'object') for (const d of DUNGEONS) { const n = Math.floor(c.tix[d.id]); if (n > 0) tx[d.id] = Math.min(9999, n); }
+    for (const id in tx) { while (tx[id] > 0) { const it = { k: 'tix', id, n: Math.min(99, tx[id]) }, n0 = it.n; if (!addItem(c.inv, it)) { tx[id] -= n0 - it.n; break; } tx[id] -= n0; } if (tx[id] <= 0) delete tx[id]; }   // v1.79: ingressos antigos vão para a mochila (o que não couber fica guardado e entra quando houver espaço)
+    c.tix = tx; }
   if (!(c.run && typeof c.run === 'object' && DUNGEONS.some(d => d.id === c.run.id))) delete c.run;
   if ((c.v || 0) < R.VERSION) {
     c.level = Math.max(1, Math.min(MAX_LEVEL, Math.floor(c.level) || 1));
@@ -1633,13 +1646,13 @@ function purgeExp(c) {
    O servidor chama isto para cada pedido do jogador; o modo offline chama o mesmo código. */
 /** Junta pilhas e ordena uma lista de itens (mochila ou baú): equipamentos (por peça, classe, raridade, nível, aprimoramento), poções e materiais; sem buracos. */
 function organizeList(list, cls) {
-  const eq = [], rest = [], pots = {}, mats = {}, tm = {}, ORD = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'shield', 'cape'];
-  for (const it of list) { if (!it) continue; if (it.k === 'eq') eq.push(it); else if (it.k === 'pot' || it.k === 'mat') { const g = it.k === 'pot' ? pots : mats; g[it.id] = (g[it.id] || 0) + it.n; tm[it.k + it.id] = it; } else rest.push(it); }
+  const eq = [], rest = [], pots = {}, mats = {}, tixs = {}, tm = {}, ORD = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'shield', 'cape'];
+  for (const it of list) { if (!it) continue; if (it.k === 'eq') eq.push(it); else if (it.k === 'pot' || it.k === 'mat' || it.k === 'tix') { const g = it.k === 'pot' ? pots : it.k === 'tix' ? tixs : mats; g[it.id] = (g[it.id] || 0) + it.n; tm[it.k + it.id] = it; } else rest.push(it); }
   const foreign = it => Number(!!(it.cls && it.cls !== cls));
   eq.sort((a, b) => ORD.indexOf(a.slot) - ORD.indexOf(b.slot) || foreign(a) - foreign(b) || String(a.cls || '').localeCompare(String(b.cls || '')) || b.rar - a.rar || b.ilvl - a.ilvl || (b.plus || 0) - (a.plus || 0) || String(a.name).localeCompare(String(b.name)));
   const o = [...eq];
   const stacks = (g, k, ids) => { for (const id of ids) { let n = g[id]; while (n > 0) { const q = Math.min(99, n); o.push({ ...tm[k + id], n: q }); n -= q; } } };
-  stacks(pots, 'pot', Object.keys(pots).sort()); stacks(mats, 'mat', Object.keys(mats).sort((a, b) => String(MATS[a].n).localeCompare(String(MATS[b].n)))); o.push(...rest);
+  stacks(pots, 'pot', Object.keys(pots).sort()); stacks(tixs, 'tix', Object.keys(tixs).sort()); stacks(mats, 'mat', Object.keys(mats).sort((a, b) => String(MATS[a].n).localeCompare(String(MATS[b].n)))); o.push(...rest);
   while (o.length < list.length) o.push(null); list.splice(0, list.length, ...o.slice(0, list.length));
 }
 /* ---------- QUEBRAR ITEM ---------- */
@@ -1783,9 +1796,9 @@ function act(sess, m, ctx) {
     const dg = DUNGEONS.find(x => x.id === m.id); if (!dg) return fail();
     if ((dg.reg || 300) !== regOf(n.x)) return fail('Esse ingresso é vendido em ' + REGN[dg.reg || 300] + '.');
     if (c.level < dg.minLevel) return fail('Nível ' + dg.minLevel + ' necessário.');
-    c.tix = c.tix || {}; if ((c.tix[dg.id] || 0) >= 5) return fail('Você já tem 5 ingressos.');
     if (c.gold < dg.price) return fail('Ouro insuficiente');
-    c.gold -= dg.price; c.tix[dg.id] = (c.tix[dg.id] || 0) + 1; F('coin'); T('🎟️ Ingresso comprado: ' + dg.name);
+    if (!addItem(c.inv, { k: 'tix', id: dg.id, n: 1 })) return fail('Mochila cheia: libere um espaço para o ingresso.');   // v1.79: o ingresso vai para a mochila (pilha de até 99)
+    c.gold -= dg.price; F('coin'); T('🎟️ Ingresso comprado: ' + dg.name);
     L(`🎟️ Você comprou um ingresso para <b style="color:#ffd27a">${dg.name}</b>. Vá até a entrada, no canto do deserto, e fale com o portal.`); return done();
   }
   if (t === 'craft') {
@@ -1998,7 +2011,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

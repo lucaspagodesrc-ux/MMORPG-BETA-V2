@@ -766,17 +766,12 @@ export class WorldRoom extends Room<WorldState> {
       if (!this.canPick(d, s)) return this.res(s, [{ toast: `🔒 Item de outro jogador — libera em ${Math.ceil((d.free - Date.now()) / 1000)}s` }], false);
       const c = s.c, it = d.item, id = Number(m.id);
       let out: any[];
-      if (it.k === "tix") {
-        c.tix = c.tix || {};
-        if ((c.tix[it.id] || 0) >= 5) return this.res(s, [{ toast: "Você já tem 5 ingressos." }], false);
-        c.tix[it.id] = (c.tix[it.id] || 0) + 1;
-        out = [{ sfx: "rare" }, { log: `🎟️ Você obteve <b style="color:#ffd24a">${R.nm(it)}</b>!` }];
-      } else if (it.k === "gold") { c.gold += it.n; out = [{ sfx: "coin" }, { float: { t: "+" + it.n + " 💰", c: "#ffe28a" } }]; }
+      if (it.k === "gold") { c.gold += it.n; out = [{ sfx: "coin" }, { float: { t: "+" + it.n + " 💰", c: "#ffe28a" } }]; }
       else {
         if (!R.canAdd(c.inv, it)) return this.res(s, [{ toast: "Mochila cheia!" }], false);
         const label = R.nm(it) + (it.n > 1 ? " ×" + it.n : "");
         R.addItem(c.inv, it);
-        out = [{ sfx: "pickup" }, { log: `Você obteve <b style="color:${it.k === "eq" ? R.RAR[it.rar].c : "#fff"}">${label}</b>` }];
+        out = [{ sfx: it.k === "tix" ? "rare" : "pickup" }, { log: `${it.k === "tix" ? "🎟️ " : ""}Você obteve <b style="color:${it.k === "eq" ? R.RAR[it.rar].c : it.k === "tix" ? "#ffd24a" : "#fff"}">${label}</b>` }];
       }
       this.wd.delete(id); this.pushDrops();
       this.touch(s); this.sync(s); this.res(s, out);
@@ -992,7 +987,7 @@ export class WorldRoom extends Room<WorldState> {
     } else if (c.run) {                                         // fora da dungeon: mantém o direito de voltar enquanto valer
       const I = this.dg.insts.get(c.run.inst);
       if (!(I && !I.closed && (!c.run.until || Date.now() < c.run.until || (I.grp && I.members.size > 0)))) {
-        if (!I && (!c.run.until || Date.now() < c.run.until) && c.run.ends && Date.now() < c.run.ends) { c.tix = c.tix || {}; c.tix[c.run.id] = Math.min(5, (c.tix[c.run.id] || 0) + 1); }
+        if (!I && (!c.run.until || Date.now() < c.run.until) && c.run.ends && Date.now() < c.run.ends) { R.tixGive(c, c.run.id); }
         delete c.run;
       }
     }

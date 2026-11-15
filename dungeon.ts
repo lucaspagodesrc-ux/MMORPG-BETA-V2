@@ -381,12 +381,12 @@ export class Dungeons {
       const old = this.insts.get(c.run.inst), until = c.run.until;
       if (old && !old.closed && (!until || now < until || (old.grp && old.members.size > 0))) { inst = old; free = true; }
       else {
-        if (!old && (!until || now < until) && c.run.ends && now < c.run.ends) { c.tix = c.tix || {}; c.tix[id] = Math.min(5, (c.tix[id] || 0) + 1); this.h.res(s, [{ log: '<span style="color:#9fe7b0">🎟️ A dungeon foi encerrada antes do tempo. Seu ingresso foi devolvido.</span>' }]); }
+        if (!old && (!until || now < until) && c.run.ends && now < c.run.ends) { R.tixGive(c, id); this.h.res(s, [{ log: '<span style="color:#9fe7b0">🎟️ A dungeon foi encerrada antes do tempo. Seu ingresso foi devolvido.</span>' }]); }
         delete c.run;
       }
     }
     if (!inst) {
-      if (!(c.tix && c.tix[id] > 0)) return "Você precisa de um ingresso. Compre com o guardião das dungeons, na vila da região.";
+      if (!(R.tixHave(c, id) > 0)) return "Você precisa de um ingresso. Compre com o guardião das dungeons, na vila da região.";
       const party = this.h.partyOf(s);
       if (party) {
         for (const msid of party.members) {                           // já existe instância do grupo?
@@ -396,7 +396,7 @@ export class Dungeons {
         }
         if (!inst && party.leader !== sid) return "O líder do grupo precisa entrar primeiro.";
         if (!inst && party.members.length > 1) {                       // início em grupo: todos precisam ter o ingresso
-          const miss = party.members.filter((x: string) => { const ms = this.h.sess.get(x); return ms && !(ms.c.tix && ms.c.tix[id] > 0); }).map((x: string) => this.h.sess.get(x).c.name);
+          const miss = party.members.filter((x: string) => { const ms = this.h.sess.get(x); return ms && !(R.tixHave(ms.c, id) > 0); }).map((x: string) => this.h.sess.get(x).c.name);
           if (miss.length) return "Todos do grupo precisam ter o ingresso para começar. Sem ingresso: " + miss.join(", ") + ".";
         }
       }
@@ -404,7 +404,7 @@ export class Dungeons {
       if (!inst) inst = this.create(def);
     }
     if (inst.paused) return "A dungeon está pausada.";
-    if (!free) { c.tix[id]--; if (c.tix[id] <= 0) delete c.tix[id]; }
+    if (!free) R.tixTake(c, id);   // v1.79: o ingresso sai da mochila
     c.run = { id, inst: inst.id, ends: inst.endsAt };
     { const pt = this.h.partyOf(s); inst.members.add(sid); inst.emptySince = 0; if (inst.members.size > 1 || (pt && pt.members.length > 1)) inst.grp = true; }
     p.inst = inst.id; p.dead = false;
