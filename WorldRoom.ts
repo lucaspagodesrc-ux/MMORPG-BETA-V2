@@ -425,9 +425,12 @@ export class WorldRoom extends Room<WorldState> {
       const fin = T.boss && sid === sim.lastHitBy && (sim as any).lhSk && c.cls === "pierrot" ? R.FINISH_LUCK : 0;   // v1.69: golpe final do Pierrot com habilidade em chefe: mais sorte no drop
       if (fin) this.res(s, [{ log: `<span style="color:#6fdc7f">🍀 Golpe final do Pierrot: +${Math.round(fin * 100)}% de sorte neste drop!</span>` }], false);
       if (!sim.lazy || Math.random() < 0.5) for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck") + fin))) { if (it.k === "gold" && gf) it.n = Math.round(it.n * (1 + gf)); this.addDrop(s, it, mx, mz, 0); }
-      if (!sim.inst) {                                                  // ingresso de dungeon: drop raro (0,3% comum / 4% chefe) — vem a dungeon da região onde o monstro morreu
+      if (!sim.inst) {                                                  // ingresso de dungeon — v1.78: monstro comum do mapa 1% (fixo, a sorte não aumenta) / chefe 4% (com sorte)
         const reg = R.regOf(mx), cand = R.DUNGEONS.filter((d: any) => (d.reg || 300) === reg && mlvl >= d.minLevel - 8);
-        if (cand.length && Math.random() < (T.boss ? 0.04 : 0.003) * (1 + R.luckOf(c, this.buff(s, "luck") + fin))) this.addDrop(s, { k: "tix", id: cand[Math.floor(Math.random() * cand.length)].id, n: 1 }, mx, mz, 0);
+        const pT = T.boss ? 0.04 * (1 + R.luckOf(c, this.buff(s, "luck") + fin)) : 0.01;
+        if (cand.length && Math.random() < pT) this.addDrop(s, { k: "tix", id: cand[Math.floor(Math.random() * cand.length)].id, n: 1 }, mx, mz, 0);
+      } else if (!T.boss && c.run && c.run.id && R.DUNGEONS.some((d: any) => d.id === c.run.id) && Math.random() < 0.02) {
+        this.addDrop(s, { k: "tix", id: c.run.id, n: 1 }, mx, mz, 0);   // v1.78: dentro do calabouço, 2% por monstro: ingresso do mesmo calabouço
       }
     });
     if (sim.inst) this.dg.onKill(sim);
