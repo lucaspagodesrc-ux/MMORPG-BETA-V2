@@ -236,6 +236,14 @@
   #win-party{left:340px;top:230px;width:310px}
   #win-friends{left:360px;top:200px;width:320px}
   #splitBox{position:fixed;z-index:70;display:none;padding:10px 12px;min-width:220px;font-size:13px}#splitBox input{background:#0f1822;color:#e6edf5;border:1px solid var(--line);border-radius:6px;padding:4px 6px}#splitBox button{padding:4px 10px}
+  #win-fz{left:380px;top:96px;width:430px;max-height:calc(100vh - 140px);overflow:auto}
+  #win-fz .fzrow{display:flex;gap:9px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:7px;margin-bottom:6px;background:#121c28}
+  #win-fz .fzi{font-size:28px;width:46px;height:46px;flex:none;display:grid;place-items:center;border:2px solid #3b4b5c;border-radius:10px;background:#0e1620}
+  #win-fz .fzt{flex:1;min-width:0}#win-fz .fzt small{display:block;color:var(--muted);font-size:11.5px}
+  #win-fz .fzp{text-align:right;flex:none;font-size:12.5px}#win-fz .fzp button{margin-top:4px}
+  #win-fz .fzh{margin:10px 0 6px;font-weight:700;font-size:12.5px;letter-spacing:.5px}
+  #win-fz .fzon{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,184,74,.35) inset}
+  #btnFz{color:#7fe0ff!important;border-color:#2f6a8a!important}
   #win-pets{left:360px;top:120px;width:360px;max-height:calc(100vh - 160px);overflow:auto}
   #win-pets .pslot{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:7px;margin-bottom:6px;background:#121c28}
   #win-pets .pslot .pi{font-size:30px;width:44px;height:44px;display:grid;place-items:center;border:2px solid #3b4b5c;border-radius:9px}
@@ -461,6 +469,7 @@
     <button data-win="gm" id="mnuGm" title="Painel do GM (Y)" style="display:none">✨</button>
     <button data-win="titles" title="Títulos (T)">🏅</button>
     <button data-win="pets" title="Mascotes (P)">🐾</button>
+    <button data-win="fz" id="btnFz" title="Loja de Diamantes • Fantasias (J)">💎</button>
     <button data-win="help" title="Ajuda (H)">❔</button>
     <button id="btnAudio" title="Áudio: música e efeitos">🔊</button>
     <button id="btnMenu" title="Trocar personagem">🚪</button>
@@ -940,6 +949,7 @@ const genItem=(slot,ilvl,rar,cls)=>RULES.genItem(slot,ilvl,rar,cls,S&&S.cls);
 
 /* =================== GEMAS: cada gema desenha uma figura diferente dentro do engaste (◇) =================== */
 const {GRADES,GEMS,GEMD}=RULES;const PETS=RULES.PETS,PRAR=RULES.PRAR;   /* v1.80: mascotes */
+const FZS=RULES.FZS;   /* v1.82: fantasias */
 const GCOL={w_ampe:'#ff7a5a',w_ampm:'#9a7bff',w_crit:'#ffd24a',w_cdmg:'#ff4a4a',w_atk:'#ff9a3a',w_matk:'#ff6ad8',w_acc:'#4ad8ff',w_add:'#b86bff',w_cmax:'#ffe14a',a_ampe:'#ff8a5a',a_ampm:'#8a9bff',a_cmax:'#ffc44a',a_crit:'#ffe84a',a_hp:'#ff4a6a',a_mp:'#4aa8ff',a_def:'#c8a068',a_drate:'#6ad8c8',a_eva:'#9fe7ff',a_lhp:'#d02a3a',a_lmp:'#c8d0ff',a_rhp:'#6fdc7f',w_hit:'#4affd8',w_ircr:'#ffb04a',w_ircd:'#ff6a3a',w_irdm:'#c4c4d8',w_irbl:'#d8d04a',a_irpe:'#9aa8b8',a_irac:'#b89aff',a_rdmg:'#8fa0b0',a_rcrt:'#ffd24a',a_rcdm:'#e04a5a',a_ramp:'#7a8bff',a_lhpu:'#ff3a5a',a_lmpu:'#3a8aff',a_lhpl:'#ff7a8a',a_lmpl:'#6ab8ff'};
 const starP=(cx,cy,ro,ri,n)=>{let d='';for(let i=0;i<n*2;i++){const a=Math.PI*i/n-Math.PI/2,r=i%2?ri:ro;d+=(i?'L':'M')+(cx+Math.cos(a)*r).toFixed(2)+' '+(cy+Math.sin(a)*r).toFixed(2);}return d+'Z';};
 const hex2=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
@@ -988,8 +998,8 @@ const sockH=(it,i,o)=>{o=o||{};const id=it.gm&&it.gm[i],g=id&&GEMD[id];const lg=
  return g?`<span class="sock${lg}${on}" style="--sc:${GRADES[g.g].c}"${da} title="${g.n}: ${g.o} ${RULES.gemTxt(g,it.k==='pet'?RULES.PET_IL:it.ilvl)}">${gemSvg(id)}</span>`:`<span class="sock em${lg}${on}"${da} title="Engaste vazio"></span>`;};
 const socksH=it=>it.sl?Array.from({length:it.sl},(_,i)=>sockH(it,i)).join(''):'';
 const gemOfMat=m=>m&&m.k==='mat'&&MATS[m.id]&&MATS[m.id].gem?GEMD[MATS[m.id].gem]:null;
-const ico=it=>it.k==='pet'?((PETS[it.id]||{}).i||'🐾'):it.k==='tix'?'🎟️':it.k==='eq'?(it.plus||it.wb?`<span class="ig${it.plus>=7||it.wb?' hi'+(it.plus>=10?' s10':it.plus>=9?' s9':it.plus>=8?' s8':''):''}" style="--gp:${it.plus||8};--gc:${it.wb?'#ffcf4a':(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?(MATS[it.id].gem?gemSvg(MATS[it.id].gem):MATS[it.id].i):it.k==='pot'?POTS[it.id].i:'💰';
-const col=it=>it.k==='pet'?PRAR[(PETS[it.id]||{rar:0}).rar].c:it.k==='mat'&&MATS[it.id].gem?GRADES[GEMD[MATS[it.id].gem].g].c:it.k==='mat'&&MATS[it.id].ext?'#c9a8ff':it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):it.wb?'#ffcf4a':RAR[it.rar].c):'#455568';
+const ico=it=>it.k==='fz'?((FZS[it.id]||{}).i||'🎭'):it.k==='pet'?((PETS[it.id]||{}).i||'🐾'):it.k==='tix'?'🎟️':it.k==='eq'?(it.plus||it.wb?`<span class="ig${it.plus>=7||it.wb?' hi'+(it.plus>=10?' s10':it.plus>=9?' s9':it.plus>=8?' s8':''):''}" style="--gp:${it.plus||8};--gc:${it.wb?'#ffcf4a':(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${it.icon}</span>`:it.icon):it.k==='mat'?(MATS[it.id].gem?gemSvg(MATS[it.id].gem):MATS[it.id].i):it.k==='pot'?POTS[it.id].i:'💰';
+const col=it=>it.k==='fz'?PRAR[(FZS[it.id]||{rar:0}).rar].c:it.k==='pet'?PRAR[(PETS[it.id]||{rar:0}).rar].c:it.k==='mat'&&MATS[it.id].gem?GRADES[GEMD[MATS[it.id].gem].g].c:it.k==='mat'&&MATS[it.id].ext?'#c9a8ff':it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):it.wb?'#ffcf4a':RAR[it.rar].c):'#455568';
 /* =================== EVENTO: BOAS-VINDAS, INAUGURAÇÃO E NATAL =================== */
 const evtEndTxt=()=>'25/12/2026 às 23:59';
 function evtLeft(){let ms=RULES.EVT.end-Date.now();if(ms<=0)return 'encerrado';const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);return d>0?`restam ${d}d ${h}h`:h>0?`restam ${h}h ${m}min`:`restam ${m}min`;}
@@ -1023,6 +1033,7 @@ function evtTabHtml(){
  return h;
 }
 function tipOf(it){
+ if(it.k==='fz'){const Z=FZS[it.id]||{},r=PRAR[Z.rar||0];return `<b style="color:${r.c}">${Z.i||'🎭'} ${Z.n}</b><br><span style="color:${r.c}">Fantasia ${r.n}</span><br>♂ ${Z.m} • ♀ ${Z.f}<br><span class="muted">Muda só a aparência (a arma da classe continua na mão) e esconde a capa.<br>Veste a versão do sexo do personagem • ocupa 1 espaço • negociável na troca e no leilão • pode ir para o baú</span><br><span class="muted">Clique para vestir • janela 💎 Fantasias: tecla J</span>`;}
  if(it.k==='pet'){const P=PETS[it.id]||{},r=PRAR[P.rar||0];let h=`<b style="color:${r.c}">${P.i||'🐾'} ${P.n}</b><br><span style="color:${r.c}">Mascote ${r.n}</span><br>${P.d||''}<br>`;
   h+=`<span class="muted">Engastes: ${it.sl||0}/${RULES.PET_MAXSL}</span> ${socksH(it)}<br>`;
   for(const id of (it.gm||[])){const g=id&&GEMD[id];if(g)h+=`<span style="color:${GRADES[g.g].c}">◆ ${g.o} ${RULES.gemTxt(g,RULES.PET_IL)}</span><br>`;}
@@ -3506,9 +3517,11 @@ function magoHats(o){const H=o.glbParts&&o.glbParts.Helm;if(!H||!H['1'])return;
    const t0=n.material.albedoTexture;m.albedoTexture=null;c.material=m;hatGray(t0,g=>{if(g)m.albedoTexture=g;});
    try{GINK_(c,.012);}catch(e){}c.setEnabled(false);return c;});}}
 const GLB=(()=>{
+ const FZV='182';   /* v1.82: versão dos modelos das fantasias */
  const FILES={cavaleiro:'cavaleiro.glb',guerreiro:'guerreiro.glb',tanque:'tanque.glb',assassino:'assassino.glb',arqueiro:'arqueiro.glb',mago:'mago.glb',pierrot:'pierrot.glb',
   /* v1.77: versões femininas (só aparência) */
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
+ for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
  let ldr=null,IPC=null;const GLBV='177';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
@@ -3517,7 +3530,7 @@ const GLB=(()=>{
   const tryI=i=>{if(i>=LOADER.length)return no(new Error('loader'));const s=document.createElement('script');s.src=LOADER[i];s.onload=()=>ok();s.onerror=()=>tryI(i+1);document.head.appendChild(s);};tryI(0);}));
  function load(cls){
   if(C[cls])return C[cls].p;const e=C[cls]={st:0,ct:null};
-  e.p=loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',FILES[cls]+'?v='+GLBV,scene,null,'.glb')).then(ct=>{
+  e.p=loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',FILES[cls]+'?v='+(/^fz_/.test(cls)?FZV:GLBV),scene,null,'.glb')).then(ct=>{
     e.ct=ct;e.st=1;ct.animationGroups.forEach(a=>a.stop());
     for(const w of WAIT.splice(0))if(w.cls===cls)swap(w);else WAIT.push(w);
    }).catch(err=>{e.st=-1;console.warn('GLB',cls,err);
@@ -3527,7 +3540,7 @@ const GLB=(()=>{
  const ready=cls=>!!(C[cls]&&C[cls].st===1);
  /* monta uma cópia do modelo dentro de r */
  function inst(key,o,r){
-  const ct=C[key].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true}),cls=key.replace(/_f$/,'');   /* key = arquivo (cls ou cls_f) */
+  const fz=/^fz_/.test(key),ct=C[key].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true}),cls=fz?o.cls:key.replace(/_f$/,'');   /* key = arquivo (cls, cls_f ou fz_<id>[_f]) */
   const top=new BABYLON.TransformNode('glb',scene);top.parent=r;const S=SCALE[cls]||1;top.scaling.setAll(S);
   const root=I.rootNodes[0];root.parent=top;
   const all=root.getDescendants(false),by=n=>all.find(x=>x.name===n);
@@ -3538,7 +3551,7 @@ const GLB=(()=>{
    if(m.material)seenM.add(m.material);const pm=m.material;
    if(pm){pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);if(pm.albedoTexture)pm.albedoTexture.anisotropicFilteringLevel=4;
     if(TINT.includes(pm.name)){(mats[pm.name]=mats[pm.name]||[]).push(pm);pm.albedoColor=C3.FromHexString(DEF).toLinearSpace();}}
-   if(!/^(Shield|Sword|Weapon|Quiver|Body0)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
+   if(!/^(Shield|Sword|Weapon|Quiver|Body0|FzBody)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
   /* v1.68: as animações são calculadas aqui (quadro e mistura por peso), sem o tocador do Babylon — com velocidade 0 ele prendia tudo no 1º quadro (personagem deslizava) */
   const AG={},CH=new Map();for(const g of I.animationGroups){g.stop();AG[g.name]={from:g.from,to:g.to};for(const ta of g.targetedAnimations){const k=ta.target.uniqueId+'|'+ta.animation.targetProperty;let e=CH.get(k);if(!e){e={t:ta.target,p:ta.animation.targetProperty,a:{}};CH.set(k,e);}e.a[g.name]=ta.animation;}}
   const L={glb:1,t:0,x:0,z:0,spd:0,ph:0,ph0:Math.random()*6,AG,CH:[...CH.values()],ank:[by('foot.L')||top,by('foot.R')||top],lr:.15,top,cls};
@@ -3546,7 +3559,8 @@ const GLB=(()=>{
   o.hand=(cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||by('hand.R')||top;o.handL=by('hand.L')||top;
   /* peças de cada conjunto: o nó do glTF e as malhas com pele (ficam em outro lugar da hierarquia, mas com o mesmo nome no começo) */
   o.glbParts={};for(const n of all){const mm=/^(Armor|Boots|Helm|Shield)([1-5])(?:$|_)/.exec(n.name);if(mm){const g=(o.glbParts[mm[1]]=o.glbParts[mm[1]]||{});(g[mm[2]]=g[mm[2]]||[]).push(n);}}
-  if(cls==='mago')magoHats(o);   /* v1.76: chapéu pontudo em todos os trajes do mago */
+  if(cls==='mago'&&!fz)magoHats(o);   /* v1.76: chapéu pontudo em todos os trajes do mago */
+  o.glbKey=key;
   o.shieldN=by('Shield2')||by('Shield')||null;showSets(o,{});
   if(!o.wMat)o.wMat=mat('wm','#cfd6dd',null,null,'metal');
   top.onDisposeObservable.add(()=>{for(const a of I.animationGroups)try{a.dispose();}catch(e){}for(const s of I.skeletons)try{s.dispose();}catch(e){}});
@@ -3619,7 +3633,25 @@ const GLB=(()=>{
  function showSets(o,ap){const P_=o.glbParts||{};const pick={Armor:setOf(ap.armor),Helm:setOf(ap.helmet),Boots:setOf(ap.boots)};pick.Shield=pick.Armor;
   for(const k in P_)for(const i in P_[k]){const on=+i===pick[k],ns=P_[k][i];if(k==='Shield'){const top=ns.find(n=>n.name==='Shield'+i)||ns[0];if(on)o.shieldN=top;ns.forEach(n=>{if(n===top)n.setEnabled(on);});}else ns.forEach(n=>n.setEnabled(on));}}
  /* equipamento: cada peça mostra o conjunto do seu nível; capa só com o item de capa */
- function gear(o,ap){o.gap=ap;const sig=JSON.stringify(ap);if(o.gsig===sig)return;o.gsig=sig;
+ /* v1.82: fantasia — arquivo pelo sexo (cai para o ♂ se o ♀ falhar) e para a classe se a fantasia não carregar */
+ const ok=k=>FILES[k]&&!(C[k]&&C[k].st===-1);
+ function fzKey(o,ap){const id=ap&&ap.fz&&ap.fz.mo;if(!id||!FILES['fz_'+id])return null;const kf='fz_'+id+'_f',km='fz_'+id;return o.fem&&ok(kf)?kf:ok(km)?km:null;}
+ /* troca o modelo dentro do mesmo nó; a arma (e o escudo) da classe passam para os ossos da fantasia */
+ function reskin(o,k){const old=o.glbTop,r=old&&old.parent;if(!r||old.isDisposed())return;
+  const keep=[];if(/^fz_/.test(k)){const seen=new Set();for(const n of old.getDescendants(false)){if((/^(Sword|Weapon|WeaponL|Quiver)$/.test(n.name)||(n===o.shieldN&&!n.skeleton))&&!seen.has(n)&&n.parent){seen.add(n);keep.push({n,par:n.parent.name});}}}
+  for(const e of keep)e.n.parent=null;
+  disposeGm(o);try{clearGear(o);}catch(e){}if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
+  try{old.dispose();}catch(e){}
+  inst(k,o,r);const all=o.glbTop.getDescendants(false);
+  for(const e of keep){e.n.parent=all.find(x=>x.name===e.par)||o.glbTop;e.n.setEnabled(true);}
+  if(keep.length){const by=n=>keep.find(e=>e.n.name===n);o.hand=((o.cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||{}).n||o.hand;const sh=keep.find(e=>e.n===o.shieldN||/^Shield/.test(e.n.name));o.shieldN=sh?sh.n:null;}
+  o._wn=null;
+  if(o.rig===r)r.getChildMeshes().forEach(m=>{if(!m.metadata)m.metadata={t:'p',ref:o};});}
+ function gear(o,ap){o.gap=ap;const sig=JSON.stringify(ap);if(o.gsig===sig)return;
+  const want=fzKey(o,ap)||key(o.cls,o.fem);
+  if(want!==o.glbKey){if(ready(want))reskin(o,want);else load(want).then(()=>{const t=o.glbTop;if(t&&!t.isDisposed()&&o.gap){o.gsig=null;gear(o,o.gap);}});}   /* enquanto baixa, fica com o modelo atual */
+  o.gsig=sig;
+  if(ap.fz)ap=Object.assign({},ap,{cape:null});   /* com fantasia a capa/manto não aparece */
   showSets(o,ap);
   if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
   const pl=o.cls==='cavaleiro'||o.cls==='guerreiro',tk=o.cls==='tanque';
@@ -4588,7 +4620,8 @@ document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" cl
 <div id="gmTimer"></div>
 <div id="win-gm" class="panel win"><h3><span>✨ Painel do GM</span><button class="x" data-close="gm">✕</button></h3><p class="muted">O <b>Buff do GM</b> dura 5 minutos em cada jogador: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa. Para buffar um jogador específico, clique nele no mapa.</p><div style="display:grid;gap:6px"><button data-gmb="self">✨ Buffar a mim</button><button data-gmb="near">🌟 Buffar todos por perto (raio 30)</button><button data-gmb="all">🎆 Buffar todos os jogadores online</button></div></div>
 <div id="win-titles" class="panel win"><h3><span>🏅 Títulos</span><button class="x" data-close="titles">✕</button></h3><div id="titlesBody"></div></div>
-<div id="win-pets" class="panel win"><h3><span>🐾 Mascotes</span><button class="x" data-close="pets">✕</button></h3><div id="petsBody"></div></div>`);
+<div id="win-pets" class="panel win"><h3><span>🐾 Mascotes</span><button class="x" data-close="pets">✕</button></h3><div id="petsBody"></div></div>
+<div id="win-fz" class="panel win"><h3><span>💎 Loja de Diamantes</span><span><span class="muted" id="fzDia"></span> <button class="x" data-close="fz">✕</button></span></h3><div id="fzTabs" class="ptabs"></div><div id="fzBody"></div></div>`);
 /** avisos da dungeon: runas, ondas, cristais, escudo, golpes grandes, teletransporte, fúria, frio */
 function dgMsg(m){
  if(!m||!NET.inst)return;
@@ -5036,7 +5069,7 @@ function spawnDrop(item,pos,life){
  else{mesh=B.CreatePolyhedron('gem',{type:1,size:.28},scene);mesh.material=fxMat(col(item)==='#455568'?(item.k==='pot'?(item.id.startsWith('hp')?'#ff6b7a':'#6bb0ff'):(item.k==='tix'?'#ffd24a':'#d8c28a')):col(item));}
  mesh.parent=root;mesh.position.y=.5;mesh.metadata={t:'d'};
  const d={item,root,x,z,mesh,born:performance.now(),warn:0,life:life||0};mesh.metadata.ref=d;
- if((item.k==='eq'&&item.rar>=2)||item.k==='tix'||item.k==='pet'){const b=B.CreateCylinder('beam',{height:5,diameter:.12,tessellation:8},scene);b.parent=root;b.position.y=2.5;b.material=fxMat(item.k==='tix'?'#ffd24a':col(item));b.visibility=.4;b.isPickable=false;}
+ if((item.k==='eq'&&item.rar>=2)||item.k==='tix'||item.k==='pet'||item.k==='fz'){const b=B.CreateCylinder('beam',{height:5,diameter:.12,tessellation:8},scene);b.parent=root;b.position.y=2.5;b.material=fxMat(item.k==='tix'?'#ffd24a':col(item));b.visibility=.4;b.isPickable=false;}
  d.label=mkLabel(item.k==='gold'?`💰 ${item.n}`:`${ico(item)} ${nm(item)}${item.n>1?' ×'+item.n:''}`,'drop');d.label.style.color=item.k==='gold'?'#ffe28a':col(item)==='#455568'?'#d9e4ee':col(item);
  d.base=d.label.innerHTML;d.base0=d.base;drops.push(d);
 }
@@ -5677,13 +5710,13 @@ window.addEventListener('keydown',e=>{
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){if(MB.open)mbClose();else mbOpen();return;}   /* v1.78: M abre o mapa; a música fica no ícone 🔊 */
  if(k==='b'){startRecall();return;}
- if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='p')toggleWin('pets');else if(k==='f')toggleWin('friends');else if(k==='y'&&S&&S.gm)toggleWin('gm');else if(k==='h')toggleWin('help');else if(k==='u')guToggle();
- else if(k==='escape'){AUDUI.panel(false);closeDialog();guClose();['inv','char','quest','skill','party','friends','gm','titles','help','pets'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
+ if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='p')toggleWin('pets');else if(k==='j')toggleWin('fz');else if(k==='f')toggleWin('friends');else if(k==='y'&&S&&S.gm)toggleWin('gm');else if(k==='h')toggleWin('help');else if(k==='u')guToggle();
+ else if(k==='escape'){AUDUI.panel(false);closeDialog();guClose();['inv','char','quest','skill','party','friends','gm','titles','help','pets','fz'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
 });
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 /* =================== JANELAS =================== */
-const WINID={pets:'win-pets',inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',friends:'win-friends',gm:'win-gm',titles:'win-titles',help:'help'};
+const WINID={fz:'win-fz',pets:'win-pets',inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',friends:'win-friends',gm:'win-gm',titles:'win-titles',help:'help'};
 function setWin(n,show){$(WINID[n]).style.display=show?'block':'none';if(n==='inv'&&!show&&BRKM){BRKM=false;if(!(dlg&&dlg.tab==='quebrar'))BRK.clear();}if(show)refreshUI();}
 function toggleWin(n){AUD.sfx('ui');setWin(n,$(WINID[n]).style.display!=='block');}
 document.addEventListener('click',e=>{
@@ -5750,7 +5783,7 @@ function renderInv(){
  for(const i of [...SELL])if(!S.inv[i])SELL.delete(i);
  if(INVTAB*IPG>=S.inv.length)INVTAB=0;$('invTabs').innerHTML=tabsHtml(S.inv,IPG,INVTAB,'data-itab','Aba');
  $('invGrid').innerHTML=S.inv.map((it,i)=>(i<INVTAB*IPG||i>=(INVTAB+1)*IPG)?'':`<div class="slot${SELL.has(i)||BRK.has('i'+i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${Array.from({length:it.sl},(_,i)=>it.gm&&it.gm[i]?'◆':'◇').join('')}</span>`:''):''}</div>`).join('')+Object.entries(S.tix||{}).filter(([k,v])=>v>0).map(([k,v])=>{const dg=DUNGEONS.find(x=>x.id===k);return `<div class="slot" data-tix="${k}" title="Ingresso: ${dg?dg.name:k} — é consumido ao entrar" style="border-color:#d4a62a">🎟️<span class="cnt">${v}</span></div>`;}).join('');
- $('invGold').textContent='💰 '+(S.gm?'∞':fmt(S.gold));updInvSell();updInvBrk();
+ $('invGold').textContent='💰 '+(S.gm?'∞':fmt(S.gold))+'  💎 '+fmt(S.dia||0);updInvSell();updInvBrk();
 }
 $('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if((e.ctrlKey||e.metaKey)&&splitAsk(+s.dataset.inv,e))return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(brkMode()){brkToggle('i'+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
 $('invGrid').addEventListener('contextmenu',e=>{e.preventDefault();const s=e.target.closest('[data-inv]');if(!s)return;if(e.ctrlKey&&splitAsk(+s.dataset.inv,e))return;dropItem(+s.dataset.inv);});   /* no Mac, Ctrl+clique vira clique direito: separa em vez de derrubar */
@@ -5773,6 +5806,7 @@ function useItem(i){
  const it=S.inv[i];if(!it||P.dead)return;
  if(it.k==='pot'){usePot(it.id.startsWith('hp')?'hp':'mp');return;}
  if(it.k==='pet'){ACT({t:'peteq',i});return;}
+ if(it.k==='fz'){ACT({t:'fzeq',i});return;}
  if(it.k==='mat'){toast('Material de criação — use com o Ferreiro');return;}
  if(it.k==='tix'){toast('🎟️ Ingresso de calabouço — fale com o portal do calabouço para entrar');return;}
  if(S.level<it.req){toast('Nível '+it.req+' necessário');return;}
@@ -5967,7 +6001,7 @@ function ahReply(m){
 function ahLeft(t){const ms=Math.max(0,t-Date.now()),h=Math.floor(ms/3600000);return h>=24?Math.floor(h/24)+'d '+(h%24)+'h':h>0?h+'h '+Math.floor(ms%3600000/60000)+'min':Math.max(1,Math.floor(ms/60000))+' min';}
 /* --- histórico de preços (vendas anteriores no leilão) --- */
 const HIST={};
-const hkOf=it=>it&&['eq','mat','pot','tix'].includes(it.k)?RULES.hkeyOf(it):'';
+const hkOf=it=>it&&['eq','mat','pot','tix','fz'].includes(it.k)?RULES.hkeyOf(it):'';
 function histPut(list,hs){for(const x of list||[])if(x.hk)HIST[x.hk]=Object.assign(HIST[x.hk]||{},{t:Date.now(),asked:Date.now(),h:(hs&&hs[x.hk])||null});}
 const HQ=new Set();let hqT=0,hqLast=0;
 function hqFlush(){hqT=0;if(!HQ.size||!NET.room)return;const ks=[...HQ].slice(0,30);ks.forEach(k=>HQ.delete(k));hqLast=Date.now();NET.room.send('ah',{op:'hs',ks});if(HQ.size)hqT=setTimeout(hqFlush,700);}
@@ -5997,7 +6031,7 @@ function ahRender(onlyList){
    const AT=[['','Qualquer'],['str','Força'],['agi','Agilidade'],['int','Inteligência'],['vit','Vitalidade'],['atk','Ataque'],['def','Defesa'],['hp','Vida']];
    body=`<div class="fil" id="ahFil">
     <label>Nome<input data-f="q" value="${esc(f.q)}" placeholder="Buscar pelo nome" maxlength="40"></label>
-    <label>Tipo<select data-f="cat">${ahOpt([['','Tudo'],['eq','Equipamento'],['gem','Pergaminhos / Gemas'],['mat','Materiais'],['pot','Poções'],['tix','Ingressos de calabouço']],f.cat)}</select></label>
+    <label>Tipo<select data-f="cat">${ahOpt([['','Tudo'],['eq','Equipamento'],['gem','Pergaminhos / Gemas'],['mat','Materiais'],['pot','Poções'],['tix','Ingressos de calabouço'],['fz','Fantasias']],f.cat)}</select></label>
     <label>Categoria<select data-f="slot">${ahOpt(SL,f.slot)}</select></label>
     <label>Classe<select data-f="cls">${ahOpt(CL,f.cls)}</select></label>
     <label>Raridade<select data-f="rar">${ahOpt(RR,f.rar)}</select></label>
@@ -6023,7 +6057,7 @@ function ahRender(onlyList){
  const msg=$('ahMsg');if(msg){msg.textContent=AH.msg||'';msg.className='msg'+(AH.ok?' ok':'');}
  const bd=$('ahBody'),pg=$('ahPg');if(!bd)return;pg.innerHTML='';
  if(AH.tab==='sell'){
-  const seen=new Map();S.inv.forEach((it,i)=>{if(!it||!['eq','mat','pot','tix'].includes(it.k)||it.bd)return;const k=ahKey(it),g=seen.get(k);if(g)g.n+=(it.k==='eq'?1:it.n);else seen.set(k,{i,it,n:it.k==='eq'?1:it.n});});
+  const seen=new Map();S.inv.forEach((it,i)=>{if(!it||!['eq','mat','pot','tix','fz'].includes(it.k)||it.bd)return;const k=ahKey(it),g=seen.get(k);if(g)g.n+=(it.k==='eq'?1:it.n);else seen.set(k,{i,it,n:it.k==='eq'?1:it.n});});
   const rows=[...seen.values()].map(g=>`<div class="row2"><div class="ri" data-inv="${g.i}" style="border-color:${col(g.it)}">${ico(g.it)}</div><div class="rt"><b style="color:${col(g.it)==='#455568'?'#fff':col(g.it)}">${nm(g.it)}${g.n>1?' ×'+g.n:''}</b><small>Valor de loja: ${fmt(sellPrice(g.it))} 💰 (cada)</small>${(()=>{const k=hkOf(g.it),H=HIST[k];return H&&H.h?`<small>📈 Média ${fmt(H.h.avg)} • último ${fmt(H.h.last)} (${H.h.n} venda${H.h.n>1?'s':''}) <button class="lnk" data-ah="useavg" data-i="${g.i}" data-v="${H.h.avg}">usar média</button> <button class="lnk" data-ah="hist" data-k="${esc(k)}">gráfico</button></small>`:H&&H.h===null?'<small class="muted">📈 sem vendas registradas</small>':'';})()}${AH.hk&&AH.hk===hkOf(g.it)?histBox(AH.hk,g.it):''}</div>
    <div class="sellrow">${g.n>1?`<input type="number" min="1" max="${g.n}" value="${(AH.sp['q'+g.i]!==undefined?AH.sp['q'+g.i]:g.n)}" data-q="${g.i}" title="Quantidade">`:''}<input type="number" min="1" placeholder="Preço cada" data-p="${g.i}" value="${AH.sp[g.i]||''}"><button data-ah="sell" data-i="${g.i}">Anunciar</button></div></div>`).join('');
   histReq([...seen.values()].map(g=>hkOf(g.it)));
@@ -6187,7 +6221,7 @@ function guRender(){
    const slot=(it,at,i,act)=>`<div class="slot" data-gu="${act}" data-id="${i}" ${at}="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`;
    h+=`<div class="grow"><span class="muted" style="flex:1">O baú fica no salão da guilda: fique perto da <b>Escrivã</b> (ou do <b>Baú</b> da cidade). Guardar: todos • Retirar: ${off?'você pode':'líder e oficiais'}.</span><label class="muted">Qtd. <input id="guQty" type="number" min="1" placeholder="tudo" value="${esc(GU.qty)}" style="width:72px"></label></div>
    <div class="dsec">📦 Baú da guilda (${g.chest.filter(Boolean).length}/${g.chestCap}) — clique para retirar</div><div class="stgrid gchest">${g.chest.map((it,i)=>slot(it,'data-gc',i,'wd')).join('')}</div>
-   <div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid gbag">${S.inv.map((it,i)=>it&&['eq','mat','pot','tix'].includes(it.k)?slot(it,'data-inv',i,'dep'):'').join('')||'<span class="muted">Sem itens.</span>'}</div>
+   <div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid gbag">${S.inv.map((it,i)=>it&&['eq','mat','pot','tix','fz'].includes(it.k)?slot(it,'data-inv',i,'dep'):'').join('')||'<span class="muted">Sem itens.</span>'}</div>
    <div class="dsec">💰 Cofre da guilda: <b class="pr">${fmt(g.gold)}</b></div>
    <div class="grow"><input id="guGold" type="number" min="1" placeholder="Quantia de ouro" value="${esc(GU.gold)}" style="flex:1"><button data-gu="dgold">Depositar</button><button data-gu="wgold" ${lead?'':'disabled title="Só o líder retira ouro"'}>Retirar</button></div>`;
   }
@@ -6246,7 +6280,7 @@ function trReply(m){
 function trRender(onlyStatus){
  if(!TR.open||!S)return;
  const line=(x,i,w,mine)=>`<div class="row2"><div class="ri" data-ti="${w},${i}" style="border-color:${col(x.item)}">${ico(x.item)}</div><div class="rt"><b style="color:${col(x.item)==='#455568'?'#fff':col(x.item)}">${nm(x.item)}${x.qty>1?' ×'+x.qty:''}</b></div>${mine?`<div class="sellrow">${x.item.k!=='eq'?`<input type="number" min="1" value="${x.qty}" data-tq="${i}">`:''}<button data-tr="rm" data-i="${i}">✕</button></div>`:''}</div>`;
- const bag=S.inv.map((it,i)=>it&&['eq','mat','pot','tix'].includes(it.k)&&!TR.mine.items.some(x=>x.i===i)?`<div class="ri" data-inv="${i}" data-tadd="${i}" style="border-color:${col(it)}">${ico(it)}${it.n>1?`<span class="cnt">${it.n}</span>`:''}</div>`:'').join('');
+ const bag=S.inv.map((it,i)=>it&&['eq','mat','pot','tix','fz'].includes(it.k)&&!TR.mine.items.some(x=>x.i===i)?`<div class="ri" data-inv="${i}" data-tadd="${i}" style="border-color:${col(it)}">${ico(it)}${it.n>1?`<span class="cnt">${it.n}</span>`:''}</div>`:'').join('');
  const st=TR.okMine&&TR.okTheirs?'Concluindo…':TR.okMine?'Você confirmou. Aguardando '+esc(TR.who)+'…':TR.okTheirs?esc(TR.who)+' já confirmou!':'Monte a oferta e confirme.';
  $('trWin').innerHTML=`<div class="dh"><b>🤝 Troca com ${esc(TR.who)}</b><span class="muted">💰 ${fmt(S.gold)}</span></div>
  <div class="cols"><div class="col${TR.okMine?' ok':''}"><h4>Você oferece ${TR.okMine?'✔':''}</h4>${TR.mine.items.map((x,i)=>line(x,i,'m',true)).join('')||'<p class="muted">Clique nos itens abaixo para adicionar.</p>'}<div style="margin-top:6px">💰 Ouro: <input type="number" min="0" value="${TR.mine.gold}" data-tg="1"></div></div>
@@ -6568,6 +6602,32 @@ function renderPets(){
  $('petsBody').innerHTML=h;}
 $('petsBody').addEventListener('click',e=>{const u=e.target.closest('[data-petun]');if(u){ACT({t:'petun',s:+u.dataset.petun});return;}const q=e.target.closest('[data-peteq]');if(q){ACT({t:'peteq',i:+q.dataset.peteq});return;}});
 $('petsBody').addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.pcf;if(!k||!S)return;const cf=JSON.parse(JSON.stringify(S.pcf||RULES.PCF0()));const [a,b]=k.split(':');if(b!==undefined)cf[a][+b]=e.target.checked?1:0;else cf[a]=e.target.checked?1:0;S.pcf=cf;ACT({t:'petcfg',cfg:cf});});
+/* v1.82: Loja de Diamantes (fantasias por raridade) e aba para vestir — só 1 fantasia por vez */
+let FZTAB='loja';
+function renderFz(){
+ const fem=!!S.fem,dia=S.dia||0;$('fzDia').textContent=S.gm?'💎 GM: grátis':'💎 '+fmt(dia);
+ $('fzTabs').innerHTML=[['loja','💎 Loja'],['vestir','🎭 Vestir']].map(([k,n])=>`<button data-fzt="${k}" class="${FZTAB===k?'on':''}">${n}</button>`).join('');
+ let h='';
+ if(FZTAB==='loja'){
+  h+=`<p class="muted" style="margin-top:0">Fantasias mudam a aparência do personagem inteiro (a arma da classe continua na mão) e escondem a capa/manto. Você recebe a versão <b>${fem?'♀ feminina':'♂ masculina'}</b>. Sem atributos — só estilo.</p>`;
+  for(let r=0;r<4;r++){const ks=Object.keys(FZS).filter(k=>FZS[k].rar===r);if(!ks.length)continue;const R=PRAR[r],cost=RULES.FZ_PRICE[r];
+   h+=`<div class="fzh" style="color:${R.c}">${R.n.toUpperCase()} • 💎 ${fmt(cost)}</div>`;
+   h+=ks.map(k=>{const Z=FZS[k],ok=S.gm||dia>=cost,own=(S.fzq&&S.fzq.id===k)||S.inv.some(x=>x&&x.k==='fz'&&x.id===k);
+    return `<div class="fzrow"><div class="fzi" style="border-color:${R.c}">${Z.i}</div><div class="fzt"><b style="color:${R.c}">${Z.n}</b><small>♂ ${Z.m} • ♀ ${Z.f}${own?' • <span style="color:#6fdc7f">você já tem</span>':''}</small></div><div class="fzp"><div class="${ok?'ok':'no'}">${S.gm?'Grátis (GM)':'💎 '+fmt(cost)}</div><button data-fzbuy="${k}" ${ok?'':'disabled'}>Comprar</button></div></div>`;}).join('');}
+  h+='<p class="muted">Diamantes são a moeda especial do jogo. As fantasias compradas podem ser vendidas para outros jogadores por ouro (troca e leilão).</p>';
+ }else{
+  const z=S.fzq,Z=z&&FZS[z.id];
+  h+='<div class="dsec">Vestindo agora</div>';
+  h+=Z?`<div class="fzrow fzon"><div class="fzi" style="border-color:${col(z)}">${Z.i}</div><div class="fzt"><b style="color:${col(z)}">${Z.n}</b><small>${fem?'♀ '+Z.f:'♂ '+Z.m} • a capa fica escondida</small></div><div class="fzp"><button data-fzun="1">Tirar</button></div></div>`
+   :'<div class="fzrow"><div class="fzi">➕</div><div class="muted" style="flex:1">Nenhuma — vista uma fantasia da mochila.</div></div>';
+  const inv=S.inv.map((it,i)=>it&&it.k==='fz'?{it,i}:null).filter(Boolean);
+  h+=`<div class="dsec">Na mochila (${inv.length})</div>`+(inv.length?inv.map(o=>{const Q=FZS[o.it.id]||{};return `<div class="fzrow"><div class="fzi" data-inv="${o.i}" style="border-color:${col(o.it)}">${Q.i}</div><div class="fzt"><b style="color:${col(o.it)}">${Q.n}</b><small>${fem?'♀ '+Q.f:'♂ '+Q.m} • ${PRAR[Q.rar||0].n}</small></div><div class="fzp"><button data-fzeq="${o.i}">Vestir</button></div></div>`;}).join(''):'<p class="muted">Nenhuma fantasia na mochila. Compre na aba 💎 Loja ou com outros jogadores.</p>');
+ }
+ $('fzBody').innerHTML=h;}
+$('win-fz').addEventListener('click',e=>{const t=e.target.closest('[data-fzt]');if(t){FZTAB=t.dataset.fzt;AUD.sfx('ui');renderFz();return;}
+ const b=e.target.closest('[data-fzbuy]');if(b){ACT({t:'buyfz',id:b.dataset.fzbuy});return;}
+ const q=e.target.closest('[data-fzeq]');if(q){ACT({t:'fzeq',i:+q.dataset.fzeq});return;}
+ if(e.target.closest('[data-fzun]')){ACT({t:'fzun'});return;}});
 function refreshUI(){
  if(!S)return;updateHud();renderTracker();
  if($('win-inv').style.display==='block')renderInv();
@@ -6579,6 +6639,7 @@ function refreshUI(){
  if($('win-skill').style.display==='block')renderSkills();
  if($('win-titles').style.display==='block')renderTitles();
  if($('win-pets').style.display==='block')renderPets();
+ if($('win-fz').style.display==='block')renderFz();
  if(dlg)renderDialog();
  if(P.sel)updateTarget();
 }

@@ -933,6 +933,17 @@ export class WorldRoom extends Room<WorldState> {
         if (!this.wb.force(id)) client.send("chat", { kind: "sys", text: "Esse chefe já está em luta." });
         return;
       }
+      const gd = /^\/diamantes\s+(\S+)\s+(-?\d+)$/i.exec(text);       // v1.82: GM dá (ou tira, com número negativo) diamantes de um jogador online
+      if (gd || /^\/diamantes\b/i.test(text)) {
+        if (!s.c.gm) return;
+        if (!gd) return client.send("chat", { kind: "sys", text: "Use: /diamantes NomeDoJogador 500   (negativo para tirar)" });
+        const t = this.findByName(gd[1]); if (!t) return client.send("chat", { kind: "sys", text: `Jogador "${gd[1].slice(0, 16)}" não está online.` });
+        const q = Math.trunc(Number(gd[2])), before = t.c.dia || 0;
+        t.c.dia = Math.max(0, Math.min(R.DIA_MAX, before + q)); this.touch(t); this.sync(t);
+        client.send("chat", { kind: "sys", text: `💎 ${t.c.name}: ${before} → ${t.c.dia} diamantes.` });
+        if (t !== s && t.c.dia > before) t.client.send("chat", { kind: "sys", text: `💎 Você recebeu ${t.c.dia - before} diamantes!` });
+        return;
+      }
       if (this.pvp.chat(s, text)) return;                               // /duelo on|off, /desistir
       if (guildChat(s, text)) return;                                  // /g, /gl ou /guilda: chat da guilda
       const g = /^\/p\s+([\s\S]+)$/i.exec(text);

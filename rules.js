@@ -860,8 +860,8 @@ R.TOWN_R = MON_TOWN_R;
 R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }, { x: -600, z: 0, r: 15 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
-const nm = it => it.k === 'pet' ? ((PETS[it.id] || {}).n || 'Mascote') : it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.bd ? 0 : it.k === 'pet' ? Math.round(((PETS[it.id] || {}).price || 0) * .1) : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
+const nm = it => it.k === 'fz' ? 'Fantasia: ' + ((FZS[it.id] || {}).n || '?') : it.k === 'pet' ? ((PETS[it.id] || {}).n || 'Mascote') : it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
+const sellPrice = it => it.bd || it.k === 'fz' ? 0 : it.k === 'pet' ? Math.round(((PETS[it.id] || {}).price || 0) * .1) : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
 const MAXPLUS = 10;
 /** chave de "modelo" do item para o histórico de preços do leilão: itens iguais (nome, nível, raridade, refino, engastes) compartilham o histórico */
 const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
@@ -987,6 +987,28 @@ const PETS = {
   drag:   { n: 'Dragãozinho', i: '🐉', rar: 3, price: 1.5e8, mv: 'fly', sc: .56, d: 'Filhote de dragão que voa ao lado do seu ombro.' },
   fenix:  { n: 'Fênix Solar', i: '🐦', rar: 3, price: 1.5e8, mv: 'fly', sc: .56, d: 'Voa em círculos acima de você com asas de fogo.' }};
 const newPet = id => ({ k: 'pet', id, sl: PETS[id].rar + 2 });
+/* ====================== FANTASIAS (v1.82) ======================
+   Item k:'fz' (n = 1, não empilha). Compradas com DIAMANTES (c.dia) na loja 💎 (GM: grátis). Só 1 equipada (c.fzq): troca a aparência do personagem
+   inteiro (a arma da classe continua na mão) e esconde a capa/manto. A versão ♂ ou ♀ é escolhida pelo sexo do personagem. Sem atributos.
+   Negociáveis por ouro na troca e no leilão; podem ir para o baú; não são vendidas ao comerciante. */
+const FZ_PRICE = [500, 850, 1150, 1500];
+const FZS = {
+  escolar: { n: 'Academia Sakura', i: '🎒', rar: 0, m: 'Aluno (gakuran)', f: 'Aluna (marinheiro)' },
+  soldado: { n: 'Patrulha de Elite', i: '🪖', rar: 0, m: 'Soldado', f: 'Soldada' },
+  cowboy:  { n: 'Xerife do Deserto', i: '🤠', rar: 0, m: 'Cowboy', f: 'Cowgirl' },
+  abobora: { n: 'Abóbora Encantada', i: '🎃', rar: 0, m: 'Rei Abóbora', f: 'Bruxinha da Abóbora' },
+  pirata:  { n: 'Capitão dos Sete Mares', i: '🏴‍☠️', rar: 1, m: 'Pirata', f: 'Corsária' },
+  natal:   { n: 'Ajudante do Noel', i: '🎅', rar: 1, m: 'Noel', f: 'Mamãe Noel' },
+  ninja:   { n: 'Sombra do Clã Kage', i: '🥷', rar: 1, m: 'Ninja', f: 'Kunoichi' },
+  samurai: { n: 'Samurai da Lua', i: '⛩️', rar: 2, m: 'Samurai', f: 'Onna-bugeisha' },
+  robo:    { n: 'Autômato de Engrenagens', i: '🤖', rar: 2, m: 'Autômato', f: 'Autômata' },
+  vampiro: { n: 'Conde da Meia-Noite', i: '🧛', rar: 2, m: 'Conde', f: 'Condessa' },
+  realeza: { n: 'Majestade de Valdoria', i: '👑', rar: 3, m: 'Rei', f: 'Rainha' },
+  anjo:    { n: 'Anjo da Aurora', i: '😇', rar: 3, m: 'Anjo Guardião', f: 'Anjo da Aurora' },
+  demonio: { n: 'Diabrete das Brasas', i: '😈', rar: 3, m: 'Diabrete', f: 'Diabinha' }};
+const DIA_MAX = 1e9;
+const newFz = id => ({ k: 'fz', id, n: 1 });
+const fzPrice = id => FZ_PRICE[(FZS[id] || { rar: 0 }).rar];
 /** drop raro de mascote: raridade sorteada 40/30/20/10 */
 function rollPet() { const W = [40, 30, 20, 10]; let r = Math.random() * 100, rar = 0; for (; rar < 3; rar++) { if (r < W[rar]) break; r -= W[rar]; } return newPet(pick(Object.keys(PETS).filter(k => PETS[k].rar === rar))); }
 /** gemas de mascote: uma por atributo (a versão mais forte entre arma/armadura), com 1/3 do valor e 1/3 do preço */
@@ -1277,7 +1299,7 @@ function eqKey(c, it, want) {
 const tierOf = ilvl => ilvl >= 120 ? 11 : ilvl >= 90 ? 10 : ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4));
 const TIERC = ['#cdbb93', '#9a6536', '#8d98a8', '#4f8fd6', '#22c4a6', '#3d3aa8', '#d8342a', '#f2b632', '#ff7a1a', '#eef2f8', '#e04fb8', '#74e044'];
 const TIERC2 = ['#7d6f52', '#553314', '#4d5562', '#234a7a', '#0f6a5a', '#1a1858', '#701510', '#8a6210', '#8a3a06', '#8a94a6', '#7a1f60', '#2f7a14'];
-function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar + '|' + (it.ilvl || 0)); } return o.join(';'); }
+function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar + '|' + (it.ilvl || 0)); } if (c.fzq && FZS[c.fzq.id]) o.push('fz|' + c.fzq.id); return o.join(';'); }
 /** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
 function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
 const UP_DROP = { ferro: .15, essencia: .04 };   // chance por monstro comum (chefes: ferro garantido, essência 60%)
@@ -1577,6 +1599,7 @@ function cleanItem(it) {
   if (it.k === 'pot') return POTS[it.id] && Number.isFinite(it.n) ? { k: 'pot', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k === 'pet') { const P = PETS[it.id]; if (!P) return null; const sl = Math.max(0, Math.min(PET_MAXSL, Number.isInteger(it.sl) ? it.sl : P.rar + 2)); const o = { k: 'pet', id: it.id, sl };
     if (Array.isArray(it.gm)) { const gm = it.gm.slice(0, sl).map(g => (g && GEMD[g] && GEMD[g].cat === 'p') ? g : null); while (gm.length < sl) gm.push(null); if (gm.some(Boolean)) o.gm = gm; } return o; }
+  if (it.k === 'fz') return FZS[it.id] ? newFz(it.id) : null;
   if (it.k === 'tix') return DUNGEONS.some(d => d.id === it.id) && Number.isFinite(it.n) ? { k: 'tix', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
@@ -1648,6 +1671,7 @@ function migrate(c) {
   if (!c.evt || typeof c.evt !== 'object' || typeof c.evt.got !== 'object') c.evt = { got: {} };
   { const ps = Array.isArray(c.pets) ? c.pets.slice(0, PET_EQ).map(x => x ? cleanItem(x) : null).map(x => x && x.k === 'pet' ? x : null) : []; while (ps.length < PET_EQ) ps.push(null); c.pets = ps;   // v1.80: mascotes
     c.pcf = cleanPcf(c.pcf); }
+  { const z = c.fzq ? cleanItem(c.fzq) : null; c.fzq = z && z.k === 'fz' ? z : null; c.dia = Math.max(0, Math.min(DIA_MAX, Math.floor(Number(c.dia)) || 0)); }   // v1.82: fantasia equipada e diamantes
   purgeExp(c);
   return c;
 }
@@ -1814,7 +1838,7 @@ function act(sess, m, ctx) {
     if (!npcFor('vender')) return fail('Chegue perto de um comerciante.');
     const idx = t === 'sell' ? [m.i] : (Array.isArray(m.idx) ? [...new Set(m.idx)] : []);
     let total = 0, n = 0;
-    for (const i of idx) { if (!intIn(i, 0, c.inv.length) || !c.inv[i]) continue; const it = c.inv[i], q = (t === 'sell' && !m.all && it.n > 1) ? 1 : (it.n || 1);
+    for (const i of idx) { if (!intIn(i, 0, c.inv.length) || !c.inv[i] || c.inv[i].k === 'fz') continue; const it = c.inv[i], q = (t === 'sell' && !m.all && it.n > 1) ? 1 : (it.n || 1);
       total += sellPrice(it) * q; n++; if (t === 'sell' && !m.all && it.n > 1) it.n--; else c.inv[i] = null; }
     if (!n) return fail('Nada para vender.'); c.gold += total; F('coin');
     if (t === 'sellmany') { L(`💰 Você vendeu <b>${n}</b> item(ns) por <b style="color:#ffe28a">${total}</b> ouro.`); T('Vendido: ' + n + ' item(ns) por ' + total + ' 💰'); }
@@ -1853,6 +1877,20 @@ function act(sess, m, ctx) {
     it.n -= n; c.inv[j] = { ...it, n }; T('✂️ Pilha separada: ' + n + ' / ' + it.n); return done();
   }
   if (t === 'petcfg') { c.pcf = cleanPcf(m.cfg); return done(); }
+  if (t === 'buyfz') {                                                    // v1.82: loja de fantasias (diamantes; GM grátis)
+    const Z = FZS[m.id]; if (!Z) return fail(); const cost = c.gm ? 0 : fzPrice(m.id);
+    if ((c.dia || 0) < cost) return fail('💎 Diamantes insuficientes.');
+    if (!addItem(c.inv, newFz(m.id))) return fail('Mochila cheia: libere um espaço para a fantasia.');
+    c.dia = (c.dia || 0) - cost; F('coin'); T('🎭 Nova fantasia: ' + Z.n);
+    L(`<span style="color:${PRAR[Z.rar].c}">🎭 Você comprou a fantasia <b>${Z.n}</b> (${PRAR[Z.rar].n})${cost ? ' por 💎 ' + cost : ''}! Vista na janela 💎 Fantasias (tecla J).</span>`); return done();
+  }
+  if (t === 'fzeq') {                                                     // veste uma fantasia da mochila (só 1; a anterior volta para o mesmo espaço)
+    if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'fz' || !FZS[it.id]) return fail('Escolha uma fantasia.');
+    const old = c.fzq || null; c.fzq = newFz(it.id); c.inv[m.i] = old; T('🎭 Vestindo: ' + FZS[it.id].n); return done();
+  }
+  if (t === 'fzun') {
+    if (!c.fzq) return fail(); if (!addItem(c.inv, c.fzq)) return fail('Mochila cheia!'); T('🎭 Fantasia guardada na mochila'); c.fzq = null; return done();
+  }
   if (t === 'buyticket') {
     const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');
     const dg = DUNGEONS.find(x => x.id === m.id); if (!dg) return fail();
@@ -2077,7 +2115,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

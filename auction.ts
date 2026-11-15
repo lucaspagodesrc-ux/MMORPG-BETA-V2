@@ -56,7 +56,7 @@ export async function auctionMsg(room: any, s: any, m: any) {
       const f = m.f || {};
       const num = (v: any, d: number, a: number, b: number) => { if (v === "" || v == null) return d; v = Number(v); return Number.isFinite(v) ? Math.max(a, Math.min(b, Math.floor(v))) : d; };
       const q = fold(String(f.q || "").slice(0, 40));
-      const cat = ["eq", "mat", "gem", "pot", "tix"].includes(f.cat) ? f.cat : "";
+      const cat = ["eq", "mat", "gem", "pot", "tix", "fz"].includes(f.cat) ? f.cat : "";
       const gopt = R.GEMD[f.gopt] ? f.gopt : "", gr = num(f.gr, -1, -1, 4);
       const slot = R.SLOTS[f.slot] ? f.slot : "";
       const cls = R.CLASSES[f.cls] ? f.cls : "";
@@ -111,7 +111,7 @@ export async function auctionMsg(room: any, s: any, m: any) {
     if (op === "sell") {
       const i = m.i;
       if (!Number.isInteger(i) || i < 0 || i >= c.inv.length || !c.inv[i]) return fail("Item inválido.");
-      const it = c.inv[i]; if (!["eq", "mat", "pot", "tix"].includes(it.k)) return fail("Este item não pode ser leiloado."); if (it.bd) return fail("Itens de evento são vinculados: não podem ser leiloados.");
+      const it = c.inv[i]; if (!["eq", "mat", "pot", "tix", "fz"].includes(it.k)) return fail("Este item não pode ser leiloado."); if (it.bd) return fail("Itens de evento são vinculados: não podem ser leiloados.");
       const price = Number(m.price);
       if (!Number.isInteger(price) || price < 1 || price > MAX_PRICE) return fail(`Informe o valor (por unidade) entre 1 e ${MAX_PRICE}.`);
       const key = invKey(it), have = invCount(c, key);

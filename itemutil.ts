@@ -4,13 +4,13 @@ const R: any = require("./rules.js");
 const sortObj = (o: any): any => Array.isArray(o) ? o.map(sortObj) : o && typeof o === "object" ? Object.keys(o).sort().reduce((a: any, k) => { a[k] = sortObj(o[k]); return a; }, {}) : o;
 export const ikeyOf = (it: any) => it.k === "eq" ? JSON.stringify(sortObj(it)) : it.k + ":" + it.id;
 export const proto = (it: any) => it.k === "eq" ? JSON.parse(JSON.stringify(it)) : { k: it.k, id: it.id };
-export const tradeable = (it: any) => !!it && !it.bd && (it.k === "eq" || it.k === "mat" || it.k === "pot" || it.k === "tix");   // itens de evento (bd) são vinculados ao personagem
+export const tradeable = (it: any) => !!it && !it.bd && (it.k === "eq" || it.k === "mat" || it.k === "pot" || it.k === "tix" || it.k === "fz");   // v1.82: fantasias   // itens de evento (bd) são vinculados ao personagem
 export const invKey = (it: any) => tradeable(it) ? ikeyOf(it) : "";
 export const itemOut = (p: any, n = 1) => p.k === "eq" ? p : { k: p.k, id: p.id, n };
 /** divide em itens colocáveis na mochila (pilhas de até 99) */
 export const chunks = (p: any, qty: number) => {
   if (p.k === "eq") return Array.from({ length: qty }, () => proto(p));
-  const o: any[] = []; let n = qty; while (n > 0) { const a = Math.min(99, n); o.push({ k: p.k, id: p.id, n: a }); n -= a; } return o;
+  const o: any[] = []; let n = qty; const per = p.k === "fz" ? 1 : 99; while (n > 0) { const a = Math.min(per, n); o.push({ k: p.k, id: p.id, n: a }); n -= a; } return o;
 };
 /** cabem `qty` unidades de `p` na mochila `inv`? */
 export function fits(inv: any[], p: any, qty: number) {
