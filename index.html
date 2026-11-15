@@ -524,8 +524,8 @@
   <div class="aslide"><input type="range" id="aMv" min="0" max="100" step="1" aria-label="Volume da música"><b id="aMvT"></b></div>
   <div class="arow"><span>⚔️ Efeitos (monstros, skills…)</span><button id="aSm" class="amute" title="Mutar / ativar os efeitos">🔊</button></div>
   <div class="aslide"><input type="range" id="aSv" min="0" max="100" step="1" aria-label="Volume dos efeitos"><b id="aSvT"></b></div>
-  <div class="arow" style="margin-top:8px"><span>✒️ Contorno de tinta</span><button id="gInk" class="amute" title="Liga/desliga o contorno desenhado à mão (desligar melhora o desempenho)">✔</button></div>
-   <div class="arow"><span>🌈 Realce de cores</span><button id="gFx" class="amute" title="Contraste, saturação e vinheta suave">✔</button></div>
+  <div class="arow" style="margin-top:8px;display:none"><span>✒️ Contorno de tinta</span><button id="gInk" class="amute" title="Liga/desliga o contorno desenhado à mão (desligar melhora o desempenho)">✔</button></div>
+   <div class="arow" style="display:none"><span>🌈 Realce de cores</span><button id="gFx" class="amute" title="Contraste, saturação e vinheta suave">✔</button></div>
    <div id="aStat" class="muted"></div>
 </div>
 
@@ -1495,6 +1495,10 @@ const ground4=B.CreateGround("ground4",{width:GW,height:GW,noFit:1},scene);groun
 /* configurações gráficas (salvas no navegador): contorno de tinta e realce de cores */
 const GSET=(()=>{const c={ink:1,fx:1,man:0};try{const j=JSON.parse(localStorage.getItem('mmo_gfx')||'null');if(j){c.ink=j.ink===0?0:1;c.fx=j.fx===0?0:1;c.man=j.man?1:0;}}catch(e){}return c;})();
 const saveGset=()=>{try{localStorage.setItem('mmo_gfx',JSON.stringify(GSET));}catch(e){}};
+/* v1.84: CONTORNO DE TINTA e REALCE DE CORES desativados para deixar o jogo mais leve (o código continua aqui).
+   Para trazer de volta: troque as duas constantes abaixo para true (as opções reaparecem no menu 🔊 Áudio e gráficos ao tirar o display:none das duas linhas). */
+const INK_FEATURE=false,FX_FEATURE=false;
+if(!INK_FEATURE)GSET.ink=0;if(!FX_FEATURE)GSET.fx=0;
 let INK_ON=!!GSET.ink;const INKED=new Set();
 const INKC=new C3(.14,.09,.06);
 /* contorno em "casco invertido": uma cópia da malha inflada ao longo das normais, com faces viradas (só aparece a borda), custa 1 desenho; o contorno do Babylon custa 3 */
@@ -1516,8 +1520,8 @@ function hullify(m){
  }catch(e){console.warn('hullify',e);}
 }
 function unhull(m){if(m.__hull){try{m.__hull.dispose();}catch(e){}m.__hull=null;m.renderOutline=INK_ON;}}
-function ink(m,w,c){m.renderOutline=INK_ON;m.outlineWidth=w||.035;m.outlineColor=c||INKC;INKED.add(m);m.onDisposeObservable.add(()=>INKED.delete(m));return m;}
-function setInk(on){INK_ON=!!on;GSET.ink=on?1:0;for(const m of INKED){if(!m.isDisposed())setOl(m,INK_ON);}PERF.lodT=0;if(typeof PX!=='undefined')PX.ink(INK_ON);}
+function ink(m,w,c){if(!INK_FEATURE){m.renderOutline=false;return m;}m.renderOutline=INK_ON;m.outlineWidth=w||.035;m.outlineColor=c||INKC;INKED.add(m);m.onDisposeObservable.add(()=>INKED.delete(m));return m;}
+function setInk(on){if(!INK_FEATURE)on=false;INK_ON=!!on;GSET.ink=on?1:0;for(const m of INKED){if(!m.isDisposed())setOl(m,INK_ON);}PERF.lodT=0;if(typeof PX!=='undefined')PX.ink(INK_ON);}
 /* contorno inteligente: cada malha com contorno custa 3 chamadas de desenho, então o contorno some das peças minúsculas
    (raio < 1,5% da altura da tela: quase invisível) e volta sozinho ao dar zoom. Corta ~30% das chamadas de desenho nas cidades. */
 const PERF={lodT:0,t0:0,chk:0,low:0,k:1,lodK:1,dbg:/dbg/.test(location.search)};
@@ -1541,7 +1545,7 @@ function perfWatch(now){
  setInk(false);saveGset();paintG();toast('⚡ Contorno de tinta desligado (FPS baixo)');
  logMsg('<span style="color:#ffd27a">⚡ O jogo estava lento, então desliguei o <b>Contorno de tinta</b>. Para reativar: 🔊 Áudio e gráficos.</span>');
 }
-function setFx(on){GSET.fx=on?1:0;const ip=scene.imageProcessingConfiguration;
+function setFx(on){if(!FX_FEATURE)on=false;GSET.fx=on?1:0;const ip=scene.imageProcessingConfiguration;
  if(on){ip.contrast=1.1;ip.exposure=1;ip.vignetteEnabled=true;ip.vignetteWeight=.9;ip.vignetteStretch=0;ip.vignetteColor=new BABYLON.Color4(.04,.02,.08,0);
   ip.colorCurvesEnabled=true;const cc=new BABYLON.ColorCurves();cc.globalSaturation=16;ip.colorCurves=cc;ip.isEnabled=true;}
  else{ip.vignetteEnabled=false;ip.colorCurvesEnabled=false;ip.isEnabled=false;}}
