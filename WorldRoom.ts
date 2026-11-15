@@ -36,6 +36,8 @@ const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number
 };
 const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }, { x: -600, z: 5 }];   // pontos de renascimento / retorno
 const NPC_REACH = 8, PICK_REACH = 7, HIT_SLACK = 4;  // folgas por causa da latência
+/** v1.78: raio do corpo do monstro para acertos de área (chefes de mapa são enormes: o jogador agora fica do lado de fora) */
+const bodyR = (bs: number) => (bs > 2 ? 1.1 : 0.5) * bs;
 
 type Buff = { val: number; until: number };
 /* v1.69 — clone do Pierrot. k: "o" = Clones Ilusórios (giram em volta do dono e avançam nos monstros), "d" = clone do Florete Voador (isca: os monstros focam nele). tid = alvo (id do monstro ou "p"+sessão em PvP) */
@@ -296,6 +298,7 @@ export class WorldRoom extends Room<WorldState> {
 
   /* ---------- combate ---------- */
   private hit(s: Sess, sim: Sim, mult: number, o: any = {}) {
+    if ((sim as any).virt) return;                                          // ponto no chão (habilidade lançada sem alvo no PvP)
     if ((sim as any).pv) return this.pvp.hit(s, sim as any, mult, o);      // alvo é um jogador (duelo / Arena PK)
     if (s.pv && s.pv.mode === "duel") return;                               // em duelo: monstros ficam de fora (nem batem, nem apanham)
     if (!sim.m.alive) return;
@@ -318,7 +321,7 @@ export class WorldRoom extends Room<WorldState> {
   }
   private hitNear(s: Sess, x: number, z: number, r: number, mult: number, o: any, seen: Set<Sim>) {
     const inst = this.playerOf(s)?.inst || 0;
-    for (const sim of this.sim.list) if (!seen.has(sim) && sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) { seen.add(sim); this.hit(s, sim, mult, { ...o, aoe: true }); }
+    for (const sim of this.sim.list) if (!seen.has(sim) && sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + bodyR(sim.bs)) { seen.add(sim); this.hit(s, sim, mult, { ...o, aoe: true }); }
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) if (!seen.has(q) && Math.hypot(q.m.x - x, q.m.z - z) <= r + 0.5) { seen.add(q); this.hit(s, q, mult, o); }
   }
   private hitLine(s: Sess, x: number, z: number, ux: number, uz: number, len: number, w: number, mult: number, o: any) {
@@ -326,7 +329,7 @@ export class WorldRoom extends Room<WorldState> {
     for (const sim of this.sim.list) {
       if (!sim.m.alive || sim.inst !== inst || cx(sim.m.x) !== cx(x)) continue;
       const rx = sim.m.x - x, rz = sim.m.z - z, t = rx * ux + rz * uz, pd = Math.abs(rx * uz - rz * ux);
-      if (t >= -0.5 && t <= len && pd <= w / 2 + 0.5 * sim.bs) this.hit(s, sim, mult, { ...o, aoe: true });
+      if (t >= -0.5 && t <= len && pd <= w / 2 + bodyR(sim.bs)) this.hit(s, sim, mult, { ...o, aoe: true });
     }
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) {
       const rx = q.m.x - x, rz = q.m.z - z, t = rx * ux + rz * uz, pd = Math.abs(rx * uz - rz * ux);
@@ -335,13 +338,13 @@ export class WorldRoom extends Room<WorldState> {
   }
   private hitArea(s: Sess, x: number, z: number, r: number, mult: number, o: any) {
     const inst = this.playerOf(s)?.inst || 0;
-    for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + 0.5 * sim.bs) this.hit(s, sim, mult, { ...o, aoe: true });
+    for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(x) && Math.hypot(sim.m.x - x, sim.m.z - z) <= r + bodyR(sim.bs)) this.hit(s, sim, mult, { ...o, aoe: true });
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) if (Math.hypot(q.m.x - x, q.m.z - z) <= r + 0.5) this.hit(s, q, mult, o);
   }
   /** Área com limite de alvos: só os `max` mais próximos do centro são atingidos. */
   private hitAreaMax(s: Sess, x: number, z: number, r: number, mult: number, o: any, max: number) {
     const inst = this.playerOf(s)?.inst || 0, L: { q: any; d: number }[] = [];
-    for (const sim of this.sim.list) { if (!sim.m.alive || sim.inst !== inst || cx(sim.m.x) !== cx(x)) continue; const d = Math.hypot(sim.m.x - x, sim.m.z - z); if (d <= r + 0.5 * sim.bs) L.push({ q: sim, d }); }
+    for (const sim of this.sim.list) { if (!sim.m.alive || sim.inst !== inst || cx(sim.m.x) !== cx(x)) continue; const d = Math.hypot(sim.m.x - x, sim.m.z - z); if (d <= r + bodyR(sim.bs)) L.push({ q: sim, d }); }
     if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) { const d = Math.hypot(q.m.x - x, q.m.z - z); if (d <= r + 0.5) L.push({ q, d }); }
     L.sort((a, b) => a.d - b.d);
     for (const e of L.slice(0, max)) this.hit(s, e.q, mult, e.q.pv ? o : { ...o, aoe: true });
@@ -386,7 +389,7 @@ export class WorldRoom extends Room<WorldState> {
     let k = 1 + this.partyBonus(s);
     if (o.aoe) k += 0.1;
     if (!o.basic && !o.dot && sim.inst) k += 0.2;
-    const x = R.xpFor(T, sim.m.lvl, s.c.level) * 1.0 * frac * k * (sim.lazy ? 0.35 : 1);   // v1.73: XP por golpe dobrado (era 0.5)
+    const x = R.xpFor(T, sim.m.lvl, s.c.level) * 0.8 * frac * k * (sim.lazy ? 0.35 : 1);   // v1.78: XP por golpe -20% (1.0 na v1.73; agora há mais missões e monstros em Aurora)
     (s as any).xpAcc = ((s as any).xpAcc || 0) + x;
     const now = Date.now(); if (now - ((s as any).xpAt || 0) >= 700) this.flushXp(s);
   }
@@ -468,7 +471,13 @@ export class WorldRoom extends Room<WorldState> {
     let tgt: Sim | undefined;
     if (["single", "dash", "aoeTarget", "multi", "barrage", "mark", "chainPull", "thunder", "arcRay"].includes(sk.type)) {
       tgt = (s.pv && s.pv.mode && m?.pid) ? (this.pvp.target(s, String(m.pid)) as any) : this.sim.byId.get(Number(m?.tid));      // alvo: monstro ou, em duelo / Arena, outro jogador
-      if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK) return;
+      if (!tgt && s.pv && s.pv.mode && sk.type !== "chainPull") {   // v1.78: no PvP dá para lançar sem alvo — mira um ponto à frente (área acerta quem estiver lá)
+        let gx = Number(m?.gx), gz = Number(m?.gz);
+        if (!Number.isFinite(gx) || !Number.isFinite(gz)) { let dx = Number(m?.dx), dz = Number(m?.dz); const dl = Math.hypot(dx, dz); if (!(dl > 0.01)) { dx = 0; dz = 1; } else { dx /= dl; dz /= dl; } const L = Math.min(sk.range, 6); gx = p.x + dx * L; gz = p.z + dz * L; }
+        const gd = Math.hypot(gx - p.x, gz - p.z); if (gd > sk.range) { gx = p.x + (gx - p.x) / gd * sk.range; gz = p.z + (gz - p.z) / gd * sk.range; }
+        tgt = { m: { x: gx, z: gz, alive: true, id: 0, hp: 1, maxHp: 1 }, inst: p.inst, bs: 1, virt: 1 } as any;
+      }
+      if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > sk.range + HIT_SLACK + bodyR(tgt.bs || 1) * 1.2) return;
     }
     s.cd[i] = now + sk.cd * 1000; s.busyUntil = now + R.animMs(c.cls, i); s.skUntil = now + R.castMs(c.cls, i);
     let mult = sk.mult;
@@ -497,7 +506,7 @@ export class WorldRoom extends Room<WorldState> {
     let ft: any = null;                    // Florete Voador: alvo opcional (o clone nasce ao lado dele)
     if (sk.type === "foilThrow") {
       ft = (s.pv && s.pv.mode && m?.pid) ? this.pvp.target(s, String(m.pid)) : this.sim.byId.get(Number(m?.tid));
-      if (ft && (!ft.m.alive || ft.inst !== p.inst || cx(ft.m.x) !== cx(p.x) || Math.hypot(ft.m.x - p.x, ft.m.z - p.z) > sk.range + HIT_SLACK)) ft = null;
+      if (ft && (!ft.m.alive || ft.inst !== p.inst || cx(ft.m.x) !== cx(p.x) || Math.hypot(ft.m.x - p.x, ft.m.z - p.z) > sk.range + HIT_SLACK + bodyR(ft.bs || 1) * 1.2)) ft = null;
       if (ft) { const dl = Math.hypot(ft.m.x - p.x, ft.m.z - p.z); if (dl > 0.01) { ux = (ft.m.x - p.x) / dl; uz = (ft.m.z - p.z) / dl; } }
     }
     const pq: any = tgt && (tgt as any).pv ? tgt : ft && ft.pv ? ft : star.find((q: any) => q.pv);          // alvo jogador (PvP)
@@ -584,7 +593,7 @@ export class WorldRoom extends Room<WorldState> {
         const last = new Map<Sim, number>(), dur = sk.dur * 1000;
         for (let t = 150; t <= dur; t += 150) this.later(t, () => {
           const q = this.playerOf(s); if (!q || q.dead) return; const tn = Date.now();
-          for (const sim of this.sim.list) if (sim.m.alive && sim.inst === q.inst && cx(sim.m.x) === cx(q.x) && Math.hypot(sim.m.x - q.x, sim.m.z - q.z) <= sk.radius + 0.5 * sim.bs && tn - (last.get(sim) || 0) > 650) { last.set(sim, tn); this.hit(s, sim, mult, so); }
+          for (const sim of this.sim.list) if (sim.m.alive && sim.inst === q.inst && cx(sim.m.x) === cx(q.x) && Math.hypot(sim.m.x - q.x, sim.m.z - q.z) <= sk.radius + bodyR(sim.bs) && tn - (last.get(sim) || 0) > 650) { last.set(sim, tn); this.hit(s, sim, mult, so); }
           if (s.pv && s.pv.mode) for (const q2 of this.pvp.foes(s)) if (Math.hypot(q2.m.x - q.x, q2.m.z - q.z) <= sk.radius + 0.5 && tn - (last.get(q2) || 0) > 650) { last.set(q2, tn); this.hit(s, q2, mult, so); }
         });
         break;
@@ -593,7 +602,7 @@ export class WorldRoom extends Room<WorldState> {
         const tx0 = tgt!.m.x, tz0 = tgt!.m.z, sid = s.client.sessionId;
         this.later(sk.type === "thunder" ? 700 : 350, () => {
           const cx0 = tgt!.m.alive ? tgt!.m.x : tx0, cz0 = tgt!.m.alive ? tgt!.m.z : tz0, hit: Sim[] = [], inst = tgt!.inst;
-          for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(cx0) && Math.hypot(sim.m.x - cx0, sim.m.z - cz0) <= sk.radius + 0.5 * sim.bs) hit.push(sim);
+          for (const sim of this.sim.list) if (sim.m.alive && sim.inst === inst && cx(sim.m.x) === cx(cx0) && Math.hypot(sim.m.x - cx0, sim.m.z - cz0) <= sk.radius + bodyR(sim.bs)) hit.push(sim);
           if (s.pv && s.pv.mode) for (const q of this.pvp.foes(s)) if (Math.hypot(q.m.x - cx0, q.m.z - cz0) <= sk.radius + 0.5) hit.push(q);
           hit.forEach((sim) => this.hit(s, sim, mult, so));
           for (let k = 1; k <= sk.dotDur; k++) this.later(k * 1000, () => { if (!this.sess.has(sid)) return; for (const q of hit) this.dot(s, q, sk.dot, sk.slow || 0); });
@@ -649,7 +658,7 @@ export class WorldRoom extends Room<WorldState> {
     if (s.c.cls !== "assassino" && now < s.busyUntil - 220) return;
     if (now - s.lastBasic < (900 / (d.atkSpd * (1 + this.buff(s, "aspd")))) * 0.7) return;
     const tgt: Sim | undefined = (s.pv && s.pv.mode && m?.pid) ? (this.pvp.target(s, String(m.pid)) as any) : this.sim.byId.get(Number(m?.tid));
-    if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > C.range + HIT_SLACK) return;
+    if (!tgt || !tgt.m.alive || tgt.inst !== p.inst || cx(tgt.m.x) !== cx(p.x) || Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z) > C.range + HIT_SLACK + bodyR(tgt.bs || 1) * 1.2) return;
     s.lastBasic = now; s.busyUntil = now + 260;
     const isP = !!(tgt as any).pv;
     this.broadcast("matk", { by: s.client.sessionId, tid: isP ? 0 : tgt.m.id, ptid: isP ? (tgt as any).sid : undefined }, { except: s.client });

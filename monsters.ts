@@ -196,17 +196,19 @@ export class MonsterSim {
       if (s.aggro && (!cur || dS > T.leash)) { s.aggro = null; s.returning = true; cur = null; }
 
       let tx: number | null = null, tz: number | null = null, sp = 0, stop = 0.2;
+      const bR = T.br ? T.br * s.bs : (s.bs > 2 ? s.bs : 0);            // v1.78: corpo dos chefes enormes — param do lado de fora do jogador (não o "engolem")
+      const RNG = bR ? Math.max(T.rng, bR + 1.3) : T.rng, STOP = bR ? Math.max(T.rng * 0.85, bR + 0.8) : T.rng * 0.85;
       const sl = now < s.slowUntil ? 0.4 : 1;
       let dq: { x: number; z: number } | null = null;                 // isca (clone do Pierrot) que este monstro está focando
       if (s.decoy) { const dc = this.decoys.get(s.decoy); if (dc && now < dc.until && dc.inst === s.inst) dq = dc.c; else s.decoy = undefined; }
       if (dq) {
         const dP = Math.hypot(dq.x - m.x, dq.z - m.z);
-        tx = dq.x; tz = dq.z; sp = rooted ? 0 : T.spd * sl; stop = T.rng * 0.85;
-        if (dP <= T.rng && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); }   // golpeia o clone (não fere ninguém)
+        tx = dq.x; tz = dq.z; sp = rooted ? 0 : T.spd * sl; stop = STOP;
+        if (dP <= RNG && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); }   // golpeia o clone (não fere ninguém)
       } else if (s.aggro && cur) {
         const dP = Math.hypot(cur.x - m.x, cur.z - m.z);
-        tx = cur.x; tz = cur.z; sp = rooted ? 0 : T.spd * sl; stop = T.rng * 0.85;
-        if (dP <= T.rng && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); this.hooks.hit(s.aggro, s.atk * rnd(0.85, 1.15), m.id); }
+        tx = cur.x; tz = cur.z; sp = rooted ? 0 : T.spd * sl; stop = STOP;
+        if (dP <= RNG && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); this.hooks.hit(s.aggro, s.atk * rnd(0.85, 1.15), m.id); }
         if (s.boss && dP < 12 && now > s.slamAt) {
           s.slamAt = now + 9000; const cx = m.x, cz = m.z;
           this.hooks.slam(cx, cz, 5, s.inst);

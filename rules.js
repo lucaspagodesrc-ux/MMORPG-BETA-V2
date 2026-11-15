@@ -248,9 +248,9 @@ Object.assign(MT,{
    hp = vida-base (piso); o servidor soma a "cota" de cada jogador que entra na luta (ver worldboss.ts) */
 const wbMob=(base,o)=>Object.assign({},MT[base],{model:base,boss:true,wb:true,eva:0,aggro:45,leash:95,resp:0,rb:3,eq:0,pot:0,matMax:4,spd:2.3},o);
 Object.assign(MT,{
- wb_a:wbMob('slime',{n:'Rainha Gosma, a Colossal',lv:[34,34],hp:150000,atk:235,def:105,rng:4.6,atkInt:1900,h:7,tint:'#7be58f',sc:2.7,xp:Math.round(xpNeed(34)*.22),gold:[0,0],mats:{gosma:1,nucleo:1,essencia:1}}),
- wb_s:wbMob('escorpiao',{n:'Escorpião-Rei das Dunas',lv:[76,76],hp:300000,atk:1000,def:190,rng:4.8,atkInt:1800,h:7,tint:'#ffcf6a',sc:3.0,xp:Math.round(xpNeed(76)*.2),gold:[0,0],mats:{obsidiana:1,selo:1,essencia:1}}),
- wb_n:wbMob('yeti',{n:'Wendigo Primordial',lv:[100,100],hp:450000,atk:1500,def:280,rng:5.2,atkInt:1700,h:11,tint:'#bfe6ff',sc:2.3,xp:Math.round(xpNeed(100)*.15),gold:[0,0],mats:{escamagelo:1,nucleogelo:1,cristalpuro:1,essencia:1}})});
+ wb_a:wbMob('slime',{br:.82,n:'Rainha Gosma, a Colossal',lv:[34,34],hp:150000,atk:235,def:105,rng:4.6,atkInt:1900,h:7,tint:'#7be58f',sc:2.7,xp:Math.round(xpNeed(34)*.22),gold:[0,0],mats:{gosma:1,nucleo:1,essencia:1}}),
+ wb_s:wbMob('escorpiao',{br:1.3,n:'Escorpião-Rei das Dunas',lv:[76,76],hp:300000,atk:1000,def:190,rng:4.8,atkInt:1800,h:7,tint:'#ffcf6a',sc:3.0,xp:Math.round(xpNeed(76)*.2),gold:[0,0],mats:{obsidiana:1,selo:1,essencia:1}}),
+ wb_n:wbMob('yeti',{br:1.45,n:'Wendigo Primordial',lv:[100,100],hp:450000,atk:1500,def:280,rng:5.2,atkInt:1700,h:11,tint:'#bfe6ff',sc:2.3,xp:Math.round(xpNeed(100)*.15),gold:[0,0],mats:{escamagelo:1,nucleogelo:1,cristalpuro:1,essencia:1}})});
 for(const k in MT)MT[k].id=k;
 /* ====================== CALABOUÇOS v2: várias salas, etapas e mecânicas próprias ======================
    Layout em GRADE de 2 m: rooms = retângulos [x0,z0,x1,z1] relativos ao centro cx; open = etapa em que a sala passa a ser acessível.
@@ -1174,6 +1174,11 @@ const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // r
 const BCAP = { flat: 1000, aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 /* dano em área: habilidades que acertam vários alvos causam 30% menos dano (AOE_K) e a área (raio, e a marcação no chão junto) fica 20% menor (AOE_R) */
 const AOE_K = .7, AOE_R = .8, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1 };
+/* v1.78: Arqueiro e Mago — alcance (ataque e habilidades) e áreas 15% menores */
+for (const k of ['arqueiro', 'mago']) {
+  const C = CLASSES[k]; C.range = +(C.range * .85).toFixed(2);
+  for (const s of C.skills) { if (s.range) s.range = +(s.range * .85).toFixed(2); if (s.radius) s.radius = +(s.radius * .85).toFixed(2); }
+}
 function skStat(cls, i, rank) {
   const s = CLASSES[cls].skills[i], k = Math.max(1, rank || 0) - 1;
   const bf = {}; if (s.buffs) for (const a in s.buffs) bf[a] = Math.min(BCAP[a] || 9, s.buffs[a] * (s.fixBuff ? 1 : 1 + ph(k, .15, .05)));
