@@ -1846,6 +1846,12 @@ function act(sess, m, ctx) {
     c.pets = Array.isArray(c.pets) ? c.pets : [null, null]; if (!intIn(m.s, 0, PET_EQ) || !c.pets[m.s]) return fail();
     if (!addItem(c.inv, c.pets[m.s])) return fail('Mochila cheia!'); T('🐾 ' + nm(c.pets[m.s]) + ' voltou para a mochila'); c.pets[m.s] = null; return done();
   }
+  if (t === 'split') {                                                    // v1.81: separa parte de uma pilha (Ctrl + clique na mochila)
+    if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; const n = Math.floor(Number(m.n));
+    if (!it || !STK(it.k) || !(it.n > 1)) return fail('Só dá para separar pilhas.'); if (!(n >= 1 && n < it.n)) return fail('Quantidade inválida.');
+    const j = c.inv.indexOf(null); if (j < 0) return fail('Mochila cheia: libere um espaço para separar.');
+    it.n -= n; c.inv[j] = { ...it, n }; T('✂️ Pilha separada: ' + n + ' / ' + it.n); return done();
+  }
   if (t === 'petcfg') { c.pcf = cleanPcf(m.cfg); return done(); }
   if (t === 'buyticket') {
     const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');

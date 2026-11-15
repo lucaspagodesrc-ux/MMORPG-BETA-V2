@@ -235,6 +235,7 @@
   #invBox button{margin-left:6px;cursor:pointer}
   #win-party{left:340px;top:230px;width:310px}
   #win-friends{left:360px;top:200px;width:320px}
+  #splitBox{position:fixed;z-index:70;display:none;padding:10px 12px;min-width:220px;font-size:13px}#splitBox input{background:#0f1822;color:#e6edf5;border:1px solid var(--line);border-radius:6px;padding:4px 6px}#splitBox button{padding:4px 10px}
   #win-pets{left:360px;top:120px;width:360px;max-height:calc(100vh - 160px);overflow:auto}
   #win-pets .pslot{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:7px;margin-bottom:6px;background:#121c28}
   #win-pets .pslot .pi{font-size:30px;width:44px;height:44px;display:grid;place-items:center;border:2px solid #3b4b5c;border-radius:9px}
@@ -464,7 +465,7 @@
     <button id="btnAudio" title="Áudio: música e efeitos">🔊</button>
     <button id="btnMenu" title="Trocar personagem">🚪</button>
   </div>
-  <div id="win-inv" class="panel win"><h3><span>🎒 Mochila</span><span><span class="muted" id="invGold"></span> <button class="x" data-close="inv">✕</button></span></h3><div id="invTabs" class="ptabs"></div><div id="invGrid"></div><div id="invTools"><button id="btnOrg" title="Junta pilhas e ordena: equipamentos, poções e materiais">🧹 Organizar mochila</button><button id="btnBrk" title="Selecione vários equipamentos e quebre de uma vez: os materiais de criação vêm daqui">🔨 Quebrar itens</button></div><div id="invBrk" style="display:none"><div id="invBrkInfo"></div><div class="selbtns"><button data-brkact="sel">🔨 Quebrar selecionados</button><button data-brkact="common">Equip. comuns</button><button data-brkact="clear">Limpar</button><button data-brkact="off">Sair</button></div></div><div id="invSell" style="display:none"><div id="invSellInfo"></div><div class="selbtns"><button data-sellact="sel">💰 Vender selecionados</button><button data-sellact="common">Equip. comuns</button><button data-sellact="mats">Materiais</button><button data-sellact="clear">Limpar</button></div></div><p class="muted" style="margin:8px 0 0">Clique: equipar / usar • Botão direito ou Shift+clique: derrubar no chão (some em 30 s) • Passe o mouse para ver detalhes e comparar com o equipado.</p></div>
+  <div id="win-inv" class="panel win"><h3><span>🎒 Mochila</span><span><span class="muted" id="invGold"></span> <button class="x" data-close="inv">✕</button></span></h3><div id="invTabs" class="ptabs"></div><div id="invGrid"></div><div id="invTools"><button id="btnOrg" title="Junta pilhas e ordena: equipamentos, poções e materiais">🧹 Organizar mochila</button><button id="btnBrk" title="Selecione vários equipamentos e quebre de uma vez: os materiais de criação vêm daqui">🔨 Quebrar itens</button></div><div id="invBrk" style="display:none"><div id="invBrkInfo"></div><div class="selbtns"><button data-brkact="sel">🔨 Quebrar selecionados</button><button data-brkact="common">Equip. comuns</button><button data-brkact="clear">Limpar</button><button data-brkact="off">Sair</button></div></div><div id="invSell" style="display:none"><div id="invSellInfo"></div><div class="selbtns"><button data-sellact="sel">💰 Vender selecionados</button><button data-sellact="common">Equip. comuns</button><button data-sellact="mats">Materiais</button><button data-sellact="clear">Limpar</button></div></div><p class="muted" style="margin:8px 0 0">Clique: equipar / usar • Ctrl+clique numa pilha: separar • Botão direito ou Shift+clique: derrubar no chão (some em 30 s) • Passe o mouse para ver detalhes e comparar com o equipado.</p></div>
   <div id="win-char" class="panel win"><h3><span>🧍 Personagem</span><button class="x" data-close="char">✕</button></h3><div id="charBody"></div></div>
   <div id="win-skill" class="panel win"><h3><span>📖 Habilidades</span><button class="x" data-close="skill">✕</button></h3><div id="skillBody"></div></div>
   <div id="win-quest" class="panel win"><h3><span>📜 Missões</span><button class="x" data-close="quest">✕</button></h3><div id="questBody"></div></div>
@@ -5751,8 +5752,17 @@ function renderInv(){
  $('invGrid').innerHTML=S.inv.map((it,i)=>(i<INVTAB*IPG||i>=(INVTAB+1)*IPG)?'':`<div class="slot${SELL.has(i)||BRK.has('i'+i)?' sel':''}" data-inv="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:'')+(it.sl?`<span class="sl">${Array.from({length:it.sl},(_,i)=>it.gm&&it.gm[i]?'◆':'◇').join('')}</span>`:''):''}</div>`).join('')+Object.entries(S.tix||{}).filter(([k,v])=>v>0).map(([k,v])=>{const dg=DUNGEONS.find(x=>x.id===k);return `<div class="slot" data-tix="${k}" title="Ingresso: ${dg?dg.name:k} — é consumido ao entrar" style="border-color:#d4a62a">🎟️<span class="cnt">${v}</span></div>`;}).join('');
  $('invGold').textContent='💰 '+(S.gm?'∞':fmt(S.gold));updInvSell();updInvBrk();
 }
-$('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(brkMode()){brkToggle('i'+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
-$('invGrid').addEventListener('contextmenu',e=>{e.preventDefault();const s=e.target.closest('[data-inv]');if(s)dropItem(+s.dataset.inv);});
+$('invGrid').addEventListener('click',e=>{const s=e.target.closest('[data-inv]');if(!s)return;if((e.ctrlKey||e.metaKey)&&splitAsk(+s.dataset.inv,e))return;if(sellMode()){toggleSel(+s.dataset.inv);return;}if(brkMode()){brkToggle('i'+s.dataset.inv);return;}if(e.shiftKey){dropItem(+s.dataset.inv);return;}useItem(+s.dataset.inv);});
+$('invGrid').addEventListener('contextmenu',e=>{e.preventDefault();const s=e.target.closest('[data-inv]');if(!s)return;if(e.ctrlKey&&splitAsk(+s.dataset.inv,e))return;dropItem(+s.dataset.inv);});   /* no Mac, Ctrl+clique vira clique direito: separa em vez de derrubar */
+/* v1.81: Ctrl + clique numa pilha (materiais, poções, gemas, ingressos): escolhe quantos separar para um espaço livre */
+function splitAsk(i,e){const it=S.inv[i];if(!it||!(it.n>1)||!['mat','pot','tix'].includes(it.k))return false;
+ let b=$('splitBox');if(!b){b=document.createElement('div');b.id='splitBox';b.className='panel';document.body.appendChild(b);
+  b.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter')b.querySelector('[data-sp="ok"]').click();if(ev.key==='Escape')b.style.display='none';});
+  b.addEventListener('click',ev=>{const a=ev.target.closest('[data-sp]');if(!a)return;const k=a.dataset.sp,inp=b.querySelector('input');
+   if(k==='ok'){const n=Math.floor(+inp.value);const ix=+b.dataset.i,cur=S.inv[ix];if(cur&&n>=1&&n<cur.n){if(!S.inv.includes(null)){toast('Mochila cheia: libere um espaço para separar.');}else ACT({t:'split',i:ix,n});}else toast('Escolha de 1 a '+((cur&&cur.n||2)-1)+'.');b.style.display='none';}
+   else if(k==='no')b.style.display='none';else if(k==='half'){inp.value=Math.floor((+b.dataset.max+1)/2);}else if(k==='one'){inp.value=1;}});}
+ b.dataset.i=i;b.dataset.max=it.n-1;b.innerHTML=`<b>✂️ Separar: ${ico(it)} ${esc(nm(it))}</b><div class="muted" style="margin:4px 0">A pilha tem <b>${it.n}</b>. Quantos separar?</div><div style="display:flex;gap:6px;align-items:center"><input type="number" min="1" max="${it.n-1}" value="1" style="width:80px"><button data-sp="one">1</button><button data-sp="half">Metade</button></div><div style="display:flex;gap:6px;margin-top:8px"><button data-sp="ok">Separar</button><button data-sp="no">Cancelar</button></div>`;
+ b.style.display='block';b.style.left=Math.min(e.clientX+10,innerWidth-250)+'px';b.style.top=Math.min(e.clientY+10,innerHeight-150)+'px';const inp=b.querySelector('input');inp.focus();inp.select();return true;}
 const DROP_LIFE=30000;   // itens largados pelo jogador somem em 30 s
 function dropItem(i){
  const it=S&&S.inv[i];if(!it||P.dead)return;
@@ -5957,7 +5967,7 @@ function ahReply(m){
 function ahLeft(t){const ms=Math.max(0,t-Date.now()),h=Math.floor(ms/3600000);return h>=24?Math.floor(h/24)+'d '+(h%24)+'h':h>0?h+'h '+Math.floor(ms%3600000/60000)+'min':Math.max(1,Math.floor(ms/60000))+' min';}
 /* --- histórico de preços (vendas anteriores no leilão) --- */
 const HIST={};
-const hkOf=it=>it&&['eq','mat','pot'].includes(it.k)?RULES.hkeyOf(it):'';
+const hkOf=it=>it&&['eq','mat','pot','tix'].includes(it.k)?RULES.hkeyOf(it):'';
 function histPut(list,hs){for(const x of list||[])if(x.hk)HIST[x.hk]=Object.assign(HIST[x.hk]||{},{t:Date.now(),asked:Date.now(),h:(hs&&hs[x.hk])||null});}
 const HQ=new Set();let hqT=0,hqLast=0;
 function hqFlush(){hqT=0;if(!HQ.size||!NET.room)return;const ks=[...HQ].slice(0,30);ks.forEach(k=>HQ.delete(k));hqLast=Date.now();NET.room.send('ah',{op:'hs',ks});if(HQ.size)hqT=setTimeout(hqFlush,700);}
@@ -5987,7 +5997,7 @@ function ahRender(onlyList){
    const AT=[['','Qualquer'],['str','Força'],['agi','Agilidade'],['int','Inteligência'],['vit','Vitalidade'],['atk','Ataque'],['def','Defesa'],['hp','Vida']];
    body=`<div class="fil" id="ahFil">
     <label>Nome<input data-f="q" value="${esc(f.q)}" placeholder="Buscar pelo nome" maxlength="40"></label>
-    <label>Tipo<select data-f="cat">${ahOpt([['','Tudo'],['eq','Equipamento'],['gem','Pergaminhos / Gemas'],['mat','Materiais'],['pot','Poções']],f.cat)}</select></label>
+    <label>Tipo<select data-f="cat">${ahOpt([['','Tudo'],['eq','Equipamento'],['gem','Pergaminhos / Gemas'],['mat','Materiais'],['pot','Poções'],['tix','Ingressos de calabouço']],f.cat)}</select></label>
     <label>Categoria<select data-f="slot">${ahOpt(SL,f.slot)}</select></label>
     <label>Classe<select data-f="cls">${ahOpt(CL,f.cls)}</select></label>
     <label>Raridade<select data-f="rar">${ahOpt(RR,f.rar)}</select></label>
@@ -6013,7 +6023,7 @@ function ahRender(onlyList){
  const msg=$('ahMsg');if(msg){msg.textContent=AH.msg||'';msg.className='msg'+(AH.ok?' ok':'');}
  const bd=$('ahBody'),pg=$('ahPg');if(!bd)return;pg.innerHTML='';
  if(AH.tab==='sell'){
-  const seen=new Map();S.inv.forEach((it,i)=>{if(!it||!['eq','mat','pot'].includes(it.k))return;const k=ahKey(it),g=seen.get(k);if(g)g.n+=(it.k==='eq'?1:it.n);else seen.set(k,{i,it,n:it.k==='eq'?1:it.n});});
+  const seen=new Map();S.inv.forEach((it,i)=>{if(!it||!['eq','mat','pot','tix'].includes(it.k)||it.bd)return;const k=ahKey(it),g=seen.get(k);if(g)g.n+=(it.k==='eq'?1:it.n);else seen.set(k,{i,it,n:it.k==='eq'?1:it.n});});
   const rows=[...seen.values()].map(g=>`<div class="row2"><div class="ri" data-inv="${g.i}" style="border-color:${col(g.it)}">${ico(g.it)}</div><div class="rt"><b style="color:${col(g.it)==='#455568'?'#fff':col(g.it)}">${nm(g.it)}${g.n>1?' ×'+g.n:''}</b><small>Valor de loja: ${fmt(sellPrice(g.it))} 💰 (cada)</small>${(()=>{const k=hkOf(g.it),H=HIST[k];return H&&H.h?`<small>📈 Média ${fmt(H.h.avg)} • último ${fmt(H.h.last)} (${H.h.n} venda${H.h.n>1?'s':''}) <button class="lnk" data-ah="useavg" data-i="${g.i}" data-v="${H.h.avg}">usar média</button> <button class="lnk" data-ah="hist" data-k="${esc(k)}">gráfico</button></small>`:H&&H.h===null?'<small class="muted">📈 sem vendas registradas</small>':'';})()}${AH.hk&&AH.hk===hkOf(g.it)?histBox(AH.hk,g.it):''}</div>
    <div class="sellrow">${g.n>1?`<input type="number" min="1" max="${g.n}" value="${(AH.sp['q'+g.i]!==undefined?AH.sp['q'+g.i]:g.n)}" data-q="${g.i}" title="Quantidade">`:''}<input type="number" min="1" placeholder="Preço cada" data-p="${g.i}" value="${AH.sp[g.i]||''}"><button data-ah="sell" data-i="${g.i}">Anunciar</button></div></div>`).join('');
   histReq([...seen.values()].map(g=>hkOf(g.it)));
@@ -6177,7 +6187,7 @@ function guRender(){
    const slot=(it,at,i,act)=>`<div class="slot" data-gu="${act}" data-id="${i}" ${at}="${i}"${it?` style="border-color:${col(it)}"`:''}>${it?ico(it)+(it.n>1?`<span class="cnt">${it.n}</span>`:'')+(it.plus?`<span class="pl">+${it.plus}</span>`:''):''}</div>`;
    h+=`<div class="grow"><span class="muted" style="flex:1">O baú fica no salão da guilda: fique perto da <b>Escrivã</b> (ou do <b>Baú</b> da cidade). Guardar: todos • Retirar: ${off?'você pode':'líder e oficiais'}.</span><label class="muted">Qtd. <input id="guQty" type="number" min="1" placeholder="tudo" value="${esc(GU.qty)}" style="width:72px"></label></div>
    <div class="dsec">📦 Baú da guilda (${g.chest.filter(Boolean).length}/${g.chestCap}) — clique para retirar</div><div class="stgrid gchest">${g.chest.map((it,i)=>slot(it,'data-gc',i,'wd')).join('')}</div>
-   <div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid gbag">${S.inv.map((it,i)=>it&&['eq','mat','pot'].includes(it.k)?slot(it,'data-inv',i,'dep'):'').join('')||'<span class="muted">Sem itens.</span>'}</div>
+   <div class="dsec">🎒 Sua mochila — clique para guardar</div><div class="stgrid gbag">${S.inv.map((it,i)=>it&&['eq','mat','pot','tix'].includes(it.k)?slot(it,'data-inv',i,'dep'):'').join('')||'<span class="muted">Sem itens.</span>'}</div>
    <div class="dsec">💰 Cofre da guilda: <b class="pr">${fmt(g.gold)}</b></div>
    <div class="grow"><input id="guGold" type="number" min="1" placeholder="Quantia de ouro" value="${esc(GU.gold)}" style="flex:1"><button data-gu="dgold">Depositar</button><button data-gu="wgold" ${lead?'':'disabled title="Só o líder retira ouro"'}>Retirar</button></div>`;
   }
@@ -6236,7 +6246,7 @@ function trReply(m){
 function trRender(onlyStatus){
  if(!TR.open||!S)return;
  const line=(x,i,w,mine)=>`<div class="row2"><div class="ri" data-ti="${w},${i}" style="border-color:${col(x.item)}">${ico(x.item)}</div><div class="rt"><b style="color:${col(x.item)==='#455568'?'#fff':col(x.item)}">${nm(x.item)}${x.qty>1?' ×'+x.qty:''}</b></div>${mine?`<div class="sellrow">${x.item.k!=='eq'?`<input type="number" min="1" value="${x.qty}" data-tq="${i}">`:''}<button data-tr="rm" data-i="${i}">✕</button></div>`:''}</div>`;
- const bag=S.inv.map((it,i)=>it&&['eq','mat','pot'].includes(it.k)&&!TR.mine.items.some(x=>x.i===i)?`<div class="ri" data-inv="${i}" data-tadd="${i}" style="border-color:${col(it)}">${ico(it)}${it.n>1?`<span class="cnt">${it.n}</span>`:''}</div>`:'').join('');
+ const bag=S.inv.map((it,i)=>it&&['eq','mat','pot','tix'].includes(it.k)&&!TR.mine.items.some(x=>x.i===i)?`<div class="ri" data-inv="${i}" data-tadd="${i}" style="border-color:${col(it)}">${ico(it)}${it.n>1?`<span class="cnt">${it.n}</span>`:''}</div>`:'').join('');
  const st=TR.okMine&&TR.okTheirs?'Concluindo…':TR.okMine?'Você confirmou. Aguardando '+esc(TR.who)+'…':TR.okTheirs?esc(TR.who)+' já confirmou!':'Monte a oferta e confirme.';
  $('trWin').innerHTML=`<div class="dh"><b>🤝 Troca com ${esc(TR.who)}</b><span class="muted">💰 ${fmt(S.gold)}</span></div>
  <div class="cols"><div class="col${TR.okMine?' ok':''}"><h4>Você oferece ${TR.okMine?'✔':''}</h4>${TR.mine.items.map((x,i)=>line(x,i,'m',true)).join('')||'<p class="muted">Clique nos itens abaixo para adicionar.</p>'}<div style="margin-top:6px">💰 Ouro: <input type="number" min="0" value="${TR.mine.gold}" data-tg="1"></div></div>
