@@ -6261,7 +6261,7 @@ $('guNo').onclick=()=>{$('guInv').style.display='none';if(NET.room)NET.room.send
 $('dialog').addEventListener('input',e=>{if(!dlg)return;if(e.target.id==='gdName')dlg.gname=e.target.value;else if(e.target.id==='gdTag')dlg.gtag=e.target.value;});
 $('dialog').addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'){e.stopPropagation();if(e.key==='Enter'){const b=$('dialog').querySelector('[data-act="guform"]');if(b)b.click();}}});
 /** linha do rastreador de missões para a Provação dos Caminhos */
-function spTrack(){const q=S&&S.spq;if(!q||!q.on||q.ok||S.spec)return '';return `<div class="dwt">🌟 Provação: <b>${q.k}/${RULES.SPQ.kills}</b> ${q.d?'✔':'✖'}Abismo ${q.w>=RULES.SPQ.wb?'✔':'✖'}Chefe</div>`;}
+function spTrack(){return '';/* v1.83: Caminhos desativados por enquanto */const q=S&&S.spq;if(!q||!q.on||q.ok||S.spec)return '';return `<div class="dwt">🌟 Provação: <b>${q.k}/${RULES.SPQ.kills}</b> ${q.d?'✔':'✖'}Abismo ${q.w>=RULES.SPQ.wb?'✔':'✖'}Chefe</div>`;}
 
 /* =================== TROCA ENTRE JOGADORES =================== */
 const TR={open:false,who:'',mine:{items:[],gold:0},theirs:{items:[],gold:0},okMine:false,okTheirs:false,msg:''};
