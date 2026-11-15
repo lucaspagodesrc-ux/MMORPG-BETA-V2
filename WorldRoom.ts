@@ -98,7 +98,7 @@ export class WorldRoom extends Room<WorldState> {
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
   private isPaused(p: any) { const I = p && p.inst ? this.dg.insts.get(p.inst) : undefined; return !!(I && I.paused); }
-  private sync(s: Sess) { if (s.c.gm) s.c.gold = R.GM_GOLD; const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; const sp = s.c.spec || ""; if (p.sp !== sp) p.sp = sp; } s.client.send("sync", { c: s.c, st: s.stash }); }
+  private sync(s: Sess) { if (s.c.gm) s.c.gold = R.GM_GOLD; const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; const sp = s.c.spec || ""; if (p.sp !== sp) p.sp = sp; const pt = (Array.isArray(s.c.pets) ? s.c.pets : []).filter(Boolean).map((x: any) => x.id).join(","); if (p.pt !== pt) p.pt = pt; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { gpFromOut(s, out); s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
     const id = ++this.wdSeq, now = Date.now(), p = this.playerOf(s);
@@ -431,6 +431,10 @@ export class WorldRoom extends Room<WorldState> {
         if (cand.length && Math.random() < pT) this.addDrop(s, { k: "tix", id: cand[Math.floor(Math.random() * cand.length)].id, n: 1 }, mx, mz, 0);
       } else if (!T.boss && c.run && c.run.id && R.DUNGEONS.some((d: any) => d.id === c.run.id) && Math.random() < 0.02) {
         this.addDrop(s, { k: "tix", id: c.run.id, n: 1 }, mx, mz, 0);   // v1.78: dentro do calabouço, 2% por monstro: ingresso do mesmo calabouço
+      }
+      if (mlvl >= R.PET_DROP_LV && !T.chest && !T.node && Math.random() < R.PET_DROP) {   // v1.80: mascote (0,01%) em monstros de nível 100+ (mapa e calabouço)
+        const pet = R.rollPet(); this.addDrop(s, pet, mx, mz, 0);
+        this.broadcast("chat", { kind: "sys", text: `🐾 ${s.c.name} encontrou um mascote: ${R.nm(pet)} (${R.PRAR[R.PETS[pet.id].rar].n})!` });
       }
     });
     if (sim.inst) this.dg.onKill(sim);
@@ -771,7 +775,7 @@ export class WorldRoom extends Room<WorldState> {
         if (!R.canAdd(c.inv, it)) return this.res(s, [{ toast: "Mochila cheia!" }], false);
         const label = R.nm(it) + (it.n > 1 ? " ×" + it.n : "");
         R.addItem(c.inv, it);
-        out = [{ sfx: it.k === "tix" ? "rare" : "pickup" }, { log: `${it.k === "tix" ? "🎟️ " : ""}Você obteve <b style="color:${it.k === "eq" ? R.RAR[it.rar].c : it.k === "tix" ? "#ffd24a" : "#fff"}">${label}</b>` }];
+        out = [{ sfx: it.k === "tix" || it.k === "pet" ? "rare" : "pickup" }, { log: `${it.k === "tix" ? "🎟️ " : it.k === "pet" ? "🐾 " : ""}Você obteve <b style="color:${it.k === "eq" ? R.RAR[it.rar].c : it.k === "pet" ? R.PRAR[R.PETS[it.id].rar].c : it.k === "tix" ? "#ffd24a" : "#fff"}">${label}</b>` }];
       }
       this.wd.delete(id); this.pushDrops();
       this.touch(s); this.sync(s); this.res(s, out);

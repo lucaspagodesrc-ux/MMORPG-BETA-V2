@@ -739,6 +739,7 @@ const NPCS=[
  {id:'mestre',name:'Mestre Kaelen',icon:'📖',x:-4.5,z:4,col:'#6b46b5',tabs:[],greet:'',hat:'#4b2f85'},
  {id:'leilao',name:'Valter, o Leiloeiro',icon:'⚖️',x:9.4,z:1.8,col:'#a8782e',tabs:['leilao'],greet:'Bem-vindo à Casa de Leilão! Aqui você anuncia seus itens e compra o que outros aventureiros estão vendendo.',hat:'#5a3a1a'},
  {id:'evento',name:'Noel, Guardião dos Presentes',icon:'🎁',x:0,z:7.5,col:'#c0392b',tabs:['evento'],greet:'Ho ho ho! Evento de Boas-vindas, Inauguração e Natal: suba de nível e venha buscar seus pacotes de presentes!',hat:'#d4a62a'},
+ {id:'mascotes',name:'Lina, a Criadora de Mascotes',icon:'🐾',x:8.6,z:6.4,col:'#3fa07a',tabs:['mascotes'],greet:'Cada mascote tem o seu jeitinho! Eles acompanham você, pegam o ouro do chão e podem receber gemas de mascote.',hat:'#2a6a4a'},
  {id:'bau',name:'Baú do Aventureiro',icon:'📦',x:4.5,z:4,col:'#8a6a43',tabs:['bau'],greet:'Seus itens guardados aqui são compartilhados com todos os seus personagens.'},
  {id:'elda',name:'Vovó Elda',icon:'🌿',x:-19.5,z:4.5,col:'#5a8a4a',tabs:SHOPT,greet:'As gosmas estragam minha horta... e eu tenho poções para vender, querido.',hat:'#7a5a3a',camp:true},
  {id:'lyra',name:'Patrulheira Lyra',icon:'🏹',x:12,z:-13,col:'#3f7a55',tabs:SHOPT,greet:'Os lobos andam inquietos. Fique alerta!',hat:'#2f5a2c',camp:true},
@@ -859,8 +860,8 @@ R.TOWN_R = MON_TOWN_R;
 R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }, { x: -600, z: 0, r: 15 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
-const nm = it => it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.bd ? 0 : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
+const nm = it => it.k === 'pet' ? ((PETS[it.id] || {}).n || 'Mascote') : it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
+const sellPrice = it => it.bd ? 0 : it.k === 'pet' ? Math.round(((PETS[it.id] || {}).price || 0) * .1) : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
 const MAXPLUS = 10;
 /** chave de "modelo" do item para o histórico de preços do leilão: itens iguais (nome, nível, raridade, refino, engastes) compartilham o histórico */
 const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
@@ -971,6 +972,35 @@ const CRIT_CAP = 52;   // taxa crítica máxima base (%) — sobe com "Taxa Crí
 const GEMD = {};
 for (const g of GEMS) { GEMD[g.id] = g; MATS['g_' + g.id] = { n: g.n, i: '📜', v: Math.round(GRADES[g.g].p * .1), gem: g.id }; }
 MATS.g_ext = { n: 'Extensor de Slot', i: '🔳', v: Math.round(EXT_PRICE * .1), ext: 1 };
+/* ====================== MASCOTES (v1.80) ======================
+   Item k:'pet' (não empilha). Até 2 equipados por personagem (c.pets). Cada mascote tem engastes (◇) próprios: começa com
+   rar+2 e o Extensor de Slot aumenta até 10. Só aceitam GEMAS DE MASCOTE (mesmos atributos das gemas normais, com 1/3 do valor),
+   no máximo 2 gemas do mesmo atributo por mascote. Valor das gemas "por nível" usa PET_IL. Os mascotes pegam ouro do chão sozinhos
+   e, conforme a configuração (c.pcf), itens por raridade. */
+const PET_IL = 100, PET_MAXSL = 10, PET_EQ = 2, PET_DROP = .0001, PET_DROP_LV = 100;
+const PRAR = [{ n: 'Comum', c: '#cfd6dd' }, { n: 'Incomum', c: '#6fdc7f' }, { n: 'Raro', c: '#5fb4ff' }, { n: 'Lendário', c: '#ffb347' }];
+const PETS = {
+  slime:  { n: 'Slime', i: '🟢', rar: 0, price: 5e7, mv: 'hop', sc: .55, d: 'Vai pulando atrás de você. Coroinha dourada torta em homenagem à Rainha Gosma.' },
+  golem:  { n: 'Mini Golem', i: '🗿', rar: 1, price: 8.5e7, mv: 'walk', sc: .48, d: 'Anda pesado atrás de você, com um cristal azul pulsando no peito.' },
+  coruja: { n: 'Coruja Sábia', i: '🦉', rar: 2, price: 1.15e8, mv: 'fly', sc: .48, d: 'Voa ao seu lado com os óculos redondos, o chapéu de mago e o livro.' },
+  fant:   { n: 'Fantasminha', i: '👻', rar: 2, price: 1.15e8, mv: 'float', sc: .48, d: 'Flutua atrás de você com a lanterna de chama azul.' },
+  drag:   { n: 'Dragãozinho', i: '🐉', rar: 3, price: 1.5e8, mv: 'fly', sc: .48, d: 'Filhote de dragão que voa ao lado do seu ombro.' },
+  fenix:  { n: 'Fênix Solar', i: '🐦', rar: 3, price: 1.5e8, mv: 'fly', sc: .48, d: 'Voa em círculos acima de você com asas de fogo.' }};
+const newPet = id => ({ k: 'pet', id, sl: PETS[id].rar + 2 });
+/** drop raro de mascote: raridade sorteada 40/30/20/10 */
+function rollPet() { const W = [40, 30, 20, 10]; let r = Math.random() * 100, rar = 0; for (; rar < 3; rar++) { if (r < W[rar]) break; r -= W[rar]; } return newPet(pick(Object.keys(PETS).filter(k => PETS[k].rar === rar))); }
+/** gemas de mascote: uma por atributo (a versão mais forte entre arma/armadura), com 1/3 do valor e 1/3 do preço */
+const PGEMS = [];
+{ const byK = {}; for (const g of GEMS) { const b = byK[g.k]; if (!b || g.v > b.v) byK[g.k] = g; }
+  for (const k in byK) { const b = byK[k]; const pg = { id: 'p_' + k, cat: 'p', g: b.g, b: b.id, n: 'Gema de Mascote: ' + b.o, o: b.o, k, v: Math.round(b.v / 3 * 100) / 100, u: b.u, sc: b.sc, d: b.d + ' Versão para MASCOTES: 1/3 do valor da gema normal.' };
+    PGEMS.push(pg); GEMD[pg.id] = pg; MATS['g_' + pg.id] = { n: pg.n, i: '🐾', v: Math.round(GRADES[pg.g].p / 3 * .1), gem: pg.id }; } }
+const PCF0 = () => ({ e: [1, 1, 1, 1], m: 1, s: 1, p: 1, t: 1, x: 1 });
+/** configuração da coleta: e = equipamentos por raridade (comum, incomum, raro, épico) • m = materiais • s = gemas/pergaminhos • p = poções • t = ingressos • x = mascotes */
+const cleanPcf = o => { const d = PCF0(); if (!o || typeof o !== 'object') return d; const b = v => v ? 1 : 0; return { e: [0, 1, 2, 3].map(i => b(Array.isArray(o.e) ? o.e[i] : 1)), m: b(o.m), s: b(o.s), p: b(o.p), t: b(o.t), x: b(o.x) }; };
+/** o mascote deve pegar este item? (ouro: sempre) */
+const petWants = (cf, it) => { if (!it) return false; if (it.k === 'gold') return true; cf = cf || PCF0();
+  if (it.k === 'eq') return !!cf.e[Math.max(0, Math.min(3, it.rar || 0))]; if (it.k === 'mat') return MATS[it.id] && MATS[it.id].gem ? !!cf.s : !!cf.m;
+  if (it.k === 'pot') return !!cf.p; if (it.k === 'tix') return !!cf.t; if (it.k === 'pet') return !!cf.x; return false; };
 const gemVal = (g, ilvl) => g.sc ? Math.max(1, Math.round(g.v * ilvl)) : g.v;
 const gemTxt = (g, ilvl) => '+' + gemVal(g, ilvl).toLocaleString('pt-BR') + (g.u || '');
 const gemCat = it => it && (it.slot === 'weapon' || it.slot === 'ring') ? 'w' : 'a';   // anéis contam como ARMA para as gemas
@@ -1000,7 +1030,8 @@ function rollBossAttr(it, cls) {
 function gemTotals(c) {
   const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0, acc: 0, ignPen: 0, ignAcc: 0, ignRcrit: 0, ignRcdmg: 0, ignBlock: 0, ignRdmg: 0, rdmg: 0, rcrit: 0, rcdmg: 0, ramp: 0, lhpUp: 0, lmpUp: 0, lhpLim: 0, lmpLim: 0 };
   for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; if (it.xa) for (const x in it.xa) if (x in t && xaOk(x, it.xa[x])) t[x] += xaEff(x, it.xa[x]);   // atributo de item (drop de chefe)
-    if (!Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g) t[g.k] += gemVal(g, it.ilvl); } }
+    if (!Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g && g.cat !== 'p') t[g.k] += gemVal(g, it.ilvl); } }
+  for (const it of (Array.isArray(c.pets) ? c.pets : [])) { if (!it || it.k !== 'pet' || !Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g && g.cat === 'p') t[g.k] += gemVal(g, PET_IL); } }   // v1.80: gemas dos mascotes equipados
   for (const k in GCAP) t[k] = Math.min(t[k], GCAP[k]);
   for (const k in GCAPL) t[k] = Math.min(t[k], GCAPL[k] * Math.max(1, c.level || 1));
   return t;
@@ -1088,7 +1119,8 @@ const SHOPS = {
 SHOPS.scr = [
   ...[['w', 'Pergaminhos de ARMA'], ['a', 'Pergaminhos de ARMADURA / ACESSÓRIOS']].flatMap(([cat, title]) =>
     GRADES.flatMap((gr, gi) => GEMS.filter(g => g.cat === cat && g.g === gi).map(g => ({ id: 'g_' + g.id, i: '📜', n: g.n, sec: title + ' — ' + gr.n + ' (' + gr.en + ')', scr: g.id, d: g.o + ' ' + (g.sc ? '+' + g.v + ' × nível do item' : '+' + g.v + (g.u || '')), c: () => gr.p, mk: () => ({ k: 'mat', id: 'g_' + g.id, n: 1 }) })))),
-  { id: 'g_ext', i: '🔳', n: 'Extensor de Slot', sec: 'Extensor de Slot', d: 'Cria +1 engaste ◇ em um equipamento (até ' + MAX_SLOTS + ' engastes). Use na aba Engastar.', c: () => EXT_PRICE, mk: () => ({ k: 'mat', id: 'g_ext', n: 1 }) }];
+  { id: 'g_ext', i: '🔳', n: 'Extensor de Slot', sec: 'Extensor de Slot', d: 'Cria +1 engaste ◇ em um equipamento (até ' + MAX_SLOTS + ' engastes) ou em um mascote (até ' + PET_MAXSL + '). Use na aba Engastar.', c: () => EXT_PRICE, mk: () => ({ k: 'mat', id: 'g_ext', n: 1 }) },
+  ...GRADES.flatMap((gr, gi) => PGEMS.filter(g => g.g === gi).map(g => ({ id: 'g_' + g.id, i: '🐾', n: g.n, sec: '🐾 Gemas de MASCOTE — ' + gr.n + ' (' + gr.en + ')', scr: g.id, d: g.o + ' ' + (g.sc ? '+' + gemVal(g, PET_IL) + ' (mascote)' : '+' + g.v + (g.u || '')) + ' • máx. 2 iguais por mascote', c: () => Math.round(gr.p / 3), mk: () => ({ k: 'mat', id: 'g_' + g.id, n: 1 }) })))];
 
 /* ---------- inventário ---------- */
 /* v1.79: itens que empilham até 99 — materiais, poções e ingressos de calabouço */
@@ -1497,6 +1529,7 @@ function cleanBar(b) {
 const INV_SIZE = 48, STASH_SIZE = 80;
 function newChar(cls, name, fem) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(INV_SIZE).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
+  c.pets = [null, null]; c.pcf = PCF0();   // v1.80: mascotes equipados + o que eles pegam do chão
   c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; } c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
@@ -1542,6 +1575,8 @@ function cleanItem(it) {
   if (!it || typeof it !== 'object') return null;
   if (it.k === 'mat') return MATS[it.id] && Number.isFinite(it.n) ? { k: 'mat', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k === 'pot') return POTS[it.id] && Number.isFinite(it.n) ? { k: 'pot', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
+  if (it.k === 'pet') { const P = PETS[it.id]; if (!P) return null; const sl = Math.max(0, Math.min(PET_MAXSL, Number.isInteger(it.sl) ? it.sl : P.rar + 2)); const o = { k: 'pet', id: it.id, sl };
+    if (Array.isArray(it.gm)) { const gm = it.gm.slice(0, sl).map(g => (g && GEMD[g] && GEMD[g].cat === 'p') ? g : null); while (gm.length < sl) gm.push(null); if (gm.some(Boolean)) o.gm = gm; } return o; }
   if (it.k === 'tix') return DUNGEONS.some(d => d.id === it.id) && Number.isFinite(it.n) ? { k: 'tix', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
@@ -1611,6 +1646,8 @@ function migrate(c) {
     c.v = R.VERSION; c._respec = true;
   }
   if (!c.evt || typeof c.evt !== 'object' || typeof c.evt.got !== 'object') c.evt = { got: {} };
+  { const ps = Array.isArray(c.pets) ? c.pets.slice(0, PET_EQ).map(x => x ? cleanItem(x) : null).map(x => x && x.k === 'pet' ? x : null) : []; while (ps.length < PET_EQ) ps.push(null); c.pets = ps;   // v1.80: mascotes
+    c.pcf = cleanPcf(c.pcf); }
   purgeExp(c);
   return c;
 }
@@ -1791,6 +1828,25 @@ function act(sess, m, ctx) {
     const it = sh.mk(c); if (!canAdd(c.inv, it)) return fail('Mochila cheia!'); c.gold -= cost; addItem(c.inv, it); F('coin');
     if (sh.box) { T('Você abriu: ' + nm(it)); L(`🎁 A caixa continha <b style="color:${colOf(it)}">${nm(it)}</b>`); if (it.rar >= 2) F('rare'); } return done();
   }
+  if (t === 'buypet') {                                                   // v1.80: Criadora de Mascotes (GM: grátis)
+    if (!npcFor('mascotes')) return fail('Chegue perto da Criadora de Mascotes.');
+    const P = PETS[m.id]; if (!P) return fail(); const cost = c.gm ? 0 : P.price;
+    if (c.gold < cost) return fail('Ouro insuficiente.');
+    if (!addItem(c.inv, newPet(m.id))) return fail('Mochila cheia: libere um espaço para o mascote.');
+    c.gold -= cost; F('coin'); T('🐾 Novo mascote: ' + P.n);
+    L(`<span style="color:${PRAR[P.rar].c}">🐾 Você adotou <b>${P.n}</b> (${PRAR[P.rar].n})! Equipe na janela de Mascotes (tecla P).</span>`); return done();
+  }
+  if (t === 'peteq') {                                                    // equipa um mascote da mochila (máx. 2)
+    if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'pet') return fail('Escolha um mascote.');
+    c.pets = Array.isArray(c.pets) ? c.pets : [null, null];
+    let sI = intIn(m.s, 0, PET_EQ) ? m.s : c.pets.findIndex(x => !x); if (sI < 0) return fail('Você já tem 2 mascotes: desequipe um primeiro.');
+    const old = c.pets[sI]; c.pets[sI] = it; c.inv[m.i] = old || null; T('🐾 ' + nm(it) + ' está com você!'); return done();
+  }
+  if (t === 'petun') {
+    c.pets = Array.isArray(c.pets) ? c.pets : [null, null]; if (!intIn(m.s, 0, PET_EQ) || !c.pets[m.s]) return fail();
+    if (!addItem(c.inv, c.pets[m.s])) return fail('Mochila cheia!'); T('🐾 ' + nm(c.pets[m.s]) + ' voltou para a mochila'); c.pets[m.s] = null; return done();
+  }
+  if (t === 'petcfg') { c.pcf = cleanPcf(m.cfg); return done(); }
   if (t === 'buyticket') {
     const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');
     const dg = DUNGEONS.find(x => x.id === m.id); if (!dg) return fail();
@@ -1843,40 +1899,44 @@ function act(sess, m, ctx) {
     if (!npcFor('engastar')) return fail('Chegue perto de um Gemólogo.');
     const ref = String(m.ref || ''); let it = null;
     if (ref.startsWith('eq:')) it = validKey(ref.slice(3)) && c.eq[ref.slice(3)]; else if (ref.startsWith('inv:')) { const i = +ref.slice(4); it = intIn(i, 0, c.inv.length) ? c.inv[i] : null; }
-    if (!it || it.k !== 'eq') return fail('Escolha um equipamento.');
+    else if (ref.startsWith('pet:')) { const i = +ref.slice(4); it = intIn(i, 0, PET_EQ) && Array.isArray(c.pets) ? c.pets[i] : null; }
+    const isPet = !!(it && it.k === 'pet'), MXS = isPet ? PET_MAXSL : MAX_SLOTS;
+    if (!it || (it.k !== 'eq' && !isPet)) return fail('Escolha um equipamento ou mascote.');
     if (it.slot === 'cape') return fail('Capas não têm engastes.');
     if (t === 'extend') {
-      if ((it.sl || 0) >= MAX_SLOTS) return fail('Este item já tem o máximo de ' + MAX_SLOTS + ' engastes.');
+      if ((it.sl || 0) >= MXS) return fail('Este item já tem o máximo de ' + MXS + ' engastes.');
       const ei = c.inv.findIndex(s => s && s.k === 'mat' && s.id === 'g_ext'); if (ei < 0) return fail('Você precisa de um Extensor de Slot (60.000.000).');
       c.inv[ei].n--; if (c.inv[ei].n <= 0) c.inv[ei] = null;
       it.sl = (it.sl || 0) + 1; it.gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl - 1) : []; while (it.gm.length < it.sl) it.gm.push(null); if (!it.gm.some(Boolean)) delete it.gm;
-      F('upOk'); T('🔳 Novo engaste! ' + nm(it)); L(`<span style="color:#c9a8ff">🔳 ${it.name} ganhou um engaste: agora tem <b>${it.sl}</b>.</span>`); return done();
+      F('upOk'); T('🔳 Novo engaste! ' + nm(it)); L(`<span style="color:#c9a8ff">🔳 ${isPet ? nm(it) : it.name} ganhou um engaste: agora tem <b>${it.sl}</b>.</span>`); return done();
     }
     const si = m.si; if (!intIn(si, 0, it.sl || 0)) return fail('Escolha um engaste.');
     const gi = m.gi; if (!intIn(gi, 0, c.inv.length)) return fail(); const sc = c.inv[gi];
     if (!sc || sc.k !== 'mat' || !MATS[sc.id] || !MATS[sc.id].gem) return fail('Escolha um pergaminho de opção.');
-    const g = GEMD[MATS[sc.id].gem], cat = gemCat(it);
-    if (g.cat !== cat) return fail(cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas nem em anéis.' : 'Esta gema é de ARMA: só serve em armas e anéis.');
+    const g = GEMD[MATS[sc.id].gem], cat = isPet ? 'p' : gemCat(it);
+    if (g.cat !== cat) return fail(cat === 'p' ? 'Mascotes só aceitam GEMAS DE MASCOTE (vendidas pelos Gemólogos).' : g.cat === 'p' ? 'Gemas de mascote só servem em mascotes.' : cat === 'w' ? 'Esta gema é de ARMADURA: não serve em armas nem em anéis.' : 'Esta gema é de ARMA: só serve em armas e anéis.');
     const gm = Array.isArray(it.gm) ? it.gm.slice(0, it.sl) : []; while (gm.length < it.sl) gm.push(null);
     if (gm[si] === g.id) return fail('Este engaste já tem essa mesma gema.');
+    if (isPet && gm.filter((x, j) => j !== si && x && GEMD[x] && GEMD[x].k === g.k).length >= 2) return fail('Um mascote aceita no máximo 2 gemas do mesmo atributo.');
     if (it.bd && gm[si]) return fail('🎄 As gemas dos itens do evento não podem ser trocadas.');
     if (gm[si] && !m.rep) return fail('O engaste já está ocupado: confirme para substituir (a gema antiga é destruída).');
     sc.n--; if (sc.n <= 0) c.inv[gi] = null; gm[si] = g.id; it.gm = gm;
-    F('upOk'); T('💎 Gema engastada: ' + g.o); L(`<span style="color:${GRADES[g.g].c}">💎 ${g.n} engastada em ${it.name}: <b>${g.o} ${gemTxt(g, it.ilvl)}</b></span>`); DW('sock'); return done();
+    F('upOk'); T('💎 Gema engastada: ' + g.o); L(`<span style="color:${GRADES[g.g].c}">💎 ${g.n} engastada em ${isPet ? nm(it) : it.name}: <b>${g.o} ${gemTxt(g, isPet ? PET_IL : it.ilvl)}</b></span>`); DW('sock'); return done();
   }
   if (t === 'unsocket') {                                                  // SÓ GM: retira gemas engastadas quando quiser (volta o pergaminho)
     if (!c.gm) return fail('Só contas GM podem retirar gemas.');
     if (!npcFor('engastar')) return fail('Chegue perto de um Gemólogo.');
     const ref = String(m.ref || ''); let it = null;
     if (ref.startsWith('eq:')) it = validKey(ref.slice(3)) && c.eq[ref.slice(3)]; else if (ref.startsWith('inv:')) { const i = +ref.slice(4); it = intIn(i, 0, c.inv.length) ? c.inv[i] : null; }
-    if (!it || it.k !== 'eq' || !Array.isArray(it.gm)) return fail('Esse equipamento não tem gemas.');
+    else if (ref.startsWith('pet:')) { const i = +ref.slice(4); it = intIn(i, 0, PET_EQ) && Array.isArray(c.pets) ? c.pets[i] : null; }
+    if (!it || (it.k !== 'eq' && it.k !== 'pet') || !Array.isArray(it.gm)) return fail('Esse item não tem gemas.');
     const idx = m.all ? it.gm.map((_, i) => i) : (intIn(m.si, 0, it.gm.length) ? [m.si] : []);
     const ids = idx.filter(i => it.gm[i]).map(i => it.gm[i]); if (!ids.length) return fail('Nenhuma gema nesse engaste.');
     const inv2 = c.inv.map(x => x && { ...x });
     for (const id of ids) if (!addItem(inv2, { k: 'mat', id: 'g_' + id, n: 1 })) return fail('Mochila cheia!');
     for (const id of ids) addItem(c.inv, { k: 'mat', id: 'g_' + id, n: 1 });
     for (const i of idx) it.gm[i] = null; if (!it.gm.some(Boolean)) delete it.gm;
-    F('upOk'); T('💎 Gema(s) retirada(s): ' + ids.length); L(`<span style="color:#7fe0ff">💎 GM: ${ids.length} gema(s) retirada(s) de ${it.name} (voltaram como pergaminho).</span>`); return done();
+    F('upOk'); T('💎 Gema(s) retirada(s): ' + ids.length); L(`<span style="color:#7fe0ff">💎 GM: ${ids.length} gema(s) retirada(s) de ${it.k === 'pet' ? nm(it) : it.name} (voltaram como pergaminho).</span>`); return done();
   }
   if (t === 'sp_start' || t === 'sp_pick' || t === 'sp_reset') {            // Mestre dos Caminhos (nível 100)
     if (!npcFor('caminhos')) return fail('Chegue perto do Mestre dos Caminhos.');
@@ -2011,7 +2071,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

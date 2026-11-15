@@ -16,8 +16,9 @@ export class Player extends Schema {
   gt = "";         // sigla da guilda (aparece ao lado do nome)
   sp = "";         // Caminho de especialização escolhido (nível 100): id
   fm = 0;          // v1.77: 1 = personagem feminino (só aparência)
+  pt = "";         // v1.80: mascotes equipados (ids separados por vírgula)
 }
-defineTypes(Player, { name: "string", cls: "string", level: "number", x: "float32", z: "float32", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8", hp: "uint32", mhp: "uint32", gt: "string", sp: "string", fm: "uint8" });
+defineTypes(Player, { name: "string", cls: "string", level: "number", x: "float32", z: "float32", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8", hp: "uint32", mhp: "uint32", gt: "string", sp: "string", fm: "uint8", pt: "string" });
 
 // Monstro simulado no servidor: todos os jogadores veem o mesmo monstro, na mesma posição e com a mesma vida.
 export class Monster extends Schema {
