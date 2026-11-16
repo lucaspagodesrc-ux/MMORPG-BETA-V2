@@ -447,6 +447,8 @@
   #audioPanel{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-width:94vw;padding:14px;z-index:40}
   #audioPanel h3{margin:0 0 6px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
   .arow{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:10px}
+  .osep{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}.ohint{font-size:11px;margin-top:3px}
+  .olang{display:flex;gap:6px}.alang{padding:5px 9px;border-radius:7px;border:1px solid var(--line);background:#1d2b3a;color:#fff;cursor:pointer;font-size:12px}.alang:hover,.alang.on{border-color:var(--gold)}.alang.on{background:#2a2414}
   .amute{width:36px;height:30px;border-radius:7px;border:1px solid var(--line);background:#1d2b3a;color:#fff;cursor:pointer;font-size:15px}
   .amute:hover{border-color:var(--gold)}.amute.off{border-color:var(--no);background:#3a1d22}
   .aslide{display:flex;gap:10px;align-items:center;margin-top:6px}.aslide input{flex:1;accent-color:var(--gold);cursor:pointer}.aslide b{width:42px;text-align:right;font-size:12px}
@@ -522,9 +524,8 @@
     <button data-win="titles" title="Títulos (T)">🏅</button>
     <button data-win="pets" title="Mascotes (P)">🐾</button>
     <button data-win="fz" id="btnFz" title="Loja de Diamantes • Fantasias (J)">💎</button>
-    <button id="btnLang" title="Idioma / Language">🌐</button>
     <button data-win="help" title="Ajuda (H)">❔</button>
-    <button id="btnAudio" title="Áudio: música e efeitos">🔊</button>
+    <button id="btnAudio" title="Opções: áudio, idioma e nome">⚙️</button>
     <button id="btnMenu" title="Trocar personagem">🚪</button>
   </div>
   <div id="win-inv" class="panel win"><h3><span>🎒 Mochila</span><span><span class="muted" id="invGold"></span> <button class="x" data-close="inv">✕</button></span></h3><div id="invTabs" class="ptabs"></div><div id="invGrid"></div><div id="invTools"><button id="btnOrg" title="Junta pilhas e ordena: equipamentos, poções e materiais">🧹 Organizar mochila</button><button id="btnBrk" title="Selecione vários equipamentos e quebre de uma vez: os materiais de criação vêm daqui">🔨 Quebrar itens</button></div><div id="invBrk" style="display:none"><div id="invBrkInfo"></div><div class="selbtns"><button data-brkact="sel">🔨 Quebrar selecionados</button><button data-brkact="common">Equip. comuns</button><button data-brkact="clear">Limpar</button><button data-brkact="off">Sair</button></div></div><div id="invSell" style="display:none"><div id="invSellInfo"></div><div class="selbtns"><button data-sellact="sel">💰 Vender selecionados</button><button data-sellact="common">Equip. comuns</button><button data-sellact="mats">Materiais</button><button data-sellact="clear">Limpar</button></div></div><p class="muted" style="margin:8px 0 0">Clique: equipar / usar • Ctrl+clique numa pilha: separar • Botão direito ou Shift+clique: derrubar no chão (some em 30 s) • Passe o mouse para ver detalhes e comparar com o equipado.</p></div>
@@ -550,7 +551,7 @@
   <span class="muted">Espaço</span> — atacar o inimigo mais próximo<br>
   <span class="muted">U</span> — janela da Guilda • <span class="muted">/g texto</span> — chat da guilda<br>
   <span class="muted">E</span> — pegar item / falar com NPC próximo · <span class="muted">Clique no NPC</span> — conversar<br>
-  <span class="muted">M</span> — abre/fecha o mapa · <span class="muted">🔊</span> (menu) — liga/desliga e volume da música e dos efeitos<br>
+  <span class="muted">M</span> — abre/fecha o mapa · <span class="muted">⚙️</span> (menu) — Opções: volume da música e dos efeitos, idioma e esconder o seu nome<br>
   <span class="muted">B</span> — voltar à cidade mais próxima (canaliza 3 s; cancela se você andar ou levar dano)<br>
   <span class="muted">I</span> mochila · <span class="muted">C</span> personagem · <span class="muted">K</span> habilidades · <span class="muted">Q</span> missões · <span class="muted">Esc</span> fechar<br>
   <span class="muted">Mochila:</span> passe o mouse no item para <b>comparar com o equipado</b> · botão direito (ou Shift+clique) <b>derruba</b> o item no chão — ele some em 30 s.<br>
@@ -571,13 +572,16 @@
 <div id="toast"></div>
 <div id="tip"></div>
 <div id="tip2"></div>
-<button id="audioFab" title="Áudio: música e efeitos">🔊</button>
+<button id="audioFab" title="Opções: áudio, idioma e nome">⚙️</button>
 <div id="audioPanel" class="panel">
-  <h3><span>🔊 Áudio e gráficos</span><button class="x" id="aClose" title="Fechar">✕</button></h3>
+  <h3><span>⚙️ Opções</span><button class="x" id="aClose" title="Fechar">✕</button></h3>
   <div class="arow"><span>🎵 Música</span><button id="aMm" class="amute" title="Mutar / ativar a música (M)">🔊</button></div>
   <div class="aslide"><input type="range" id="aMv" min="0" max="100" step="1" aria-label="Volume da música"><b id="aMvT"></b></div>
   <div class="arow"><span>⚔️ Efeitos (monstros, skills…)</span><button id="aSm" class="amute" title="Mutar / ativar os efeitos">🔊</button></div>
   <div class="aslide"><input type="range" id="aSv" min="0" max="100" step="1" aria-label="Volume dos efeitos"><b id="aSvT"></b></div>
+  <div class="arow osep"><span>🏷️ Esconder meu nome</span><button id="oHideName" class="amute" title="Esconde o nome, título, guilda e nível em cima do seu personagem (só para você)">👁️</button></div>
+  <div class="muted ohint">Some só da sua tela — os outros jogadores continuam vendo.</div>
+  <div class="arow osep"><span>🌐 Idioma / Language</span><span class="olang" data-notr><button class="alang" data-lang="pt">🇧🇷 PT</button><button class="alang" data-lang="en">🇺🇸 EN</button></span></div>
   <div class="arow" style="margin-top:8px;display:none"><span>✒️ Contorno de tinta</span><button id="gInk" class="amute" title="Liga/desliga o contorno desenhado à mão (desligar melhora o desempenho)">✔</button></div>
    <div class="arow" style="display:none"><span>🌈 Realce de cores</span><button id="gFx" class="amute" title="Contraste, saturação e vinheta suave">✔</button></div>
    <div id="aStat" class="muted"></div>
@@ -925,7 +929,7 @@ const AUDUI=(function(){
   $('aMm').textContent=c.mm?'🔇':'🔊';$('aMm').classList.toggle('off',c.mm);
   $('aSm').textContent=c.sm?'🔇':'🔊';$('aSm').classList.toggle('off',c.sm);
   const all=(c.mm||c.mv===0)&&(c.sm||c.sv===0),ic=all?'🔇':'🔊';
-  $('btnAudio').textContent=ic;$('audioFab').textContent=ic;
+  $('btnAudio').title=$('audioFab').title=(all?'🔇 ':'')+'Opções: áudio, idioma e nome';
   const st=AUD.status();
   $('aStat').innerHTML=c.mm?'Música silenciada.':st==='mp3'?'♪ <b>The Reason of Your Conviction</b>':st==='gen'?'⚠️ O arquivo <b>tema.mp3</b> não foi encontrado — tocando uma música ambiente provisória. Veja o README para adicionar a música.':'Carregando música…';
  }
@@ -940,6 +944,10 @@ const AUDUI=(function(){
  $('audioFab').addEventListener('click',()=>panel());
  $('btnAudio').addEventListener('click',()=>panel());
  $('aClose').addEventListener('click',()=>panel(false));
+ /* v1.94: esconder o próprio nome (só na tela de quem ligou; guardado no navegador) */
+ const hn=$('oHideName'),hnSync=()=>{hn.textContent=window.OPT_HIDENAME?'🙈':'👁️';hn.classList.toggle('off',!!window.OPT_HIDENAME);hn.title=window.OPT_HIDENAME?'Seu nome está escondido (clique para mostrar)':'Esconde o nome, título, guilda e nível em cima do seu personagem (só para você)';};
+ try{window.OPT_HIDENAME=localStorage.getItem('mmo_hidename')==='1';}catch(e){window.OPT_HIDENAME=false;}
+ hnSync();hn.addEventListener('click',()=>{window.OPT_HIDENAME=!window.OPT_HIDENAME;try{localStorage.setItem('mmo_hidename',window.OPT_HIDENAME?'1':'0');}catch(e){}hnSync();});
  window.addEventListener('keydown',e=>{if(e.key==='Escape')panel(false);});
  // navegadores só liberam áudio depois de um clique/tecla do jogador
  for(const ev of['pointerdown','keydown','touchend'])window.addEventListener(ev,()=>AUD.ensure(),{passive:true});
@@ -1580,7 +1588,7 @@ const ground5=B.CreateGround("ground5",{width:GW,height:GW,noFit:1},scene);groun
 const GSET=(()=>{const c={ink:1,fx:1,man:0};try{const j=JSON.parse(localStorage.getItem('mmo_gfx')||'null');if(j){c.ink=j.ink===0?0:1;c.fx=j.fx===0?0:1;c.man=j.man?1:0;}}catch(e){}return c;})();
 const saveGset=()=>{try{localStorage.setItem('mmo_gfx',JSON.stringify(GSET));}catch(e){}};
 /* v1.84: CONTORNO DE TINTA e REALCE DE CORES desativados para deixar o jogo mais leve (o código continua aqui).
-   Para trazer de volta: troque as duas constantes abaixo para true (as opções reaparecem no menu 🔊 Áudio e gráficos ao tirar o display:none das duas linhas). */
+   Para trazer de volta: troque as duas constantes abaixo para true (as opções reaparecem no menu ⚙️ Opções ao tirar o display:none das duas linhas). */
 const INK_FEATURE=false,FX_FEATURE=false;
 if(!INK_FEATURE)GSET.ink=0;if(!FX_FEATURE)GSET.fx=0;
 let INK_ON=!!GSET.ink;const INKED=new Set();
@@ -1627,7 +1635,7 @@ function perfWatch(now){
  if(PERF.k<2){PERF.k=2;PERF.lodK=.6;PERF.lodT=0;return;}
  if(!INK_ON){const hs=engine.getHardwareScalingLevel();if(hs<1.5){engine.setHardwareScalingLevel(hs+.25);toast('⚡ Resolução reduzida para melhorar o FPS');}return;}
  setInk(false);saveGset();paintG();toast('⚡ Contorno de tinta desligado (FPS baixo)');
- logMsg('<span style="color:#ffd27a">⚡ O jogo estava lento, então desliguei o <b>Contorno de tinta</b>. Para reativar: 🔊 Áudio e gráficos.</span>');
+ logMsg('<span style="color:#ffd27a">⚡ O jogo estava lento, então desliguei o <b>Contorno de tinta</b>. Para reativar: ⚙️ Opções.</span>');
 }
 function setFx(on){if(!FX_FEATURE)on=false;GSET.fx=on?1:0;const ip=scene.imageProcessingConfiguration;
  if(on){ip.contrast=1.1;ip.exposure=1;ip.vignetteEnabled=true;ip.vignetteWeight=.9;ip.vignetteStretch=0;ip.vignetteColor=new BABYLON.Color4(.04,.02,.08,0);
@@ -6146,7 +6154,7 @@ window.addEventListener('keydown',e=>{
  {const dm=/^Digit([1-8])$/.exec(e.code);if(dm){e.preventDefault();const bar=S.bar||RULES.defBar(),si=bar[(+dm[1]-1)+(e.shiftKey?8:0)];if(si>=0)castSkill(si);return;}}
  if(k==='9'){usePot('hp');return;}if(k==='0'){usePot('mp');return;}
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
- if(k==='m'){if(MB.open)mbClose();else mbOpen();return;}   /* v1.78: M abre o mapa; a música fica no ícone 🔊 */
+ if(k==='m'){if(MB.open)mbClose();else mbOpen();return;}   /* v1.78: M abre o mapa; a música fica nas ⚙️ Opções */
  if(k==='b'){startRecall();return;}
  if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='p')toggleWin('pets');else if(k==='j')toggleWin('fz');else if(k==='f')toggleWin('friends');else if(k==='y'&&S&&S.gm)toggleWin('gm');else if(k==='h')toggleWin('help');else if(k==='u')guToggle();
  else if(k==='escape'){AUDUI.panel(false);closeDialog();guClose();['inv','char','quest','skill','party','friends','gm','titles','help','pets','fz'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
@@ -7264,7 +7272,7 @@ const ttHtml=id=>{const i=id?RULES.titleInfo(id):null;return i?`<div class="tt${
 const natCol=nt=>nt&&NATS[nt]?NATS[nt].col:'';   /* v1.91: cor do nome pela nação */
 const plateHtml=(nm,lv,tt,gt,sp,nt)=>{const q=sp&&SPEC_BY[sp],c=natCol(nt);return `${ttHtml(tt)}${gt?`<span class="gt">[${esc(gt)}]</span> `:''}${q?`<span title="${esc(q.n)}">${q.i}</span> `:''}<span data-notr${c?` style="color:${c};font-weight:700;text-shadow:0 0 6px ${c}88,0 1px 2px #000"`:''}>${esc(nm)}</span> <span style="color:#ffd27a">Nv ${lv}</span>`;};
 function updateLabels(now){
- if(S&&P.root){if(!LBL_ME)LBL_ME=mkLabel('','plate');const myGt=GU.st?GU.st.tag:'',sig=S.title+'|'+S.level+'|'+S.name+'|'+myGt+'|'+(S.spec||'')+'|'+(S.nat||0);if(sig!==LBL_SIG){LBL_SIG=sig;LBL_ME.innerHTML=plateHtml(S.name,S.level,S.title,myGt,S.spec,S.nat);}if(S.hp===0||P.dead)LBL_ME.style.display='none';else place(LBL_ME,P.pos,3.0);}
+ if(S&&P.root){if(!LBL_ME)LBL_ME=mkLabel('','plate');const myGt=GU.st?GU.st.tag:'',sig=S.title+'|'+S.level+'|'+S.name+'|'+myGt+'|'+(S.spec||'')+'|'+(S.nat||0);if(sig!==LBL_SIG){LBL_SIG=sig;LBL_ME.innerHTML=plateHtml(S.name,S.level,S.title,myGt,S.spec,S.nat);}if(S.hp===0||P.dead||window.OPT_HIDENAME)LBL_ME.style.display='none';else place(LBL_ME,P.pos,3.0);}   /* v1.94: opção Esconder meu nome */
  for(const m of monsters){
   const show=m.alive&&!m.hid&&(m===P.sel||m===hover||now-m.lastHit<4000||(m.T.boss&&hyp(m.pos,P.pos)<22));
   if(!show){m.plate.style.display='none';continue;}
@@ -8166,7 +8174,7 @@ loadBabylon([
 ], 0);
 </script>
 <div id="langPop" data-notr><b>🌐 Idioma / Language</b><button data-lang="pt">🇧🇷 Português</button><button data-lang="en">🇺🇸 English</button></div>
-<script>/* v1.88: escolha do idioma (botão 🌐 na barra da direita e na tela de login) */
+<script>/* v1.88: escolha do idioma • v1.94: os botões ficam dentro de ⚙️ Opções */
 (function(){const cur=(window.I18N||{}).lang||'pt',pop=document.getElementById('langPop');
  document.querySelectorAll('[data-lang]').forEach(b=>{if(b.dataset.lang===cur)b.classList.add('on');b.addEventListener('click',e=>{e.stopPropagation();const l=b.dataset.lang;if(l===cur){pop.style.display='none';return;}
   const inGame=document.getElementById('login')&&getComputedStyle(document.getElementById('login')).display==='none';
