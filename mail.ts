@@ -100,3 +100,25 @@ export async function mailMsg(room: any, s: any, m: any) {
 export async function mailSweep() {
   try { await pool.query("delete from mail where read and gold=0 and items='[]'::jsonb and created_at < now() - interval '14 days'"); } catch (e) { console.error("mailSweep", e); }
 }
+
+/** v1.93: presente ÚNICO — um conjunto Astral completo (melhores atributos fora do engaste + 3 engastes vazios) para CADA personagem da conta GM.
+ *  Uma carta por personagem (o Correio é da conta). Roda uma vez só: a marca fica na tabela once_flags. Nível das peças = nível do personagem. */
+export async function gmAstralGift() {
+  const key = "gm_astral_v193";
+  try {
+    const f = await pool.query("insert into once_flags(id) values($1) on conflict do nothing returning id", [key]);
+    if (!f.rowCount) return;
+    const gm = (process.env.GM_USER || "GM123").toLowerCase();
+    const acc = (await pool.query("select id from accounts where lower(username)=$1", [gm])).rows[0];
+    if (!acc) { await pool.query("delete from once_flags where id=$1", [key]); return; }   // conta ainda não existe: tenta de novo no próximo início
+    const chars = (await pool.query("select name,class,level from characters where account_id=$1 order by name", [acc.id])).rows;
+    for (const c of chars) {
+      const cls = String(c.class), ilvl = Math.max(1, Math.min(R.MAX_LEVEL || 200, Number(c.level) || 1));
+      const slots = ["weapon", "armor", "helmet", "boots", "ring", "bracelet", "earring"].concat(cls === "cavaleiro" ? ["shield"] : []);
+      const items = slots.map((sl) => ({ item: R.cleanItem(R.astralBest(sl, cls, ilvl)) || R.astralBest(sl, cls, ilvl), qty: 1 }));
+      await sendMail(acc.id, { kind: "gift", title: `✦ Conjunto Astral — ${c.name}`,
+        body: `Presente para ${c.name}: conjunto Astral completo (nível ${ilvl}) com os 3 melhores atributos fora do engaste e 3 engastes vazios em cada peça.`, items });
+    }
+    console.log(`[gm] conjunto Astral enviado por correio para ${chars.length} personagem(ns) da conta GM`);
+  } catch (e) { console.error("gmAstralGift", e); }
+}

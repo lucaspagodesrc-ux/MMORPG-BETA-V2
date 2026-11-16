@@ -12,6 +12,7 @@ import { WorldRoom } from "./WorldRoom";
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error("Defina DATABASE_URL (veja .env.example).");
   await migrate();
+  import("./mail").then((m) => m.gmAstralGift());   // v1.93: presente único da conta GM
 
   const app = express();
   app.set("trust proxy", 1);

@@ -40,6 +40,24 @@ const XN={weapon:{tanque:['Gancho Solar','Gancho Faraônico','Gancho Imortal'],p
 {const fem=n=>/^(Armadura|Espada|Adaga)/.test(n),pl=n=>/^Botas/.test(n);
  const ext=a=>{const l=a[a.length-1];a.push(l.replace('Imortais','Glaciais').replace('Imortal','Glacial'));a.push(l.replace('Imortais','Eternas').replace('Imortal',fem(l)?'Eterna':'Eterno'));};
  for(const k in XN){if(Array.isArray(XN[k]))ext(XN[k]);else for(const c in XN[k])ext(XN[k][c]);}}
+/* v1.92 — conjunto ASTRAL (azul e branco): cai na Cidade das Máquinas e nos calabouços Fábrica de Ferrugem e Núcleo Ômega (OG.vset = 2) */
+const AXN={weapon:{tanque:'Gancho Astral',pierrot:'Florete Astral',assassino:'Adaga Astral',cavaleiro:'Espada Astral',guerreiro:'Montante Astral',arqueiro:'Arco Astral',mago:'Cajado Astral'},
+ armor:'Armadura Astral',helmet:'Elmo Astral',boots:'Botas Astrais',ring:'Anel Astral',bracelet:'Bracelete Astral',earring:'Brinco Astral',shield:'Escudo Astral'};
+const ASTRAL_MULT=1.12;
+/** v1.92: na Cidade das Máquinas (e nos calabouços dela) o Astral é RARO — no resto das vezes cai um item de Vulcânia (Dracônico/Solar).
+    p = chance de vir Astral: monstro comum 18% • chefe do mapa 35% • monstro de calabouço 25% • baú de calabouço 30/38/50% (por nível do baú) */
+const ASTRAL_P = { mob: .18, boss: .35, dg: .25, chest: [.3, .38, .5] };
+/** v1.93: Astral também cai em VULCÂNIA (mapa de lava e calabouços Fornalha/Caldeira), mais raro: monstro 4% • chefe 10% • monstro de calabouço 6% • baú 8/12/20% */
+const ASTRAL_V = { mob: .04, boss: .1, dg: .06, chest: [.08, .12, .2] };
+/** kind = 'mob' | 'boss' | 'dg' | 'chest' (tier 1..3 para baú). Máquinas: Astral ou item de Vulcânia • Vulcânia: item de Vulcânia ou (raro) Astral */
+function astralMo(mo, kind, tier) {
+  const og = mo && OG[mo]; if (!og || !og.vset) return mo;
+  const P = og.vset === 2 ? ASTRAL_P : ASTRAL_V, p = kind === 'chest' ? P.chest[Math.max(0, Math.min(2, (tier || 1) - 1))] : (P[kind] || P.mob);
+  const hit = Math.random() < p;
+  if (og.vset === 2) { if (hit) return mo; const vc = Object.keys(OG).filter(k => /^vc_/.test(k) && OG[k].vset === 1); return vc.length ? vc[Math.floor(Math.random() * vc.length)] : mo; }
+  if (!hit) return mo;
+  const mc = Object.keys(OG).filter(k => /^mc_/.test(k) && OG[k].vset === 2); return mc.length ? mc[Math.floor(Math.random() * mc.length)] : mo;
+}
 const SUF=['do Dragão','da Tempestade','da Sombra','do Titã','da Aurora','do Lobo'];
 const MATS={pelepolar:{n:'Pelagem Polar',i:'🤍',v:280},runabar:{n:'Runa Bárbara',i:'🔰',v:330},ossogelo:{n:'Osso Congelado',i:'❄️',v:380},fiocristal:{n:'Fio de Cristal',i:'🕸️',v:430},coracaogelo:{n:'Coração de Gelo',i:'💙',v:560},essenciagelo:{n:'Essência Glacial',i:'🔷',v:640},nucleogelo:{n:'Núcleo Glacial',i:'💠',v:2200},cristalpuro:{n:'Cristal Eterno',i:'💎',v:2800},escamagelo:{n:'Escama Glacial',i:'🐲',v:4500},gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
  seda:{n:'Seda de Aranha',i:'🕸️',v:12},presa:{n:'Presa de Orc',i:'🦷',v:18},cristal:{n:'Cristal de Gelo',i:'🧊',v:25},brasa:{n:'Brasa Infernal',i:'🔥',v:35},escama:{n:'Escama de Dragão',i:'🐉',v:300},
@@ -967,18 +985,18 @@ Object.assign(MT, {
   mc_b3: mcBoss('dragao', { n: 'Wyrm Ômega', lv: [150, 150], tint: '#5a6470', sc: 1.05, fly: 1, rng: 6, h: 6.5 })
 });
 Object.assign(OG, {
-  mc_ara: { sf: 'de Sucata', col: '#8a7e72', col2: '#2a2622', el: 'poison', ft: 'stinger', vset: 1 },
-  mc_cao: { sf: 'do Cão de Ferro', col: '#7a6a62', col2: '#2a1e1a', el: 'shadow', ft: 'spikes', vset: 1 },
-  mc_aut: { sf: 'do Autômato', col: '#9aa0a8', col2: '#2e3036', el: 'lightning', ft: 'skull', vset: 1 },
-  mc_dro: { sf: 'do Drone', col: '#6a8aa0', col2: '#1a2a36', el: 'lightning', ft: 'eyes', vset: 1 },
-  mc_cor: { sf: 'do Corvo de Ferro', col: '#5a5a66', col2: '#1a1a22', el: 'shadow', ft: 'spikes', vset: 1 },
-  mc_ser: { sf: 'Serrador', col: '#b05a3a', col2: '#3a1a10', el: 'fire', ft: 'spikes', vset: 1 },
-  mc_ves: { sf: 'da Vespa de Aço', col: '#c8a03a', col2: '#3a2a10', el: 'poison', ft: 'stinger', vset: 1 },
-  mc_gol: { sf: 'das Engrenagens', col: '#a88a5a', col2: '#3a2c18', el: 'fire', ft: 'rock', vset: 1 },
-  mc_cei: { sf: 'de Cromo', col: '#c8d0dc', col2: '#2a2e36', el: 'soul', ft: 'horns', vset: 1 },
-  mc_b1: { sf: 'do Colosso Esmagador', col: '#8a5a4a', col2: '#2a1610', el: 'fire', ft: 'rock', vset: 1 },
-  mc_b2: { sf: 'da Matriarca', col: '#7a8a9a', col2: '#1a222a', el: 'poison', ft: 'crown', vset: 1 },
-  mc_b3: { sf: 'Ômega', col: '#d03a4a', col2: '#3a0a12', el: 'lightning', ft: 'spikes', vset: 1 } });
+  mc_ara: { sf: 'de Sucata', col: '#8a7e72', col2: '#2a2622', el: 'poison', ft: 'stinger', vset: 2 },
+  mc_cao: { sf: 'do Cão de Ferro', col: '#7a6a62', col2: '#2a1e1a', el: 'shadow', ft: 'spikes', vset: 2 },
+  mc_aut: { sf: 'do Autômato', col: '#9aa0a8', col2: '#2e3036', el: 'lightning', ft: 'skull', vset: 2 },
+  mc_dro: { sf: 'do Drone', col: '#6a8aa0', col2: '#1a2a36', el: 'lightning', ft: 'eyes', vset: 2 },
+  mc_cor: { sf: 'do Corvo de Ferro', col: '#5a5a66', col2: '#1a1a22', el: 'shadow', ft: 'spikes', vset: 2 },
+  mc_ser: { sf: 'Serrador', col: '#b05a3a', col2: '#3a1a10', el: 'fire', ft: 'spikes', vset: 2 },
+  mc_ves: { sf: 'da Vespa de Aço', col: '#c8a03a', col2: '#3a2a10', el: 'poison', ft: 'stinger', vset: 2 },
+  mc_gol: { sf: 'das Engrenagens', col: '#a88a5a', col2: '#3a2c18', el: 'fire', ft: 'rock', vset: 2 },
+  mc_cei: { sf: 'de Cromo', col: '#c8d0dc', col2: '#2a2e36', el: 'soul', ft: 'horns', vset: 2 },
+  mc_b1: { sf: 'do Colosso Esmagador', col: '#8a5a4a', col2: '#2a1610', el: 'fire', ft: 'rock', vset: 2 },
+  mc_b2: { sf: 'da Matriarca', col: '#7a8a9a', col2: '#1a222a', el: 'poison', ft: 'crown', vset: 2 },
+  mc_b3: { sf: 'Ômega', col: '#d03a4a', col2: '#3a0a12', el: 'lightning', ft: 'spikes', vset: 2 } });
 ZONES.push(
   { t: 'mc_ara', x: -952, z: -38, r: 10, n: 13, col: '#3a3634', name: 'Ferro-Velho das Aranhas' },
   { t: 'mc_cao', x: -952, z: 38, r: 10, n: 13, col: '#3a3230', name: 'Canil Abandonado' },
@@ -1166,6 +1184,8 @@ function rarRoll(b) { b = b || 0; const r = Math.random(), k = 1 + b; if (r < .0
 /** Gera um equipamento. `cls` fixa a classe da arma; sem ela, 70% de chance de ser da classe do dono (`owner`). */
 function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   if (mo === true) mo = originFor(ilvl);
+  let ax = null;   // v1.93: Astral — até 3 atributos aleatórios fora do engaste; quanto melhores, mais rara a peça
+  if (mo && OG[mo] && OG[mo].vset === 2 && slot !== 'cape') { ax = rollAstralAttr(slot, slot === 'weapon' ? (cls || owner) : owner); rar = Math.max(rar, ax.rar); }
   const tier = ilvl >= 120 ? 11 : ilvl >= 90 ? 10 : ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), mult = RAR[rar].m, j = () => rnd(.92, 1.08);
   const it = { k: 'eq', slot, ilvl, rar, req: Math.max(1, ilvl - 1), plus: 0, bon: {}, hp: 0, atk: 0, def: 0 };
   if (slot === 'weapon') { cls = cls || (Math.random() < .7 && owner ? owner : pick(Object.keys(CLASSES))); it.cls = cls; it.name = tier > 6 ? XN.weapon[cls][tier - 7] : WN[cls][tier]; it.atk = Math.round((3 + ilvl * 1.7) * mult * j()); it.icon = CLASSES[cls].wi; }
@@ -1176,7 +1196,10 @@ function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   else if (slot === 'bracelet') { it.name = tier > 6 ? XN.bracelet[tier - 7] : BRN[tier]; it.atk = Math.round((1 + ilvl * .45) * mult * j()); it.def = Math.round((1 + ilvl * .3) * mult * j()); it.icon = '📿'; }
   else if (slot === 'earring') { it.name = tier > 6 ? XN.earring[tier - 7] : ERN[tier]; it.hp = Math.round(ilvl * 5 * mult); it.def = Math.round((1 + ilvl * .25) * mult * j()); it.icon = '🧿'; }
   else { it.name = tier > 6 ? XN.ring[tier - 7] : RN[tier]; it.atk = Math.round((1 + ilvl * .6) * mult * j()); it.hp = Math.round(ilvl * 4 * mult); it.icon = '💍'; }
-  if (mo && OG[mo] && OG[mo].vset) {   // v1.70 — Vulcânia: Dracônico (comum/incomum) ou Solar (raro/épico), no lugar do nome por nível
+  if (mo && OG[mo] && OG[mo].vset === 2) {   // v1.92 — Astral: sempre o visual Astral e +12% nos atributos base
+    it.name = (slot === 'weapon' ? AXN.weapon[it.cls] : AXN[slot]) || it.name;
+    it.atk = Math.round(it.atk * ASTRAL_MULT); it.def = Math.round(it.def * ASTRAL_MULT); it.hp = Math.round(it.hp * ASTRAL_MULT);
+  } else if (mo && OG[mo] && OG[mo].vset) {   // v1.70 — Vulcânia: Dracônico (comum/incomum) ou Solar (raro/épico), no lugar do nome por nível
     const sol = rar >= 2, L = { weapon: [WN[it.cls] || [], (XN.weapon[it.cls] || [])], shield: [SHN, XN.shield], armor: [AN, XN.armor], helmet: [HN, XN.helmet], boots: [BN, XN.boots], bracelet: [BRN, XN.bracelet], earring: [ERN, XN.earring], ring: [RN, XN.ring] }[slot];
     if (L) it.name = (sol ? L[1][0] : L[0][6]) || it.name;
   }
@@ -1184,6 +1207,7 @@ function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   if (rar >= 2) { if (!it.mo) it.name += ' ' + pick(SUF); const st = ['str', 'agi', 'int', 'vit']; for (let n = 0; n < rar - 1; n++) { const s = pick(st); it.bon[s] = (it.bon[s] || 0) + Math.max(1, Math.round(ilvl / 3)); } }
   if (rar === 3) it.name = '★ ' + it.name;
   if (sl) it.sl = sl;            // encaixes (slots) para gemas — só caem em dungeons
+  if (ax && ax.list.length) it.ax = ax.list;
   return it;
 }
 
@@ -1301,6 +1325,47 @@ const petWants = (cf, it) => { if (!it) return false; if (it.k === 'gold') retur
 const gemVal = (g, ilvl) => g.sc ? Math.max(1, Math.round(g.v * ilvl)) : g.v;
 const gemTxt = (g, ilvl) => '+' + gemVal(g, ilvl).toLocaleString('pt-BR') + (g.u || '');
 const gemCat = it => it && (it.slot === 'weapon' || it.slot === 'ring') ? 'w' : 'a';   // anéis contam como ARMA para as gemas
+/* ---------- v1.93: ATRIBUTOS ASTRAIS (fora do engaste) ----------
+   it.ax = [[idDaGema, valor], ...] (até 3, opções diferentes). São as mesmas opções das gemas de engaste da categoria da peça,
+   com valor de 1 "degrau" até o valor CHEIO de uma gema (ex.: Dano Crítico 1% a 15%). Valores altos são bem mais raros
+   (peso cai exponencialmente) e deixam a peça mais rara (Incomum → Raro → ★ Épico). Gemas "× nível" guardam a fração e crescem com o nível do item. */
+const axSteps = g => (!g.sc && g.v >= 4 && Number.isInteger(g.v)) ? g.v : 10;
+const axValAt = (g, k) => { const n = axSteps(g); return n === g.v ? k : Math.round(g.v * k / n * 1e4) / 1e4; };
+const axOk = (g, v, cat) => g && g.cat === cat && Number.isFinite(v) && v > 0 && v <= g.v + 1e-9;
+const axPool = (cat, cls) => { const sc = cls ? schoolOf(cls) : null; return GEMS.filter(g => g.cat === cat && !(sc === 'M' && (g.k === 'ampE' || g.k === 'atkE')) && !(sc === 'E' && (g.k === 'ampM' || g.k === 'atkM'))); };
+const AX_N = [.55, .87, 1];   // chance acumulada de 1 / 2 / 3 atributos
+function rollAstralAttr(slot, cls) {
+  const cat = gemCat({ slot }), pool = axPool(cat, cls).slice(), list = []; let score = 0;
+  const r = Math.random(), n = r < AX_N[0] ? 1 : r < AX_N[1] ? 2 : 3;
+  for (let i = 0; i < n && pool.length; i++) {
+    const g = pool.splice(Math.floor(Math.random() * pool.length), 1)[0], N = axSteps(g);
+    const w = []; let tot = 0; for (let k = 1; k <= N; k++) { const x = Math.exp(-3.2 * (k - 1) / Math.max(1, N - 1)); w.push(x); tot += x; }
+    let q = Math.random() * tot, k = 1; for (; k < N; k++) { if (q < w[k - 1]) break; q -= w[k - 1]; }
+    list.push([g.id, axValAt(g, k)]); score += k / N;
+    for (let j = pool.length - 1; j >= 0; j--) if (pool[j].k === g.k) pool.splice(j, 1);   // sem opção repetida
+  }
+  const rar = score >= 2.2 ? 3 : score >= 1.4 ? 2 : score >= .7 ? 1 : 0;
+  return { list, rar };
+}
+/** o melhor possível: 3 atributos no valor cheio (Amp. da escola + Taxa Crítica + Dano Crítico na arma/anel; Amp. + Taxa Crítica + Taxa Crítica Máxima nas demais) */
+function astralBestAttr(slot, cls) {
+  const cat = gemCat({ slot }), m = schoolOf(cls) === 'M';
+  const ids = cat === 'w' ? [m ? 'w_ampm' : 'w_ampe', 'w_crit', 'w_cdmg'] : [m ? 'a_ampm' : 'a_ampe', 'a_crit', 'a_cmax'];
+  return ids.map(id => [id, GEMD[id].v]);
+}
+/** peça Astral com os melhores atributos e 3 engastes vazios (presente do GM) */
+function astralBest(slot, cls, ilvl) {
+  const mo = 'mc_b3', it = genItem(slot, ilvl, 3, slot === 'weapon' ? cls : undefined, cls, MAX_SLOTS, mo);
+  it.ax = astralBestAttr(slot, cls); return it;
+}
+/** linhas para mostrar: [{ o, txt, full }] */
+function axList(it) {
+  if (!it || !Array.isArray(it.ax)) return []; const cat = gemCat(it), out = [];
+  for (const [id, v] of it.ax) { const g = GEMD[id]; if (!axOk(g, v, cat)) continue;
+    const val = g.sc ? Math.max(1, Math.round(v * it.ilvl)) : v;
+    out.push({ o: g.o, txt: '+' + (Math.round(val * 100) / 100).toLocaleString('pt-BR') + (g.u || ''), full: v >= g.v - 1e-9 }); }
+  return out;
+}
 /** escola de habilidades da classe: 'E' = física (Espada) • 'M' = mágica */
 const schoolOf = cls => (cls === 'mago' || cls === 'pierrot') ? 'M' : 'E';
 /** ATRIBUTOS DE ITEM (fora do engaste): só vêm em drops de CHEFE. it.xa = { cdmg | ampE | ampM | cmax : valor }.
@@ -1327,6 +1392,7 @@ function rollBossAttr(it, cls) {
 function gemTotals(c) {
   const t = { ampE: 0, ampM: 0, crit: 0, cdmg: 0, cmax: 0, atkE: 0, atkM: 0, pen: 0, add: 0, hp: 0, mp: 0, def: 0, drate: 0, eva: 0, lhp: 0, lmp: 0, rhp: 0, acc: 0, ignPen: 0, ignAcc: 0, ignRcrit: 0, ignRcdmg: 0, ignBlock: 0, ignRdmg: 0, rdmg: 0, rcrit: 0, rcdmg: 0, ramp: 0, lhpUp: 0, lmpUp: 0, lhpLim: 0, lmpLim: 0 };
   for (const k in c.eq) { const it = c.eq[k]; if (!it) continue; if (it.xa) for (const x in it.xa) if (x in t && xaOk(x, it.xa[x])) t[x] += xaEff(x, it.xa[x]);   // atributo de item (drop de chefe)
+    if (Array.isArray(it.ax)) { const cat = gemCat(it); for (const [id, v] of it.ax) { const g = GEMD[id]; if (axOk(g, v, cat)) t[g.k] += g.sc ? Math.max(1, Math.round(v * it.ilvl)) : v; } }   // v1.93: atributos Astrais
     if (!Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g && g.cat !== 'p') t[g.k] += gemVal(g, it.ilvl); } }
   for (const it of (Array.isArray(c.pets) ? c.pets : [])) { if (!it || it.k !== 'pet' || !Array.isArray(it.gm)) continue; for (const id of it.gm) { const g = id && GEMD[id]; if (g && g.cat === 'p') t[g.k] += gemVal(g, PET_IL); } }   // v1.80: gemas dos mascotes equipados
   for (const k in GCAP) t[k] = Math.min(t[k], GCAP[k]);
@@ -1344,7 +1410,8 @@ function rollScroll(cls, mlvl) {
 
 /* ---------- CONJUNTOS (sets): peças com a mesma ORIGEM (mo) somam bônus a cada 2/4/6 peças ---------- */
 const OGK = {};     // chave canônica da origem (dg_a = múmia, dg_boss = faraó ...)
-for (const k in OG) OGK[k] = Object.keys(OG).find(x => OG[x] === OG[k]);
+for (const k in OG) OGK[k] = OG[k].vset === 2 ? 'astral' : Object.keys(OG).find(x => OG[x] === OG[k]);   // v1.92: todas as origens Astrais formam UM conjunto
+const ASTRAL = { sf: 'Astral', col: '#6ab4ff', el: 'astral' }, setOG = key => key === 'astral' ? ASTRAL : OG[key];
 /** n = peças necessárias • b = bônus (valores em % ou pontos, multiplicados pelo "tier" da origem) */
 const SETB = {
   fire:      [{ n: 2, b: { dmgP: 4 } },            { n: 4, b: { crit: 4, cdmg: 10 } },     { n: 6, b: { ampX: 8, pen: 5 } }],
@@ -1353,11 +1420,12 @@ const SETB = {
   lightning: [{ n: 2, b: { aspd: 4 } },            { n: 4, b: { crit: 4, aspd: 4 } },      { n: 6, b: { ampX: 8, eva: 3 } }],
   gold:      [{ n: 2, b: { gf: 10 } },             { n: 4, b: { gf: 10, dmgP: 3 } },       { n: 6, b: { gf: 15, hpP: 6 } }],
   soul:      [{ n: 2, b: { mpP: 6 } },             { n: 4, b: { lmp: 1, rhp: .2 } },       { n: 6, b: { ampX: 6, lhp: 1.5 } }],
-  shadow:    [{ n: 2, b: { crit: 3 } },            { n: 4, b: { cdmg: 15, eva: 2 } },      { n: 6, b: { dmgP: 6, pen: 5 } }]};
+  shadow:    [{ n: 2, b: { crit: 3 } },            { n: 4, b: { cdmg: 15, eva: 2 } },      { n: 6, b: { dmgP: 6, pen: 5 } }],
+  astral:    [{ n: 2, b: { dmgP: 4, hpP: 4 } },    { n: 4, b: { defP: 6, crit: 4, cdmg: 12, pen: 4 } }, { n: 6, b: { ampX: 8, dmgP: 4, lhp: 1, eva: 2 } }]};   // v1.92: o conjunto mais forte
 /** rótulo e unidade de cada bônus de conjunto */
 const BLAB = { dmgP: ['Dano', '%'], hpP: ['Vida máxima', '%'], mpP: ['Mana máxima', '%'], defP: ['Defesa', '%'], aspd: ['Velocidade de ataque', '%'], gf: ['Ouro obtido', '%'], crit: ['Taxa Crítica', '%'], cdmg: ['Dano Crítico', '%'], ampX: ['Amp. de habilidades', '%'], pen: ['Perfuração', '%'], eva: ['Evasão', '%'], drate: ['Taxa de Defesa', '%'], rhp: ['Regeneração de HP', '%/s'], lhp: ['Absorção de HP', '%'], lmp: ['Absorção de MP', '%'] };
 /** quanto o conjunto vale: origens de monstros mais fortes dão bônus maiores (0,5× a 1,6×) */
-const setTf = key => { const m = MT[key]; const L = m && m.lv ? m.lv[0] : 30; return Math.max(.5, Math.min(1.6, .5 + L / 90)); };
+const setTf = key => { if (key === 'astral') return 1.8; const m = MT[key]; const L = m && m.lv ? m.lv[0] : 30; return Math.max(.5, Math.min(1.6, .5 + L / 90)); };
 /** v1.71: bônus de conjunto de Taxa Crítica, Dano Crítico e Amp. de habilidades valem só 30% (o forte agora são as gemas) */
 const SET_SOFT = { crit: .3, cdmg: .3, ampX: .3 };
 const setVal = (v, tf, k) => Math.round(v * tf * (SET_SOFT[k] || 1) * 10) / 10;
@@ -1366,7 +1434,7 @@ function setCounts(c) { const n = {}; for (const k in c.eq) { const it = c.eq[k]
 function setBonus(c) {
   const tot = {}, act = [], cnt = setCounts(c);
   for (const key in cnt) {
-    const n = cnt[key]; if (n < 2) continue; const og = OG[key], tf = setTf(key), on = [];
+    const n = cnt[key]; if (n < 2) continue; const og = setOG(key), tf = setTf(key), on = [];
     for (const t of SETB[og.el] || []) if (n >= t.n) { on.push(t.n); for (const k in t.b) tot[k] = (tot[k] || 0) + setVal(t.b[k], tf, k); }
     act.push({ key, name: og.sf, el: og.el, n, on, tf });
   }
@@ -1374,7 +1442,7 @@ function setBonus(c) {
 }
 /** descrição de um conjunto (para a janela de item): cada degrau com o texto do bônus */
 function setInfo(key, have) {
-  const og = OG[OGK[key] || key]; if (!og) return null; const tf = setTf(OGK[key] || key);
+  const og = setOG(OGK[key] || key); if (!og) return null; const tf = setTf(OGK[key] || key);
   return { name: 'Conjunto ' + og.sf, col: og.col, tiers: (SETB[og.el] || []).map(t => ({ n: t.n, on: have >= t.n, txt: Object.keys(t.b).map(k => '+' + setVal(t.b[k], tf, k) + (BLAB[k][1] === '%/s' ? '%/s' : '%') + ' ' + BLAB[k][0]).join(' • ') })) };
 }
 
@@ -1594,7 +1662,7 @@ function rollLoot(T, mlvl, cls, luck) {
     if (Math.random() < (T.boss ? 1 : UP_DROP.ferro)) out.push({ k: 'mat', id: 'ferro', n: T.boss ? ri(3, 6) : ri(1, 2) });
     if (Math.random() < (T.boss ? .6 : UP_DROP.essencia)) out.push({ k: 'mat', id: 'essencia', n: T.boss ? ri(1, 3) : 1 });
   }
-  if (Math.random() < T.eq * (1 + luck / 100) * (T.dg ? 1.3 : 1)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + (T.dg ? .35 : 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .022 * lk ? 2 : Math.random() < .11 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(T.dg ? 1 : 0, 2)), rar, undefined, cls, sl, T.id); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.dg) dgAttrBoost(it); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
+  if (Math.random() < T.eq * (1 + luck / 100) * (T.dg ? 1.3 : 1)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + (T.dg ? .35 : 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .022 * lk ? 2 : Math.random() < .11 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(T.dg ? 1 : 0, 2)), rar, undefined, cls, sl, astralMo(T.id, T.dg ? 'dg' : T.boss ? 'boss' : 'mob')); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.dg) dgAttrBoost(it); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
   if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
   if (T.boss && !T.chest && Math.random() < (T.dg ? .035 : .02) * (1 + luck / 100)) out.push(rollScroll(cls, mlvl));   // pergaminho de opção: chance mínima em chefes
   if (Math.random() < T.pot) out.push({ k: 'pot', id: (Math.random() < .65 ? 'hp' : 'mp') + (T.lv[0] >= 50 ? '2' : ''), n: ri(1, T.boss ? 4 : 1) });
@@ -1610,7 +1678,7 @@ function dgChestLoot(dg, tier, cls, luck) {
     const p2 = bad ? 0 : [.09, .15, .26][tier - 1] * lk, p1 = bad ? .04 : [.34, .42, .48][tier - 1] * lk, r = Math.random();
     const sl = r < p2 ? 2 : r < p2 + p1 ? 1 : 0;
     const mo = Math.random() < .7 ? (dg.cm || ['dg_s1', 'dg_s2', 'dg_boss'])[tier - 1] : pick(dg.mm || ['dg_a', 'dg_b', 'dg_c', 'dg_d']);
-    const it = genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, mo); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (!bad) dgAttrBoost(it); return it;
+    const it = genItem(pick(slotPool(cls)), ilvl, rar, undefined, cls, sl, astralMo(mo, 'chest', tier)); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (!bad) dgAttrBoost(it); return it;
   };
   out.push(mk(Math.random() < [.30, .22, .12][tier - 1] / (1 + luck / 100)));
   if (tier === 3 && Math.random() < .4) out.push(mk(false));
@@ -1887,12 +1955,13 @@ function cleanItem(it) {
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
   it.plus = Math.max(0, Math.min(MAXPLUS, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
   if (it.wb && it.rar === 3 && it.slot !== 'cape') it.wb = 1; else delete it.wb;       // relíquia de chefe de mundo: limites maiores
-  const mx = itemMax(it.slot, it.ilvl, it.rar), wk = it.wb ? 1.45 : 1;
+  const mx = itemMax(it.slot, it.ilvl, it.rar), wk = (it.wb ? 1.45 : 1) * (it.mo && OG[it.mo] && OG[it.mo].vset === 2 ? ASTRAL_MULT : 1);   // v1.93: Astral +12%
   for (const k of ['atk', 'def', 'hp']) { const v = Number(it[k]) || 0; it[k] = Math.max(0, Math.min(Math.round(mx[k] * wk + 1), Math.round(v))); }
   const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1) * (it.wb ? 3 : 1), nb = {};
   for (const s of ['str', 'agi', 'int', 'vit']) if (it.bon && it.bon[s] > 0) nb[s] = Math.min(bmax, Math.floor(it.bon[s]));
   it.bon = nb;
   { const xa = {}; if (it.xa && typeof it.xa === 'object' && it.slot !== 'cape') for (const k in it.xa) if (xaOk(k, it.xa[k])) xa[k] = it.xa[k]; if (Object.keys(xa).length) it.xa = xa; else delete it.xa; }
+  { const cat = gemCat(it), ax = [], seen = {}; if (Array.isArray(it.ax) && it.slot !== 'cape') for (const e of it.ax.slice(0, 3)) { const g = Array.isArray(e) && GEMD[e[0]]; const v = g && Number(e[1]); if (axOk(g, v, cat) && !seen[g.k]) { seen[g.k] = 1; ax.push([g.id, v]); } } if (ax.length) it.ax = ax; else delete it.ax; }   // v1.93
   it.sl = Math.max(0, Math.min(MAX_SLOTS, Math.floor(it.sl || 0))); if (!it.sl || it.slot === 'cape') delete it.sl;
   { const cat = gemCat(it), gm = [];   // gemas engastadas: categoria certa (a mesma opção PODE repetir em vários engastes)
     for (let i = 0; i < (it.sl || 0); i++) { const id = Array.isArray(it.gm) ? it.gm[i] : null, g = typeof id === 'string' && GEMD[id]; if (g && g.cat === cat) gm.push(id); else gm.push(null); }
@@ -2413,7 +2482,7 @@ const castMs = (cls, i, x) => {
   return Math.round(Math.max(a, t));
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
