@@ -101,24 +101,35 @@ export async function mailSweep() {
   try { await pool.query("delete from mail where read and gold=0 and items='[]'::jsonb and created_at < now() - interval '14 days'"); } catch (e) { console.error("mailSweep", e); }
 }
 
-/** v1.93: presente ÚNICO — um conjunto Astral completo (melhores atributos fora do engaste + 3 engastes vazios) para CADA personagem da conta GM.
- *  Uma carta por personagem (o Correio é da conta). Roda uma vez só: a marca fica na tabela once_flags. Nível das peças = nível do personagem. */
+/** v1.93b: presente ÚNICO da conta GM — conjunto Astral completo para CADA personagem:
+ *  peças ★ Épicas no nível do personagem, +10, com os 3 melhores atributos Astrais e os 3 engastes JÁ com gemas (como no pacote do Noel:
+ *  arma/anel = Fúria Rubra (Dano Crítico) • bracelete = Cálice Vital • brinco = Sede Rubra • armadura/elmo/botas/escudo = Amp. da escola).
+ *  Vai o PAR de anel, bracelete e brinco. As cartas antigas (v1.93) que ainda não foram recolhidas são apagadas e substituídas.
+ *  Uma carta por personagem (o Correio é da conta). Roda uma vez só: a marca fica na tabela once_flags. */
 export async function gmAstralGift() {
-  const key = "gm_astral_v193";
+  const key = "gm_astral_v193b";
   try {
     const f = await pool.query("insert into once_flags(id) values($1) on conflict do nothing returning id", [key]);
     if (!f.rowCount) return;
     const gm = (process.env.GM_USER || "GM123").toLowerCase();
     const acc = (await pool.query("select id from accounts where lower(username)=$1", [gm])).rows[0];
     if (!acc) { await pool.query("delete from once_flags where id=$1", [key]); return; }   // conta ainda não existe: tenta de novo no próximo início
+    await pool.query("insert into once_flags(id) values('gm_astral_v193') on conflict do nothing");   // a versão antiga não roda mais
+    const del = await pool.query("delete from mail where account_id=$1 and kind='gift' and title like '✦ Conjunto Astral%' and items<>'[]'::jsonb", [acc.id]);
     const chars = (await pool.query("select name,class,level from characters where account_id=$1 order by name", [acc.id])).rows;
     for (const c of chars) {
       const cls = String(c.class), ilvl = Math.max(1, Math.min(R.MAX_LEVEL || 200, Number(c.level) || 1));
-      const slots = ["weapon", "armor", "helmet", "boots", "ring", "bracelet", "earring"].concat(cls === "cavaleiro" ? ["shield"] : []);
-      const items = slots.map((sl) => ({ item: R.cleanItem(R.astralBest(sl, cls, ilvl)) || R.astralBest(sl, cls, ilvl), qty: 1 }));
-      await sendMail(acc.id, { kind: "gift", title: `✦ Conjunto Astral — ${c.name}`,
-        body: `Presente para ${c.name}: conjunto Astral completo (nível ${ilvl}) com os 3 melhores atributos fora do engaste e 3 engastes vazios em cada peça.`, items });
+      const amp = R.schoolOf(cls) === "M" ? "a_ampm" : "a_ampe";
+      const slots = ["weapon", "armor", "helmet", "boots", "ring", "ring", "bracelet", "bracelet", "earring", "earring"].concat(cls === "cavaleiro" ? ["shield"] : []);
+      const items = slots.map((sl) => {
+        const it = R.astralBest(sl, cls, ilvl);
+        const g = sl === "weapon" || sl === "ring" ? "w_cdmg" : sl === "bracelet" ? "a_lhpl" : sl === "earring" ? "a_lhpu" : amp;
+        it.plus = R.MAXPLUS || 10; it.sl = 3; it.gm = [g, g, g];
+        return { item: R.cleanItem(it) || it, qty: 1 };
+      });
+      await sendMail(acc.id, { kind: "gift", title: `✦ Conjunto Astral +10 — ${c.name}`,
+        body: `Presente para ${c.name}: conjunto Astral +10 completo (nível ${ilvl}, com o par de anel, bracelete e brinco), 3 melhores atributos fora do engaste e 3 gemas engastadas em cada peça.`, items });
     }
-    console.log(`[gm] conjunto Astral enviado por correio para ${chars.length} personagem(ns) da conta GM`);
+    console.log(`[gm] conjunto Astral +10 enviado para ${chars.length} personagem(ns) da conta GM (${del.rowCount} carta(s) antiga(s) substituída(s))`);
   } catch (e) { console.error("gmAstralGift", e); }
 }
