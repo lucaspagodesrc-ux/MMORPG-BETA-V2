@@ -149,11 +149,29 @@ export class WorldRoom extends Room<WorldState> {
     const now = Date.now(), p = this.playerOf(s), sid = s.client.sessionId; if (!p) return;
     s.cls = (s.cls || []).filter((c) => c.k !== k && now < c.until);                      // lançar de novo substitui os clones do mesmo tipo
     for (const it of items) {
-      const c: PClone = { j: it.j, k, x: it.x, z: it.z, tid: it.tid, next: now + 250, busy: 0, sw: 0, until: now + sk.dur * 1000, mult: sk.cloneMult || 0.5, inst: p.inst || 0, seek: sk.seek || 7 };
+      const c: PClone = { j: it.j, k, x: it.x, z: it.z, tid: it.tid, next: now + 250, busy: 0, sw: 0, until: now + sk.dur * 1000, mult: (sk.cloneMult || 0.5) * 1.15, inst: p.inst || 0, seek: sk.seek || 7 };
       s.cls.push(c);
       if (k === "d") this.sim.lure("d" + sid, c, c.inst, sk.dur * 1000, 9, sid);        // os monstros passam a focar o clone
     }
     s.clAt = 0; this.clonesSend(s, p, now);
+  }
+  /** v1.90: os clones ativos repetem a Estocada / Estocada Tripla no alvo deles (ou no seu alvo, se estiver perto). */
+  private cloneEcho(s: Sess, sk: any, mult: number, so: any, tgt: any) {
+    const now = Date.now(), p = this.playerOf(s); if (!p || !s.cls || !s.cls.length) return;
+    const n = sk.type === "multi" ? (sk.hits || 3) : 1;
+    for (const c of s.cls) {
+      if (now >= c.until) continue;
+      let f: any = null;
+      if (typeof c.tid === "number") { const q = this.sim.byId.get(c.tid); if (q && q.m.alive && Math.hypot(q.m.x - c.x, q.m.z - c.z) <= 7) f = q; }
+      else if (typeof c.tid === "string" && s.pv && s.pv.mode) f = this.pvp.target(s, c.tid.slice(1));
+      if (!f && tgt && tgt.m.alive && Math.hypot(tgt.m.x - c.x, tgt.m.z - c.z) <= 7) f = tgt;
+      if (!f) continue;
+      const reach = 1.3 + 0.5 * (f.bs || 1), dx = f.m.x - c.x, dz = f.m.z - c.z, d = Math.hypot(dx, dz) || 1;
+      if (d > reach) { c.x += (dx / d) * (d - reach * 0.9); c.z += (dz / d) * (d - reach * 0.9); }   // o clone avança até o alvo
+      c.busy = now + 200 + n * 190; c.next = c.busy;
+      for (let h = 0; h < n; h++) this.later(180 + h * 190, () => { if (!f.m.alive) return; c.sw++; this.hit(s, f, mult * c.mult, { ...so, clone: true }); });
+    }
+    s.clAt = 0;
   }
   private clonesSend(s: Sess, p: any, now: number) {
     s.clAt = now + 100;
@@ -530,7 +548,7 @@ export class WorldRoom extends Room<WorldState> {
     let ux = 0, uz = 1;                    // direção da habilidade (Escudo Voador / Raio do Escudo)
     if (Number.isFinite(m?.dx) && Number.isFinite(m?.dz)) { const dl = Math.hypot(m.dx, m.dz); if (dl > 0.01) { ux = m.dx / dl; uz = m.dz / dl; } }
     let hc: { x: number; z: number } | null = null;   // v1.89 Estrela Sombria: centro da estrela
-    if (sk.type === "hexStar") { let gx = Number(m?.cx), gz = Number(m?.cz); if (!Number.isFinite(gx) || !Number.isFinite(gz)) { gx = p.x + ux * 5; gz = p.z + uz * 5; } const gd = Math.hypot(gx - p.x, gz - p.z), lim = sk.range + 2; if (gd > lim) { gx = p.x + (gx - p.x) / gd * lim; gz = p.z + (gz - p.z) / gd * lim; } hc = { x: gx, z: gz }; }
+    if (sk.type === "hexStar" || sk.type === "bomb") { let gx = Number(m?.cx), gz = Number(m?.cz); if (!Number.isFinite(gx) || !Number.isFinite(gz)) { gx = p.x + ux * 5; gz = p.z + uz * 5; } const gd = Math.hypot(gx - p.x, gz - p.z), lim = sk.range + 2; if (gd > lim) { gx = p.x + (gx - p.x) / gd * lim; gz = p.z + (gz - p.z) / gd * lim; } hc = { x: gx, z: gz }; }
     let ft: any = null;                    // Florete Voador: alvo opcional (o clone nasce ao lado dele)
     if (sk.type === "foilThrow") {
       ft = (s.pv && s.pv.mode && m?.pid) ? this.pvp.target(s, String(m.pid)) : this.sim.byId.get(Number(m?.tid));
@@ -543,8 +561,8 @@ export class WorldRoom extends Room<WorldState> {
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
     switch (sk.type) {
-      case "single": this.later((pr ? flight : 150) + (sk.pre || 0), () => tgt && this.hit(s, tgt, mult, so)); break;
-      case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * (sk.fan ? 60 : 190) + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); break;
+      case "single": this.later((pr ? flight : 150) + (sk.pre || 0), () => tgt && this.hit(s, tgt, mult, so)); if ((sk as any).echo) this.cloneEcho(s, sk, mult, so, tgt); break;
+      case "multi": for (let h = 0; h < sk.hits; h++) this.later(h * (sk.fan ? 60 : 190) + (pr ? flight : 0), () => tgt && this.hit(s, tgt, mult)); if ((sk as any).echo) this.cloneEcho(s, sk, mult, so, tgt); break;
       case "aoeSelf": this.later(sk.delay || 200, () => { const q = this.playerOf(s); this.hitArea(s, sk.delay && q ? q.x : px, sk.delay && q ? q.z : pz, sk.radius, mult, so); }); break;
       case "shieldThrow": {                 // escudo voa (perfura), gira 2s no alcance máximo (área) e volta
         const SPD = (sk as any).fspd || 16, SPIN = ((sk as any).spin || 2) * 1000, NT = Math.max(1, Math.floor(SPIN / 400)), tOut = (sk.range / SPD) * 1000, sx = p.x, sz = p.z, ex = sx + ux * sk.range, ez = sz + uz * sk.range;
@@ -563,7 +581,7 @@ export class WorldRoom extends Room<WorldState> {
         for (let h = 0; h < sk.hits; h++) this.later(t0 + h * gap, () => { if (p.dead) return; if (maxT) this.hitAreaMax(s, p.x, p.z, sk.radius, mult, so, maxT); else this.hitArea(s, p.x, p.z, sk.radius, mult, so); });
         if ((sk as any).cloneSpin) this.later(t0 + gap, () => {             // Redemoinho Circense: cada clone ativo dá 1 giro com 20% do dano
           const tn = Date.now(), L = (s.cls || []).filter((c) => tn < c.until); if (!L.length || p.dead) return;
-          for (const c of L) { c.busy = tn + 500; this.hitAreaMax(s, c.x, c.z, sk.radius, mult * (sk as any).cloneSpin, { ...so, clone: true }, maxT || 99); }
+          for (const c of L) { c.busy = tn + 500; this.hitAreaMax(s, c.x, c.z, sk.radius, mult * (sk as any).cloneSpin * 1.15, { ...so, clone: true }, maxT || 99); }   // v1.90: clones +15%
           this.nearSend(p, "clspin", { by: s.client.sessionId, r: sk.radius, c: L.map((c) => c.j) });
         });
         break;
@@ -642,6 +660,9 @@ export class WorldRoom extends Room<WorldState> {
         this.later(Math.max(120, flight), () => tgt && this.hit(s, tgt, mult, so)); break;
       }
       case "xslash": this.later(150, () => { const q = this.playerOf(s); if (!q || q.dead) return; this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.8, mult, so); }); break;   // v1.89 Corte Rápido: corte em X para a frente
+      case "bomb": {                        // v1.90 Kbum: a bomba voa, conta 3 s e explode em área
+        const bx = hc!.x, bz = hc!.z; this.later(450 + ((sk as any).fuse || 3) * 1000, () => this.hitArea(s, bx, bz, sk.radius, mult, so)); break;
+      }
       case "hexStar": {                     // v1.89 Estrela Sombria: voa pelas 6 pontas e fere quem estiver dentro da estrela
         const R0 = (sk as any).starR || 4.6, a0 = Math.atan2(p.x - hc!.x, p.z - hc!.z), tip = (k: number) => ({ x: hc!.x + Math.sin(a0 + k * Math.PI / 3) * R0, z: hc!.z + Math.cos(a0 + k * Math.PI / 3) * R0 });
         const end = tip(3);

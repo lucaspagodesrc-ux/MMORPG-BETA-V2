@@ -73,6 +73,8 @@
   .lbl.bub::before{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(255,253,244,.96);border-bottom:0;z-index:1}
   .lbl.bub.pt{border-color:#2a7a9a}.lbl.bub.pt::after{border-top-color:#2a7a9a}
   .lbl.drop{font-size:11px;padding:1px 5px;background:rgba(0,0,0,.55);border-radius:4px}
+  .kbcd{position:absolute;left:0;top:0;font:900 64px/1 'Arial Black',Impact,sans-serif;color:#ffe14a;-webkit-text-stroke:3px #7a1600;text-shadow:0 4px 0 #3a0a00,0 0 18px rgba(255,120,0,.8);pointer-events:none;will-change:transform}
+  .kaboom{position:absolute;left:0;top:0;width:260px;height:190px;pointer-events:none;will-change:transform}
   .fl{position:absolute;left:0;top:0;font-weight:800;font-size:15px;text-shadow:0 1px 3px #000,0 0 5px #000;will-change:transform}
   .fl.big{font-size:22px}
   .panel{position:absolute;background:rgba(13,20,31,.9);border:1px solid var(--line);backdrop-filter:blur(8px);border-radius:12px;box-shadow:0 8px 28px #0006}
@@ -4830,6 +4832,36 @@ function cloakFx(o,dur){
   if(now>nx){nx=now+80;puff(p.x+(Math.random()-.5)*1.2,p.z+(Math.random()-.5)*1.2);}},
   done:()=>{cl.getChildMeshes().forEach(q=>q.dispose());cl.dispose();cm.dispose();setV(0);o.cloakUntil=0;o.cloakEnd=null;}}));
 }
+/* ===== v1.90 Pierrot — Kbum: a bomba voa, pisca e cresce numa contagem de 3 s e explode com um "KABUM!" de quadrinho ===== */
+const KABOOM_SVG=(()=>{const KBT=(window.I18N&&I18N.lang==="en")?"KABOOM!":"KABUM!",KBS=KBT.length>6?46:54;const pts=[];const n=22;for(let k=0;k<n;k++){const a=k/n*6.283,r=k%2?58:96+((k*37)%5)*6;pts.push((130+Math.cos(a)*r*1.25).toFixed(0)+','+(95+Math.sin(a)*r*.85).toFixed(0));}
+ const star=(x,y,R,r)=>{const q=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,d=k%2?r:R;q.push((x+Math.cos(a)*d).toFixed(1)+','+(y+Math.sin(a)*d).toFixed(1));}return `<polygon points="${q.join(' ')}" fill="#ffe14a" stroke="#7a3a00" stroke-width="2.5" stroke-linejoin="round"/>`;};
+ return `<svg viewBox="0 0 260 190" width="260" height="190"><polygon points="${pts.join(' ')}" fill="#ffd21f" stroke="#f08a00" stroke-width="6" stroke-linejoin="round"/><polygon points="${pts.join(' ')}" fill="none" stroke="#fff6b0" stroke-width="2" transform="translate(13 9.5) scale(.9)"/>`+
+  star(26,30,18,8)+star(232,40,15,6.5)+star(40,160,14,6)+star(222,150,19,8)+star(130,12,11,5)+
+  `<g transform="rotate(-8 130 98)"><text x="130" y="116" text-anchor="middle" font-family="'Arial Black',Impact,sans-serif" font-weight="900" font-size="${KBS}" fill="#e8331c" stroke="#5a0d00" stroke-width="10" stroke-linejoin="round" paint-order="stroke">${KBT}</text>`+
+  `<text x="130" y="116" text-anchor="middle" font-family="'Arial Black',Impact,sans-serif" font-weight="900" font-size="${KBS}" fill="#ff4a24" stroke="#ffd21f" stroke-width="2.5" paint-order="stroke">${KBT}</text></g></svg>`;})();
+function bombFx(from,c,s,mine){
+ const col=s.color||'#ff7a1a',fuse=(s.fuse||3)*1000,A=new V3(from.x,1.3,from.z),Bp=new V3(c.x,.35,c.z),FL=450;
+ const g=new BABYLON.TransformNode('kb',scene),bm=new BABYLON.StandardMaterial('kbm',scene);bm.diffuseColor=new C3(.08,.08,.1);bm.specularColor=new C3(.5,.5,.6);bm.emissiveColor=new C3(.02,.02,.03);
+ const ball=B.CreateSphere('kbb',{diameter:.7,segments:12},scene);ball.parent=g;ball.material=bm;
+ const cap=B.CreateCylinder('kbc',{height:.14,diameter:.26},scene);cap.parent=g;cap.position.y=.37;cap.material=fxMat('#555a66');
+ const fz=B.CreateCylinder('kbf',{height:.22,diameter:.05},scene);fz.parent=g;fz.position.set(.05,.52,0);fz.rotation.z=-.4;fz.material=fxMat('#c8a060');
+ const sp=B.CreateSphere('kbs',{diameter:.16,segments:6},scene);sp.parent=g;sp.position.set(.1,.64,0);sp.material=fxMat('#ffe14a');
+ [ball,cap,fz,sp].forEach(m=>m.isPickable=false);g.position.copyFrom(A);
+ const t00=performance.now();let lbl=null,last=-1;
+ fx.push({t0:t00,dur:FL+fuse,upd:t=>{const e=(performance.now()-t00);
+  if(e<FL){const k=e/FL;g.position.copyFrom(V3.Lerp(A,Bp,k));g.position.y+=Math.sin(Math.PI*k)*2.2;g.rotation.z=k*6;return;}
+  g.position.copyFrom(Bp);g.rotation.z=0;const f=(e-FL)/fuse,ph=Math.min(3,Math.floor(f*4));   /* 4 piscadas, crescendo a cada uma */
+  const sc=1+ph*.22+(f*4-ph)*.22;g.scaling.setAll(sc);const blink=((f*4)%1)<.35;bm.emissiveColor=blink?new C3(.95,.15,.05):new C3(.02,.02,.03);sp.scaling.setAll(.7+Math.random()*.8);
+  const n=Math.max(1,3-Math.floor(f*3));if(!lbl){lbl=document.createElement('div');lbl.className='kbcd';labels.appendChild(lbl);}
+  if(n!==last){last=n;lbl.textContent=n;lbl._t=performance.now();}
+  const q=scr(Bp.x,1.6+sc*.6,Bp.z),pop=1+Math.max(0,1-(performance.now()-lbl._t)/250)*.6;lbl.style.transform=`translate(${q.x-20}px,${q.y-70}px) scale(${pop})`;},
+  done:()=>{if(lbl)lbl.remove();g.getChildMeshes().forEach(m=>m.dispose());g.dispose();bm.dispose();kaboom(c,s,mine);}});
+}
+function kaboom(c,s,mine){
+ const r=s.radius||3.2;ring(c.x,c.z,r,'#ffb02a',500);ring(c.x,c.z,r*.6,'#ff4a1a',420);burst(c.x,c.z,'fire');try{groundFx(c.x,c.z,r,'fire');}catch(e){}
+ const el=document.createElement('div');el.className='kaboom';el.innerHTML=KABOOM_SVG;labels.appendChild(el);
+ fx.push({t0:performance.now(),dur:1100,upd:t=>{const q0=scr(c.x,2.4,c.z),W=innerWidth,H=innerHeight,q={x:Math.min(W-140,Math.max(140,q0.x)),y:Math.min(H-110,Math.max(110,q0.y))},k=t<.18?.3+t/.18*.9:1.2-Math.min(.2,(t-.18)*.5);el.style.transform=`translate(${q.x-130}px,${q.y-95}px) scale(${k.toFixed(3)}) rotate(${(-4+t*6).toFixed(1)}deg)`;el.style.opacity=t>.75?((1-t)/.25).toFixed(2):'1';},done:()=>el.remove()});
+}
 /* ===== v1.89 Assassino: corte em X, faca da Marca, fumaça, lâminas da Dança e estrela de 6 pontas ===== */
 function smokeAt(x,z,n,sz){for(let k=0;k<(n||5);k++){const pm=new BABYLON.StandardMaterial('smk',scene);pm.disableLighting=true;const g=.55+Math.random()*.25;pm.emissiveColor=new C3(g,g*.97,g*1.05);pm.alpha=.55;
  const q=B.CreateSphere('smk',{diameter:.55*(sz||1),segments:6},scene);q.material=pm;q.isPickable=false;const a=Math.random()*6.283,r=Math.random()*.6*(sz||1);q.position.set(x+Math.cos(a)*r,.35,z+Math.sin(a)*r);const vy=.5+Math.random()*.6;
@@ -5501,11 +5533,11 @@ function castSkill(i){
  }
  let dirx=0,dirz=1;
  let ft=null;   /* Florete Voador: alvo opcional (o clone nasce ao lado dele) */
- if(s.type==='shieldThrow'||s.type==='shieldBeam'||s.type==='daggerFan'||s.type==='roll'||s.type==='stab3'||s.type==='foilThrow'||s.type==='xslash'||s.type==='hexStar'){const t0=curTgt()||nearestMonster(s.range);if(t0&&s.type==='foilThrow'&&hyp(P.pos,t0.pos)<=s.range)ft=t0;if(t0){dirx=t0.pos.x-P.pos.x;dirz=t0.pos.z-P.pos.z;}else{dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}const dl=Math.hypot(dirx,dirz)||1;dirx/=dl;dirz/=dl;P.root.rotation.y=Math.atan2(dirx,dirz);}
+ if(s.type==='shieldThrow'||s.type==='shieldBeam'||s.type==='daggerFan'||s.type==='roll'||s.type==='stab3'||s.type==='foilThrow'||s.type==='xslash'||s.type==='hexStar'||s.type==='bomb'){const t0=curTgt()||nearestMonster(s.range);if(t0&&s.type==='foilThrow'&&hyp(P.pos,t0.pos)<=s.range)ft=t0;if(t0){dirx=t0.pos.x-P.pos.x;dirz=t0.pos.z-P.pos.z;}else{dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}const dl=Math.hypot(dirx,dirz)||1;dirx/=dl;dirz/=dl;P.root.rotation.y=Math.atan2(dirx,dirz);}
  if(s.type==='foilStep'){dirx=Math.sin(P.root.rotation.y);dirz=Math.cos(P.root.rotation.y);}
  let stars=[];
  if(s.type==='starJump'){stars=pickStar(s.range,s.jumps||5);if(!stars.length){toast('Sem alvo próximo');return;}}
- let hc=null;if(s.type==='hexStar'){const t0=(curTgt()&&hyp(P.pos,P.sel.pos)<=s.range+2)?P.sel:nearestMonster(s.range);hc=t0?{x:t0.pos.x,z:t0.pos.z}:{x:P.pos.x+dirx*5,z:P.pos.z+dirz*5};}   /* v1.89: centro da estrela */
+ let hc=null;if(s.type==='hexStar'||s.type==='bomb'){const t0=(curTgt()&&hyp(P.pos,P.sel.pos)<=s.range+2)?P.sel:nearestMonster(s.range);hc=t0?{x:t0.pos.x,z:t0.pos.z}:{x:P.pos.x+dirx*(s.type==='bomb'?6:5),z:P.pos.z+dirz*(s.type==='bomb'?6:5)};}   /* v1.89: centro da estrela */
  if(s.type==='chainPull'&&tgt)stars=pickGrab(tgt,s.radius,s.cnt);
  P.mp-=s.mp;P.cd[i]=now+s.cd*1000;P.cdMax[i]=s.cd*1000;P.actUntil=now+RULES.animMs(S.cls,i);P.skUntil=now+RULES.castMs(S.cls,i,{dist:tgt?hyp(P.pos,tgt.pos):0,n:stars.length,hits:s.hits});P.swingAt=now;P.swKind=s.anim||null;P.swKA=now;P.lastCombat=now;
  if(NET.room){const cm=pkCastMsg(i,tgt||ft,stars,dirx,dirz);if(tgt&&tgt.virt){cm.tid=0;cm.gx=tgt.pos.x;cm.gz=tgt.pos.z;delete cm.pid;}if(hc){cm.cx=hc.x;cm.cz=hc.z;}NET.room.send('cast',cm);}
@@ -5542,6 +5574,7 @@ function castSkill(i){
   case 'daggerFan':daggerFanFx(P,dirx,dirz,s.dag||1,s.range,s.color);break;
   case 'mark':{const tg=tgt;P.markT={m:tg,until:now+s.mark*1000};knifeFx(P.pos,tg,s.color,()=>{playerHit(tg,s.mult,so);markFx(tg,s.mark,s.color);});break;}
   case 'xslash':{xSlashFx(P,dirx,dirz,s.range,s.color);const x0=P.pos.x,z0=P.pos.z;later(150,()=>{for(const m of monsters){if(!m.alive)continue;const rx=m.pos.x-x0,rz=m.pos.z-z0,t=rx*dirx+rz*dirz,pd=Math.abs(rx*dirz-rz*dirx);if(t>=-.5&&t<=s.range&&pd<=.9+.5*(m.bs||1))playerHit(m,s.mult,so);}});break;}
+  case 'bomb':bombFx(P.pos,hc,s,true);later(450+(s.fuse||3)*1000,()=>hitArea(hc,s.radius,s.mult,so));break;
   case 'hexStar':{const R0=s.starR||4.6;hexStarFx(P,hc,R0,s.color,true);later(1450,()=>hitArea(hc,R0+.3,s.mult,so));break;}
   case 'cloak':P.cloakT=now+s.dur*1000;for(const k in s.buffs)addBuff(k,s.buffs[k],s.dur,s);cloakFx(P,s.dur);logMsg(`<span style="color:${s.color}">${s.i} ${s.n} ativado!</span>`);break;
   case 'starJump':starFx(P,stars,s,true);break;
@@ -7300,6 +7333,7 @@ function remoteSkill(m){
   case 'daggerFan':daggerFanFx(o,m.dx||0,m.dz||1,m.n||1,s.range,s.color);break;
   case 'mark':if(mo)knifeFx(from,mo,s.color,()=>markFx(mo,s.mark,s.color));break;
   case 'xslash':xSlashFx(o,m.dx||0,m.dz||1,s.range,s.color);break;
+  case 'bomb':if(Number.isFinite(m.cx))bombFx(from,{x:m.cx,z:m.cz},s,false);break;
   case 'hexStar':if(Number.isFinite(m.cx))hexStarFx(o,{x:m.cx,z:m.cz},s.starR||4.6,s.color,false);break;
   case 'cloak':cloakFx(o,s.dur);break;
   case 'starJump':starFx(o,[...(m.ptid?[ptOf(m.ptid)].filter(Boolean):[]),...(m.tids||[]).map(id=>monsters.find(x=>x.id===id)).filter(Boolean)],s,false);break;

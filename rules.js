@@ -118,19 +118,20 @@ const CLASSES={
   d:'Palhaço acrobata: frágil, mas com CRÍTICO alto e muita SORTE (mais raros, slots e épicos +0~+4). Florete, estocadas e CLONES. Golpe final de habilidade em chefe ou baú: +50% de sorte no drop.',
   skills:[
    /* v1.69 — Pierrot refeito: recargas fixas (cdMin = cd), clones que atacam sozinhos, Grand Finale removido (7 habilidades) */
-   {n:'Estocada',i:'🤺',lv:1,cd:4,cdMin:4,mp:6,type:'single',mult:2.1,range:3.4,color:'#ff6b9a',d:'Estocada veloz de florete.'},
-   {n:'Florete Voador',i:'🗡️',lv:3,cd:8,cdMin:8,mp:14,type:'foilThrow',anim:'throw',mult:.9,range:9,dur:2,fixDur:1,cloneN:1,cloneMult:1,color:'#ff9ad0',d:'Parado, arremessa o florete (fere quem estiver no caminho). No fim do alcance surge um CLONE seu que ataca o alvo por 2s — os monstros passam a focar o clone. Uma marca mostra quem é o clone e quem é você.'},
+   {n:'Estocada',i:'🤺',lv:1,cd:4,cdMin:4,mp:6,type:'single',mult:2.1,range:3.4,color:'#ff6b9a',echo:1,d:'Estocada veloz de florete. Os clones ativos repetem a estocada.'},
+   {n:'Florete Voador',i:'🗡️',lv:3,cd:10,cdMin:10,mp:14,type:'foilThrow',anim:'throw',mult:.9,range:9,dur:5,fixDur:1,cloneN:1,cloneMult:1,color:'#ff9ad0',d:'Parado, arremessa o florete (fere quem estiver no caminho). No fim do alcance surge um CLONE seu que ataca o alvo por 5s — os monstros passam a focar o clone. Uma marca mostra quem é o clone e quem é você.'},
    {n:'Passo de Bailarino',i:'💃',lv:5,cd:10,cdMin:10,mp:12,type:'foilStep',range:7,dur:3,fixDur:1,buffs:{haste:.2},fixBuff:1,color:'#ffd27a',d:'Crava o florete no chão e salta para a frente (+20% de velocidade por 3s). Use de novo em até 3s para TROCAR de lugar com o florete. Depois de 3s o florete some.'},
    {n:'Truque da Sorte',i:'🍀',lv:8,cd:30,mp:20,type:'buff',buffs:{crit:.3,luck:.6},dur:15,color:'#6fdc7f',d:'+30% crítico e +60% de SORTE nos drops por 15s.'},
-   {n:'Estocada Tripla',i:'⚔️',lv:12,cd:6,cdMin:6,mp:22,type:'multi',hits:3,fixHits:1,mult:1.15,range:3.6,color:'#ff6b9a',d:'Três estocadas seguidas no alvo (sempre 3 golpes).'},
-   {n:'Clones Ilusórios',i:'👥',lv:15,cd:40,cdMin:40,mp:30,type:'clone',cloneN:3,cloneMult:.5,seek:9,dur:5,fixDur:1,color:'#c79bff',d:'3 clones giram ao seu redor por 5s. Quando um monstro entra no raio de ação, eles avançam e dão ataques básicos — cada clone escolhe um monstro diferente (se houver só um, todos atacam o mesmo).'},
-   {n:'Redemoinho Circense',i:'🎪',lv:20,cd:12,cdMin:12,mp:38,type:'aoeMulti',anim:'spin3',hits:3,fixHits:1,gap:500,maxT:3,cloneSpin:.2,mult:.95,radius:4.4,color:'#ff4a8a',d:'3 giros em 1,5s; cada giro fere até 3 monstros. Cada clone ativo também dá 1 giro, com 20% do seu dano.'}]}
+   {n:'Estocada Tripla',i:'⚔️',lv:12,cd:6,cdMin:6,mp:22,type:'multi',hits:3,fixHits:1,mult:1.15,range:3.6,color:'#ff6b9a',echo:1,d:'Três estocadas seguidas no alvo (sempre 3 golpes). Os clones ativos repetem as estocadas.'},
+   {n:'Clones Ilusórios',i:'👥',lv:15,cd:40,cdMin:40,mp:30,type:'clone',cloneN:3,cloneMult:.5,seek:9,dur:10,fixDur:1,color:'#c79bff',d:'3 clones giram ao seu redor por 10s. Quando um monstro entra no raio de ação, eles avançam e dão ataques básicos — cada clone escolhe um monstro diferente (se houver só um, todos atacam o mesmo).'},
+   {n:'Redemoinho Circense',i:'🎪',lv:20,cd:12,cdMin:12,mp:38,type:'aoeMulti',anim:'spin3',hits:3,fixHits:1,gap:500,maxT:3,cloneSpin:.2,mult:.95,radius:4.4,color:'#ff4a8a',d:'3 giros em 1,5s; cada giro fere até 3 monstros. Cada clone ativo também dá 1 giro, com 20% do seu dano.'},
+    {n:'Kbum',i:'💣',lv:25,cd:18,cdMin:18,mp:45,type:'bomb',anim:'throw',mult:3.2,radius:4,range:9,fuse:3,color:'#ff7a1a',d:'Joga uma bomba na direção dos monstros. Ela pisca e cresce numa contagem de 3 segundos e então EXPLODE, causando dano em área.'}]}
 };
 /* Elemento visual de cada habilidade (efeitos no chão, partículas): wind, fire, ice, water, lightning, earth, poison, shadow, holy, blood, steel, arcane, nature, circus */
 const SKFX={guerreiro:['steel','wind','wind','fire','earth','blood','fire','steel'],arqueiro:['wind','water','wind','fire','wind','ice','lightning','shadow'],
  mago:['fire','ice','arcane','fire','lightning','nature','ice','fire'],assassino:['shadow','shadow','steel','wind','blood','shadow','lightning','shadow'],
  cavaleiro:['steel','earth','holy','holy','earth','nature','holy','holy'],tanque:['steel','earth','fire','steel','earth','steel','shadow','earth'],
- pierrot:['circus','wind','circus','nature','circus','arcane','wind','circus']};
+ pierrot:['circus','wind','circus','nature','circus','arcane','wind','fire']};
 for(const k in SKFX)CLASSES[k].skills.forEach((s,i)=>{s.fx=SKFX[k][i];});
 const MT={
  slime:{n:'Gosma da Floresta',lv:[1,3],hp:45,atk:6,def:0,spd:1.5,xp:10,gold:[1,4],aggro:6,rng:1.7,atkInt:1700,resp:10,leash:15,h:1.7,mats:{gosma:0.510,erva:0.212,essencia:0.025},eq:0.042,pot:0.048},
@@ -1314,7 +1315,7 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
 const BCAP = { flat: 1000, aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 /* dano em área: habilidades que acertam vários alvos causam 30% menos dano (AOE_K) e a área (raio, e a marcação no chão junto) fica 20% menor (AOE_R) */
-const AOE_K = .7, AOE_R = .8, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1, hexStar: 1 };
+const AOE_K = .7, AOE_R = .8, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1, hexStar: 1, bomb: 1 };
 /* v1.78: Arqueiro e Mago — alcance (ataque e habilidades) e áreas 15% menores */
 for (const k of ['arqueiro', 'mago']) {
   const C = CLASSES[k]; C.range = +(C.range * .85).toFixed(2);
@@ -2187,6 +2188,7 @@ const castMs = (cls, i, x) => {
     case 'starJump': t = 100 + (Math.max(1, x.n || 1) - 1) * 520 + 500; break;
     case 'hexStar': t = 1650; break;                                                  // v1.89: estrela de 6 pontas (8 trechos)
     case 'xslash': t = 400; break;
+    case 'bomb': t = 500; break;
     case 'chainPull': t = s.gust ? 900 : 700; break;
     case 'thunder': t = 1000; break;
     case 'arcRay': t = 650; break;
