@@ -85,14 +85,14 @@ const CLASSES={
  assassino:{n:'Assassino',i:'🥷',wi:'🔪',main:'agi',base:{str:4,agi:12,int:4,vit:5},range:2.4,ranged:false,combo:true,
   d:'Lâminas e sombras. +30% vel. de ataque, +12% crítico, -10% vida. Encadeie habilidades em COMBOS: bônus de dano, mana de volta e recargas reiniciadas.',
   skills:[
-   {n:'Corte Rápido',i:'🔪',lv:1,cd:2.5,mp:6,type:'single',mult:2.0,range:3.4,color:'#c79bff',anim:'both',after:[1,3],cbonus:.4,d:'Corte veloz com as duas lâminas (os dois braços golpeiam). COMBO após Passo Sombrio ou Dança das Lâminas.'},
-   {n:'Passo Sombrio',i:'💨',lv:3,cd:7,mp:12,type:'dash',mult:1.2,range:10,color:'#8f7aff',d:'Teleporta até o alvo e ataca. Abertura de combo.'},
+   {n:'Corte Rápido',i:'🔪',lv:1,cd:2.5,mp:6,type:'xslash',mult:2.0,range:3.4,color:'#c79bff',anim:'both',after:[1,3],cbonus:.4,d:'Cruza os braços e solta um corte em "X" com as duas lâminas: o corte avança 1 m à frente e fere todos os monstros no caminho. COMBO após Passo Sombrio ou Dança das Lâminas.'},
+   {n:'Passo Sombrio',i:'💨',lv:3,cd:7,mp:12,type:'dash',mult:1.2,range:6,knee:1,aoeR:1.6,maxT:3,anim:'stomp',color:'#8f7aff',d:'Avança até o alvo (alcance curto) com uma joelhada: ao acertar solta fumaça e fere até 3 monstros bem próximos uns dos outros. Abertura de combo.'},
    {n:'Chuva de Adagas',i:'🗡️',lv:5,cd:8,mp:16,type:'daggerFan',mult:.7,range:8,dagMin:1,dagMax:5,color:'#e0c4ff',after:[1,0],cbonus:.5,d:'Lança adagas em leque (1 no nível 1, até 5 no nível máximo), com dano em área. Elas ficam presas no chão por 2s e voltam ao personagem causando dano de novo. Use a habilidade de novo enquanto estiverem presas para chamá-las de volta na hora. COMBO após Passo Sombrio ou Corte Rápido.'},
-   {n:'Dança das Lâminas',i:'🌪️',lv:8,cd:9,mp:18,type:'aoeSelf',mult:1.6,radius:3.8,color:'#ff7ad9',anim:'spin',after:[0,1,2],cbonus:.6,reset:[1],d:'O personagem gira com as lâminas, ferindo todos em volta. COMBO reinicia o Passo Sombrio.'},
-   {n:'Marca da Morte',i:'🎯',lv:12,cd:14,mp:20,type:'mark',mult:0,range:9,mark:6,color:'#ff4a6a',after:[3],cbonus:.3,d:'Não causa dano: apenas marca o monstro. Alvo marcado recebe +35% de dano por 6s.'},
-   {n:'Véu Sombrio',i:'🌑',lv:15,cd:30,mp:25,type:'buff',buffs:{evade:.35,crit:.3,haste:.3},dur:8,color:'#7a6aff',d:'+35% esquiva, +30% crítico e +30% velocidade.'},
-   {n:'Manto Fumaça',i:'🌫️',lv:20,cd:30,mp:30,type:'cloak',buffs:{haste:.4},fixBuff:1,dur:10,fixDur:1,color:'#e8eef5',d:'Um manto branco e fumaça envolvem o personagem: fica semi transparente, +40% de velocidade e invisível para os monstros por 10s. Não causa dano.'},
-   {n:'Estrela Sombria',i:'⭐',lv:25,cd:20,cdMin:20,mp:60,type:'starJump',jumps:5,mult:1.6,range:12,color:'#9a7bff',d:'Pula em até 5 monstros, um após o outro, causando dano em cada um e desenhando uma estrela negra no chão.'}]},
+   {n:'Dança das Lâminas',i:'🌪️',lv:8,cd:9,mp:18,type:'aoeSelf',mult:1.6,radius:3.8,color:'#ff7ad9',anim:'spin',after:[0,1,2],cbonus:.6,reset:[1],blades:1,d:'O personagem gira com as lâminas, lançando lâminas que acompanham o giro e ferem todos em volta. COMBO reinicia o Passo Sombrio.'},
+   {n:'Marca da Morte',i:'🎯',lv:12,cd:14,mp:20,type:'mark',mult:.6,range:9,mark:6,recall:20,color:'#ff4a6a',after:[3],cbonus:.3,d:'Lança uma faca no alvo: causa um pouco de dano e o marca por 6s (alvo marcado recebe +35% de dano). Use de novo enquanto a marca durar para voar até o alvo (até 20 m).'},
+   {n:'Véu Sombrio',i:'🌑',lv:15,cd:40,cdMin:40,mp:25,type:'buff',buffs:{evade:.35,crit:.3,haste:.3},dur:20,fixDur:1,color:'#7a6aff',d:'+35% esquiva, +30% crítico e +30% velocidade por 20s.'},
+   {n:'Manto Fumaça',i:'🌫️',lv:20,cd:30,mp:30,type:'cloak',buffs:{haste:.4},fixBuff:1,dur:10,fixDur:1,jmult:.9,jrange:12,color:'#e8eef5',d:'O personagem some e só o manto, meio transparente, anda pelo mapa: +40% de velocidade e invisível para os monstros por 10s. Use de novo para saltar no monstro mais próximo com um golpe (o efeito do manto acaba).'},
+   {n:'Estrela Sombria',i:'⭐',lv:25,cd:20,cdMin:20,mp:60,type:'hexStar',mult:2.3,range:12,starR:4.6,color:'#9a7bff',d:'Marca no chão uma estrela de 6 pontas dentro de um círculo e voa em linha reta de ponta a ponta (fumaça em cada ponta). Ao terminar, causa dano em todos os monstros dentro da estrela.'}]},
  cavaleiro:{n:'Cavaleiro Pesado',i:'🛡️',wi:'🗡️',main:'str',base:{str:8,agi:3,int:3,vit:13},range:2.6,ranged:false,
   d:'Espada e escudo. Defesa +40% e vida +15%. Converte defesa em dano.',
   skills:[
@@ -1314,7 +1314,7 @@ const canSkillUp = c => CLASSES[c.cls].skills.some((s, i) => c.level >= s.lv && 
 const ph = (k, a, b) => a * Math.min(k, 4) + b * Math.max(0, k - 4);        // ranks 1–5 rendem mais; do 6 ao 20 o ganho é menor
 const BCAP = { flat: 1000, aspd: .6, defloss: .6, shield: .75, evade: .6, haste: 1, crit: .8, dmg: 1.2, defdmg: 2.5, luck: 1.2 };
 /* dano em área: habilidades que acertam vários alvos causam 30% menos dano (AOE_K) e a área (raio, e a marcação no chão junto) fica 20% menor (AOE_R) */
-const AOE_K = .7, AOE_R = .8, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1 };
+const AOE_K = .7, AOE_R = .8, AOE_T = { aoeSelf: 1, aoeTarget: 1, aoeMulti: 1, thunder: 1, arcRay: 1, shieldThrow: 1, shieldBeam: 1, chainPull: 1, roll: 1, daggerFan: 1, starJump: 1, stab3: 1, hexStar: 1 };
 /* v1.78: Arqueiro e Mago — alcance (ataque e habilidades) e áreas 15% menores */
 for (const k of ['arqueiro', 'mago']) {
   const C = CLASSES[k]; C.range = +(C.range * .85).toFixed(2);
@@ -2185,6 +2185,8 @@ const castMs = (cls, i, x) => {
     case 'shieldBeam': t = 250 + (s.beam || 3) * 1000; break;                          // raio canalizado
     case 'daggerFan': t = 450; break;
     case 'starJump': t = 100 + (Math.max(1, x.n || 1) - 1) * 520 + 500; break;
+    case 'hexStar': t = 1650; break;                                                  // v1.89: estrela de 6 pontas (8 trechos)
+    case 'xslash': t = 400; break;
     case 'chainPull': t = s.gust ? 900 : 700; break;
     case 'thunder': t = 1000; break;
     case 'arcRay': t = 650; break;

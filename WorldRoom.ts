@@ -50,7 +50,7 @@ type Sess = {
   cd: number[]; lastBasic: number; buffs: Record<string, Buff>; cst: number; cstAt: number; lastSkill: number; lastSkillAt: number; form?: number; dag?: { id: number; st: string; ret?: () => void };
   seen: Set<number>; busyUntil: number; skUntil?: number;
   partyId: number; ward?: { v: number; until: number };
-  cls?: PClone[]; clAt?: number; foil?: { x: number; z: number; inst: number; until: number; used: boolean };   // v1.69 Pierrot: clones vivos e florete cravado no chão (Passo de Bailarino)
+  cls?: PClone[]; clAt?: number; foil?: { x: number; z: number; inst: number; until: number; used: boolean }; markT?: { q: any; until: number }; cloakUntil?: number;   // v1.89 Assassino: alvo marcado (voar até ele) e Manto Fumaça (salto)   // v1.69 Pierrot: clones vivos e florete cravado no chão (Passo de Bailarino)
   mv?: Map<number, string>;                                    // v1.68: monstros que este jogador está vendo (último estado enviado)
   pv?: any; px?: any; noDuel?: boolean; tpAt?: number;      // PvP (duelo / Arena PK): estado, alvo-proxy, "não aceitar duelos", último teleporte
 };
@@ -453,6 +453,25 @@ export class WorldRoom extends Room<WorldState> {
       this.broadcast("fx", { by: s.client.sessionId, i, rc: 1, x: p.x, z: p.z, fx: ox, fz: oz }, { except: s.client });
       return;
     }
+    if (C.skills[i].type === "mark" && s.markT && Date.now() < s.markT.until) {   // v1.89 Marca da Morte de novo: voa até o alvo marcado (até 20 m)
+      const q = s.markT.q, lim = (C.skills[i] as any).recall || 20; s.markT = undefined;
+      if (q && q.m.alive && (q.inst || 0) === (p.inst || 0) && cx(q.m.x) === cx(p.x)) {
+        const dx = q.m.x - p.x, dz = q.m.z - p.z, d = Math.hypot(dx, dz) || 1;
+        if (d <= lim + bodyR(q.bs || 1) * 1.2) { const mv = Math.max(0, d - 1.5), ox = p.x, oz = p.z; p.x = clampX(p.x + (dx / d) * mv, p.x); p.z = clampZ(p.z + (dz / d) * mv, p.inst); this.dgClamp(p, ox, oz); s.tpAt = Date.now(); s.t = Date.now();
+          this.broadcast("fx", { by: s.client.sessionId, i, rc: 1, x: p.x, z: p.z }, { except: s.client }); }
+      }
+      return;
+    }
+    if (C.skills[i].type === "cloak" && (s.cloakUntil || 0) > Date.now()) {   // v1.89 Manto Fumaça de novo: salta no monstro mais próximo e o manto acaba
+      const sk0: any = C.skills[i], lim = sk0.jrange || 12; s.cloakUntil = 0;
+      delete s.buffs.haste; this.sim.hidden.delete(s.client.sessionId);
+      let q: any = (s.pv && s.pv.mode && m?.pid) ? this.pvp.target(s, String(m.pid)) : this.sim.byId.get(Number(m?.tid));
+      if (!q || !q.m.alive || (q.inst || 0) !== (p.inst || 0) || cx(q.m.x) !== cx(p.x) || Math.hypot(q.m.x - p.x, q.m.z - p.z) > lim + bodyR(q.bs || 1) * 1.2) q = null;
+      if (q) { const dx = q.m.x - p.x, dz = q.m.z - p.z, d = Math.hypot(dx, dz) || 1, mv = Math.max(0, d - 1.4), ox = p.x, oz = p.z; p.x = clampX(p.x + (dx / d) * mv, p.x); p.z = clampZ(p.z + (dz / d) * mv, p.inst); this.dgClamp(p, ox, oz); s.tpAt = Date.now(); s.t = Date.now();
+        const mlt = (sk0.jmult || .9) * (1 + Math.min(1, Math.max(0, (rank - 1)) / 19)); this.later(260, () => this.hit(s, q, mlt, {})); }
+      this.broadcast("fx", { by: s.client.sessionId, i, rc: 1, x: p.x, z: p.z }, { except: s.client });
+      return;
+    }
     if (c.cls !== "assassino" && Date.now() < s.busyUntil - 220) return;   // uma habilidade só depois do fim da animação da outra
     if (!(C.skills[i].type === "daggerFan" && s.dag && s.dag.st === "stuck") && Date.now() < (s.skUntil || 0) - 250) return;   // vale para todas as classes: tempo de exibição da habilidade anterior (R.castMs)
     const sk = R.skStat(c.cls, i, rank), now = Date.now();
@@ -510,6 +529,8 @@ export class WorldRoom extends Room<WorldState> {
     }
     let ux = 0, uz = 1;                    // direção da habilidade (Escudo Voador / Raio do Escudo)
     if (Number.isFinite(m?.dx) && Number.isFinite(m?.dz)) { const dl = Math.hypot(m.dx, m.dz); if (dl > 0.01) { ux = m.dx / dl; uz = m.dz / dl; } }
+    let hc: { x: number; z: number } | null = null;   // v1.89 Estrela Sombria: centro da estrela
+    if (sk.type === "hexStar") { let gx = Number(m?.cx), gz = Number(m?.cz); if (!Number.isFinite(gx) || !Number.isFinite(gz)) { gx = p.x + ux * 5; gz = p.z + uz * 5; } const gd = Math.hypot(gx - p.x, gz - p.z), lim = sk.range + 2; if (gd > lim) { gx = p.x + (gx - p.x) / gd * lim; gz = p.z + (gz - p.z) / gd * lim; } hc = { x: gx, z: gz }; }
     let ft: any = null;                    // Florete Voador: alvo opcional (o clone nasce ao lado dele)
     if (sk.type === "foilThrow") {
       ft = (s.pv && s.pv.mode && m?.pid) ? this.pvp.target(s, String(m.pid)) : this.sim.byId.get(Number(m?.tid));
@@ -517,7 +538,7 @@ export class WorldRoom extends Room<WorldState> {
       if (ft) { const dl = Math.hypot(ft.m.x - p.x, ft.m.z - p.z); if (dl > 0.01) { ux = (ft.m.x - p.x) / dl; uz = (ft.m.z - p.z) / dl; } }
     }
     const pq: any = tgt && (tgt as any).pv ? tgt : ft && ft.pv ? ft : star.find((q: any) => q.pv);          // alvo jogador (PvP)
-    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt && !(tgt as any).pv ? tgt.m.id : ft && !ft.pv ? ft.m.id : 0, ptid: pq ? pq.sid : undefined, x: p.x, z: p.z, dx: ux, dz: uz, n: sk.dag || 0, tids: star.filter((q: any) => !q.pv).map((q) => q.m.id) }, { except: s.client });
+    this.broadcast("fx", { by: s.client.sessionId, i, tid: tgt && !(tgt as any).pv ? tgt.m.id : ft && !ft.pv ? ft.m.id : 0, ptid: pq ? pq.sid : undefined, x: p.x, z: p.z, dx: ux, dz: uz, cx: hc ? hc.x : undefined, cz: hc ? hc.z : undefined, n: sk.dag || 0, tids: star.filter((q: any) => !q.pv).map((q) => q.m.id) }, { except: s.client });
     const pr = sk.proj || (C.ranged ? C.proj : null), so = { slow: sk.slow, defMult: sk.defMult, exec: sk.exec, stun: sk.stun, root: sk.root, lift: sk.lift, pull: sk.pull, forceCrit: sk.forceCrit, pierce: sk.pierce };
     const flight = tgt ? Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000 : 0;
     const px = p.x, pz = p.z;
@@ -577,7 +598,7 @@ export class WorldRoom extends Room<WorldState> {
       case "barrage": case "dash": {
         const dx = tgt!.m.x - p.x, dz = tgt!.m.z - p.z, d = Math.hypot(dx, dz) || 1, mv = Math.max(0, d - (sk.type === "dash" ? 1.7 : 1.6));
         { const ox = p.x, oz = p.z; p.x = clampX(p.x + (dx / d) * mv, p.x); p.z = clampZ(p.z + (dz / d) * mv, p.inst); this.dgClamp(p, ox, oz); } s.t = now;
-        if (sk.type === "dash") this.later(120, () => this.hit(s, tgt!, mult, so));
+        if (sk.type === "dash") this.later(120, () => { if ((sk as any).knee && tgt && !(tgt as any).virt) this.hitAreaMax(s, tgt.m.x, tgt.m.z, (sk as any).aoeR || 1.6, mult, so, (sk as any).maxT || 3); else this.hit(s, tgt!, mult, so); });   // v1.89: joelhada (até 3 monstros colados)
         else {
           for (let h = 0; h < sk.hits; h++) this.later(150 + h * 130, () => this.hit(s, tgt!, mult));
           this.later(200 + sk.hits * 130, () => { for (let j = 0; j < 8; j++) if (j !== i) s.cd[j] = 0; });
@@ -616,8 +637,19 @@ export class WorldRoom extends Room<WorldState> {
         });
         break;
       }
-      case "mark": break;                                                        // só marca (já feito acima), sem dano
+      case "mark": {                                                             // v1.89: a faca voa até o alvo, causa um pouco de dano e marca (reutilizar = voar até ele)
+        s.markT = { q: tgt, until: now + (sk.mark || 6) * 1000 };
+        this.later(Math.max(120, flight), () => tgt && this.hit(s, tgt, mult, so)); break;
+      }
+      case "xslash": this.later(150, () => { const q = this.playerOf(s); if (!q || q.dead) return; this.hitLine(s, q.x, q.z, ux, uz, sk.range, 1.8, mult, so); }); break;   // v1.89 Corte Rápido: corte em X para a frente
+      case "hexStar": {                     // v1.89 Estrela Sombria: voa pelas 6 pontas e fere quem estiver dentro da estrela
+        const R0 = (sk as any).starR || 4.6, a0 = Math.atan2(p.x - hc!.x, p.z - hc!.z), tip = (k: number) => ({ x: hc!.x + Math.sin(a0 + k * Math.PI / 3) * R0, z: hc!.z + Math.cos(a0 + k * Math.PI / 3) * R0 });
+        const end = tip(3);
+        this.later(1450, () => { const pp = this.playerOf(s); if (!pp || pp.dead) return; const ox = pp.x, oz = pp.z; pp.x = clampX(end.x, pp.x); pp.z = clampZ(end.z, pp.inst); this.dgClamp(pp, ox, oz); s.t = Date.now(); s.budget = BURST; this.hitArea(s, hc!.x, hc!.z, R0 + 0.3, mult, so); });
+        s.tpAt = now + 1500; break;
+      }
       case "cloak": {
+        s.cloakUntil = now + sk.dur * 1000;
         for (const k in sk.buffs) this.addBuff(s, k, sk.buffs[k], sk.dur);
         this.sim.hidden.set(s.client.sessionId, now + sk.dur * 1000);
         break;
