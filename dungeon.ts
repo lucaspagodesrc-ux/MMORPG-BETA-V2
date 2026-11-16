@@ -1,6 +1,8 @@
 // Instâncias de dungeon: uma por grupo, com etapas, baús destrutíveis, tempo limite e 5 minutos para voltar se sair.
 // Dois estilos de mapa: o corredor reto da Cripta (def.gates) e as dungeons de várias salas em grade (def.rooms, ver rules.js).
 // Etapas: kill • statue • boss • runes (ordem sorteada) • defend (altar) • waves (ondas) • crystals (âncoras).
+// v1.91 (Cidade das Máquinas): lasers (corredor com lasers + terminal) • power (geradores) • levers (alavancas em sincronia) • escort (núcleo no trilho).
+// Chefes v1.91: sweep (varredura de lasers girando) e overload (sobrecarga: destruir os condutores antes da explosão).
 // Perigos do ambiente por etapa: hz (círculos de aviso) e cold (frio, só as fogueiras protegem). Chefes: mech { rain, big, adds, shield, blink, nova, enrage }.
 import { Sim } from "./monsters";
 import { gpAdd } from "./guild";
@@ -113,7 +115,7 @@ export class Dungeons {
   }
   private fx(inst: Inst, msg: any) { for (const sid of inst.members) this.h.sess.get(sid)?.client.send("dgmsg", msg); }
   private env(inst: Inst, atk: number): any { return { inst: inst.id, atk, m: { alive: true, id: 0 } }; }   // "atacante" fantasma dos perigos do ambiente
-  private refAtk(inst: Inst, st: any) { const T = R.MT[st.t || st.guards?.t || (st.list && st.list[0].t) || (st.waves && st.waves.t[0]) || st.ct]; return (T && T.atk) || 600; }
+  private refAtk(inst: Inst, st: any) { const T = R.MT[st.t || st.guards?.t || (st.list && st.list[0].t) || (st.waves && st.waves.t[0]) || (st.spawn && st.spawn.t && st.spawn.t[0]) || st.ct]; return (T && T.atk) || 600; }
 
   /* ---------- etapas ---------- */
   private enterStage(inst: Inst) {
@@ -124,6 +126,10 @@ export class Dungeons {
     else if (st.k === "defend") { ss.acc = 0; ss.waveAt = now + 5000; }
     else if (st.k === "waves") { ss.w = -1; ss.cur = []; ss.nextAt = now + 3500; }
     else if (st.k === "crystals") { ss.spawnAt = now + 7000; ss.crys = st.at.map(([x, z]: number[]) => this.spawnLazy(inst, st.ct, def.cx + x, z, false)).filter(Boolean); ss.broken = 0; }
+    else if (st.k === "lasers") { ss.k = 0; ss.rowAt = now + 3000; ss.spawnAt = now + 6000; }
+    else if (st.k === "power") { ss.ch = {}; ss.full = {}; ss.waveAt = now + 6000; for (const id of st.objs) ss.ch[id] = 0; }
+    else if (st.k === "levers") { ss.lev = {}; ss.first = 0; ss.fails = 0; }
+    else if (st.k === "escort") { ss.cart = { x: def.cx + st.path[0][0], z: st.path[0][1] }; ss.prog = 0; ss.ck = 0; ss.hp = 100; ss.spawnAt = now + 5000; ss.moving = false; }
   }
 
   info(inst: Inst) {
@@ -140,7 +146,10 @@ export class Dungeons {
       else if (st.k === "defend") { cur = Math.floor(ss.acc || 0); need = st.secs; fx = { near: ss.near ? 1 : 0 }; if (!ss.near) text += " — volte ao altar!"; }
       else if (st.k === "waves") { cur = Math.max(0, ss.w || 0); need = st.list.length; text += ` — onda ${Math.max(1, (ss.w ?? -1) + 1)}/${st.list.length}`; }
       else if (st.k === "crystals") { cur = ss.broken || 0; need = st.at.length; }
-      else if (st.k === "boss" && ss.boss && ss.boss.immune) { text += " — 🛡️ escudo ativo!"; fx = { sh: 1 }; }
+      else if (st.k === "power") { const ids: string[] = st.objs; cur = ids.filter((id) => ss.full && ss.full[id]).length; need = ids.length; const g: any = {}; for (const id of ids) g[id] = Math.round(((ss.ch && ss.ch[id]) || 0) / st.secs * 100); fx = { gen: g }; }
+      else if (st.k === "levers") { const on = Object.keys(ss.lev || {}); cur = on.length; need = st.objs.length; const left = ss.first ? Math.max(0, Math.ceil((ss.first + st.win * 1000 - Date.now()) / 1000)) : 0; if (ss.first) text += ` — ⏱ ${left}s`; fx = { lev: on, left }; }
+      else if (st.k === "escort" && ss.cart) { cur = Math.round((ss.prog || 0) * 100); need = 100; text += ` — núcleo ${Math.max(0, Math.round(ss.hp))}%`; fx = { cart: { x: Math.round(ss.cart.x * 10) / 10, z: Math.round(ss.cart.z * 10) / 10, hp: Math.max(0, Math.round(ss.hp)), mv: ss.moving ? 1 : 0 } }; }
+      else if (st.k === "boss" && ss.boss && ss.boss.immune) { if (ss.ovEnd) text += ` — ⚡ SOBRECARGA: ${Math.max(0, Math.ceil((ss.ovEnd - Date.now()) / 1000))}s`; else text += " — 🛡️ escudo ativo!"; fx = { sh: 1 }; }
     }
     return { id: def.id, name: def.name, stage: inst.stage, total: def.stages.length, text, cur, need, maxZ: this.maxZ(inst), endsAt: inst.endsAt, done: inst.done, paused: inst.paused, canPause: !inst.grp && inst.members.size === 1, fx };
   }
@@ -227,6 +236,19 @@ export class Dungeons {
     } else if (o.kind === "rune") {
       if (!st || st.k !== "runes" || !st.objs.includes(o.id)) { msg(`${o.sym} A ${o.name} permanece adormecida.`); return; }
       this.runeHit(inst, st, o, p);
+    } else if (o.kind === "lever") {
+      if (!st || st.k !== "levers" || !st.objs.includes(o.id)) { msg(`${o.sym} A ${o.name} está travada.`); return; }
+      if (ss.lev[o.id]) { msg(`${o.sym} A ${o.name} já foi puxada — rápido, as outras!`); return; }
+      ss.lev[o.id] = Date.now(); if (!ss.first) ss.first = Date.now();
+      const n = Object.keys(ss.lev).length;
+      this.fx(inst, { k: "lever", name: `${o.sym} ${o.name} (${n}/${st.objs.length})`, ok: 1 });
+      if (n >= st.objs.length) { this.say(inst, `<span style="color:#ffd27a">⚙️ Todas as alavancas foram puxadas juntas! O portão se destravou.</span>`); this.advance(inst); }
+      else this.sendState(inst);
+    } else if (o.kind === "term") {
+      if (st && st.k === "lasers" && st.term === o.id) { this.say(inst, `<span style="color:#ffd27a">🖥️ ${o.name}: linha desligada. Os lasers se apagaram!</span>`); this.advance(inst); }
+      else msg(`🖥️ ${o.name}: <i>sem energia.</i>`);
+    } else if (o.kind === "gen") {
+      msg(st && st.k === "power" && st.objs.includes(o.id) ? `⚡ <b>${o.name}</b>: fique perto dele para carregar. Quanto mais gente perto, mais rápido — e longe dele a carga cai.` : `⚡ ${o.name}: zumbindo baixinho.`);
     } else if (o.kind === "altar") {
       msg(st && st.k === "defend" ? `${o.sym} <b>${o.name}</b>: fiquem perto do altar enquanto a energia se acumula! Barra de progresso no alto da tela.` : `${o.sym} ${o.name}: a energia aqui está adormecida.`);
     }
@@ -273,6 +295,78 @@ export class Dungeons {
     else if (st.k === "waves") this.wavesTick(inst, st, now, mem);
     else if (st.k === "crystals") this.crystalsTick(inst, st, now);
     else if (st.k === "boss") this.bossTick(inst, st, now, mem);
+    else if (st.k === "lasers") this.lasersTick(inst, st, now, mem);
+    else if (st.k === "power") this.powerTick(inst, st, now, dt, mem);
+    else if (st.k === "levers") this.leversTick(inst, st, now);
+    else if (st.k === "escort") this.escortTick(inst, st, now, dt, mem);
+  }
+  /* ---------- v1.91: etapas da Cidade das Máquinas ---------- */
+  private lazyAlive(inst: Inst) { return inst.lazy.filter((s) => s.m.alive && !s.T.node).length; }
+  private lasersTick(inst: Inst, st: any, now: number, mem: [string, any][]) {
+    const def = inst.def, ss = inst.ss, r = st.room, len = r[3] - r[1];
+    if (now >= ss.rowAt) {                                                     // duas fileiras de laser que avançam pelo corredor
+      ss.rowAt = now + st.every; const ref = this.env(inst, this.refAtk(inst, st));
+      const z1 = r[1] + 3 + ((ss.k * 5.5) % (len - 6)), z2 = r[1] + 3 + ((ss.k * 5.5 + len / 2) % (len - 6)); ss.k++;
+      for (const z of [z1, z2]) for (let x = r[0] + 1; x <= r[2] - 1 + 1e-6; x += 2) this.h.sim.areaHit(ref, def.cx + x, z, 1.5, st.mult, st.delay, st.c);
+    }
+    if (st.spawn && now >= ss.spawnAt) {
+      ss.spawnAt = now + st.spawn.every; const free = st.spawn.cap - this.lazyAlive(inst);
+      const k = Math.min(free, Math.round(rnd(st.spawn.n[0], st.spawn.n[1])) + Math.floor(mem.length / 3));
+      for (let i = 0; i < k; i++) this.spawnLazy(inst, pick(st.spawn.t), def.cx + rnd(r[0] + 1.5, r[2] - 1.5), rnd(r[1] + 4, r[3] - 4));
+    }
+  }
+  private powerTick(inst: Inst, st: any, now: number, dt: number, mem: [string, any][]) {
+    const def = inst.def, ss = inst.ss; let charging: any[] = [];
+    for (const id of st.objs as string[]) {
+      if (ss.full[id]) continue;
+      const o = def.objs.find((q: any) => q.id === id), gx = def.cx + o.at[0], gz = o.at[1];
+      const n = mem.filter(([, p]) => Math.hypot(p.x - gx, p.z - gz) <= st.r).length;
+      if (n) { ss.ch[id] = Math.min(st.secs, ss.ch[id] + dt * (1 + 0.25 * (n - 1))); charging.push(o); }
+      else ss.ch[id] = Math.max(0, ss.ch[id] - dt * 0.35);
+      if (ss.ch[id] >= st.secs) { ss.full[id] = 1; this.fx(inst, { k: "gen", name: `⚡ ${o.name} carregado!` }); }
+    }
+    if (st.objs.every((id: string) => ss.full[id])) { this.say(inst, `<span style="color:#ffd27a">⚡ Todos os geradores voltaram a funcionar! O portão se abriu.</span>`); this.advance(inst); return; }
+    if (now >= ss.waveAt) {
+      ss.waveAt = now + st.waves.every; const list = charging.length ? charging : def.objs.filter((q: any) => st.objs.includes(q.id) && !ss.full[q.id]);
+      const k = Math.min(14 - this.lazyAlive(inst), Math.round(rnd(st.waves.n[0], st.waves.n[1])) + Math.floor(mem.length / 3));
+      for (let i = 0; i < k; i++) { const o: any = pick(list as any[]); for (let tr = 0; tr < 6; tr++) { const [x, z] = this.ring(inst, def.cx + o.at[0], o.at[1], 5, 10); if (this.spawnLazy(inst, pick(st.waves.t), x, z)) break; } }
+      if (k > 0) this.fx(inst, { k: "wave", name: "As máquinas vêm atrás da energia!" });
+    }
+    this.sendState(inst);
+  }
+  private leversTick(inst: Inst, st: any, now: number) {
+    const def = inst.def, ss = inst.ss;
+    if (!ss.first) return;
+    if (now - ss.first <= st.win * 1000) { this.sendState(inst); return; }
+    ss.fails++; ss.lev = {}; ss.first = 0;                                    // demorou: as alavancas voltam e dão choque
+    const bad = st.bad || { r: 5, mult: 1.6, delay: 900, c: "#6ad0ff" }, ref = this.env(inst, this.refAtk(inst, st));
+    for (const id of st.objs) { const o = def.objs.find((q: any) => q.id === id); this.h.sim.areaHit(ref, def.cx + o.at[0], o.at[1], bad.r, bad.mult, bad.delay, bad.c);
+      if (st.guards && ss.fails <= 4) for (let i = 0; i < Math.ceil(st.guards.n / 2); i++) { const a = rnd(0, 6.283); this.spawnLazy(inst, st.guards.t, def.cx + o.at[0] + Math.cos(a) * 5, o.at[1] + Math.sin(a) * 5); } }
+    this.fx(inst, { k: "lever", name: "Tempo esgotado! As alavancas voltaram.", ok: 0 });
+    this.say(inst, `<span style="color:#ff9a6a">⚡ Tempo esgotado! As alavancas voltaram ao lugar e soltaram uma descarga. Puxem as ${st.objs.length} dentro de ${st.win} s.</span>`);
+    this.sendState(inst);
+  }
+  private escortTick(inst: Inst, st: any, now: number, dt: number, mem: [string, any][]) {
+    const def = inst.def, ss = inst.ss, c = ss.cart, P0 = st.path[0], P1 = st.path[st.path.length - 1];
+    const ax = def.cx + P0[0], az = P0[1], bx = def.cx + P1[0], bz = P1[1], L = Math.hypot(bx - ax, bz - az) || 1;
+    this.h.sim.lure("cart" + inst.id, c, inst.id, 2500, 6, "");                     // monstros perto do núcleo atacam o núcleo
+    const foes = inst.lazy.filter((s) => s.m.alive && !s.T.node && Math.hypot(s.m.x - c.x, s.m.z - c.z) < 3.2).length;
+    const near = mem.some(([, p]) => Math.hypot(p.x - c.x, p.z - c.z) <= st.r);
+    if (foes) ss.hp -= foes * st.loss * dt;
+    ss.moving = near && !foes;
+    if (ss.moving) { ss.prog = Math.min(1, ss.prog + st.spd * dt / L); c.x = ax + (bx - ax) * ss.prog; c.z = az + (bz - az) * ss.prog; ss.ck = Math.max(ss.ck, Math.floor(ss.prog * 3) / 3); }
+    if (ss.hp <= 0) {                                                            // núcleo destruído: volta ao último marco (a cada 1/3 do trilho)
+      ss.hp = 100; ss.prog = ss.ck; c.x = ax + (bx - ax) * ss.prog; c.z = az + (bz - az) * ss.prog;
+      this.fx(inst, { k: "cart", name: "O Núcleo foi destruído! Ele voltou ao último marco." });
+      this.say(inst, `<span style="color:#ff9a6a">💥 O Núcleo de Energia foi destruído e voltou ao último marco. Protejam o núcleo — com monstros perto dele, ele para e se desgasta.</span>`);
+    }
+    if (ss.prog >= 1) { this.say(inst, `<span style="color:#ffd27a">⚙️ O Núcleo chegou ao fim do trilho! O portão se abriu.</span>`); this.advance(inst); return; }
+    if (now >= ss.spawnAt) {
+      ss.spawnAt = now + st.spawn.every; const k = Math.min(st.spawn.cap - this.lazyAlive(inst), Math.round(rnd(st.spawn.n[0], st.spawn.n[1])) + Math.floor(mem.length / 3));
+      const r = st.room, ux = (bx - ax) / L, uz = (bz - az) / L;
+      for (let i = 0; i < k; i++) for (let tr = 0; tr < 6; tr++) { const d = rnd(5, 11), x = Math.max(def.cx + r[0] + 1.5, Math.min(def.cx + r[2] - 1.5, c.x + ux * d + rnd(-2, 2))), z = Math.max(r[1] + 1.5, Math.min(r[3] - 1.5, c.z + uz * d + rnd(-3, 3))); if (this.spawnLazy(inst, pick(st.spawn.t), x, z)) break; }
+    }
+    this.sendState(inst);
   }
 
   private ring(inst: Inst, cx: number, cz: number, r0: number, r1: number): [number, number] {
@@ -321,7 +415,7 @@ export class Dungeons {
 
   /* ---------- mecânicas dos chefes ---------- */
   private unshield(inst: Inst) {
-    const ss = inst.ss; if (ss.boss && ss.boss.immune) { ss.boss.immune = false; this.fx(inst, { k: "unshield", name: "Escudo quebrado!" }); this.say(inst, `<span style="color:#9fe7b0">💥 O escudo do chefe se quebrou! Ataque!</span>`); this.sendState(inst); }
+    const ss = inst.ss; ss.ovEnd = 0; if (ss.boss && ss.boss.immune) { ss.boss.immune = false; this.fx(inst, { k: "unshield", name: "Escudo quebrado!" }); this.say(inst, `<span style="color:#9fe7b0">💥 O escudo do chefe se quebrou! Ataque!</span>`); this.sendState(inst); }
     ss.shAdds = null;
   }
   private bossTick(inst: Inst, st: any, now: number, mem: [string, any][]) {
@@ -329,7 +423,7 @@ export class Dungeons {
     if (!ss.boss) ss.boss = this.h.sim.list.find((s: Sim) => s.inst === inst.id && s.m.type === st.t);
     const boss: Sim | undefined = ss.boss; if (!boss || !boss.m.alive || !mech) return;
     const m = boss.m, frac = m.hp / Math.max(1, m.maxHp);
-    const b = ss.b || (ss.b = { big: new Set(), adds: new Set(), shield: new Set(), blink: new Set(), enraged: false, rainAt: now + 9000, novaAt: now + (mech.nova ? mech.nova.every * 0.6 : 0) });
+    const b = ss.b || (ss.b = { big: new Set(), adds: new Set(), shield: new Set(), blink: new Set(), ov: new Set(), enraged: false, rainAt: now + 9000, novaAt: now + (mech.nova ? mech.nova.every * 0.6 : 0), swAt: now + (mech.sweep ? mech.sweep.every * 0.6 : 0), swA: 0 });
     const near = mem.filter(([, p]) => Math.hypot(p.x - m.x, p.z - m.z) < 40); if (!near.length) return;
     if (ss.boss.immune && (!ss.shAdds || ![...ss.shAdds].some((s: Sim) => s.m.alive))) this.unshield(inst);          // segurança: sem aliados vivos, sem escudo
     if (mech.enrage && !b.enraged && frac <= mech.enrage) { b.enraged = true; boss.atk *= 1.35; this.fx(inst, { k: "enrage", name: "FÚRIA!" }); this.say(inst, `<span style="color:#ff6a4a">🔥 ${R.MT[st.t].n} entrou em FÚRIA!</span>`); }
@@ -346,6 +440,24 @@ export class Dungeons {
       for (let i = 0; i < mech.shield.n; i++) { const [x, z] = this.ring(inst, m.x, m.z, 4, 9); const s = this.spawnLazy(inst, mech.shield.t, x, z); if (s) { set.add(s); (s as any).shieldAdd = true; } }
       if (set.size) { boss.immune = true; ss.shAdds = set; this.fx(inst, { k: "shield", name: "ESCUDO!" }); this.say(inst, `<span style="color:#9fd8ff">🛡️ ${mech.shield.text}</span>`); this.sendState(inst); }
       break;
+    }
+    if (mech.overload && !boss.immune) for (const at of mech.overload.at) if (frac <= at && !b.ov.has(at)) {   // v1.91: sobrecarga
+      b.ov.add(at); const ov = mech.overload, set = new Set<Sim>();
+      for (let i = 0; i < ov.n; i++) { for (let tr = 0; tr < 6; tr++) { const [x, z] = this.ring(inst, m.x, m.z, 5, 10); const s = this.spawnLazy(inst, ov.t, x, z, false); if (s) { set.add(s); (s as any).shieldAdd = true; break; } } }
+      if (set.size) { boss.immune = true; ss.shAdds = set; ss.ovEnd = now + ov.secs * 1000; ss.ovMult = ov.mult; this.fx(inst, { k: "overload", name: "SOBRECARGA!", t: ov.secs * 1000 }); this.say(inst, `<span style="color:#ff6a4a">⚡ ${ov.text} (${ov.secs} s)</span>`); this.sendState(inst); }
+      break;
+    }
+    if (ss.ovEnd && now >= ss.ovEnd) {                                          // não deu tempo: explosão em toda a sala
+      ss.ovEnd = 0; this.h.sim.areaHit(boss, m.x, m.z, 30, ss.ovMult || 2.6, 700, "#ff2a2a");
+      this.fx(inst, { k: "big", name: "EXPLOSÃO DE SOBRECARGA", t: 700 });
+      if (ss.shAdds) for (const s of ss.shAdds as Set<Sim>) if (s.m.alive) { s.m.alive = false; s.m.hp = 0; }
+      this.unshield(inst);
+    }
+    if (mech.sweep && now >= b.swAt) {                                          // v1.91: varredura de lasers (braços girando a partir do chefe)
+      const sw = mech.sweep; b.swAt = now + sw.every; b.swA += Math.PI / (sw.arms * 2);
+      for (let a = 0; a < sw.arms; a++) { const ang = b.swA + a * 6.2832 / sw.arms, cs = Math.cos(ang), sn = Math.sin(ang);
+        for (let d = 2.4; d <= sw.len; d += 2.6) this.h.sim.areaHit(boss, m.x + cs * d, m.z + sn * d, sw.r, sw.mult, sw.delay, sw.c); }
+      this.fx(inst, { k: "big", name: sw.name, t: sw.delay });
     }
     if (mech.blink) for (const at of mech.blink.at) if (frac <= at && !b.blink.has(at)) { b.blink.add(at); this.blink(inst, st, boss); }
     if (mech.nova && now >= b.novaAt) {

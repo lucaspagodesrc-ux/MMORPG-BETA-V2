@@ -18,7 +18,7 @@ const clamp = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 // Dentro de uma dungeon em grade o mapa passa de z=80 (o Abismo vai até z≈210); as paredes são validadas por dg.clampMove.
 const clampZ = (v: number, inst: number) => (inst ? Math.max(-120, Math.min(240, v)) : clamp(v));
 // O mundo tem duas regiões de 160x160: a Vila Aurora (centro x=0) e Solara (centro x=300).
-const cx = (x: number) => (x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);   // 1800 = Arena PK • -600 = Vulcânia (v1.70)
+const cx = (x: number) => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);   // 1800 = Arena PK • -600 = Vulcânia (v1.70)
 const DGCX: number[] = R.DUNGEONS.map((d: any) => d.cx);
 const clampX = (x: number, ref: number) => {
   if (ref > 1650) return Math.max(1760, Math.min(1840, x));                 // Arena PK (o limite redondo é aplicado no "move")
@@ -26,15 +26,18 @@ const clampX = (x: number, ref: number) => {
   const c = cx(ref); return Math.max(c - MAP, Math.min(c + MAP, x));
 };
 const SOLARA_MIN_LEVEL = 50, SNOW_MIN_LEVEL = 75, VOLC_MIN_LEVEL = 100;
-const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number }; minLevel: number }> = {
+const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number }; minLevel: number; toN?: Record<number, { x: number; z: number }>; nat?: boolean }> = {
   portal_a: { x: 14, z: 56, to: { x: 300, z: -7 }, minLevel: SOLARA_MIN_LEVEL },
   portal_b: { x: 300, z: -11, to: { x: 14, z: 52 }, minLevel: 0 },
   portal_c: { x: -32, z: -45, to: { x: -300, z: -7 }, minLevel: SNOW_MIN_LEVEL },
   portal_d: { x: -300, z: -11, to: { x: -32, z: -41 }, minLevel: 0 },
   portal_e: { x: -48, z: 60, to: { x: -600, z: -7 }, minLevel: VOLC_MIN_LEVEL },   // v1.70: Vulcânia (perto do Ninho do Dragão)
   portal_f: { x: -600, z: -11, to: { x: -48, z: 56 }, minLevel: 0 },
+  portal_g: { x: -672, z: -6, to: { x: -900, z: -64 }, toN: { 1: { x: -900, z: -64 }, 2: { x: -900, z: 64 } }, minLevel: 130, nat: true },   // v1.91: Cidade das Máquinas (cada nação chega na sua base)
+  portal_h1: { x: -893, z: -75, to: { x: -667, z: -6 }, minLevel: 0 },
+  portal_h2: { x: -907, z: 75, to: { x: -667, z: -6 }, minLevel: 0 },
 };
-const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }, { x: -600, z: 5 }];   // pontos de renascimento / retorno
+const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }, { x: -600, z: 5 }];   // pontos de renascimento / retorno (da Cidade das Máquinas o retorno leva a Vulcânia)
 const NPC_REACH = 8, PICK_REACH = 7, HIT_SLACK = 4;  // folgas por causa da latência
 /** v1.78: raio do corpo do monstro para acertos de área (chefes de mapa são enormes: o jogador agora fica do lado de fora) */
 const bodyR = (bs: number) => (bs > 2 ? 1.1 : 0.5) * bs;
@@ -98,7 +101,7 @@ export class WorldRoom extends Room<WorldState> {
     if (s.tokens < cost) return false; s.tokens -= cost; return true;
   }
   private isPaused(p: any) { const I = p && p.inst ? this.dg.insts.get(p.inst) : undefined; return !!(I && I.paused); }
-  private sync(s: Sess) { if (s.c.gm) s.c.gold = R.GM_GOLD; const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; const sp = s.c.spec || ""; if (p.sp !== sp) p.sp = sp; const pt = (Array.isArray(s.c.pets) ? s.c.pets : []).filter(Boolean).map((x: any) => x.id).join(","); if (p.pt !== pt) p.pt = pt; } s.client.send("sync", { c: s.c, st: s.stash }); }
+  private sync(s: Sess) { if (s.c.gm) s.c.gold = R.GM_GOLD; const p = this.state.players.get(s.client.sessionId); if (p) { const ap = R.apOf(s.c); if (p.ap !== ap) p.ap = ap; const tt = s.c.title || ""; if (p.tt !== tt) p.tt = tt; const gb = (s.c.gmu || 0) > Date.now() ? 1 : 0; if (p.gb !== gb) p.gb = gb; const sp = s.c.spec || ""; if (p.sp !== sp) p.sp = sp; const pt = (Array.isArray(s.c.pets) ? s.c.pets : []).filter(Boolean).map((x: any) => x.id).join(","); if (p.pt !== pt) p.pt = pt; const nt = s.c.nat | 0; if (p.nt !== nt) p.nt = nt; } s.client.send("sync", { c: s.c, st: s.stash }); }
   private res(s: Sess, out: any[], ok = true) { gpFromOut(s, out); s.client.send("res", { ok, out }); }
   private addDrop(s: Sess, item: any, x: number, z: number, life: number) {
     const id = ++this.wdSeq, now = Date.now(), p = this.playerOf(s);
@@ -445,8 +448,9 @@ export class WorldRoom extends Room<WorldState> {
       if (!sim.lazy || Math.random() < 0.5) for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck") + fin))) { if (it.k === "gold" && gf) it.n = Math.round(it.n * (1 + gf)); this.addDrop(s, it, mx, mz, 0); }
       if (!sim.inst) {                                                  // ingresso de dungeon — v1.78: monstro comum do mapa 1% (fixo, a sorte não aumenta) / chefe 4% (com sorte)
         const reg = R.regOf(mx), cand = R.DUNGEONS.filter((d: any) => (d.reg || 300) === reg && mlvl >= d.minLevel - 8);
-        const pT = T.boss ? 0.04 * (1 + R.luckOf(c, this.buff(s, "luck") + fin)) : 0.01;
-        if (cand.length && Math.random() < pT) this.addDrop(s, { k: "tix", id: cand[Math.floor(Math.random() * cand.length)].id, n: 1 }, mx, mz, 0);
+        const dg = cand.length ? cand[Math.floor(Math.random() * cand.length)] : null;   // v1.91: chance própria de cada calabouço (Solara menor; Cidade das Máquinas mínima)
+        const pT = dg ? (T.boss ? (dg.tixBoss ?? 0.04) * (1 + R.luckOf(c, this.buff(s, "luck") + fin)) : (dg.tixMob ?? 0.01)) : 0;
+        if (dg && Math.random() < pT) this.addDrop(s, { k: "tix", id: dg.id, n: 1 }, mx, mz, 0);
       } else if (!T.boss && c.run && c.run.id && R.DUNGEONS.some((d: any) => d.id === c.run.id) && Math.random() < 0.02) {
         this.addDrop(s, { k: "tix", id: c.run.id, n: 1 }, mx, mz, 0);   // v1.78: dentro do calabouço, 2% por monstro: ingresso do mesmo calabouço
       }
@@ -736,7 +740,7 @@ export class WorldRoom extends Room<WorldState> {
     this.setPatchRate(50);
     this.sim = new MonsterSim(this.state, {
       hit: (sid, dmg, mid) => this.sess.get(sid)?.client.send("mhit", { raw: dmg, id: mid }),
-      attack: (mid) => this.broadcast("mat", { id: mid }),
+      attack: (mid, x) => this.broadcast("mat", x ? { id: mid, ...x } : { id: mid }),
       slam: (x, z, r, inst, t, c) => this.broadcast("slam", { x, z, r, inst, t, c }),
       wbHit: (sid, s, real) => this.wb && this.wb.hurt(sid, s, real),
       grid: (inst) => this.dg.gridStage(inst),
@@ -795,7 +799,7 @@ export class WorldRoom extends Room<WorldState> {
       if (!s || !p || !m || typeof m.t !== "string" || m.t === "died" || !this.okRate(s, 1)) return;
       if (m.t === "ack") { delete s.c._respec; this.touch(s); return; }
       const near = (n: any) => !!n && cx(n.x) === cx(p.x) && Math.hypot(n.x - p.x, n.z - p.z) <= NPC_REACH;
-      const pvm = !!(s.pv && s.pv.mode);
+      const pvm = !!(s.pv && s.pv.mode && (s.pv.mode !== "war" || Date.now() - (s.pv.at || 0) < R.WAR.potWin));   // v1.91: na guerra, regra de poção de PvP só logo depois de lutar com alguém
       const r = R.act(s, m, { near, now: Date.now(), potCd: pvm ? R.PVP.potCd : 0 });
       if (pvm && m.t === "pot" && r.ok) this.pvp.onPotion(s, String(m.kind));
       for (const sp of r.spawn) this.addDrop(s, sp.item, p.x, p.z, sp.life);
@@ -838,7 +842,7 @@ export class WorldRoom extends Room<WorldState> {
       const s = this.S(client), p = this.state.players.get(client.sessionId);
       if (!s || !p || p.dead) return;
       p.dead = true;
-      if (s.pv && s.pv.mode) { this.pvp.onDied(s); return; }      // PvP: sem penalidade de morte
+      if (s.pv && s.pv.mode && this.pvp.onDied(s)) return;          // PvP: sem penalidade de morte (na Cidade das Máquinas só se um inimigo te derrubou)
       const r = R.act(s, { t: "died" }, { now: Date.now() });
       this.touch(s); this.sync(s); this.res(s, r.out);
     });
@@ -846,7 +850,8 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("recall", (client) => {       // teleporte para a cidade mais próxima (sem aceitar coordenadas do cliente)
       const p = this.state.players.get(client.sessionId), s = this.S(client);
       if (!p || !s || p.dead) return;
-      if (s.pv && s.pv.mode) { this.sysTo(s, "O retorno não funciona durante um duelo ou na Arena PK."); return; }
+      if (s.pv && s.pv.mode === "war") { if (Date.now() - (s.pv.at || 0) < 10_000) { this.sysTo(s, "Você está em combate com outro jogador: espere alguns segundos para retornar."); return; } }
+      else if (s.pv && s.pv.mode) { this.sysTo(s, "O retorno não funciona durante um duelo ou na Arena PK."); return; }
       if (p.inst) { this.sysTo(s, "O retorno não funciona dentro da dungeon. Use o portal de saída."); return; }
       const now = Date.now();
       if (now - s.lastRecall < 10_000) return;
@@ -858,13 +863,15 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("portal", (client, m) => {
       const p = this.state.players.get(client.sessionId), s = this.S(client);
       const g = PORTALS[String(m?.id)];
-      if (!p || !s || !g || p.dead || p.inst || (s.pv && s.pv.mode)) return;
+      if (!p || !s || !g || p.dead || p.inst || (s.pv && s.pv.mode && s.pv.mode !== "war")) return;
       const now = Date.now();
       if (now - s.lastPortal < 1500) return;
       if (Math.hypot(p.x - g.x, p.z - g.z) > 9) return;
       if (s.c.level < g.minLevel) { client.send("chat", { kind: "sys", text: `O portal só abre a partir do nível ${g.minLevel}.` }); return; }
+      if (g.nat && !s.c.nat) { client.send("chat", { kind: "sys", text: "O portal da Cidade das Máquinas só abre para quem jurou lealdade a uma nação. Fale com o Arauto das Nações." }); return; }
       s.lastPortal = now;
-      p.x = g.to.x; p.z = g.to.z; s.budget = BURST; s.t = now;
+      const to = (g.toN && g.toN[s.c.nat]) || g.to;
+      p.x = to.x; p.z = to.z; s.budget = BURST; s.t = s.tpAt = now;
     });
 
     this.onMessage("revive", (client) => {
@@ -872,6 +879,7 @@ export class WorldRoom extends Room<WorldState> {
       if (!p || !s || (s.pv && s.pv.mode === "arena")) return;            // na Arena o servidor reaparece o jogador sozinho
       const now = Date.now();
       if (now - s.lastRevive < 3_000) return;
+      if (s.pv && s.pv.mode === "war") { if (s.pv.rs) return; s.lastRevive = now; this.pvp.warRevive(s); return; }   // v1.91: renasce na base da nação
       s.lastRevive = now; p.dead = false;
       if (p.inst) { const I = this.dg.insts.get(p.inst); if (I) { const st = this.dg.startOf(I.def); p.x = st.x; p.z = st.z; s.budget = BURST; s.t = now; return; } }
       const t = TOWNS.reduce((a, b) => (Math.hypot(b.x - p.x, b.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? b : a));
@@ -882,7 +890,8 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("dgenter", (client, m) => {
       const s = this.S(client); if (!s || !this.okRate(s, 2)) return;
       const p = this.playerOf(s); if (!p || p.dead) return;
-      if (s.pv && s.pv.mode) return void this.res(s, [{ toast: "Termine o duelo (ou saia da Arena PK) antes de entrar em um calabouço." }], false);
+      if (s.pv && s.pv.mode && s.pv.mode !== "war") return void this.res(s, [{ toast: "Termine o duelo (ou saia da Arena PK) antes de entrar em um calabouço." }], false);
+      if (s.pv && s.pv.mode === "war" && Date.now() - (s.pv.at || 0) < 8000) return void this.res(s, [{ toast: "Você está em combate com outro jogador: espere alguns segundos." }], false);
       const err = this.dg.enter(s, String(m?.id));
       if (err) this.res(s, [{ toast: err }], false); else { this.touch(s); this.sync(s); const pt = this.partyOf(s); if (pt) this.sendParty(pt); }
     });
@@ -1040,6 +1049,7 @@ export class WorldRoom extends Room<WorldState> {
     if (p.x > 150 && p.x < 450 && c.level < SOLARA_MIN_LEVEL) { p.x = 0; p.z = 5; }
     if (p.x < -150 && c.level < SNOW_MIN_LEVEL) { p.x = 0; p.z = 5; }
     if (p.x < -450 && c.level < VOLC_MIN_LEVEL) { p.x = 0; p.z = 5; }
+    if (p.x < -750 && (c.level < R.WAR.minLv || !c.nat)) { p.x = -600; p.z = 5; }
     this.state.players.set(client.sessionId, p);
     const now = Date.now();
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,

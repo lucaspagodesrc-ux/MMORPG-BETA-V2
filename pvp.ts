@@ -6,14 +6,14 @@ import { pool } from "./db";
 import { sendMail, mailNotify } from "./mail";
 const R: any = require("./rules.js");
 
-const PV = R.PVP, DU = R.DUEL, AR = R.ARENA;
+const PV = R.PVP, DU = R.DUEL, AR = R.ARENA, WR = R.WAR;
 const now = () => Date.now();
-const cxOf = (x: number) => (x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const cxOf = (x: number) => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);
 const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }, { x: -600, z: 5 }];
 const toMail = (items: any[]) => items.map((it) => (it.k === "eq" ? { item: it, qty: 1 } : { item: { k: it.k, id: it.id }, qty: it.n }));
 
 type Pv = {
-  mode: "" | "duel" | "arena";
+  mode: "" | "duel" | "arena" | "war";   // war = Cidade das Máquinas (v1.91): PK aberto entre nações
   hp: number; max: number;          // verificador de vida
   taken: number;                    // dano recebido desde a última restauração
   at: number;                       // último combate (dano dado ou recebido)
@@ -36,6 +36,7 @@ export class Pvp {
   lastReq = new Map<string, number>();                            // quem pediu → quando (contra spam)
   declined = new Map<string, number>();                           // "de>para" → não pedir de novo até
   arena = new Set<string>();                                      // jogadores na arena
+  war = new Set<string>();                                        // v1.91: jogadores na Cidade das Máquinas (PK entre nações)
   private seq = 0;
   private tkAt = 0;
   constructor(private room: any) {}
@@ -93,6 +94,14 @@ export class Pvp {
     }
     if (now() < v.prot || v.rs) return [];
     const out: any[] = [];
+    if (v.mode === "war") {                                       // Cidade das Máquinas: só jogadores da OUTRA nação (e fora do seu grupo)
+      if (p.inst) return [];
+      for (const id of this.war) {
+        if (id === sid) continue; const o = this.S(id), q = this.P(id);
+        if (o && q && !q.dead && !q.inst && o.pv && o.pv.mode === "war" && o.c.nat && o.c.nat !== s.c.nat && now() >= o.pv.prot && !o.pv.rs && !this.sameParty(s, o) && cxOf(q.x) === cxOf(p.x)) out.push(this.px(o));
+      }
+      return out;
+    }
     for (const id of this.arena) {
       if (id === sid) continue; const o = this.S(id), q = this.P(id);
       if (o && q && !q.dead && o.pv && o.pv.mode === "arena" && now() >= o.pv.prot && !o.pv.rs && !this.sameParty(s, o)) out.push(this.px(o));
@@ -169,6 +178,7 @@ export class Pvp {
     if (this.of.has(b)) return `${q.name} já está em um duelo.`;
     if ((s.pv && s.pv.mode === "arena") || (ts.pv && ts.pv.mode === "arena") || R.arenaIn(p.x) || R.arenaIn(q.x)) return "Dentro da Arena não há duelos: lá todos lutam contra todos.";
     if (p.inst || q.inst) return "Duelos só valem no mundo aberto (não em calabouços).";
+    if (cxOf(p.x) === WR.x || cxOf(q.x) === WR.x || (s.pv && s.pv.mode === "war") || (ts.pv && ts.pv.mode === "war")) return "Na Cidade das Máquinas não há duelos: a guerra entre as nações já está aberta.";
     if (cxOf(p.x) !== cxOf(q.x)) return `${q.name} está em outra região.`;
     if (R.inTown(p.x, p.z) || R.inTown(q.x, q.z)) return "Duelos não são permitidos na zona segura: afaste-se da cidade.";
     if (Math.hypot(p.x - q.x, p.z - q.z) > DU.maxDist) return `Chegue mais perto de ${q.name} (no máximo ${DU.maxDist} m).`;
@@ -228,22 +238,71 @@ export class Pvp {
   down(s: any) {
     const sid = s.client.sessionId, v = this.pv(s);
     if (v.mode === "duel") { const d = this.of.get(sid); if (d && d.st === "fight" && v.taken >= v.max * 0.9) this.endDuel(d, sid, "vida"); else if (d && d.st === "fight") s.client.send("pvhp", { hp: Math.max(1, Math.round(v.hp)) }); return; }
+    if (v.mode === "war" && !v.rs) { if (v.by && now() - v.byAt < 20000 && this.S(v.by)) { const p = this.P(sid); if (p) p.dead = true; this.warDeath(s, v.by); } return; }
     if (v.mode === "arena" && !v.rs) {
       if (v.taken >= v.max * 0.9 && v.by && now() - v.byAt < 20000) this.arenaDeath(s, v.by);
       else s.client.send("pvhp", { hp: Math.max(1, Math.round(v.hp)) });
     }
   }
-  /** morreu por outra causa (monstro) durante um duelo = derrota; na Arena conta como queda */
-  onDied(s: any) {
+  /** morreu por outra causa (monstro) durante um duelo = derrota; na Arena conta como queda.
+      Devolve true quando o PvP cuidou da morte (sem perda de XP). Na Cidade das Máquinas só é "morte PvP" se um inimigo bateu nos últimos 20 s. */
+  onDied(s: any): boolean {
     const sid = s.client.sessionId, v = this.pv(s), d = this.of.get(sid);
-    if (v.mode === "duel" && d) this.endDuel(d, sid, "caiu");
-    else if (v.mode === "arena" && !v.rs) this.arenaDeath(s, v.by && now() - v.byAt < 20000 ? v.by : "");
+    if (v.mode === "duel" && d) { this.endDuel(d, sid, "caiu"); return true; }
+    if (v.mode === "arena") { if (!v.rs) this.arenaDeath(s, v.by && now() - v.byAt < 20000 ? v.by : ""); return true; }
+    if (v.mode === "war") { if (v.rs) return true; if (v.by && now() - v.byAt < 20000 && this.S(v.by)) { this.warDeath(s, v.by); return true; } return false; }
+    return !!v.mode;
   }
   chat(s: any, text: string): boolean {
     const m = /^\/(duelo|duel)\s+(on|off)$/i.exec(text);
     if (m) { s.noDuel = m[2].toLowerCase() === "off"; this.sys(s, s.noDuel ? "⚔️ Você não receberá mais pedidos de duelo (/duelo on para voltar)." : "⚔️ Pedidos de duelo liberados."); return true; }
     if (/^\/(render|desistir)$/i.test(text)) { this.surrender(s); return true; }
     return false;
+  }
+
+  /* ---------- v1.91: Cidade das Máquinas (guerra entre nações) ---------- */
+  private warBase(s: any) { const b = WR.base[s.c.nat] || WR.base[1]; return { x: b.x + (Math.random() * 2 - 1) * 3, z: b.z + (Math.random() * 2 - 1) * 2 }; }
+  private warEnter(s: any) {
+    const sid = s.client.sessionId, v = this.pv(s); if (this.of.has(sid)) { const d = this.of.get(sid); if (d) this.endDuel(d, sid, "fugiu"); }
+    v.mode = "war"; v.prot = now() + WR.prot; v.rs = 0; v.kills = 0; v.deaths = 0; v.streak = 0; v.pts = 0;
+    const st = this.room.stats(s); v.max = Math.max(1, st.maxHp); v.hp = v.max; v.taken = 0; v.zero = 0; v.by = ""; v.byAt = 0; v.at = 0; v.reg = now();
+    this.war.add(sid);
+    s.client.send("war", { st: "in", ms: WR.prot, nat: s.c.nat, pk: s.c.pk || { k: 0, d: 0, p: 0, bs: 0 } });
+    this.sys(s, "⚔️ Você entrou na Cidade das Máquinas: aqui NÃO há zona segura — jogadores da outra nação podem atacar você (e você a eles).");
+  }
+  private warLeave(s: any) {
+    const sid = s.client.sessionId, v = this.pv(s); this.war.delete(sid);
+    if (v.mode === "war") { v.mode = ""; v.rs = 0; v.prot = 0; v.zero = 0; s.client.send("war", { st: "out", k: v.kills, d: v.deaths }); }
+  }
+  /** caiu para um inimigo: conta o abate, sem perder XP; renasce na base da sua nação em 5 s */
+  private warDeath(vs: any, killerSid: string) {
+    const sid = vs.client.sessionId, p = this.P(sid), v = this.pv(vs), t = now(); if (!p || v.rs) return;
+    const ks = this.S(killerSid), kn = ks ? this.name(killerSid) : "alguém", NV = R.NATIONS[vs.c.nat] || { i: "" }, NK = ks ? R.NATIONS[ks.c.nat] || { i: "" } : { i: "" };
+    v.deaths++; v.streak = 0; v.rs = t + WR.resp; v.zero = 0; p.dead = true;
+    vs.c.pk = vs.c.pk || { k: 0, d: 0, p: 0, bs: 0 }; vs.c.pk.d++; this.room.touch(vs);
+    if (ks && ks.pv && ks.pv.mode === "war") {
+      const kv = ks.pv; kv.kills++; kv.streak++;
+      ks.c.pk = ks.c.pk || { k: 0, d: 0, p: 0, bs: 0 }; ks.c.pk.k++; ks.c.pk.bs = Math.max(ks.c.pk.bs, kv.streak); this.room.touch(ks);
+      ks.client.send("war", { st: "kill", v: this.name(sid), streak: kv.streak, pk: ks.c.pk });
+      if (kv.streak >= 3) for (const id of this.war) this.sys(this.S(id), `⚔️ ${NK.i} ${kn} está em sequência de ${kv.streak} abates na Cidade das Máquinas!`);
+    }
+    vs.client.send("war", { st: "dead", by: kn, ms: WR.resp, pk: vs.c.pk });
+    for (const id of this.war) this.S(id)?.client.send("pkfeed", { k: `${NK.i} ${kn}`, v: `${NV.i} ${this.name(sid)}`, pts: 0, war: 1 });
+  }
+  /** renasce na base da nação (morte por monstro, botão "Renascer") */
+  warRevive(s: any) {
+    const sid = s.client.sessionId, p = this.P(sid), v = this.pv(s); if (!p) return;
+    const b = this.warBase(s), t = now();
+    v.rs = 0; v.prot = t + 3000; p.dead = false; p.x = b.x; p.z = b.z; s.budget = 20; s.t = s.tpAt = t;
+    const st = this.room.stats(s); v.max = Math.max(1, st.maxHp); v.hp = v.max; v.taken = 0; v.zero = 0; v.by = ""; v.byAt = 0;
+    s.client.send("war", { st: "resp", x: b.x, z: b.z, ms: 3000 });
+  }
+  private tickWar(sid: string, t: number) {
+    const s = this.S(sid), p = this.P(sid); if (!s || !p) { this.war.delete(sid); return; }
+    const v = this.pv(s);
+    if (v.mode !== "war" || p.inst || cxOf(p.x) !== WR.x || !s.c.nat) { this.warLeave(s); return; }
+    if (v.rs && t >= v.rs) { const b = this.warBase(s); v.rs = 0; v.prot = t + 3000; p.dead = false; p.x = b.x; p.z = b.z; s.budget = 20; s.t = s.tpAt = t; this.fresh(s); s.client.send("war", { st: "resp", x: b.x, z: b.z, ms: 3000, full: 1 }); }
+    if (!v.rs && v.zero && t - v.zero > 3000 && v.taken >= v.max * 1.3 && v.by && this.S(v.by)) this.warDeath(s, v.by);    // verificador: cliente "modo deus"
   }
 
   /* ---------- Arena PK ---------- */
@@ -346,13 +405,19 @@ export class Pvp {
     this.req.delete(sid); for (const [to, r] of this.req) if (r.from === sid) this.req.delete(to);
     this.lastReq.delete(sid); for (const k of [...this.declined.keys()]) if (k.startsWith(sid + ">") || k.endsWith(">" + sid)) this.declined.delete(k);    // não deixa lixo na memória
     const v = s.pv; if (v && v.mode === "arena") { const p = this.P(sid), h = v.home || TOWNS[0]; if (p) { p.x = h.x; p.z = h.z; p.dead = false; } v.mode = ""; }
-    this.arena.delete(sid);
+    if (v && v.mode === "war") { const p = this.P(sid); if (p && (p.dead || v.rs)) { const b = this.warBase(s); p.x = b.x; p.z = b.z; p.dead = false; } v.mode = ""; }
+    this.arena.delete(sid); this.war.delete(sid);
   }
   tick() {
     const t = now(); if (t < this.tkAt) return; this.tkAt = t + 250;
     for (const [to, r] of this.req) if (r.until < t) { this.req.delete(to); this.sys(this.S(r.from), `⚔️ ${this.name(to)} não respondeu ao desafio.`); }
     for (const d of [...this.duels.values()]) this.tickDuel(d, t);
     for (const sid of [...this.arena]) this.tickArena(sid, t);
+    for (const [sid, s] of this.room.sess) {                       // v1.91: entra no modo guerra ao pisar na Cidade das Máquinas (com nação, fora de calabouço)
+      if (this.war.has(sid) || (s.pv && s.pv.mode)) continue; const p = this.P(sid);
+      if (p && !p.dead && !p.inst && s.c.nat && cxOf(p.x) === WR.x) this.warEnter(s);
+    }
+    for (const sid of [...this.war]) this.tickWar(sid, t);
     for (const [id, s] of this.room.sess) { const v = s.pv; if (v && v.mode && t - v.reg >= 1000) this.regen(s, v, t); }
   }
   private tickDuel(d: Duel, t: number) {

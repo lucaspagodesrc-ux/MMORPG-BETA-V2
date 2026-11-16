@@ -7,7 +7,7 @@ const MT: Record<string, any> = R.MT, ZONES: any[] = R.ZONES;
 const MAP = 80;
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const ri = (a: number, b: number) => Math.floor(rnd(a, b + 1));
-const cxOf = (x: number) => (x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
+const cxOf = (x: number) => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
 const clampX = (x: number, ref: number) => { const c = cxOf(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
 const clampZ = (v: number) => Math.max(-MAP, Math.min(MAP, v));
 const safe = (x: number, z: number) => R.inTown(x, z);
@@ -20,10 +20,11 @@ export type Sim = {
   xpp?: Map<string, number>;   // fração da vida do monstro já paga em XP por golpe (por jogador)
   inst: number; noResp: boolean; tier: number;   // instância de dungeon (0 = mundo), sem renascimento, nível do baú
   home?: number; lazy?: boolean; immune?: boolean; side?: number;   // dungeons em grade: sala de origem (etapa em que acorda) • criado durante a luta • escudo do chefe • lado preferido p/ contornar paredes
+  diveAt?: number; dive?: { x: number; z: number; until: number; t0: number; hit: boolean; sx: number; sz: number } | null; back?: { x: number; z: number; until: number } | null;   // v1.91: voadores — próximo rasante, rasante em andamento e a volta para o alto
 };
 export type Hooks = {
   hit: (sessionId: string, dmg: number, monsterId: number) => void;   // monstro acerta um jogador
-  attack: (monsterId: number) => void;                                 // animação de ataque (todos veem)
+  attack: (monsterId: number, extra?: any) => void;                    // animação de ataque (todos veem) • extra: rajada {k:"b",t,n} / rasante {k:"d",x,z}
   slam: (x: number, z: number, r: number, inst: number, t?: number, c?: string) => void;   // aviso do ataque em área do chefe (t = duração em ms, c = cor)
   wbHit?: (sessionId: string, s: Sim, real: number) => void;           // dano num chefe de mundo (para ranking e vida dinâmica)
   grid?: (inst: number) => number;                                     // dungeon em grade: etapa atual (−1 = não é em grade → regras antigas)
@@ -179,7 +180,8 @@ export class MonsterSim {
         continue;
       }
       const lifted = now < s.liftUntil, stunned = lifted || now < s.stunUntil, rooted = now < s.rootUntil;
-      const fl = (stunned ? 1 : 0) | (rooted ? 2 : 0) | (lifted ? 4 : 0) | (s.immune ? 8 : 0); if (m.st !== fl) m.st = fl;
+      if (s.dive && (stunned || now > s.dive.until)) s.dive = null;
+      const fl = (stunned ? 1 : 0) | (rooted ? 2 : 0) | (lifted ? 4 : 0) | (s.immune ? 8 : 0) | (s.dive ? 16 : 0); if (m.st !== fl) m.st = fl;
       if (stunned) continue;                    // atordoado/levantado: não anda nem ataca
       if (!s.aggro && !s.returning && !awake(m, s.inst)) continue;   // ninguém por perto: parado
       let tgt: { id: string; x: number; z: number } | null = null, best = Infinity;
@@ -205,10 +207,30 @@ export class MonsterSim {
         const dP = Math.hypot(dq.x - m.x, dq.z - m.z);
         tx = dq.x; tz = dq.z; sp = rooted ? 0 : T.spd * sl; stop = STOP;
         if (dP <= RNG && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); }   // golpeia o clone (não fere ninguém)
+      } else if (s.aggro && cur && s.dive) {                          // v1.91: rasante — mergulha no ponto marcado e acerta quem estiver ali
+        const dv = s.dive, dP = Math.hypot(dv.x - m.x, dv.z - m.z);
+        tx = dv.x; tz = dv.z; sp = rooted ? 0 : Math.max(T.spd * 3.2, dP / 0.35); stop = 0.3;
+        if (!dv.hit && (dP < 1.2 || now - dv.t0 > 650)) { dv.hit = true; dv.until = Math.min(dv.until, now + 260); s.back = { x: dv.sx, z: dv.sz, until: now + 1400 }; const sid0 = s.aggro, mult = T.dive.mult;
+          players.forEach((p, id) => { if (!p.dead && p.inst === s.inst && !safe(p.x, p.z) && !this.noAggro.has(id) && cxOf(p.x) === cxOf(m.x) && Math.hypot(p.x - dv.x, p.z - dv.z) < 2.1) this.hooks.hit(id, s.atk * mult * rnd(0.9, 1.1), m.id); });
+          void sid0; }
+      } else if (s.aggro && cur && s.back && now < s.back.until) {   // depois do rasante: volta a subir/recuar para o ponto de onde mergulhou
+        tx = s.back.x; tz = s.back.z; sp = rooted ? 0 : T.spd * 1.6; stop = 0.4;
+        if (Math.hypot(tx - m.x, tz - m.z) < 0.6) s.back = null;
       } else if (s.aggro && cur) {
         const dP = Math.hypot(cur.x - m.x, cur.z - m.z);
         tx = cur.x; tz = cur.z; sp = rooted ? 0 : T.spd * sl; stop = STOP;
-        if (dP <= RNG && now - s.atkAt > T.atkInt) { s.atkAt = now; this.hooks.attack(m.id); this.hooks.hit(s.aggro, s.atk * rnd(0.85, 1.15), m.id); }
+        if (T.dive && !rooted && now > (s.diveAt || 0) && dP > 2.5 && dP < 10) {      // voador: começa um rasante (aviso no chão + mergulho)
+          s.diveAt = now + T.dive.every * rnd(0.85, 1.15); s.dive = { x: cur.x, z: cur.z, t0: now + 450, until: now + 1500, hit: false, sx: m.x, sz: m.z };
+          this.hooks.attack(m.id, { k: "d", x: Math.round(cur.x * 10) / 10, z: Math.round(cur.z * 10) / 10 }); this.hooks.slam(cur.x, cur.z, 2.1, s.inst, 600, "#ff3a3a");
+          continue;
+        }
+        if (dP <= RNG && now - s.atkAt > T.atkInt) {
+          s.atkAt = now; const aid = s.aggro;
+          if (T.burst > 1) {                                             // voador: rajada de N disparos (o dano total é ~1,35× um golpe normal)
+            const n = T.burst, per = 1.35 / n; this.hooks.attack(m.id, { k: "b", t: aid, n });
+            for (let i = 0; i < n; i++) setTimeout(() => { const p = players.get(aid); if (!m.alive || !p || p.dead || p.inst !== s.inst || safe(p.x, p.z) || Math.hypot(p.x - m.x, p.z - m.z) > RNG + 3) return; this.hooks.hit(aid, s.atk * per * rnd(0.85, 1.15), m.id); }, 140 + i * 170);
+          } else { this.hooks.attack(m.id); this.hooks.hit(aid, s.atk * rnd(0.85, 1.15), m.id); }
+        }
         if (s.boss && dP < 12 && now > s.slamAt) {
           s.slamAt = now + 9000; const cx = m.x, cz = m.z;
           this.hooks.slam(cx, cz, 5, s.inst);

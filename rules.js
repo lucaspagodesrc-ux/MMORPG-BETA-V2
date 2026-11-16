@@ -931,6 +931,203 @@ const storyNext = c => MAINQ.find(q => !(c.quests && c.quests[q.id] && c.quests[
   for (const n of NPCS) { if (n.id === 'arena_g') continue; const t = OLD.find(q => Math.hypot(n.x - q.x, n.z) < q.r + .5); if (!t) continue;
     n.x = Math.round((t.x + (n.x - t.x) * t.k) * 10) / 10; n.z = Math.round(n.z * t.k * 10) / 10; } }
 
+/* ====================== v1.91 — NAÇÕES e CIDADE DAS MÁQUINAS (Nv 130–150, zona PK total) ======================
+   Nações: no Nv 50 o jogador jura lealdade a uma das duas (Arauto das Nações, em Aurora, Solara e Vulcânia). A escolha é
+   definitiva e muda a cor do nome sobre a cabeça. Só quem tem nação entra na Cidade das Máquinas.
+   Cidade das Máquinas (centro x = -900): portal em Vulcânia (Nv 130+). Não há zona segura — o mapa inteiro é PK entre
+   NAÇÕES diferentes (o seu grupo e a sua nação nunca são alvo). Cada nação nasce numa base, em extremos opostos do mapa
+   (Kharzun ao norte, Azurath ao sul). Na base só há o portal de volta e um vendedor de poções. */
+const NATIONS = {
+  1: { id: 1, n: 'Kharzun', full: 'Império Rubro de Kharzun', ao: 'ao', i: '🐉', col: '#ff5f45', d: 'Forjado no aço e no fogo, o Império Rubro acredita que só a força mantém o mundo de pé. Seus guerreiros marcham sob o dragão escarlate.' },
+  2: { id: 2, n: 'Azurath', full: 'Confederação Azul de Azurath', ao: 'à', i: '🦅', col: '#45b6ff', d: 'Unidas pelo saber e pelo mar, as cidades de Azurath estudam as máquinas antigas para dominá-las. Voam sob a águia de safira.' } };
+const NAT_LV = 50;
+const NAT_RW = { xp: Math.round(xpNeed(NAT_LV) * .6), gold: 15000, hp: 10 };
+const WAR = { x: -900, minLv: 130, base: { 1: { x: -900, z: -68 }, 2: { x: -900, z: 68 } }, prot: 5000, resp: 5000, potWin: 10000 };
+const warIn = x => x < -750;
+
+/* ---- monstros (mesma curva de Vulcânia, continuando de 130 a 150) ---- */
+const mcMob = (model, o) => { const L = (o.lv[0] + o.lv[1]) / 2, k = L - 100, f = o.fly ? .82 : 1;
+  return Object.assign({ model, eva: 0, boss: false, hp: Math.round((16000 + k * 750) * f), atk: Math.round((950 + k * 21) * (o.fly ? .9 : 1)), def: Math.round(240 + k * 5.2), xp: Math.round(xpNeed(L) / 55),
+    gold: [Math.round(1500 + k * 60), Math.round(2400 + k * 90)], spd: 3, aggro: 9, rng: 2.2, atkInt: 1500, resp: 15, leash: 20, h: 2.8, eq: .17, pot: .07, mats: {} }, o); };
+const mcBoss = (model, o) => { const L = o.lv[0], k = L - 100;
+  return Object.assign({ model, boss: true, eva: 0, hp: Math.round(320000 + k * 16000), atk: Math.round(1500 + k * 24), def: Math.round(300 + k * 5), xp: Math.round(xpNeed(L) * .45),
+    gold: [30000 + k * 1200, 45000 + k * 1800], spd: 2.2, aggro: 11, rng: 3.4, atkInt: 1700, resp: 400, leash: 26, h: 6, eq: 1, pot: 1, rb: 3, matMax: 3, mats: {} }, o); };
+Object.assign(MT, {
+  mc_ara: mcMob('mspider', { n: 'Aranha de Sucata', lv: [130, 134], spd: 3.4, h: 2.3 }),
+  mc_cao: mcMob('mhound', { n: 'Cão de Caça Mecânico', lv: [130, 134], spd: 3.9, eva: .15, h: 2.3 }),
+  mc_aut: mcMob('automaton', { n: 'Autômato Carrasco', lv: [135, 139], h: 3.3 }),
+  mc_dro: mcMob('mdrone', { n: 'Drone Vigia', lv: [136, 140], fly: 1, rng: 6.5, atkInt: 2300, spd: 3.2, burst: 3, h: 2.1 }),
+  mc_cor: mcMob('mraven', { n: 'Corvo de Ferro', lv: [136, 140], fly: 1, rng: 6, atkInt: 2400, spd: 3.6, burst: 2, dive: { every: 8000, mult: 1.5 }, h: 2.1 }),
+  mc_ser: mcMob('mcrawler', { n: 'Rastejante Serrador', lv: [141, 145], spd: 2.6, h: 2.6 }),
+  mc_ves: mcMob('mwasp', { n: 'Vespa de Aço', lv: [141, 145], fly: 1, rng: 5.5, atkInt: 2200, spd: 3.8, burst: 2, dive: { every: 6500, mult: 1.7 }, h: 4.4 }),
+  mc_gol: mcMob('gearGolem', { n: 'Golem de Engrenagens', lv: [145, 149], spd: 2.3, rng: 2.8, atkInt: 1800, h: 4.4 }),
+  mc_cei: mcMob('reaper', { n: 'Ceifador de Cromo', lv: [146, 150], spd: 3.2, rng: 2.6, h: 3.7 }),
+  mc_b1: mcBoss('mtitan', { n: 'Colosso Esmagador', lv: [140, 140], sc: 1.1, h: 7 }),
+  mc_b2: mcBoss('mspider', { n: 'A Matriarca de Aço', lv: [145, 145], sc: 1.9, rng: 4.2, h: 5 }),
+  mc_b3: mcBoss('dragao', { n: 'Wyrm Ômega', lv: [150, 150], tint: '#5a6470', sc: 1.05, fly: 1, rng: 6, h: 6.5 })
+});
+Object.assign(OG, {
+  mc_ara: { sf: 'de Sucata', col: '#8a7e72', col2: '#2a2622', el: 'poison', ft: 'stinger', vset: 1 },
+  mc_cao: { sf: 'do Cão de Ferro', col: '#7a6a62', col2: '#2a1e1a', el: 'shadow', ft: 'spikes', vset: 1 },
+  mc_aut: { sf: 'do Autômato', col: '#9aa0a8', col2: '#2e3036', el: 'lightning', ft: 'skull', vset: 1 },
+  mc_dro: { sf: 'do Drone', col: '#6a8aa0', col2: '#1a2a36', el: 'lightning', ft: 'eyes', vset: 1 },
+  mc_cor: { sf: 'do Corvo de Ferro', col: '#5a5a66', col2: '#1a1a22', el: 'shadow', ft: 'spikes', vset: 1 },
+  mc_ser: { sf: 'Serrador', col: '#b05a3a', col2: '#3a1a10', el: 'fire', ft: 'spikes', vset: 1 },
+  mc_ves: { sf: 'da Vespa de Aço', col: '#c8a03a', col2: '#3a2a10', el: 'poison', ft: 'stinger', vset: 1 },
+  mc_gol: { sf: 'das Engrenagens', col: '#a88a5a', col2: '#3a2c18', el: 'fire', ft: 'rock', vset: 1 },
+  mc_cei: { sf: 'de Cromo', col: '#c8d0dc', col2: '#2a2e36', el: 'soul', ft: 'horns', vset: 1 },
+  mc_b1: { sf: 'do Colosso Esmagador', col: '#8a5a4a', col2: '#2a1610', el: 'fire', ft: 'rock', vset: 1 },
+  mc_b2: { sf: 'da Matriarca', col: '#7a8a9a', col2: '#1a222a', el: 'poison', ft: 'crown', vset: 1 },
+  mc_b3: { sf: 'Ômega', col: '#d03a4a', col2: '#3a0a12', el: 'lightning', ft: 'spikes', vset: 1 } });
+ZONES.push(
+  { t: 'mc_ara', x: -952, z: -38, r: 10, n: 13, col: '#3a3634', name: 'Ferro-Velho das Aranhas' },
+  { t: 'mc_cao', x: -952, z: 38, r: 10, n: 13, col: '#3a3230', name: 'Canil Abandonado' },
+  { t: 'mc_aut', x: -950, z: 0, r: 10, n: 13, col: '#2e3036', name: 'Linha de Montagem Morta' },
+  { t: 'mc_dro', x: -900, z: -36, r: 9, n: 12, col: '#2a3038', name: 'Torres de Vigia' },
+  { t: 'mc_cor', x: -900, z: 36, r: 9, n: 12, col: '#30282c', name: 'Ninhal de Ferro' },
+  { t: 'mc_ser', x: -850, z: -38, r: 9, n: 12, col: '#3a2a26', name: 'Serraria Rubra' },
+  { t: 'mc_ves', x: -850, z: 38, r: 9, n: 12, col: '#2e2a22', name: 'Colmeia de Aço' },
+  { t: 'mc_gol', x: -849, z: -12, r: 9, n: 12, col: '#3a3632', name: 'Fundição das Engrenagens' },
+  { t: 'mc_cei', x: -849, z: 12, r: 9, n: 12, col: '#26262e', name: 'Câmara dos Ceifadores' },
+  { t: 'mc_b1', x: -973, z: 0, r: 4, n: 1, col: '#2a1612', name: 'Pátio do Colosso' },
+  { t: 'mc_b2', x: -827, z: 0, r: 4, n: 1, col: '#1a222a', name: 'Teia da Matriarca' },
+  { t: 'mc_b3', x: -900, z: 0, r: 6, n: 1, col: '#2a0a12', name: 'Reator Ômega' });
+Object.assign(QNAME, { mc_ara: 'aranhas de sucata', mc_cao: 'cães mecânicos', mc_aut: 'autômatos carrascos', mc_dro: 'drones vigia', mc_cor: 'corvos de ferro', mc_ser: 'rastejantes serradores',
+  mc_ves: 'vespas de aço', mc_gol: 'golens de engrenagens', mc_cei: 'ceifadores de cromo', mc_b1: 'Colosso Esmagador', mc_b2: 'Matriarca de Aço', mc_b3: 'Wyrm Ômega',
+  dg_xboss: 'Supervisor Ferro-Velho', dg_yboss: 'Forja-Mãe' });
+
+/* ---- calabouços da Cidade das Máquinas: mecânicas novas (lasers, geradores, alavancas, escolta, sobrecarga) ---- */
+Object.assign(MT, {
+  /* Fábrica de Ferrugem (Nv 132–140) */
+  dg_xa: dg2m('mc_ara', [132, 134], { h: 1, a: 1, d: 1 }, { n: 'Sucateiro' }),
+  dg_xb: dg2m('mc_aut', [133, 135], { h: 1.1, a: 1.05, d: 1.1 }, { n: 'Montador Defeituoso' }),
+  dg_xc: dg2m('mc_dro', [134, 136], { h: .8, a: 1.1, d: .8 }, { n: 'Drone de Solda' }),
+  dg_xd: dg2m('mc_ser', [135, 137], { h: 1.3, a: 1.1, d: 1.2, x: 1.2 }, { n: 'Triturador' }),
+  dg_xe: dg2m('mc_cao', [134, 136], { h: .8, a: .95, d: .9 }, { n: 'Cão de Ferrugem', spd: 4.2 }),
+  dg_xcond: dg2m('mc_aut', [136, 136], { h: 1.4, a: 0, d: 1.2, x: 1 }, { n: 'Condutor de Energia', model: 'mcond', node: true, rng: 0, atkInt: 999999, spd: 0, aggro: 0, h: 4, fly: 0, burst: 0, dive: 0 }),
+  dg_xm1: dg2b('mc_b1', 136, { h: 10, a: 1.45, d: 1.5, xd: 8 }, { n: 'Capataz de Sucata', model: 'mtitan', sc: 1.0, rng: 3.8 }),
+  dg_xm2: dg2b('mc_gol', 138, { h: 12, a: 1.5, d: 1.5, xd: 6.5 }, { n: 'A Prensa Viva', model: 'gearGolem', sc: 1.3, rng: 4 }),
+  dg_xboss: dg2b('mc_b1', 140, { h: 22, a: 1.8, d: 1.6, xd: 4.2 }, { n: 'Supervisor Ferro-Velho', model: 'mtitan', sc: 1.35, rng: 4.6, tint: '#9a6a3a' }),
+  /* Núcleo da Forja-Mãe (Nv 142–150) */
+  dg_ya: dg2m('mc_cei', [142, 144], { h: 1, a: 1, d: 1 }, { n: 'Sentinela de Cromo' }),
+  dg_yb: dg2m('mc_ves', [143, 145], { h: .85, a: 1.1, d: .85 }, { n: 'Vespa do Núcleo' }),
+  dg_yc: dg2m('mc_gol', [144, 146], { h: 1.3, a: 1.1, d: 1.25, x: 1.2 }, { n: 'Forjador Ancestral' }),
+  dg_yd: dg2m('mc_cor', [144, 146], { h: .85, a: 1.1, d: .85 }, { n: 'Corvo Elétrico' }),
+  dg_ye: dg2m('mc_ara', [145, 147], { h: .9, a: 1, d: .9 }, { n: 'Aranha de Cabos', spd: 4 }),
+  dg_ycond: dg2m('mc_aut', [146, 146], { h: 1.5, a: 0, d: 1.3, x: 1 }, { n: 'Condutor do Núcleo', model: 'mcond', node: true, rng: 0, atkInt: 999999, spd: 0, aggro: 0, h: 4, fly: 0, burst: 0, dive: 0 }),
+  dg_ym1: dg2b('mc_b1', 146, { h: 10, a: 1.45, d: 1.5, xd: 8 }, { n: 'Sentinela Ômega', model: 'automaton', sc: 1.7, rng: 3.6, tint: '#b8c0cc' }),
+  dg_ym2: dg2b('mc_b2', 148, { h: 12, a: 1.5, d: 1.5, xd: 6.5 }, { n: 'A Tecelã de Cabos', model: 'mspider', sc: 1.9, rng: 4.4 }),
+  dg_yboss: dg2b('mc_b1', 150, { h: 24, a: 1.85, d: 1.7, xd: 4.2 }, { n: 'A Forja-Mãe', model: 'mtitan', sc: 1.5, rng: 4.8, tint: '#a83a3a' }) });
+for (const [a, b] of [['dg_xa', 'mc_ara'], ['dg_xb', 'mc_aut'], ['dg_xc', 'mc_dro'], ['dg_xd', 'mc_ser'], ['dg_xe', 'mc_cao'], ['dg_xcond', 'mc_aut'], ['dg_xm1', 'mc_b1'], ['dg_xm2', 'mc_gol'], ['dg_xboss', 'mc_b1'],
+  ['dg_ya', 'mc_cei'], ['dg_yb', 'mc_ves'], ['dg_yc', 'mc_gol'], ['dg_yd', 'mc_cor'], ['dg_ye', 'mc_ara'], ['dg_ycond', 'mc_aut'], ['dg_ym1', 'mc_aut'], ['dg_ym2', 'mc_b2'], ['dg_yboss', 'mc_b3']]) OG[a] = OG[b];
+for (const k in MT) MT[k].id = k;
+DUNGEONS.push({
+  id: 'fabrica', name: 'Fábrica de Ferrugem', icon: '🏭', reg: -900, sellReg: -600, minLevel: 132, price: 5000000, time: 3300, ilvl: [134, 142], cx: 1380, grace: 300, theme: 'mech', tixMob: .002, tixBoss: .01,
+  desc: 'Uma fábrica que nunca parou: lasers na linha de montagem, geradores para religar, alavancas que precisam ser puxadas juntas, um núcleo para escoltar e três chefes de aço. 10 etapas. Itens com SLOTS caem aqui. Tempo limite: 55 min.',
+  start: { x: 1380, z: -74 }, pa: [0, -78], pb: [34, 234],
+  titles: { 1: 'Operário da Fábrica', 10: 'Mestre de Linha', 50: 'Desmontador', 100: 'Lenda da Fábrica de Ferrugem' },
+  cm: ['dg_xm1', 'dg_xm2', 'dg_xboss'], mm: ['dg_xa', 'dg_xb', 'dg_xc', 'dg_xd', 'dg_xe'],
+  rooms: [rm(-12, -80, 12, -60, 0), rm(-4, -60, 4, -20, 1), rm(-26, -20, 26, 16, 2), rm(-4, 16, 4, 24, 3), rm(-20, 24, 20, 52, 3), rm(-4, 52, 4, 58, 4), rm(-16, 58, 16, 86, 4),
+    rm(-4, 86, 4, 92, 5), rm(-30, 92, 30, 124, 5), rm(-4, 124, 4, 130, 6), rm(-18, 130, 18, 156, 6), rm(-4, 156, 4, 162, 7), rm(-16, 162, 16, 188, 7),
+    rm(-4, 188, 4, 194, 8), rm(-40, 194, 40, 206, 8), rm(30, 206, 38, 212, 9), rm(14, 212, 54, 238, 9)],
+  objs: [
+    { id: 'tm1', kind: 'term', at: [2.4, -23.5], name: 'Terminal da Linha', sym: '🖥️', col: '#ff3a3a' },
+    { id: 'gx1', kind: 'gen', at: [-18, -12], name: 'Gerador Oeste', sym: '⚡', col: '#ffb02a' },
+    { id: 'gx2', kind: 'gen', at: [18, -12], name: 'Gerador Leste', sym: '⚡', col: '#ffb02a' },
+    { id: 'gx3', kind: 'gen', at: [0, 10], name: 'Gerador Central', sym: '⚡', col: '#ffb02a' },
+    { id: 'lx1', kind: 'lever', at: [-26, 96], name: 'Alavanca Vermelha', sym: '🔴', col: '#ff4a4a' },
+    { id: 'lx2', kind: 'lever', at: [26, 96], name: 'Alavanca Amarela', sym: '🟡', col: '#ffd24a' },
+    { id: 'lx3', kind: 'lever', at: [0, 121], name: 'Alavanca Azul', sym: '🔵', col: '#4aa8ff' }],
+  stages: [
+    { k: 'kill', t: 'dg_xa', n: 24, need: 20, room: [-10, -78, 10, -62], text: 'Elimine os Sucateiros' },
+    { k: 'lasers', room: [-4, -60, 4, -20], term: 'tm1', every: 2600, mult: 1.3, delay: 1100, c: '#ff2a2a', spawn: { every: 9000, t: ['dg_xe'], n: [2, 3], cap: 8 }, text: 'Atravesse a Linha de Montagem e desligue o terminal' },
+    { k: 'power', objs: ['gx1', 'gx2', 'gx3'], r: 6, secs: 22, room: [-26, -20, 26, 16], waves: { every: 8000, t: ['dg_xb', 'dg_xc'], n: [2, 4] }, text: 'Religue os geradores (fique perto deles até carregar)' },
+    { k: 'kill', t: 'dg_xd', n: 18, need: 14, room: [-18, 26, 18, 50], text: 'Elimine os Trituradores', hz: { every: 4200, n: 2, r: 3.2, mult: 1.2, delay: 1700, c: '#ff4a1a', name: 'Faíscas' } },
+    { k: 'boss', t: 'dg_xm1', at: [0, 74], room: [-14, 60, 14, 84], chest: { slot: 190, tier: 1 }, text: 'Derrote o Capataz de Sucata',
+      mech: { adds: { at: [.7, .35], t: 'dg_xe', n: 4 }, sweep: { every: 11000, arms: 4, len: 13, r: 1.7, mult: 1.4, delay: 1300, c: '#ff2a2a', name: 'Varredura Laser' }, big: BIG([.5], 8, 2.4, '#ff6a2a', 'Pisão Hidráulico') } },
+    { k: 'levers', objs: ['lx1', 'lx2', 'lx3'], win: 18, room: [-30, 92, 30, 124], guards: { t: 'dg_xb', n: 3 }, bad: { r: 5, mult: 1.6, delay: 900, c: '#6ad0ff' }, text: 'Puxe as 3 alavancas em até 18 s' },
+    { k: 'waves', room: [-16, 132, 16, 154], text: 'Resista à Recicladora', gap: 5000, list: [{ t: 'dg_xa', n: 8 }, { t: 'dg_xc', n: 6 }, { t: 'dg_xd', n: 6 }, { t: 'dg_xb', n: 6 }] },
+    { k: 'boss', t: 'dg_xm2', at: [0, 176], room: [-14, 164, 14, 186], chest: { slot: 191, tier: 2 }, text: 'Derrote a Prensa Viva',
+      mech: { overload: { at: [.6, .3], t: 'dg_xcond', n: 4, secs: 25, mult: 2.6, text: 'A Prensa entrou em SOBRECARGA! Destrua os Condutores de Energia antes da explosão!' }, big: BIG([.75], 8, 2.5, '#ff7a2a', 'Prensagem'), rain: RAIN(3, 3, 9500, 3, 1.2, '#ff4a1a', 'Chuva de Rebites') } },
+    { k: 'escort', path: [[-34, 200], [34, 200]], spd: 1.4, r: 7, loss: 2.2, room: [-40, 194, 40, 206], spawn: { every: 7000, t: ['dg_xa', 'dg_xe', 'dg_xc'], n: [2, 3], cap: 10 }, text: 'Escolte o Núcleo de Energia até o fim da esteira' },
+    { k: 'boss', t: 'dg_xboss', at: [34, 226], room: [16, 214, 52, 236], chest: { slot: 192, tier: 3 }, final: true, text: 'Derrote o Supervisor Ferro-Velho',
+      mech: { sweep: { every: 12000, arms: 5, len: 14, r: 1.7, mult: 1.5, delay: 1300, c: '#ff2a2a', name: 'Varredura Laser' }, overload: { at: [.5], t: 'dg_xcond', n: 5, secs: 22, mult: 2.8, text: 'O Supervisor sobrecarregou a fábrica! Destrua os Condutores!' },
+        rain: RAIN(4, 3, 9000, 3.2, 1.3, '#ff4a1a', 'Ferro Derretido'), adds: { at: [.8, .4], t: 'dg_xb', n: 4 }, nova: { every: 16000, r: 7.5, mult: 2, delay: 1800, c: '#ff2a2a', name: 'Descarga Elétrica' }, enrage: .2 } }
+  ]
+});
+DUNGEONS.push({
+  id: 'nucleo', name: 'Núcleo da Forja-Mãe', icon: '⚙️', reg: -900, sellReg: -600, minLevel: 142, price: 9000000, time: 3600, ilvl: [144, 152], cx: 1590, grace: 300, theme: 'mech2', tixMob: .002, tixBoss: .01,
+  desc: 'O coração de toda a Cidade das Máquinas: um núcleo para escoltar, alavancas, lasers, geradores, um reator para segurar e a própria Forja-Mãe. 11 etapas. Itens com SLOTS caem aqui. Tempo limite: 60 min.',
+  start: { x: 1590, z: -74 }, pa: [0, -78], pb: [15, 234],
+  titles: { 1: 'Invasor do Núcleo', 10: 'Quebra-Engrenagens', 50: 'Ruína das Máquinas', 100: 'Lenda da Forja-Mãe' },
+  cm: ['dg_ym1', 'dg_ym2', 'dg_yboss'], mm: ['dg_ya', 'dg_yb', 'dg_yc', 'dg_yd', 'dg_ye'],
+  rooms: [rm(-12, -80, 12, -60, 0), rm(-4, -60, 4, -52, 1), rm(-36, -52, 36, -40, 1), rm(-4, -40, 4, -34, 2), rm(-36, -34, 36, 0, 2), rm(-4, 0, 4, 6, 3), rm(-18, 6, 18, 36, 3),
+    rm(-4, 36, 4, 80, 4), rm(-30, 80, 30, 116, 5), rm(-4, 116, 4, 122, 6), rm(-18, 122, 18, 150, 6), rm(-4, 150, 4, 156, 7), rm(-20, 156, 20, 182, 7),
+    rm(-4, 182, 4, 186, 8), rm(-18, 186, 18, 206, 8), rm(18, 190, 40, 202, 9), rm(28, 202, 36, 210, 10), rm(-10, 210, 40, 238, 10)],
+  objs: [
+    { id: 'ly1', kind: 'lever', at: [-30, -28], name: 'Alavanca Vermelha', sym: '🔴', col: '#ff4a4a' },
+    { id: 'ly2', kind: 'lever', at: [30, -28], name: 'Alavanca Amarela', sym: '🟡', col: '#ffd24a' },
+    { id: 'ly3', kind: 'lever', at: [0, -4], name: 'Alavanca Azul', sym: '🔵', col: '#4aa8ff' },
+    { id: 'tm2', kind: 'term', at: [2.4, 77], name: 'Terminal do Corredor', sym: '🖥️', col: '#ff3a3a' },
+    { id: 'gy1', kind: 'gen', at: [-22, 88], name: 'Gerador 1', sym: '⚡', col: '#ffb02a' },
+    { id: 'gy2', kind: 'gen', at: [22, 88], name: 'Gerador 2', sym: '⚡', col: '#ffb02a' },
+    { id: 'gy3', kind: 'gen', at: [-22, 110], name: 'Gerador 3', sym: '⚡', col: '#ffb02a' },
+    { id: 'gy4', kind: 'gen', at: [22, 110], name: 'Gerador 4', sym: '⚡', col: '#ffb02a' },
+    { id: 'ry1', kind: 'altar', at: [0, 196], name: 'Reator Instável', sym: '☢️', col: '#ff3a4a' }],
+  stages: [
+    { k: 'kill', t: 'dg_ya', n: 24, need: 20, room: [-10, -78, 10, -62], text: 'Elimine as Sentinelas de Cromo' },
+    { k: 'escort', path: [[-30, -46], [30, -46]], spd: 1.3, r: 7, loss: 2.4, room: [-36, -52, 36, -40], spawn: { every: 6500, t: ['dg_ye', 'dg_yb', 'dg_ya'], n: [2, 3], cap: 10 }, text: 'Escolte o Núcleo de Energia pelo trilho' },
+    { k: 'levers', objs: ['ly1', 'ly2', 'ly3'], win: 22, room: [-36, -34, 36, 0], guards: { t: 'dg_yc', n: 3 }, bad: { r: 5, mult: 1.7, delay: 900, c: '#6ad0ff' }, text: 'Puxe as 3 alavancas em até 22 s' },
+    { k: 'boss', t: 'dg_ym1', at: [0, 22], room: [-16, 8, 16, 34], chest: { slot: 190, tier: 1 }, text: 'Derrote a Sentinela Ômega',
+      mech: { sweep: { every: 10000, arms: 4, len: 13, r: 1.7, mult: 1.5, delay: 1300, c: '#ff2a2a', name: 'Varredura Laser' }, shield: { at: [.5], t: 'dg_ya', n: 4, text: 'A Sentinela ergueu um escudo de energia! Derrote as Sentinelas de Cromo!' }, big: BIG([.75], 8, 2.5, '#ff4a6a', 'Golpe de Pistão') } },
+    { k: 'lasers', room: [-4, 36, 4, 80], term: 'tm2', every: 2300, mult: 1.4, delay: 1050, c: '#ff2a2a', spawn: { every: 8500, t: ['dg_yb'], n: [2, 3], cap: 8 }, text: 'Atravesse o Corredor de Lasers e desligue o terminal' },
+    { k: 'power', objs: ['gy1', 'gy2', 'gy3', 'gy4'], r: 6, secs: 20, room: [-30, 80, 30, 116], waves: { every: 7500, t: ['dg_yc', 'dg_yd', 'dg_ye'], n: [2, 4] }, text: 'Religue os 4 geradores (fique perto deles até carregar)' },
+    { k: 'boss', t: 'dg_ym2', at: [0, 136], room: [-16, 124, 16, 148], chest: { slot: 191, tier: 2 }, text: 'Derrote a Tecelã de Cabos',
+      mech: { overload: { at: [.65, .3], t: 'dg_ycond', n: 4, secs: 24, mult: 2.7, text: 'A Tecelã puxou energia do Núcleo! Destrua os Condutores antes da explosão!' }, adds: { at: [.8, .5], t: 'dg_ye', n: 5 }, rain: RAIN(3, 3, 9000, 3, 1.25, '#7affea', 'Teia Elétrica') } },
+    { k: 'waves', room: [-18, 158, 18, 180], text: 'Resista às Linhas de Produção', gap: 5000, list: [{ t: 'dg_ya', n: 8 }, { t: 'dg_yb', n: 7 }, { t: 'dg_yd', n: 7 }, { t: 'dg_yc', n: 6 }] },
+    { k: 'defend', at: [0, 196], r: 8, secs: 60, text: 'Segure o Reator Instável', waves: { every: 9000, t: ['dg_yc', 'dg_ye', 'dg_yb'], n: [4, 6] } },
+    { k: 'kill', t: 'dg_yd', n: 16, need: 12, room: [20, 191, 39, 201], text: 'Derrube os Corvos Elétricos', hz: { every: 3800, n: 2, r: 3, mult: 1.25, delay: 1600, c: '#7affea', name: 'Arcos Elétricos' } },
+    { k: 'boss', t: 'dg_yboss', at: [15, 224], room: [-8, 212, 38, 236], chest: { slot: 192, tier: 3 }, final: true, text: 'Derrote a Forja-Mãe',
+      mech: { sweep: { every: 11000, arms: 6, len: 15, r: 1.7, mult: 1.6, delay: 1300, c: '#ff2a2a', name: 'Varredura Laser' }, overload: { at: [.6, .25], t: 'dg_ycond', n: 5, secs: 22, mult: 3, text: 'A Forja-Mãe entrou em SOBRECARGA! Destrua os Condutores!' },
+        nova: { every: 15000, r: 8, mult: 2.1, delay: 1800, c: '#ff3a1a', name: 'Fornalha Aberta' }, rain: RAIN(4, 3, 9000, 3.2, 1.3, '#ff6a1a', 'Metal Fundido'), adds: { at: [.8, .45], t: 'dg_yc', n: 4 }, enrage: .2 } }
+  ]
+});
+for (const id of ['cripta', 'solar']) { const d = DUNGEONS.find(x => x.id === id); if (d) { d.tixMob = .003; d.tixBoss = .015; } }   // v1.91: ingressos de Solara caem menos no mapa de Solara
+
+/* ---- NPCs: portal em Vulcânia, bases das nações (portal de volta + poções), entradas dos calabouços e quem dá as missões ---- */
+NPCS.push(
+  { id: 'portal_g', name: '⚙️ Portal da Cidade das Máquinas (Nv 130+)', icon: '⚙️', x: -672, z: -6, col: '#d0202a', tabs: [], greet: '', portal: { name: 'Cidade das Máquinas', lvl: 130, nat: 1, to: { x: -900, z: -64 }, toN: { 1: { x: -900, z: -64 }, 2: { x: -900, z: 64 } } } },
+  { id: 'portal_h1', name: '🌋 Portal para Vulcânia', icon: '🌀', x: -893, z: -75, col: '#ff6a2a', tabs: [], greet: '', portal: { name: 'Forte de Vulcânia', lvl: 0, to: { x: -667, z: -6 } } },
+  { id: 'portal_h2', name: '🌋 Portal para Vulcânia', icon: '🌀', x: -907, z: 75, col: '#ff6a2a', tabs: [], greet: '', portal: { name: 'Forte de Vulcânia', lvl: 0, to: { x: -667, z: -6 } } },
+  { id: 'mc_pot1', name: 'Bolt, o Boticário de Kharzun', icon: '🧪', x: -907, z: -73, col: '#8a2a22', tabs: ['comprar', 'vender'], greet: 'Poções para quem luta pelo Império. Lá fora não existe lugar seguro — beba antes de precisar.', hat: '#3a0a08', shop: 'mc', nat: 1 },
+  { id: 'mc_pot2', name: 'Rivet, a Boticária de Azurath', icon: '🧪', x: -893, z: 73, col: '#1a4a7a', tabs: ['comprar', 'vender'], greet: 'Poções para quem voa com a Confederação. Aqui todo mundo é alvo, menos os nossos.', hat: '#0a1a3a', shop: 'mc', nat: 2 },
+  { id: 'dg_fabrica', name: '🏭 Fábrica de Ferrugem (Nv 132+)', icon: '🏭', x: -925, z: 0, col: '#d0642a', tabs: [], greet: '', dungeon: 'fabrica' },
+  { id: 'dg_nucleo', name: '⚙️ Núcleo da Forja-Mãe (Nv 142+)', icon: '⚙️', x: -875, z: 0, col: '#d02a3a', tabs: [], greet: '', dungeon: 'nucleo' },
+  { id: 'vc_kessa', name: 'Engenheira Kessa', icon: '🔧', x: -662, z: -13, col: '#5a6a7a', tabs: ['missoes'], greet: 'A oeste daqui fica a Cidade das Máquinas. Ninguém sabe quem a construiu — mas ela continua funcionando, e fabricando monstros. Só entra quem jurou lealdade a uma nação.', hat: '#2a3038', camp: true },
+  { id: 'arauto_a', name: 'Arauto das Nações', icon: '⚔️', x: 8.5, z: 52, col: '#8a6a3a', tabs: ['nacao'], greet: 'Duas nações disputam o futuro deste mundo. A partir do nível 50 você pode jurar lealdade a uma delas.', hat: '#3a2a1a' },
+  { id: 'arauto_s', name: 'Arauto das Nações', icon: '⚔️', x: 313.5, z: -10, col: '#8a6a3a', tabs: ['nacao'], greet: 'Duas nações disputam o futuro deste mundo. A partir do nível 50 você pode jurar lealdade a uma delas.', hat: '#3a2a1a' },
+  { id: 'arauto_v', name: 'Arauto das Nações', icon: '⚔️', x: -664, z: 2, col: '#8a6a3a', tabs: ['nacao'], greet: 'Sem nação, o portal da Cidade das Máquinas não abre para você. Jure lealdade a Kharzun ou a Azurath.', hat: '#3a2a1a' });
+{ const ng = NPCS.find(n => n.id === 'guarda_lava'); if (ng) ng.greet = 'Quatro lugares queimam mais que o resto: a Fornalha dos Titãs e a Caldeira do Dragão Ancestral, aqui em Vulcânia, e a Fábrica de Ferrugem e o Núcleo da Forja-Mãe, na Cidade das Máquinas. Compre o ingresso comigo e fale com o portal.'; }
+
+/* ---- missões (dadas em Vulcânia, alvos na Cidade das Máquinas) ---- */
+{ const MQ = (id, npc, t, d, tg, qty, rec, x) => { const q = Q(id, npc, t, d, tg, qty, rec, 0, Math.round(rec * rec * 25), x); q.need = rec - 2; q.rw.xp = Math.max(20, Math.round(q.rw.xp * .6)); return q; };
+  QUESTS.push(
+    MQ('mck1', 'vc_kessa', 'Sucata que Anda', 'As aranhas de sucata desmontam tudo o que encontram. Elimine 30 na Cidade das Máquinas.', 'mc_ara', 30, 130, E('boots', 132, 3)),
+    MQ('mck2', 'vc_kessa', 'Matilha de Aço', 'Cães mecânicos caçam em bando. Elimine 30.', 'mc_cao', 30, 131, { sp: 1 }),
+    MQ('mck3', 'vc_kessa', 'Linha de Montagem', 'Os autômatos carrascos ainda seguem ordens de alguém. Elimine 30.', 'mc_aut', 30, 134, E('ring', 136, 3)),
+    MQ('mck4', 'vc_kessa', 'A Fábrica de Ferrugem', 'Algo na Fábrica de Ferrugem fabrica esses monstros. Derrote o Supervisor Ferro-Velho lá dentro.', 'dg_xboss', 1, 137, { sp: 1 }),
+    MQ('mck5', 'vc_kessa', 'Olhos no Céu', 'Os drones vigia avisam as máquinas de tudo o que acontece. Derrube 25.', 'mc_dro', 25, 138, E('helmet', 139, 3)),
+    MQ('mck6', 'vc_kessa', 'Asas de Ferro', 'Os corvos de ferro mergulham sobre quem passa. Derrube 25.', 'mc_cor', 25, 139, { sp: 1 }),
+    MQ('mck7', 'vc_kessa', 'Serraria Rubra', 'Os rastejantes serradores cortam aço como manteiga. Elimine 30.', 'mc_ser', 30, 141, E('armor', 143, 3)),
+    MQ('mck8', 'vc_kessa', 'A Colmeia', 'As vespas de aço protegem a colmeia com rasantes. Derrube 25.', 'mc_ves', 25, 143, { sp: 1 }),
+    MQ('mck9', 'vc_kessa', 'Engrenagens Vivas', 'Os golens de engrenagens nunca param de girar. Elimine 30.', 'mc_gol', 30, 145, E('weapon', 147, 3)),
+    MQ('mck10', 'vc_kessa', 'O Coração da Máquina', 'A Forja-Mãe alimenta toda a cidade. Desça ao Núcleo e derrote-a.', 'dg_yboss', 1, 147, { sp: 2 }),
+    MQ('mck11', 'vc_kessa', 'Ceifadores de Cromo', 'Os ceifadores guardam a última câmara. Elimine 30.', 'mc_cei', 30, 148, E('boots', 150, 3)),
+    MQ('mck12', 'vc_kessa', 'Desligar a Cidade', 'Quase lá. Elimine mais 45 ceifadores de cromo e a cidade vai parar de fabricar.', 'mc_cei', 45, 150, { sp: 2 }),
+    MQ('mci1', 'vc_ignis', 'O Colosso Esmagador', 'Um colosso de aço patrulha o pátio oeste da Cidade das Máquinas. Derrube-o!', 'mc_b1', 1, 140, { ...E('armor', 141, 3), sp: 2 }),
+    MQ('mci2', 'vc_ignis', 'A Matriarca de Aço', 'A mãe de todas as aranhas de sucata tece sua teia a leste. Destrua-a!', 'mc_b2', 1, 145, { ...E('helmet', 146, 3), sp: 2 }),
+    MQ('mci3', 'vc_ignis', 'Wyrm Ômega', 'No reator do centro da cidade dorme um dragão de aço. Derrote o Wyrm Ômega!', 'mc_b3', 1, 150, { ...E('weapon', 151, 3), sp: 3 })); }
+
 
 /* ====================== FUNÇÕES DE REGRA ====================== */
 const MON_TOWN_R = 15;
@@ -1222,6 +1419,13 @@ SHOPS.scr = [
   { id: 'g_ext', i: '🔳', n: 'Extensor de Slot', sec: 'Extensor de Slot', d: 'Cria +1 engaste ◇ em um equipamento (até ' + MAX_SLOTS + ' engastes) ou em um mascote (até ' + PET_MAXSL + '). Use na aba Engastar.', c: () => EXT_PRICE, mk: () => ({ k: 'mat', id: 'g_ext', n: 1 }) },
   ...GRADES.flatMap((gr, gi) => PGEMS.filter(g => g.g === gi).map(g => ({ id: 'g_' + g.id, i: '🐾', n: g.n, sec: '🐾 Gemas de MASCOTE — ' + gr.n + ' (' + gr.en + ')', scr: g.id, d: g.o + ' ' + (g.sc ? '+' + gemVal(g, PET_IL) + ' (mascote)' : '+' + g.v + (g.u || '')) + ' • máx. 2 iguais por mascote', c: () => Math.round(gr.p / 3), mk: () => ({ k: 'mat', id: 'g_' + g.id, n: 1 }) })))];
 
+SHOPS.mc = [
+  { id: 'mhp', i: '🧪', n: 'Poção de Vida', d: 'Recupera 40% da vida', c: () => 40, mk: () => ({ k: 'pot', id: 'hp', n: 1 }) },
+  { id: 'mmp', i: '🔷', n: 'Poção de Mana', d: 'Recupera 40% da mana', c: () => 40, mk: () => ({ k: 'pot', id: 'mp', n: 1 }) },
+  { id: 'mhp2', i: '🍷', n: 'Poção de Vida Superior', d: 'Recupera 70% da vida', c: () => 170, mk: () => ({ k: 'pot', id: 'hp2', n: 1 }) },
+  { id: 'mmp2', i: '💧', n: 'Poção de Mana Superior', d: 'Recupera 70% da mana', c: () => 170, mk: () => ({ k: 'pot', id: 'mp2', n: 1 }) },
+  { id: 'mhp2x10', i: '🍷', n: 'Poção de Vida Superior ×10', d: 'Pacote de guerra', c: () => 1600, mk: () => ({ k: 'pot', id: 'hp2', n: 10 }) },
+  { id: 'mmp2x10', i: '💧', n: 'Poção de Mana Superior ×10', d: 'Pacote de guerra', c: () => 1600, mk: () => ({ k: 'pot', id: 'mp2', n: 10 }) }];
 /* ---------- inventário ---------- */
 /* v1.79: itens que empilham até 99 — materiais, poções e ingressos de calabouço */
 const STK = k => k === 'mat' || k === 'pot' || k === 'tix';
@@ -1434,8 +1638,8 @@ const dayKey = t => Math.floor((t - RESET_UTC_MS) / 86400e3);
 const weekKey = t => Math.floor((dayKey(t) + 3) / 7);                  // a semana começa na segunda-feira, 04:00
 const dayEnd = t => (dayKey(t) + 1) * 86400e3 + RESET_UTC_MS;
 const weekEnd = t => ((weekKey(t) + 1) * 7 - 3) * 86400e3 + RESET_UTC_MS;
-const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca', '-600': 'Vulcânia' };
-const regOf = x => (x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca', '-600': 'Vulcânia', '-900': 'a Cidade das Máquinas' };
+const regOf = x => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
 const bandReg = L => (L < 50 ? 0 : L < 75 ? 300 : L < 100 ? -300 : -600);
 const dwGold = L => Math.round((4000 + L * L * 45) / 100) * 100;      // ouro-base por nível (nível 100 ≈ 454 mil)
 const DWT = {   // q(L, semanal) = quantidade • rw = peso da recompensa • min = nível mínimo
@@ -1974,12 +2178,12 @@ function act(sess, m, ctx) {
   if (t === 'buyticket') {
     const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');
     const dg = DUNGEONS.find(x => x.id === m.id); if (!dg) return fail();
-    if ((dg.reg || 300) !== regOf(n.x)) return fail('Esse ingresso é vendido em ' + REGN[dg.reg || 300] + '.');
+    const sr = dg.sellReg || dg.reg || 300; if (sr !== regOf(n.x)) return fail('Esse ingresso é vendido em ' + REGN[sr] + '.');
     if (c.level < dg.minLevel) return fail('Nível ' + dg.minLevel + ' necessário.');
     if (c.gold < dg.price) return fail('Ouro insuficiente');
     if (!addItem(c.inv, { k: 'tix', id: dg.id, n: 1 })) return fail('Mochila cheia: libere um espaço para o ingresso.');   // v1.79: o ingresso vai para a mochila (pilha de até 99)
     c.gold -= dg.price; F('coin'); T('🎟️ Ingresso comprado: ' + dg.name);
-    L(`🎟️ Você comprou um ingresso para <b style="color:#ffd27a">${dg.name}</b>. Vá até a entrada, no canto do deserto, e fale com o portal.`); return done();
+    L(`🎟️ Você comprou um ingresso para <b style="color:#ffd27a">${dg.name}</b>. ${dg.reg === -900 ? 'A entrada fica na Cidade das Máquinas (zona PK!).' : 'Vá até a entrada do calabouço e fale com o portal.'}`); return done();
   }
   if (t === 'craft') {
     const sm = npcFor('forja'); if (!sm) return fail('Chegue perto do Ferreiro.');
@@ -2109,6 +2313,17 @@ function act(sess, m, ctx) {
     F('rare'); T(`🎁 Baú ${CH.n} aberto!`); L(`<span style="color:#ffd27a">🎁 Baú ${w ? 'da semana' : 'do dia'} <b>${CH.n}</b>: <b>${fmtN(loot.gold)}</b> 💰${loot.items.map(it => ' • ' + nm(it) + (it.n > 1 ? ' ×' + it.n : '')).join('')}</span>`);
     return done();
   }
+  if (t === 'nation') {                                                    // v1.91: jurar lealdade a uma nação (Nv 50+, definitivo)
+    if (!npcFor('nacao')) return fail('Fale com um Arauto das Nações.');
+    const N = NATIONS[m.n]; if (!N) return fail();
+    if (c.nat) return fail('Você já tem nação: ' + NATIONS[c.nat].full + '.');
+    if (c.level < NAT_LV) return fail('Você precisa estar no nível ' + NAT_LV + '.');
+    c.nat = N.id; F('questDone'); T(N.i + ' ' + N.full + '!');
+    c.gold += NAT_RW.gold; if (!addItem(c.inv, { k: 'pot', id: 'hp', n: NAT_RW.hp })) spawn.push({ item: { k: 'pot', id: 'hp', n: NAT_RW.hp }, life: 0 });
+    L(`<span style="color:${N.col}">${N.i} Você jurou lealdade: <b>${N.full}</b>! Seu nome agora aparece em <b>${N.n === 'Kharzun' ? 'vermelho' : 'azul'}</b>. Missão "O Chamado das Nações" concluída.</span>`);
+    if (gainXp(c, NAT_RW.xp)) out.push({ lvl: c.level });
+    return done();
+  }
   if (t === 'died') {
     const loss = Math.floor(xpNeed(c.level) * .05); c.xp = Math.max(0, c.xp - loss);
     L(`<span style="color:#ff6b6b">Você morreu e perdeu ${loss} XP.</span>`); return done();
@@ -2198,7 +2413,7 @@ const castMs = (cls, i, x) => {
   return Math.round(Math.max(a, t));
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
