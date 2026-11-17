@@ -1033,6 +1033,7 @@ export class WorldRoom extends Room<WorldState> {
     const c = await loadCharacter(acc.id, String(options?.charId || ""));
     if (!c) throw new ServerError(404, "Personagem não encontrado.");
     if (!c.name) throw new ServerError(403, "Escolha um nome para este personagem antes de entrar.");
+    if (!R.lkOk(c.lk)) throw new ServerError(403, "Personalize o visual deste personagem antes de entrar.");   // v1.95
     const stash = await loadStash(acc.id);
     return { acc, c, stash };
   }

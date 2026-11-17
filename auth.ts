@@ -126,14 +126,15 @@ const NAME_USED = "Esse nome já está em uso. Escolha outro.";
 
 authRouter.post("/chars", authed, async (req, res) => {
   const u = (req as any).user as AuthUser;
-  const { cls, name, fem } = req.body || {};
+  const { cls, name, fem, lk } = req.body || {};
   const nm = cleanName(name);
   if (!CLASSES.includes(cls)) return res.status(400).json({ error: "Classe inválida." });
   if (nameErr(nm)) return res.status(400).json({ error: nameErr(nm) });
+  if (!R.lkOk(lk)) return res.status(400).json({ error: "Escolha o visual do personagem (olhos, cabelo, rosto e pele)." });   // v1.95
   if (await nameTaken(nm)) return res.status(409).json({ error: NAME_USED });
   const n = await pool.query("select count(*)::int as n from characters where account_id=$1", [u.id]);
   if (n.rows[0].n >= 6 && u.username.toLowerCase() !== GM_USER) return res.status(400).json({ error: "Limite de 6 personagens." });
-  const c = R.newChar(cls, nm, fem === true || fem === 1 ? 1 : 0); c.nmOk = 1;   // v1.77: masculino/feminino (só aparência)
+  const c = R.newChar(cls, nm, fem === true || fem === 1 ? 1 : 0, lk); c.nmOk = 1;   // v1.77: masculino/feminino (só aparência)
   try { await saveChar(u.id, c); } catch (e: any) { if (e?.code === "23505") return res.status(409).json({ error: NAME_USED }); throw e; }
   res.json({ char: c });
 });
@@ -151,6 +152,19 @@ authRouter.post("/chars/:id/name", authed, async (req, res) => {
   if (await nameTaken(nm, id)) return res.status(409).json({ error: NAME_USED });
   const c = R.migrate(d); c.name = nm; c.nmOk = 1;
   try { await saveChar(u.id, c); } catch (e: any) { if (e?.code === "23505") return res.status(409).json({ error: NAME_USED }); throw e; }
+  res.json({ char: c });
+});
+
+// v1.95: personagens antigos escolhem o visual (obrigatório antes de entrar no jogo). Só vale para quem ainda não tem visual.
+authRouter.post("/chars/:id/look", authed, async (req, res) => {
+  const u = (req as any).user as AuthUser;
+  const id = String(req.params.id), lk = req.body?.lk;
+  if (!R.lkOk(lk)) return res.status(400).json({ error: "Visual inválido." });
+  const cur = await pool.query("select data from characters where id=$1 and account_id=$2", [id, u.id]);
+  if (!cur.rows[0]) return res.status(404).json({ error: "Personagem não encontrado." });
+  const c = R.migrate(cur.rows[0].data || {});
+  if (c.lk) return res.status(400).json({ error: "Este personagem já tem visual." });
+  c.lk = lk; await saveChar(u.id, c);
   res.json({ char: c });
 });
 

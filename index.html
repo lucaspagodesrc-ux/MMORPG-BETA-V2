@@ -354,6 +354,10 @@
   #selCap{margin-top:6px;text-align:center;text-shadow:0 2px 6px #000;pointer-events:none}#selCap b{font-size:22px;color:#fff}#selCap small{display:block;color:#cbd6e2;margin-top:2px}
   #selAct{margin-top:auto;width:min(460px,100%);background:rgba(13,20,31,.92);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;cursor:default}
   .sexSel{display:flex;gap:8px}.sexSel button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:#0e1722;color:#cfd8e3;font-weight:700;font-size:14px;cursor:pointer}.sexSel button.on{border-color:var(--gold);background:#3b3014;color:#ffe28a}
+  #lkBox{display:flex;flex-direction:column;gap:5px;font-size:12px}.lkRow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.lkRow>b{width:66px;flex:none;color:#cbd6e2;font-weight:700}
+  .lkRow button{min-width:27px;height:27px;padding:0 6px;border-radius:7px;border:1px solid var(--line);background:#0e1722;color:#cfd8e3;cursor:pointer;font-size:12px;font-weight:700}
+  .lkRow button.on{border-color:var(--gold);background:#3b3014;color:#ffe28a}.lkRow button.sw{width:26px;min-width:26px;padding:0;border-radius:50%;border:2px solid #0006}.lkRow button.sw.on{border:2px solid #ffe28a;box-shadow:0 0 0 2px #3b3014}
+  .lkTop{display:flex;justify-content:space-between;align-items:center;gap:8px}.lkTop button{padding:5px 9px;border-radius:7px;border:1px solid var(--line);background:#1d2b3a;color:#e6eef7;cursor:pointer;font-size:12px}
   #selAct input{padding:9px;border-radius:8px;border:1px solid var(--line);background:#0e1722;color:#fff;font-size:15px;text-align:center}
   #selAct button.go{padding:12px;border-radius:10px;border:1px solid var(--gold);background:#3b3014;color:#ffe28a;font-weight:800;font-size:16px;cursor:pointer}#selAct button.go:hover{background:#4d3f1a}#selAct button.go:disabled{opacity:.4;cursor:not-allowed}
   .opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(18,28,41,.95);cursor:pointer;position:relative;transition:.12s}
@@ -491,7 +495,7 @@
 <div id="select">
   <div class="selp" id="selL" style="padding-top:56px"><div class="sec">➕ Criar novo personagem</div><div id="clsList"></div><div id="clsInfo"></div></div>
   <div id="selMid"><div><div class="vlogo sm"><svg class="vemb" viewBox="-8 -14 136 136" aria-hidden="true"><defs><linearGradient id="vsG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".45" stop-color="#e9b955"/><stop offset=".7" stop-color="#9a6420"/><stop offset="1" stop-color="#f3d27a"/></linearGradient><linearGradient id="vsS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef3f7"/><stop offset=".5" stop-color="#9aa7b4"/><stop offset="1" stop-color="#5d6874"/></linearGradient><linearGradient id="vsR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9c1c1c"/><stop offset="1" stop-color="#3e0707"/></linearGradient></defs><g stroke="#1a0f05" stroke-width="2.2" stroke-linejoin="round"><g transform="rotate(-44 60 60)"><path d="M60 -14 L64 -3 L64.5 74 L55.5 74 L56 -3 Z" fill="url(#vsS)"/><path d="M60 -8 L60 72" stroke="#ffffff" stroke-opacity=".35" stroke-width="1"/><rect x="42" y="74" width="36" height="7" rx="2.5" fill="url(#vsG)"/><rect x="56.5" y="81" width="7" height="22" fill="#4a2c14"/><circle cx="60" cy="108" r="6" fill="url(#vsG)"/></g><g transform="rotate(44 60 60)"><path d="M60 -14 L64 -3 L64.5 74 L55.5 74 L56 -3 Z" fill="url(#vsS)"/><path d="M60 -8 L60 72" stroke="#ffffff" stroke-opacity=".35" stroke-width="1"/><rect x="42" y="74" width="36" height="7" rx="2.5" fill="url(#vsG)"/><rect x="56.5" y="81" width="7" height="22" fill="#4a2c14"/><circle cx="60" cy="108" r="6" fill="url(#vsG)"/></g><g transform="translate(60 66) scale(.82) translate(-60 -66)"><path d="M60 30 L86 40 L84 70 Q80 92 60 102 Q40 92 36 70 L34 40 Z" fill="url(#vsG)"/><path d="M60 37 L80 45 L78 69 Q75 86 60 94 Q45 86 42 69 L40 45 Z" fill="url(#vsR)"/><path d="M60 47 L64 60 L76 62 L66 70 L69 83 L60 75 L51 83 L54 70 L44 62 L56 60 Z" fill="url(#vsG)" stroke-width="1.6"/></g></g></svg><div class="vt">Valdoria</div><div class="vo"><i></i><span>Online</span><i></i></div></div></div><div id="selCap"></div><div id="selAct"></div></div>
-  <div class="selp" id="selR"><div style="display:flex;justify-content:space-between;align-items:center"><div class="sec" id="secChars">Seus personagens</div><button id="lgOut" style="padding:5px 9px;font-size:12px;flex:none">Sair da conta</button></div><div id="chars"></div><div class="muted" id="selNote"></div></div>
+  <div class="selp" id="selR"><div style="display:flex;justify-content:space-between;align-items:center"><div class="sec" id="secChars">Seus personagens</div><button id="lgOut" style="padding:5px 9px;font-size:12px;flex:none">Sair da conta</button></div><div id="chars"></div><div class="muted" id="selNote"></div><div id="lkWrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"></div></div>
 </div>
 
 <div id="ui">
@@ -581,6 +585,8 @@
   <div class="aslide"><input type="range" id="aSv" min="0" max="100" step="1" aria-label="Volume dos efeitos"><b id="aSvT"></b></div>
   <div class="arow osep"><span>🏷️ Esconder meu nome</span><button id="oHideName" class="amute" title="Esconde o nome, título, guilda e nível em cima do seu personagem (só para você)">👁️</button></div>
   <div class="muted ohint">Some só da sua tela — os outros jogadores continuam vendo.</div>
+  <div class="arow osep"><span>🪖 Esconder capacete</span><button id="oHideHelm" class="amute" title="Esconde o capacete/chapéu para mostrar o rosto (o item continua equipado)">🪖</button></div>
+  <div class="muted ohint">O item continua equipado. Todos os jogadores veem seu rosto e cabelo.</div>
   <div class="arow osep"><span>🌐 Idioma / Language</span><span class="olang" data-notr><button class="alang" data-lang="pt">🇧🇷 PT</button><button class="alang" data-lang="en">🇺🇸 EN</button></span></div>
   <div class="arow" style="margin-top:8px;display:none"><span>✒️ Contorno de tinta</span><button id="gInk" class="amute" title="Liga/desliga o contorno desenhado à mão (desligar melhora o desempenho)">✔</button></div>
    <div class="arow" style="display:none"><span>🌈 Realce de cores</span><button id="gFx" class="amute" title="Contraste, saturação e vinheta suave">✔</button></div>
@@ -933,7 +939,7 @@ const AUDUI=(function(){
   const st=AUD.status();
   $('aStat').innerHTML=c.mm?'Música silenciada.':st==='mp3'?'♪ <b>The Reason of Your Conviction</b>':st==='gen'?'⚠️ O arquivo <b>tema.mp3</b> não foi encontrado — tocando uma música ambiente provisória. Veja o README para adicionar a música.':'Carregando música…';
  }
- function panel(show){const open=show===undefined?pn.style.display!=='block':show;pn.style.display=open?'block':'none';if(open)sync();}
+ function panel(show){const open=show===undefined?pn.style.display!=='block':show;pn.style.display=open?'block':'none';if(open){sync();try{window.hhSync&&hhSync();}catch(e){}}}
  AUD.onChange(sync);sync();
  $('aMv').addEventListener('input',e=>AUD.setMusicVol(e.target.value/100));
  $('aSv').addEventListener('input',e=>AUD.setSfxVol(e.target.value/100));
@@ -947,6 +953,10 @@ const AUDUI=(function(){
  /* v1.94: esconder o próprio nome (só na tela de quem ligou; guardado no navegador) */
  const hn=$('oHideName'),hnSync=()=>{hn.textContent=window.OPT_HIDENAME?'🙈':'👁️';hn.classList.toggle('off',!!window.OPT_HIDENAME);hn.title=window.OPT_HIDENAME?'Seu nome está escondido (clique para mostrar)':'Esconde o nome, título, guilda e nível em cima do seu personagem (só para você)';};
  try{window.OPT_HIDENAME=localStorage.getItem('mmo_hidename')==='1';}catch(e){window.OPT_HIDENAME=false;}
+ /* v1.95: esconder capacete (fica salvo no personagem; os outros também veem o rosto) */
+ const curS=()=>window.getS?window.getS():null,hh=$('oHideHelm'),hhSync=()=>{const c=curS(),on=!!(c&&c.hh);hh.textContent=on?'🙈':'🪖';hh.classList.toggle('off',on);hh.disabled=!c;hh.title=hh.disabled?'Entre no jogo para usar':on?'Capacete escondido (clique para mostrar)':'Esconde o capacete/chapéu para mostrar o rosto (o item continua equipado)';};
+ hh.addEventListener('click',()=>{if(!curS())return;try{window.doAct&&doAct({t:'hh'});}catch(e){console.warn(e);}setTimeout(hhSync,60);setTimeout(hhSync,600);});
+ window.hhSync=hhSync;
  hnSync();hn.addEventListener('click',()=>{window.OPT_HIDENAME=!window.OPT_HIDENAME;try{localStorage.setItem('mmo_hidename',window.OPT_HIDENAME?'1':'0');}catch(e){}hnSync();});
  window.addEventListener('keydown',e=>{if(e.key==='Escape')panel(false);});
  // navegadores só liberam áudio depois de um clique/tecla do jogador
@@ -3816,7 +3826,7 @@ const GLB=(()=>{
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='193';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ let ldr=null,IPC=null;const GLBV='195';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -3844,7 +3854,7 @@ const GLB=(()=>{
    if(m.material)seenM.add(m.material);const pm=m.material;
    if(pm){pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);if(pm.albedoTexture)pm.albedoTexture.anisotropicFilteringLevel=4;
     if(TINT.includes(pm.name)){(mats[pm.name]=mats[pm.name]||[]).push(pm);pm.albedoColor=C3.FromHexString(DEF).toLinearSpace();}}
-   if(!/^(Shield|A?Sword|A?Weapon|A?Quiver|Body0|FzBody)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
+   if(!/^(Shield|A?Sword|A?Weapon|A?Quiver|Body0|FzBody|Head0|Face0|Skin0|Hair[0-6])/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
   /* v1.68: as animações são calculadas aqui (quadro e mistura por peso), sem o tocador do Babylon — com velocidade 0 ele prendia tudo no 1º quadro (personagem deslizava) */
   const AG={},CH=new Map();for(const g of I.animationGroups){g.stop();AG[g.name]={from:g.from,to:g.to};for(const ta of g.targetedAnimations){const k=ta.target.uniqueId+'|'+ta.animation.targetProperty;let e=CH.get(k);if(!e){e={t:ta.target,p:ta.animation.targetProperty,a:{}};CH.set(k,e);}e.a[g.name]=ta.animation;}}
   const L={glb:1,t:0,x:0,z:0,spd:0,ph:0,ph0:Math.random()*6,AG,CH:[...CH.values()],ank:[by('foot.L')||top,by('foot.R')||top],lr:.15,top,cls};
@@ -3852,6 +3862,9 @@ const GLB=(()=>{
   o.hand=(cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||by('hand.R')||top;o.handL=by('hand.L')||top;
   /* peças de cada conjunto: o nó do glTF e as malhas com pele (ficam em outro lugar da hierarquia, mas com o mesmo nome no começo) */
   o.glbAW=all.filter(n=>/^A(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));o.glbOW=all.filter(n=>/^(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));   /* v1.92: arma Astral (troca quando a arma equipada é Astral) */
+  o.glbLook=null;{const LK={head:[],skin:[],face:[],hair:{}};let any=0;   /* v1.95: peças do visual escolhido (cabeça, pele, rosto e cabelos) */
+   for(const n of all){const mm=/^(Head0|Skin0|Face0|Hair([0-6]))(?:$|_)/.exec(n.name);if(!mm)continue;any=1;if(mm[2]!==undefined)(LK.hair[mm[2]]=LK.hair[mm[2]]||[]).push(n);else LK[mm[1]==='Head0'?'head':mm[1]==='Skin0'?'skin':'face'].push(n);}
+   if(any)o.glbLook=LK;}
   o.glbParts={};for(const n of all){const mm=/^(Armor|Boots|Helm|Shield)([1-6])(?:$|_)/.exec(n.name);if(mm){const g=(o.glbParts[mm[1]]=o.glbParts[mm[1]]||{});(g[mm[2]]=g[mm[2]]||[]).push(n);}}
   if(cls==='mago'&&!fz)magoHats(o);   /* v1.76: chapéu pontudo em todos os trajes do mago */
   o.glbKey=key;
@@ -3926,7 +3939,42 @@ const GLB=(()=>{
   const L=it.il||it.ilvl||0;return L<=20?2:L<=40?1:L<=60?3:L<=80?5:4;};
  function showSets(o,ap){const P_=o.glbParts||{};const pick={Armor:setOf(ap.armor),Helm:setOf(ap.helmet),Boots:setOf(ap.boots)};pick.Shield=pick.Armor;for(const k in pick)if(pick[k]===6&&P_[k]&&!P_[k]['6'])pick[k]=4;   /* modelo antigo sem o Astral: mostra o Solar */
   if(o.glbAW&&o.glbAW.length){const w=ap.weapon,og=w&&w.mo&&RULES.OG[w.mo],aw=!!(og&&og.vset===2);o._astW=aw;o.glbAW.forEach(n=>n.setEnabled(aw));o.glbOW.forEach(n=>{if('isVisible' in n)n.isVisible=!aw;});}
-  for(const k in P_)for(const i in P_[k]){const on=+i===pick[k],ns=P_[k][i];if(k==='Shield'){const top=ns.find(n=>n.name==='Shield'+i)||ns[0];if(on)o.shieldN=top;ns.forEach(n=>{if(n===top)n.setEnabled(on);});}else ns.forEach(n=>n.setEnabled(on));}}
+  for(const k in P_)for(const i in P_[k]){const on=+i===pick[k],ns=P_[k][i];if(k==='Shield'){const top=ns.find(n=>n.name==='Shield'+i)||ns[0];if(on)o.shieldN=top;ns.forEach(n=>{if(n===top)n.setEnabled(on);});}else ns.forEach(n=>n.setEnabled(on));}
+  lookApply(o,ap);}
+ /* v1.95: visual escolhido — cabelo (6 penteados + o original da classe), cor do cabelo, pele, rosto montado e capacete escondido.
+    Com capacete/chapéu visível fica o padrão de antes (penteado original da classe; elmo fechado esconde a cabeça). */
+ const LK_DEF='001010';
+ function lookApply(o,ap){const L=o.glbLook,P_=o.glbParts||{};const hh=!!(ap&&ap.hh&&ap.hh.mo==='1');
+  if(hh&&P_.Helm)for(const i in P_.Helm)P_.Helm[i].forEach(n=>n.setEnabled(false));
+  if(!L)return;const lk=RULES.lkParse(ap&&ap.lk&&ap.lk.mo)||RULES.lkParse(LK_DEF),LO=RULES.LOOK;
+  const closed=['guerreiro','tanque','cavaleiro'].includes(o.cls)&&!o.fem,showHead=!closed||hh;
+  for(const n of[...L.head,...L.skin,...L.face])n.setEnabled(showHead);
+  const want=hh?lk.h+1:0;   /* com capacete/chapéu: só o penteado original da classe (se a classe não tem, nenhum) */
+  for(const k in L.hair)L.hair[k].forEach(n=>n.setEnabled(showHead&&+k===want));
+  const sig=RULES.lkStr(lk);if(L._sig===sig)return;L._sig=sig;   /* a marca fica no modelo (um modelo novo é pintado de novo) */
+  const hc=C3.FromHexString(LO.hairCols[lk.hc][1]).toLinearSpace(),sc=C3.FromHexString(LO.skins[lk.s][1]).toLinearSpace();
+  const meshes=ns=>{const r=[];for(const n of ns){if(n.material)r.push(n);if(n.getChildMeshes)r.push(...n.getChildMeshes(false));}return r;};
+  for(const k in L.hair)for(const m of meshes(L.hair[k]))if(m.material&&/^HairTint/.test(m.material.name))m.material.albedoColor=hc;
+  for(const m of meshes([...L.head,...L.skin]))if(m.material)m.material.albedoColor=sc;
+  const tx=faceTex(!!o.fem,lk,o.cls);
+  for(const m of meshes(L.face))if(m.material){const pm=m.material;pm.albedoTexture=tx;pm.useAlphaFromAlbedoTexture=true;pm.transparencyMode=2;pm.albedoColor=new C3(1,1,1);pm.backFaceCulling=true;m.alphaIndex=10;}}
+ /* rosto montado no navegador a partir das camadas (rostos_m.png / rostos_f.png): íris na cor dos olhos, sobrancelha na cor do cabelo */
+ const FACE_SH={},FACE_TX=new Map(),FCELL=512;
+ function faceSheet(g){let e=FACE_SH[g];if(e)return e;const im=new Image();e=FACE_SH[g]={im,ok:false,cb:[]};im.crossOrigin='anonymous';
+  im.onload=()=>{e.ok=true;e.cb.splice(0).forEach(f=>{try{f();}catch(er){}});};im.onerror=()=>console.warn('rostos',g);
+  im.src=(window.GLB_BASE||'modelos/')+'rostos_'+g+'.png?v='+GLBV;return e;}
+ function faceTex(fem,lk,cls){const g=fem?'f':'m',pr=cls==='pierrot',key=g+RULES.lkStr(lk)+(pr?'p':'');let dt=FACE_TX.get(key);if(dt)return dt;
+  dt=new BABYLON.DynamicTexture('face_'+key,{width:FCELL,height:FCELL},scene,true);dt.hasAlpha=true;FACE_TX.set(key,dt);
+  const LO=RULES.LOOK,eyeC=LO.eyeCols[lk.ec][1],browC=LO.hairCols[lk.hc][0]==='Prata'?'#9aa0ac':LO.hairCols[lk.hc][1],e=lk.e,f=lk.f,sh=faceSheet(g);
+  const draw=()=>{const ctx=dt.getContext(),C=FCELL,im=sh.im,blit=(c2,i)=>c2.drawImage(im,(i%5)*C,Math.floor(i/5)*C,C,C,0,0,C,C);ctx.clearRect(0,0,C,C);
+   const lay=(i,fn)=>{const t=document.createElement('canvas');t.width=t.height=C;const tc=t.getContext('2d');blit(tc,i);fn(tc,i);ctx.drawImage(t,0,0);};
+   blit(ctx,21+f);
+   lay(e*3+f,(tc,i)=>{tc.globalCompositeOperation='multiply';tc.fillStyle=eyeC;tc.fillRect(0,0,C,C);tc.globalCompositeOperation='destination-in';blit(tc,i);});
+   blit(ctx,9+e*3+f);
+   lay(18+f,tc=>{tc.globalCompositeOperation='source-in';tc.fillStyle=browC;tc.fillRect(0,0,C,C);});
+   if(pr)blit(ctx,24);
+   dt.update();};
+  if(sh.ok)draw();else sh.cb.push(draw);return dt;}
  /* equipamento: cada peça mostra o conjunto do seu nível; capa só com o item de capa */
  /* v1.82: fantasia — arquivo pelo sexo (cai para o ♂ se o ♀ falhar) e para a classe se a fantasia não carregar */
  const ok=k=>FILES[k]&&!(C[k]&&C[k].st===-1);
@@ -3960,7 +4008,7 @@ const GLB=(()=>{
   CAPE(o,o.glbTop,ap,tk?{sx:.5,sy:1.56,hy:1.95,hr:.4,bz:-.52,R:y=>y>.95&&y<1.7?.46:0,len:1.3}:pl?{sx:.4,sy:1.56,hy:1.95,hr:.4,bz:-.44,R:y=>y>.95&&y<1.7?.38:0,len:1.3}:{sx:.36,sy:1.54,hy:1.88,hr:.32,bz:-.34,R:y=>y>.95&&y<1.65?.3:0,len:1.25});
  }
  /* cada classe é baixada só quando aparece um personagem dela */
- return{build,anim,gear,load,ready,FILES,setOf,key,loader:loadLoader,MATTE};
+ return{build,anim,gear,load,ready,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet};
 })();
 
 /* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago e Pierrot, dano mágico),
@@ -6943,7 +6991,7 @@ function updateSkillbar(now){
  if(!S.bar)S.bar=RULES.defBar();if(S.bar.join()!==SBSIG||!SBEL.length)buildSkillbar();
  const C=CLASSES[S.cls];
  for(const el of SBEL){const si=S.bar[+el.dataset.slot];if(si<0)continue;const r=rk(si),left=P.cd[si]-now;el.classList.toggle('locked',!r);el.querySelector('.rk').textContent=r?'R'+r:'';
-  el.querySelector('.cdm').style.height=left>0?(left/P.cdMax[si]*100)+'%':'0';el.querySelector('.cdt').textContent=left>0?Math.ceil(left/1000):'';el.classList.toggle('nomp',r>0&&P.mp<skStat(si).mp);const sa=C.skills[si].after;el.classList.toggle('combo',!!(r>0&&C.combo&&sa&&P.lastSkill>=0&&now-P.lastSkillAt<3500&&sa.includes(P.lastSkill)));}
+  el.querySelector('.cdm').style.height=left>0?(left/P.cdMax[si]*100)+'%':'0';el.querySelector('.cdt').textContent=left>0?Math.ceil(left/1000):'';el.classList.toggle('nomp',r>0&&P.mp<skStat(si).mp);const sa=C.skills[si]&&C.skills[si].after;el.classList.toggle('combo',!!(r>0&&C.combo&&sa&&P.lastSkill>=0&&now-P.lastSkillAt<3500&&sa.includes(P.lastSkill)));}
  for(const el of POTEL){const k=el.dataset.pot,pc=have(k)+have(k+'2');el.querySelector('.cnt').textContent=pc;el.style.opacity=pc?1:.45;}
  renderBuffs(now);
 }
@@ -7391,7 +7439,7 @@ function loadAcc(){
  try{const o=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(o&&CLASSES[o.cls]&&o.inv&&o.eq&&o.alloc)acc.chars.push(dropDefName(migrate(o)));}catch(e){}
  return acc;
 }
-const newChar=(cls,name,fem)=>RULES.newChar(cls,name,fem?1:0);
+const newChar=(cls,name,fem,lk)=>RULES.newChar(cls,name,fem?1:0,lk);
 /* ===================== v1.85: TELAS COM ARTE + CARREGAMENTO DE VERDADE =====================
    O login sorteia uma arte. Ao entrar no jogo (e ao usar portal ou entrar/sair de calabouço) aparece a tela de carregamento com outra arte sorteada:
    enquanto ela cobre a tela, o jogo baixa o seu personagem, conecta, monta quem está perto, prepara os gráficos e espera o FPS assentar.
@@ -7432,7 +7480,9 @@ const LOAD=(()=>{let tok=0;const pick=a=>a[Math.floor(Math.random()*a.length)];l
  return {login,enter,travel};
 })();
 try{LOAD.login();}catch(e){}
+window.getS=()=>S;window.doAct=m=>ACT(m);   /* v1.95: o painel de Opções lê o personagem atual e manda a ação */
 function play(c){if(!c||!c.name){alert("Escolha um nome para o personagem antes de entrar.");return;}
+ if(!RULES.lkOk(c.lk)){alert("Personalize o visual do personagem antes de entrar.");return;}   /* v1.95 */
  pvHide();S=c;dirty();RULES.dwSync(S);buildPlayer(S.cls);
  const p=S.pos||{x:0,z:5};P.pos.set(p.x,0,p.z);if(Math.hypot(p.x,p.z)<2)P.pos.set(0,0,5);
  P.hp=D().maxHp;P.mp=D().maxMp;P.dead=false;P.cd=Array(8).fill(0);P.cdMax=Array(8).fill(1);P.lastSkill=-1;P.cst=0;P.buffs={};P.moveTo=null;P.atkTarget=null;P.interact=null;P.sel=null;
@@ -7454,16 +7504,31 @@ function pvStage(){if(PV.stage)return;const r=new BABYLON.TransformNode('pvstage
  put(B.CreateDisc('pvg',{radius:2.4,tessellation:40},scene),-.02,fxMat('#2a3d57')).rotation.x=Math.PI/2;}
 function maxAp(cls){const a=(m,p,r)=>({mo:m,plus:p,rar:r}),F='farao',ap={weapon:a(F,10,3),armor:a(F,10,3),helmet:a(F,10,3),boots:a(F,10,3),ring:a(F,10,3),ring2:a('dragao',10,3),bracelet:a(F,10,3),bracelet2:a('dragao',10,3),earring:a(F,10,3),earring2:a('dragao',10,3),cape:a('',0,0)};if(cls==='cavaleiro')ap.shield=a('dragao',10,3);return ap;}
 function pvShow(cls,ap,fem){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}
- const o={cls,swingAt:0,fem:fem?1:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);r.rotation.y=PV.rot;o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();}
-function pvCam(){const nar=window.innerWidth<860;zoom=nar?3.4:2.8;setOrtho();camera.target.copyFromFloats(PV.x,nar?.5:.7,PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
-function pvHide(){PV.on=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
-const SEL={t:null,id:null,fem:0};
+ const o={cls,swingAt:0,fem:fem?1:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();if(PV.face)pvFront();r.rotation.y=PV.rot;}
+function pvFront(){try{const d=camera.position.subtract(new BABYLON.Vector3(PV.x,0,PV.z));PV.rot=Math.atan2(d.x,d.z)-.35;}catch(e){}}   /* v1.95: rosto de frente para a câmera (um pouco de lado) */
+function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?1.6:1.5):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.7:1.62):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
+function pvHide(){PV.on=false;PV.face=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
+const SEL={t:null,id:null,fem:0,lk:{e:0,ec:0,h:0,hc:1,f:0,s:1}};
+/* v1.95: personalização (olhos, cabelo, rosto e pele) — na criação e, para personagens antigos, antes de entrar */
+function lkHtml(fem){const L=RULES.LOOK,v=SEL.lk,hn=fem?L.hairF:L.hairM,fn=fem?L.facesF:L.facesM;
+ const opt=(k,list,lab)=>list.map((x,i)=>`<button data-lk="${k}:${i}" class="${v[k]===i?'on':''}" title="${esc(lab?lab(x,i):x)}">${i+1}</button>`).join('');
+ const sw=(k,list)=>list.map((x,i)=>`<button data-lk="${k}:${i}" class="sw${v[k]===i?' on':''}" style="background:${x[1]}" title="${esc(x[0])}"></button>`).join('');
+ return `<div id="lkBox"><div class="lkTop"><b style="color:#ffe28a">🎨 Visual do personagem</b><span><button data-lkrand="1" title="Sortear tudo">🎲 Sortear</button> <button data-pvz="1" title="Aproximar/afastar a câmera">${PV.face?'🧍 Corpo':'🔍 Rosto'}</button></span></div>
+  <div class="lkRow"><b>Olhos</b>${opt('e',L.eyes)}<span class="muted">${esc(L.eyes[v.e])}</span></div>
+  <div class="lkRow"><b>Cor dos olhos</b>${sw('ec',L.eyeCols)}</div>
+  <div class="lkRow"><b>Cabelo</b>${opt('h',hn,(x,i)=>x+' ('+L.hairLen[i]+')')}<span class="muted">${esc(hn[v.h])} • ${esc(L.hairLen[v.h])}</span></div>
+  <div class="lkRow"><b>Cor do cabelo</b>${sw('hc',L.hairCols)}</div>
+  <div class="lkRow"><b>Rosto</b>${opt('f',fn)}<span class="muted">${esc(fn[v.f])}</span></div>
+  <div class="lkRow"><b>Pele</b>${sw('s',L.skins)}</div></div>`;}
+function lkShow(h){const w=$('lkWrap');if(!w)return;w.innerHTML=h;w.style.display=h?'':'none';}
+const lkAp=ap=>Object.assign({},ap,{lk:{mo:RULES.lkStr(SEL.lk)},hh:{mo:'1'}});   /* prévia: capacete escondido para ver o rosto */
+function lkPreview(){if(!PV.o)return;let ap;if(SEL.t==='cls')ap=maxAp(SEL.id);else{const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;ap=parseAp(RULES.apOf(c));}try{applyGear(PV.o,lkAp(ap));}catch(e){console.warn(e);}}
 /* v1.78: masculino e feminino usam o mesmo nome de classe (só a aparência muda) */
 const clsName=k=>CLASSES[k].n;
 function renderSelect(){
  if(!ACC)ACC=loadAcc();const full=ACC.chars.length>=6;
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
- $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${clsName(c.cls,c.fem)}${c.fem?' ♀':''} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
+ $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${clsName(c.cls,c.fem)}${c.fem?' ♀':''} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}${c.lk?'':' • <span style="color:#ffe28a">🎨 escolher visual</span>'}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
  $('secChars').textContent='Seus personagens ('+ACC.chars.length+'/6)';
  $('selNote').textContent=full?'Limite de 6 personagens. Exclua um para criar outro.':'O baú da cidade é compartilhado entre todos os seus personagens.';
  const info=$('clsInfo'),cap=$('selCap'),act=$('selAct');
@@ -7471,16 +7536,17 @@ function renderSelect(){
   info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo (+10, brilho e efeitos). É só visual: o personagem novo começa sem esses itens.</p>`;
   const nm0=$('newName')?$('newName').value:'',cn=clsName(SEL.id,SEL.fem);
   cap.innerHTML=`<b>${c.i} ${cn} ${SEL.fem?'♀':'♂'}</b><small>Prévia: equipamento máximo (apenas visual)</small>`;
-  act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${cn} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
+  lkShow(lkHtml(SEL.fem));act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><div class="muted" style="text-align:center">🎨 Escolha o visual no painel da direita</div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${cn} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
  else if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c){SEL.t=null;return renderSelect();}
   info.innerHTML='<p class="muted">Selecione uma classe aqui para criar outro personagem e ver a prévia dela.</p>';
   cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${clsName(c.cls,c.fem)} • Nível ${c.level} • com os itens equipados</small>`;
-  act.innerHTML=c.name?`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>`:`<input id="newName" maxlength="16" value="" placeholder="Escolha o nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo">✔ Confirmar nome e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
- else{info.innerHTML='<p class="muted">Clique em uma classe para ver a descrição e a prévia.</p>';cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em uma classe (esquerda) ou em um personagem seu (direita)</small>';act.style.display='none';return;}
+  const needLk=!c.lk,lkPart=needLk?`<div class="muted" style="color:#ffe28a;text-align:center">✨ Novo: escolha o visual de ${c.name?esc(c.name):'seu personagem'} no painel da direita antes de entrar (obrigatório).</div>`:'';lkShow(needLk?lkHtml(c.fem):'');
+  act.innerHTML=c.name?(needLk?`${lkPart}<button class="go" id="selGo">✔ Salvar visual e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`:`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>`):`${lkPart}<input id="newName" maxlength="16" value="" placeholder="Escolha o nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo">✔ Confirmar ${needLk?'nome e visual':'nome'} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
+ else{lkShow('');info.innerHTML='<p class="muted">Clique em uma classe para ver a descrição e a prévia.</p>';cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em uma classe (esquerda) ou em um personagem seu (direita)</small>';act.style.display='none';return;}
  act.style.display='flex';
 }
 function selPick(t,id){SEL.t=t;SEL.id=id;if(!ACC)ACC=loadAcc();
- if(t==='cls')pvShow(id,maxAp(id),SEL.fem);else{const c=ACC.chars.find(x=>x.id===id);if(c)pvShow(c.cls,parseAp(RULES.apOf(c)),c.fem);}
+ if(t==='cls')pvShow(id,lkAp(maxAp(id)),SEL.fem);else{const c=ACC.chars.find(x=>x.id===id);if(c){if(!c.lk){PV.face=true;}pvShow(c.cls,c.lk?parseAp(RULES.apOf(c)):lkAp(parseAp(RULES.apOf(c))),c.fem);}}
  renderSelect();}
 function showSelect(){
  if(!ACC)ACC=loadAcc();SEL.t=null;SEL.id=null;
@@ -7492,21 +7558,26 @@ $('select').addEventListener('click',e=>{
  if(del){e.stopPropagation();if(confirm('Excluir este personagem permanentemente? (O baú compartilhado não é afetado.)')){const id=del.dataset.del;(async()=>{try{if(TOKEN)await api('chars/'+encodeURIComponent(id),'DELETE');ACC.chars=ACC.chars.filter(c=>c.id!==id);save();if(SEL.id===id){SEL.t=null;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}}renderSelect();}catch(er){alert(er.message);}})();}return;}
  const pl=e.target.closest('[data-play]');if(pl){selPick('chr',pl.dataset.play);return;}
  const cl=e.target.closest('[data-cls]');if(cl){selPick('cls',cl.dataset.cls);return;}
- const sx=e.target.closest('[data-sex]');if(sx&&SEL.t==='cls'){SEL.fem=+sx.dataset.sex?1:0;pvShow(SEL.id,maxAp(SEL.id),SEL.fem);renderSelect();return;}   /* v1.77: masculino/feminino na criação */
+ const sx=e.target.closest('[data-sex]');if(sx&&SEL.t==='cls'){SEL.fem=+sx.dataset.sex?1:0;pvShow(SEL.id,lkAp(maxAp(SEL.id)),SEL.fem);renderSelect();return;}
+ const lkb=e.target.closest('[data-lk]');if(lkb){const [k,v]=lkb.dataset.lk.split(':');SEL.lk[k]=+v;lkPreview();const nm=$('newName')?$('newName').value:null;renderSelect();if(nm!==null&&$('newName'))$('newName').value=nm;return;}
+ if(e.target.closest('[data-lkrand]')){const L=RULES.LOOK,r=n=>Math.floor(Math.random()*n);SEL.lk={e:r(3),ec:r(6),h:r(6),hc:r(6),f:r(3),s:r(4)};lkPreview();const nm=$('newName')?$('newName').value:null;renderSelect();if(nm!==null&&$('newName'))$('newName').value=nm;return;}
+ if(e.target.closest('[data-pvz]')){PV.face=!PV.face;pvCam();if(PV.face)pvFront();const nm=$('newName')?$('newName').value:null;renderSelect();if(nm!==null&&$('newName'))$('newName').value=nm;return;}   /* v1.77: masculino/feminino na criação */
  if(e.target.closest('#selGo')){
   const nmMsg=t=>{const m=$('nameMsg');if(m)m.textContent=t||'';if(t&&!m)alert(t);};
   const readName=()=>(($('newName')&&$('newName').value)||'').replace(/[\u0000-\u001f<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,16);
   const taken=(nm,exId)=>(ACC.chars||[]).some(x=>x.id!==exId&&(x.name||'').toLowerCase()===nm.toLowerCase());
-  if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;if(c.name){play(c);return;}
-   const nm=readName();if(nm.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
-   if(taken(nm,c.id)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}
-   $('selGo').disabled=true;nmMsg('');
-   (async()=>{try{if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/name','POST',{name:nm})).char;c.name=r.name;c.nmOk=1;}else{c.name=nm;c.nmOk=1;save();}play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
+  if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;if(c.name&&c.lk){play(c);return;}
+   const nm=c.name?'':readName();if(!c.name){if(nm.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
+   if(taken(nm,c.id)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}}
+   $('selGo').disabled=true;nmMsg('');const lk=RULES.lkStr(SEL.lk);
+   (async()=>{try{if(!c.name){if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/name','POST',{name:nm})).char;c.name=r.name;c.nmOk=1;}else{c.name=nm;c.nmOk=1;save();}}
+    if(!c.lk){if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;}else{c.lk=lk;save();}}
+    PV.face=false;play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
   if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,name=readName();
    if(name.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
    if(taken(name)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}
    $('selGo').disabled=true;nmMsg('');
-   (async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name,fem:!!SEL.fem})).char;}else{c=newChar(k,name,SEL.fem);c.nmOk=1;}ACC.chars.push(c);play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
+   const lk=RULES.lkStr(SEL.lk);(async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name,fem:!!SEL.fem,lk})).char;}else{c=newChar(k,name,SEL.fem,lk);c.nmOk=1;}ACC.chars.push(c);PV.face=false;play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
 });
 {const m=$('selMid');m.addEventListener('pointerdown',e=>{if(e.target.closest('#selAct'))return;PV.drag=e.clientX;});window.addEventListener('pointermove',e=>{if(PV.drag!==false&&PV.drag!==undefined&&PV.drag!==null){PV.rot+=(e.clientX-PV.drag)*.012;PV.drag=e.clientX;}});window.addEventListener('pointerup',()=>{PV.drag=false;});}
 window.addEventListener('beforeunload',()=>{save();});
@@ -8154,7 +8225,7 @@ engine.runRenderLoop(()=>{
   updSnow();updRegionMood();pf('neve');updatePlayer(dt,now);pf('jogador');updateMonsters(dt,now);pf('monstros');updateLife(dt,now);pf('vida');updateNet(dt,now);updBubbles(now);tutFrame();pkTick(now);pf('rede');updateRecall(dt,now);updateDrops(dt,now);regen(dt,now);pf('outros');
   const t=camera.target;t.x+=(P.pos.x-t.x)*.15;t.y=.6;t.z+=(P.pos.z-t.z)*.15;
  }
- if(!S&&PV.on&&PV.o){if(!PV.drag)PV.rot+=dt*.55;PV.o.root.rotation.y=PV.rot;const L_=PV.o.limbs;if(L_&&L_.glb)try{GLB.anim(PV.o,PV.x,PV.z,now,0);}catch(e){}}   /* v1.87: prévia com a pose parada (arma na mão, para a frente) */
+ if(!S&&PV.on&&PV.o){if(!PV.drag&&!PV.face)PV.rot+=dt*.55;PV.o.root.rotation.y=PV.rot;const L_=PV.o.limbs;if(L_&&L_.glb)try{GLB.anim(PV.o,PV.x,PV.z,now,0);}catch(e){}}   /* v1.87: prévia com a pose parada (arma na mão, para a frente) */
  if(S)try{petsTick(Math.min((now-(PETM.t||now))/1000,.1),now);}catch(e){console.warn('pets',e);}PETM.t=now;updateFx(now);pf('fx');updateGear(now);pf('equip');updateClones(now);lodUpdate(now);inkLOD(now);perfWatch(now);pf('lod');
  scene.render();pf('render');
  if(S){updateLabels(now);updateSkillbar(now);}

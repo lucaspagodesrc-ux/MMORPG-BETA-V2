@@ -1649,7 +1649,25 @@ function eqKey(c, it, want) {
 const tierOf = ilvl => ilvl >= 120 ? 11 : ilvl >= 90 ? 10 : ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4));
 const TIERC = ['#cdbb93', '#9a6536', '#8d98a8', '#4f8fd6', '#22c4a6', '#3d3aa8', '#d8342a', '#f2b632', '#ff7a1a', '#eef2f8', '#e04fb8', '#74e044'];
 const TIERC2 = ['#7d6f52', '#553314', '#4d5562', '#234a7a', '#0f6a5a', '#1a1858', '#701510', '#8a6210', '#8a3a06', '#8a94a6', '#7a1f60', '#2f7a14'];
-function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar + '|' + (it.ilvl || 0)); } if (c.fzq && FZS[c.fzq.id]) o.push('fz|' + c.fzq.id); return o.join(';'); }
+function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if (it) o.push(k + '|' + (it.mo || '') + '|' + (it.plus || 0) + '|' + it.rar + '|' + (it.ilvl || 0)); } if (c.fzq && FZS[c.fzq.id]) o.push('fz|' + c.fzq.id);
+  if (lkOk(c.lk)) o.push('lk|' + c.lk); if (c.hh) o.push('hh|1');   // v1.95: visual escolhido e capacete escondido (os outros jogadores também veem)
+  return o.join(';'); }
+/* ====================== v1.95: PERSONALIZAÇÃO DO PERSONAGEM ======================
+   c.lk = 6 dígitos: modelo do olho (0-2) • cor do olho (0-5) • cabelo (0-5) • cor do cabelo (0-5) • rosto (0-2) • pele (0-3).
+   Escolhido na criação; personagens antigos escolhem antes de entrar (obrigatório). c.hh = capacete/chapéu escondido (só visual). */
+const LOOK = {
+  eyes: ['Clássico', 'Afiado', 'Brilhante'],
+  eyeCols: [['Castanho', '#6a3f1e'], ['Azul', '#2f6fd0'], ['Verde', '#2f8a4a'], ['Violeta', '#7a3ab0'], ['Âmbar', '#c8862a'], ['Rubi', '#b8323a']],
+  hairM: ['Curto Espetado', 'Curto Repartido', 'Médio Bagunçado', 'Médio com Coque', 'Longo Solto', 'Longo Rabo Alto'],
+  hairF: ['Chanel', 'Pixie', 'Rabo de Cavalo', 'Ondulado nos Ombros', 'Longo Liso', 'Trança Lateral'],
+  hairLen: ['Curto', 'Curto', 'Médio', 'Médio', 'Longo', 'Longo'],
+  hairCols: [['Preto', '#1e1a22'], ['Castanho', '#5a3418'], ['Loiro', '#e0b050'], ['Ruivo', '#b8461e'], ['Prata', '#d4d8e2'], ['Azul', '#3a6ad8']],
+  facesM: ['Sereno', 'Determinado', 'Marcado'], facesF: ['Doce', 'Confiante', 'Sardenta'],
+  skins: [['Clara', '#f8dcc4'], ['Média clara', '#e8b88e'], ['Morena', '#b47a4c'], ['Escura', '#6a3e26']]
+};
+const lkOk = s => typeof s === 'string' && /^[0-2][0-5][0-5][0-5][0-2][0-3]$/.test(s);
+const lkParse = s => lkOk(s) ? { e: +s[0], ec: +s[1], h: +s[2], hc: +s[3], f: +s[4], s: +s[5] } : null;
+const lkStr = o => [o.e, o.ec, o.h, o.hc, o.f, o.s].map(v => Math.max(0, Math.floor(v) || 0)).join('');
 /** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
 function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
 const UP_DROP = { ferro: .15, essencia: .04 };   // chance por monstro comum (chefes: ferro garantido, essência 60%)
@@ -1899,13 +1917,15 @@ function cleanBar(b) {
 }
 /* v1.70: tamanho da mochila e do baú (cada um aparece em 2 abas) */
 const INV_SIZE = 48, STASH_SIZE = 80;
-function newChar(cls, name, fem) {
+function newChar(cls, name, fem, lk) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(INV_SIZE).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
   c.pets = [null, null]; c.pcf = PCF0();   // v1.80: mascotes equipados + o que eles pegam do chão
-  c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; } c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
+  c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; }
+  if (cls === 'tanque') { c.tkv = 1; c.bar = c.bar.map(v => v >= CLASSES.tanque.skills.length ? -1 : v); }   // v1.95: o Tanque tem 7 habilidades (o atalho da 8ª travava a tela) c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
   if (fem) c.fem = 1;   // v1.77: personagem feminino (só aparência; escolhido na criação, não muda depois)
+  if (lkOk(lk)) c.lk = lk;   // v1.95: visual escolhido na criação
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }
@@ -1976,6 +1996,7 @@ function cleanItem(it) {
 }
 /** Atualiza personagens antigos para as regras atuais. Nunca apaga o personagem: só corrige/ajusta. */
 function migrate(c) {
+  if (!lkOk(c.lk)) delete c.lk; if (c.hh) c.hh = 1; else delete c.hh;   // v1.95: visual (sem visual = precisa personalizar antes de entrar)
   if (c.tut === undefined) c.tut = 99;   // v1.75: personagens que já existiam não fazem o tutorial
   if (!c.sk || !Array.isArray(c.sk)) { c.sk = Array(8).fill(0); c.sk[0] = 1; if (c.sp === undefined) c.sp = c.level; }
   while (c.sk.length < 9) c.sk.push(0); if (c.sp === undefined) c.sp = 0;
@@ -1989,7 +2010,7 @@ function migrate(c) {
     c.prv = 1; const old = c.sk[7] || 0; let rf = 0; for (let r = 0; r < old; r++) rf += skCost(r);
     c.sp = (c.sp || 0) + rf; c.sk[7] = 0; if (Array.isArray(c.bar)) c.bar = c.bar.map(v => v === 7 ? -1 : v);
   }
-  c.bar = cleanBar(c.bar);
+  c.bar = cleanBar(c.bar); if (CLASSES[c.cls]) { const n = CLASSES[c.cls].skills.length; c.bar = c.bar.map(v => v >= n ? -1 : v); }   // v1.95: atalho para habilidade que não existe
   c.quests = c.quests || {}; c.inv = Array.isArray(c.inv) ? c.inv : []; while (c.inv.length < INV_SIZE) c.inv.push(null);   // v1.70: mochila dobrada (48 espaços, em 2 abas)
   for (const k of ['dq', 'wq']) { const b = c[k]; if (!(b && typeof b === 'object' && Array.isArray(b.q))) delete c[k]; else { b.k = Math.floor(b.k) || 0; b.pts = Math.max(0, Math.floor(b.pts) || 0); b.ch = [0, 1, 2].map(i => b.ch && b.ch[i] ? 1 : 0);
     b.q = b.q.slice(0, 8).filter(q => q && DWT[q.id]).map(q => ({ id: q.id, n: Math.max(0, Math.floor(q.n) || 0), need: Math.max(1, Math.floor(q.need) || 1), done: q.done ? 1 : 0, got: q.got ? 1 : 0, xp: Math.max(0, Math.floor(q.xp) || 0), gold: Math.max(0, Math.floor(q.gold) || 0), ...(q.reg !== undefined ? { reg: Number(q.reg) || 0 } : {}) })); } }
@@ -2382,6 +2403,10 @@ function act(sess, m, ctx) {
     F('rare'); T(`🎁 Baú ${CH.n} aberto!`); L(`<span style="color:#ffd27a">🎁 Baú ${w ? 'da semana' : 'do dia'} <b>${CH.n}</b>: <b>${fmtN(loot.gold)}</b> 💰${loot.items.map(it => ' • ' + nm(it) + (it.n > 1 ? ' ×' + it.n : '')).join('')}</span>`);
     return done();
   }
+  if (t === 'hh') {                                                        // v1.95: esconder/mostrar o capacete (o item continua equipado)
+    c.hh = c.hh ? 0 : 1; if (!c.hh) delete c.hh;
+    T(c.hh ? '🙈 Capacete escondido — o item continua equipado.' : '🪖 Capacete visível de novo.'); return done();
+  }
   if (t === 'nation') {                                                    // v1.91: jurar lealdade a uma nação (Nv 50+, definitivo)
     if (!npcFor('nacao')) return fail('Fale com um Arauto das Nações.');
     const N = NATIONS[m.n]; if (!N) return fail();
@@ -2482,7 +2507,7 @@ const castMs = (cls, i, x) => {
   return Math.round(Math.max(a, t));
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { LOOK, lkOk, lkParse, lkStr, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
