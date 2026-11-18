@@ -7530,7 +7530,7 @@ function pvFront(){try{const d=camera.position.subtract(new BABYLON.Vector3(PV.x
 function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?1.7:1.6):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.75:1.68):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
 function pvHide(){PV.on=false;PV.face=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
 /* ===== v2.0: duas telas — CRIAÇÃO (classe à esquerda, personagem no meio, visual à direita) e ESCOLHA (personagem no meio, lista à direita) ===== */
-const SEL={mode:'pick',t:null,id:null,fem:0,edit:null,nofz:0,lk:RULES.lkParse(RULES.LK_DEF)};
+const SEL={mode:'pick',t:null,id:null,fem:0,edit:null,nofz:0,helm:0,lk:RULES.lkParse(RULES.LK_DEF)};
 const clsName=k=>CLASSES[k].n;
 const lkNeed=c=>!RULES.lkOk(c.lk);
 function lkHtml(fem){const L=RULES.LOOK,v=SEL.lk,nb=fem?L.browsF:L.browsM;
@@ -7548,7 +7548,7 @@ function lkHtml(fem){const L=RULES.LOOK,v=SEL.lk,nb=fem?L.browsF:L.browsM;
   <div class="lkRow"><b>Pele</b>${sw('s',L.skins)}</div>
   <div class="muted" style="font-size:11px">O cabelo aparece com o capacete/chapéu escondido (⚙️ Opções no jogo).</div></div>`;}
 function lkShow(h){const w=$('lkWrap');if(!w)return;w.innerHTML=h;w.style.display=h?'':'none';}
-const lkAp=ap=>Object.assign({},ap,{lk:{mo:RULES.lkStr(SEL.lk)},hh:{mo:'1'}});   /* prévia: capacete escondido para ver o rosto e o cabelo */
+const lkAp=ap=>{const a=Object.assign({},ap,{lk:{mo:RULES.lkStr(SEL.lk)},hh:{mo:'1'}});if(SEL.helm)delete a.hh;return a;};   /* prévia: capacete escondido (🪖 mostra o capacete) */
 const charAp=c=>{const ap=parseAp(RULES.apOf(c));if(SEL.nofz)delete ap.fz;return ap;};   /* 🎭 esconder fantasia (só na prévia) */
 function lkPreview(){if(!PV.o)return;let ap;if(SEL.t==='cls')ap=maxAp(SEL.id);else{const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;ap=charAp(c);}try{applyGear(PV.o,lkAp(ap));}catch(e){console.warn(e);}}
 /* janela de confirmação (sem o confirm() do navegador) */
@@ -7560,6 +7560,7 @@ function renderSelect(){
  if(SEL.mode==='pick'&&!ACC.chars.length)SEL.mode='create';
  sel.classList.toggle('pick',SEL.mode==='pick');sel.classList.toggle('create',SEL.mode==='create');
  const info=$('clsInfo'),cap=$('selCap'),act=$('selAct'),hasFz=c=>{try{return !!parseAp(RULES.apOf(c)).fz;}catch(e){return false;}};
+ const helmBtn=`<button data-helm="1" class="selB">${SEL.helm?'🪖 Esconder capacete':'🪖 Mostrar capacete'}</button>`;
  const fzBtn=c=>c&&hasFz(c)?`<button data-nofz="1" class="selB">${SEL.nofz?'🎭 Mostrar fantasia':'🎭 Esconder fantasia'}</button>`:'';
  if(SEL.mode==='pick'){
   $('selL').style.display='none';lkShow('');
@@ -7578,14 +7579,14 @@ function renderSelect(){
   $('clsList').innerHTML='';info.innerHTML=`<div class="sec">${k.i} ${k.n}</div><p>${k.d}</p><div class="sg">${k.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div>`;
   lkShow(lkHtml(c.fem));const need=lkNeed(c);
   cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório)':'Editar visual'}</small>`;
-  act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">${need?'✔ Salvar visual e entrar no jogo':'💾 Salvar visual'}</button><div class="selRow">${back}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
+  act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">${need?'✔ Salvar visual e entrar no jogo':'💾 Salvar visual'}</button><div class="selRow">${back}${helmBtn}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
  if(SEL.t!=='cls'){info.innerHTML='<p class="muted">Escolha uma classe para ver a descrição.</p>';lkShow('');cap.innerHTML='<b>Criar personagem</b><small>Escolha uma classe à esquerda</small>';act.innerHTML=back?`<div class="selRow">${back}</div>`:'';act.style.display=back?'flex':'none';return;}
  const c=CLASSES[SEL.id],nm0=$('newName')?$('newName').value:'';
  info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo. É só visual: o personagem novo começa sem esses itens.</p>`;
  lkShow(lkHtml(SEL.fem));
- cap.innerHTML=`<b>${c.i} ${clsName(SEL.id,SEL.fem)} ${SEL.fem?'♀':'♂'}</b><small>Prévia com o capacete escondido</small>`;
- act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${clsName(SEL.id,SEL.fem)} e entrar no jogo</button><div class="selRow">${back}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';}
+ cap.innerHTML=`<b>${c.i} ${clsName(SEL.id,SEL.fem)} ${SEL.fem?'♀':'♂'}</b><small>${SEL.helm?'Prévia com o capacete':'Prévia com o capacete escondido'}</small>`;
+ act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${clsName(SEL.id,SEL.fem)} e entrar no jogo</button><div class="selRow">${back}${helmBtn}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';}
 function selPick(t,id){SEL.t=t;SEL.id=id;if(!ACC)ACC=loadAcc();
  if(t==='cls'){SEL.edit=null;pvShow(id,lkAp(maxAp(id)),SEL.fem);}
  else{const c=ACC.chars.find(x=>x.id===id);if(c){if(lkNeed(c)){SEL.mode='create';SEL.edit=c.id;SEL.lk=RULES.lkParse(RULES.lkFix(RULES.LK_DEF,c.fem));PV.face=true;pvShow(c.cls,lkAp(charAp(c)),c.fem);pvCam();pvFront();}else{SEL.mode='pick';SEL.edit=null;PV.face=false;pvShow(c.cls,charAp(c),c.fem);pvCam();}}}
@@ -7604,6 +7605,7 @@ $('select').addEventListener('click',e=>{
  const pl=e.target.closest('[data-play]');if(pl){selPick('chr',pl.dataset.play);return;}
  if(e.target.closest('[data-new]')){SEL.mode='create';SEL.edit=null;SEL.t=null;SEL.lk=RULES.lkParse(RULES.lkFix(RULES.LK_DEF,SEL.fem));if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}PV.face=false;pvCam();selPick('cls',Object.keys(CLASSES)[0]);return;}
  if(e.target.closest('[data-back]')){SEL.mode='pick';SEL.edit=null;PV.face=false;selPick('chr',(SEL.t==='chr'&&SEL.id)||ACC.chars[0].id);return;}
+ if(e.target.closest('[data-helm]')){SEL.helm=SEL.helm?0:1;lkPreview();keepName(renderSelect);return;}
  if(e.target.closest('[data-nofz]')){SEL.nofz=SEL.nofz?0:1;const c=ACC.chars.find(x=>x.id===SEL.id);if(c)pvShow(c.cls,SEL.mode==='create'?lkAp(charAp(c)):charAp(c),c.fem);renderSelect();return;}
  const cl=e.target.closest('[data-cls]');if(cl){keepName(()=>selPick('cls',cl.dataset.cls));return;}
  const sx=e.target.closest('[data-sex]');if(sx&&SEL.t==='cls'){SEL.fem=+sx.dataset.sex?1:0;SEL.lk=RULES.lkParse(RULES.lkFix(RULES.lkStr(SEL.lk),SEL.fem));keepName(()=>{pvShow(SEL.id,lkAp(maxAp(SEL.id)),SEL.fem);renderSelect();});return;}
