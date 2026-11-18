@@ -1663,11 +1663,16 @@ const LOOK = {
   hairLen: ['Curto', 'Curto', 'Médio', 'Médio', 'Longo', 'Longo'],
   hairCols: [['Preto', '#1e1a22'], ['Castanho', '#5a3418'], ['Loiro', '#e0b050'], ['Ruivo', '#b8461e'], ['Prata', '#d4d8e2'], ['Azul', '#3a6ad8']],
   facesM: ['Sereno', 'Determinado', 'Marcado'], facesF: ['Doce', 'Confiante', 'Sardenta'],
-  skins: [['Clara', '#f8dcc4'], ['Média clara', '#e8b88e'], ['Morena', '#b47a4c'], ['Escura', '#6a3e26']]
+  skins: [['Clara', '#f8dcc4'], ['Média clara', '#e8b88e'], ['Morena', '#b47a4c'], ['Escura', '#6a3e26']],
+  brows: ['Normal', 'Bravo', 'Furioso'],   // v1.96: 0 = a do rosto escolhido
+  beards: ['Sem barba', 'Cavanhaque', 'Barba pequena', 'Barba média', 'Barba grande'], beardsS: ['Sem', 'Cavanhaque', 'Pequena', 'Média', 'Grande'],
+  musts: ['Sem bigode', 'Bigode simples', 'Bigode com voltinha'], mustsS: ['Sem', 'Simples', 'Com voltinha']
 };
-const lkOk = s => typeof s === 'string' && /^[0-2][0-5][0-5][0-5][0-2][0-3]$/.test(s);
-const lkParse = s => lkOk(s) ? { e: +s[0], ec: +s[1], h: +s[2], hc: +s[3], f: +s[4], s: +s[5] } : null;
-const lkStr = o => [o.e, o.ec, o.h, o.hc, o.f, o.s].map(v => Math.max(0, Math.floor(v) || 0)).join('');
+// v1.96: + sobrancelha (b), barba (bd) e bigode (m) — códigos antigos de 6 dígitos continuam valendo (sem barba, sobrancelha do rosto)
+const lkOk = s => typeof s === 'string' && /^[0-2][0-5][0-5][0-5][0-2][0-3](?:[0-2][0-4][0-2])?$/.test(s);
+const lkParse = s => lkOk(s) ? { e: +s[0], ec: +s[1], h: +s[2], hc: +s[3], f: +s[4], s: +s[5], b: +(s[6] || 0), bd: +(s[7] || 0), m: +(s[8] || 0) } : null;
+const lkStr = o => [o.e, o.ec, o.h, o.hc, o.f, o.s, o.b, o.bd, o.m].map(v => Math.max(0, Math.floor(v) || 0)).join('');
+const lkFix = (s, fem) => { const o = lkParse(s); if (!o) return null; if (fem) { o.bd = 0; o.m = 0; } return lkStr(o); };   // personagem feminino não tem barba nem bigode
 /** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
 function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
 const UP_DROP = { ferro: .15, essencia: .04 };   // chance por monstro comum (chefes: ferro garantido, essência 60%)
@@ -1925,7 +1930,7 @@ function newChar(cls, name, fem, lk) {
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
   if (fem) c.fem = 1;   // v1.77: personagem feminino (só aparência; escolhido na criação, não muda depois)
-  if (lkOk(lk)) c.lk = lk;   // v1.95: visual escolhido na criação
+  if (lkOk(lk)) c.lk = lkFix(lk, fem);   // v1.95: visual escolhido na criação (v1.96: feminino sem barba/bigode)
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }
@@ -2507,7 +2512,7 @@ const castMs = (cls, i, x) => {
   return Math.round(Math.max(a, t));
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { LOOK, lkOk, lkParse, lkStr, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { LOOK, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

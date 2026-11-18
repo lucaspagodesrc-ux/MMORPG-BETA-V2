@@ -155,7 +155,7 @@ authRouter.post("/chars/:id/name", authed, async (req, res) => {
   res.json({ char: c });
 });
 
-// v1.95: personagens antigos escolhem o visual (obrigatório antes de entrar no jogo). Só vale para quem ainda não tem visual.
+// v1.95: personagens antigos escolhem o visual (obrigatório antes de entrar no jogo). v1.96: quem já tem visual pode mudar sobrancelha, barba e bigode.
 authRouter.post("/chars/:id/look", authed, async (req, res) => {
   const u = (req as any).user as AuthUser;
   const id = String(req.params.id), lk = req.body?.lk;
@@ -163,8 +163,9 @@ authRouter.post("/chars/:id/look", authed, async (req, res) => {
   const cur = await pool.query("select data from characters where id=$1 and account_id=$2", [id, u.id]);
   if (!cur.rows[0]) return res.status(404).json({ error: "Personagem não encontrado." });
   const c = R.migrate(cur.rows[0].data || {});
-  if (c.lk) return res.status(400).json({ error: "Este personagem já tem visual." });
-  c.lk = lk; await saveChar(u.id, c);
+  // v1.96: quem já tem visual só pode trocar sobrancelha, barba e bigode (os 3 últimos dígitos)
+  if (c.lk && String(c.lk).slice(0, 6) !== lk.slice(0, 6)) return res.status(400).json({ error: "Só a sobrancelha, a barba e o bigode podem ser trocados." });
+  c.lk = R.lkFix(lk, c.fem); await saveChar(u.id, c);
   res.json({ char: c });
 });
 
