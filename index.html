@@ -3830,8 +3830,8 @@ const GLB=(()=>{
   /* v1.77: versões femininas (só aparência) */
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
- const SCALE={cavaleiro:1.14,guerreiro:1.1,tanque:1.2,assassino:1.03,arqueiro:1.03,mago:1.03,pierrot:1.03},WIDE={tanque:1.08}   /* v2.0: Guerreiro +7%, Cavaleiro +11%, Tanque +17% (e mais largo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='200';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},WIDE={}   /* v2.1: corpo antigo (o Tanque já vem mais largo do modelo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
+ let ldr=null,IPC=null;const GLBV='210';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -7527,7 +7527,7 @@ function maxAp(cls){const a=(m,p,r)=>({mo:m,plus:p,rar:r}),F='farao',ap={weapon:
 function pvShow(cls,ap,fem){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}
  const o={cls,swingAt:0,fem:fem?1:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();if(PV.face)pvFront();r.rotation.y=PV.rot;}
 function pvFront(){try{const d=camera.position.subtract(new BABYLON.Vector3(PV.x,0,PV.z));PV.rot=Math.atan2(d.x,d.z)-.35;}catch(e){}}   /* v1.95: rosto de frente para a câmera (um pouco de lado) */
-function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?2.1:1.9):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.55:1.45):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
+function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?1.7:1.6):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.75:1.68):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
 function pvHide(){PV.on=false;PV.face=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
 /* ===== v2.0: duas telas — CRIAÇÃO (classe à esquerda, personagem no meio, visual à direita) e ESCOLHA (personagem no meio, lista à direita) ===== */
 const SEL={mode:'pick',t:null,id:null,fem:0,edit:null,nofz:0,lk:RULES.lkParse(RULES.LK_DEF)};
