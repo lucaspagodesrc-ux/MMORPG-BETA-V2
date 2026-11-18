@@ -7,7 +7,7 @@ rm -rf dist && mkdir -p dist/colyseus-client dist/modelos dist/audio dist/telas
 cp index.html rules.js lang_en.js dist/
 cp colyseus-browser.js dist/colyseus-client/colyseus.js
 for f in *.glb; do [ -f "$f" ] && cp "$f" dist/modelos/; done
-for f in rostos_*.png; do [ -f "$f" ] && cp "$f" dist/modelos/; done   # v1.95: camadas do rosto (olhos, sobrancelhas, boca) montadas no navegador
+for f in rostos_*.png rosto2_*.png; do [ -f "$f" ] && cp "$f" dist/modelos/; done   # v1.95: camadas do rosto (olhos, sobrancelhas, boca) montadas no navegador
 for f in tela_*.jpg; do [ -f "$f" ] && cp "$f" dist/telas/; done   # v1.85: artes do login e da tela de carregamento
 M=$(ls tema.mp3 2>/dev/null || ls *.mp3 2>/dev/null | head -1 || true); [ -n "$M" ] && cp "$M" dist/audio/tema.mp3
 echo "window.GAME_SERVER='${GAME_SERVER:-}';" > dist/config.js

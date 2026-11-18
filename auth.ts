@@ -163,8 +163,7 @@ authRouter.post("/chars/:id/look", authed, async (req, res) => {
   const cur = await pool.query("select data from characters where id=$1 and account_id=$2", [id, u.id]);
   if (!cur.rows[0]) return res.status(404).json({ error: "Personagem não encontrado." });
   const c = R.migrate(cur.rows[0].data || {});
-  // v1.96: quem já tem visual só pode trocar sobrancelha, barba e bigode (os 3 últimos dígitos)
-  if (c.lk && String(c.lk).slice(0, 6) !== lk.slice(0, 6)) return res.status(400).json({ error: "Só a sobrancelha, a barba e o bigode podem ser trocados." });
+  // v2.0: o visual pode ser trocado a qualquer momento (só aparência)
   c.lk = R.lkFix(lk, c.fem); await saveChar(u.id, c);
   res.json({ char: c });
 });

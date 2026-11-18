@@ -364,8 +364,13 @@
   .opt:hover{border-color:var(--gold);transform:translateX(2px)}.opt.sel{border-color:#ffd24a;background:#2a2412;box-shadow:0 0 14px #ffd24a55}
   .opt .oi{font-size:26px;width:34px;text-align:center}.opt b{display:block;font-size:15px}.opt small{color:var(--mut);font-size:11px}
   .opt .del{position:absolute;right:8px;top:6px;background:none;border:none;color:#9fb0c2;font-size:14px;cursor:pointer}.opt .del:hover{color:var(--no)}
+  #select.pick{grid-template-columns:1fr minmax(260px,330px)}#select.pick #selMid{grid-column:1}#select.pick #selR{grid-column:2}
+  .selRow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.selB{padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:#1d2b3a;color:#e6eef7;cursor:pointer;font-size:13px;font-weight:700}.selB:hover{border-color:var(--gold)}.selB:disabled{opacity:.4;cursor:not-allowed}
+  .selB.newC{width:100%;padding:11px;border-color:var(--gold);background:#3b3014;color:#ffe28a}
+  #cfmBox{display:none;position:fixed;inset:0;z-index:99;place-items:center;background:rgba(0,0,0,.6)}.cfmIn{background:#121c29;border:1px solid var(--gold);border-radius:14px;padding:18px 20px;max-width:min(380px,92vw);text-align:center;box-shadow:0 20px 60px #000a}
+  .cfmT{font-size:15px;line-height:1.5;color:#e6eef7;margin-bottom:14px}.cfmT small{color:#9fb0c2}.cfmB{display:flex;gap:10px;justify-content:center}.cfmB button{padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:#1d2b3a;color:#e6eef7;font-weight:700;cursor:pointer}.cfmB .cfmY{border-color:#d0504a;background:#4a1c1a;color:#ffd0cc}
   #clsInfo{font-size:12px;line-height:1.5;color:#cbd6e2}#clsInfo .sg{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin:4px 0}
-  @media(max-width:860px){#select{grid-template-columns:1fr;grid-template-rows:46vh auto auto;overflow:auto}#selMid{grid-row:1}.selp{max-height:none}#selL{grid-row:2}#selR{grid-row:3}}
+  @media(max-width:860px){#select,#select.pick{grid-template-columns:1fr;grid-template-rows:46vh auto auto;overflow:auto}#selMid,#select.pick #selMid{grid-row:1;grid-column:1}.selp{max-height:none}#selL{grid-row:2}#selR,#select.pick #selR{grid-row:3;grid-column:1}}
   #select h1{margin:0;font-size:30px;letter-spacing:.06em;color:var(--gold)}
   .cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
   .card{width:230px;padding:16px;border-radius:14px;border:1px solid var(--line);background:rgba(18,28,41,.95);cursor:pointer;transition:.15s}
@@ -3825,8 +3830,8 @@ const GLB=(()=>{
   /* v1.77: versões femininas (só aparência) */
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
- const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='196';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ const SCALE={cavaleiro:1.14,guerreiro:1.1,tanque:1.2,assassino:1.03,arqueiro:1.03,mago:1.03,pierrot:1.03},WIDE={tanque:1.08}   /* v2.0: Guerreiro +7%, Cavaleiro +11%, Tanque +17% (e mais largo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
+ let ldr=null,IPC=null;const GLBV='200';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -3844,7 +3849,7 @@ const GLB=(()=>{
  /* monta uma cópia do modelo dentro de r */
  function inst(key,o,r){
   const fz=/^fz_/.test(key),ct=C[key].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true}),cls=fz?o.cls:key.replace(/_f$/,'');   /* key = arquivo (cls, cls_f ou fz_<id>[_f]) */
-  const top=new BABYLON.TransformNode('glb',scene);top.parent=r;const S=SCALE[cls]||1;top.scaling.setAll(S);
+  const top=new BABYLON.TransformNode('glb',scene);top.parent=r;const S=SCALE[cls]||1,Wd=WIDE[cls]||1;top.scaling.set(S*Wd,S,S*Wd);
   const root=I.rootNodes[0];root.parent=top;
   const all=root.getDescendants(false),by=n=>all.find(x=>x.name===n);
   const mats={};
@@ -3854,7 +3859,7 @@ const GLB=(()=>{
    if(m.material)seenM.add(m.material);const pm=m.material;
    if(pm){pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=MATTE();pm.albedoColor=new C3(.93,.93,.93);if(pm.albedoTexture)pm.albedoTexture.anisotropicFilteringLevel=4;
     if(TINT.includes(pm.name)){(mats[pm.name]=mats[pm.name]||[]).push(pm);pm.albedoColor=C3.FromHexString(DEF).toLinearSpace();}}
-   if(!/^(Shield|A?Sword|A?Weapon|A?Quiver|Body0|FzBody|Head0|Face0|Skin0|Hair[0-6]|Beard|Must)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
+   if(!/^(Shield|A?Sword|A?Weapon|A?Quiver|Body0|BodySkin0|FzBody|Head0|Face0|Skin0|Hair[0-6]|Beard|Must)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
   /* v1.68: as animações são calculadas aqui (quadro e mistura por peso), sem o tocador do Babylon — com velocidade 0 ele prendia tudo no 1º quadro (personagem deslizava) */
   const AG={},CH=new Map();for(const g of I.animationGroups){g.stop();AG[g.name]={from:g.from,to:g.to};for(const ta of g.targetedAnimations){const k=ta.target.uniqueId+'|'+ta.animation.targetProperty;let e=CH.get(k);if(!e){e={t:ta.target,p:ta.animation.targetProperty,a:{}};CH.set(k,e);}e.a[g.name]=ta.animation;}}
   const L={glb:1,t:0,x:0,z:0,spd:0,ph:0,ph0:Math.random()*6,AG,CH:[...CH.values()],ank:[by('foot.L')||top,by('foot.R')||top],lr:.15,top,cls};
@@ -3862,9 +3867,9 @@ const GLB=(()=>{
   o.hand=(cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||by('hand.R')||top;o.handL=by('hand.L')||top;
   /* peças de cada conjunto: o nó do glTF e as malhas com pele (ficam em outro lugar da hierarquia, mas com o mesmo nome no começo) */
   o.glbAW=all.filter(n=>/^A(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));o.glbOW=all.filter(n=>/^(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));   /* v1.92: arma Astral (troca quando a arma equipada é Astral) */
-  o.glbLook=null;{const LK={head:[],skin:[],face:[],hair:{},beard:{},must:{}};let any=0;   /* v1.95: peças do visual escolhido (cabeça, pele, rosto e cabelos; v1.96: barbas e bigodes) */
-   for(const n of all){const bm=/^(Beard|Must)([1-4])(?:$|_)/.exec(n.name);if(bm){const g=LK[bm[1]==='Beard'?'beard':'must'];(g[bm[2]]=g[bm[2]]||[]).push(n);continue;}
-    const mm=/^(Head0|Skin0|Face0|Hair([0-6]))(?:$|_)/.exec(n.name);if(!mm)continue;any=1;if(mm[2]!==undefined)(LK.hair[mm[2]]=LK.hair[mm[2]]||[]).push(n);else LK[mm[1]==='Head0'?'head':mm[1]==='Skin0'?'skin':'face'].push(n);}
+  o.glbLook=null;{const LK={head:[],skin:[],face:[],body:[],hd:by('head'),top,hairM:null,beardM:null};let any=0;   /* v2.0: corpo novo — cabeça, corpo, rosto; cabelo e barba vêm de arquivos à parte e são presos no osso da cabeça */
+   for(const n of all){const mm=/^(Head0|BodySkin0|Face0|Skin0)(?:$|_)/.exec(n.name);if(!mm)continue;any=1;LK[mm[1]==='Head0'?'head':mm[1]==='BodySkin0'?'body':mm[1]==='Skin0'?'skin':'face'].push(n);}
+   if(any&&LK.hd){try{for(const sk of I.skeletons)sk.returnToRest();}catch(e){}try{for(const n of [top,...all])if(n.computeWorldMatrix)n.computeWorldMatrix(true);LK.rest=LK.hd.getWorldMatrix().multiply(BABYLON.Matrix.Invert(top.getWorldMatrix()));}catch(e){}}   /* osso da cabeça parado (antes da animação) */
    if(any)o.glbLook=LK;}
   o.glbParts={};for(const n of all){const mm=/^(Armor|Boots|Helm|Shield)([1-6])(?:$|_)/.exec(n.name);if(mm){const g=(o.glbParts[mm[1]]=o.glbParts[mm[1]]||{});(g[mm[2]]=g[mm[2]]||[]).push(n);}}
   if(cls==='mago'&&!fz)magoHats(o);   /* v1.76: chapéu pontudo em todos os trajes do mago */
@@ -3942,43 +3947,54 @@ const GLB=(()=>{
   if(o.glbAW&&o.glbAW.length){const w=ap.weapon,og=w&&w.mo&&RULES.OG[w.mo],aw=!!(og&&og.vset===2);o._astW=aw;o.glbAW.forEach(n=>n.setEnabled(aw));o.glbOW.forEach(n=>{if('isVisible' in n)n.isVisible=!aw;});}
   for(const k in P_)for(const i in P_[k]){const on=+i===pick[k],ns=P_[k][i];if(k==='Shield'){const top=ns.find(n=>n.name==='Shield'+i)||ns[0];if(on)o.shieldN=top;ns.forEach(n=>{if(n===top)n.setEnabled(on);});}else ns.forEach(n=>n.setEnabled(on));}
   lookApply(o,ap);}
- /* v1.95: visual escolhido — cabelo (6 penteados + o original da classe), cor do cabelo, pele, rosto montado e capacete escondido.
-    Com capacete/chapéu visível fica o padrão de antes (penteado original da classe; elmo fechado esconde a cabeça). */
- const LK_DEF='001010';
+ /* v2.0: visual escolhido — pele, rosto em camadas, cabelo (18, unissex) e barba (6). Com capacete/chapéu visível o cabelo fica escondido. */
+ const LK_DEF=RULES.LK_DEF;
+ const XF={hm:'cabelos_m.glb',hf:'cabelos_f.glb',bm:'barbas_m.glb'},XC={};
+ function xload(k){let e=XC[k];if(e)return e;e=XC[k]={ok:false,m:{},cb:[]};
+  loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',XF[k]+'?v='+GLBV,scene,null,'.glb')).then(ct=>{
+   const I=ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true}),root=I.rootNodes[0];root.setEnabled(false);
+   for(const m of root.getChildMeshes(false)){m.computeWorldMatrix(true);e.m[m.name]={src:m,w:m.getWorldMatrix().clone()};}   /* posição da peça no "espaço do modelo" (igual ao corpo parado) */
+   e.ok=true;e.cb.splice(0).forEach(f=>{try{f();}catch(er){console.warn(er);}});}).catch(er=>console.warn('extra',k,er));
+  return e;}
+ const HMAT={};
+ function hairMat(hex){let m=HMAT[hex];if(m)return m;m=HMAT[hex]=new BABYLON.PBRMaterial('hair'+hex,scene);m.albedoColor=C3.FromHexString(hex).toLinearSpace();m.metallic=0;m.roughness=.55;m.environmentIntensity=.35;m.imageProcessingConfiguration=MATTE();return m;}
+ /* prende uma cópia da peça no osso da cabeça: local = peça (modelo) × inverso(cabeça parada) */
+ function attachX(L,ent,name){const c=ent.src.clone(name+'_'+L.top.uniqueId,null,true);c.makeGeometryUnique&&0;c.setEnabled(true);c.isPickable=false;c.alwaysSelectAsActiveMesh=true;
+  const M=ent.w.multiply(BABYLON.Matrix.Invert(L.rest)),sc=new BABYLON.Vector3(),q=new BABYLON.Quaternion(),ps=new BABYLON.Vector3();M.decompose(sc,q,ps);
+  c.parent=L.hd;c.scaling.copyFrom(sc);c.rotationQuaternion=q;c.position.copyFrom(ps);return c;}
+ function setX(o,L,slot,file,name,on,hex){const cur=L[slot];
+  if(!on){if(cur){cur.dispose();L[slot]=null;}return;}
+  if(cur&&cur._nm===name){cur.material=hairMat(hex);cur.setEnabled(true);return;}
+  if(cur){cur.dispose();L[slot]=null;}
+  const e=xload(file);const go=()=>{if(L.top.isDisposed()||!e.m[name]||!L.rest)return;if(L[slot]){L[slot].dispose();}const c=attachX(L,e.m[name],name);c._nm=name;c.material=hairMat(hex);L[slot]=c;};
+  if(e.ok)go();else e.cb.push(go);}
  function lookApply(o,ap){const L=o.glbLook,P_=o.glbParts||{};const hh=!!(ap&&ap.hh&&ap.hh.mo==='1');
   if(hh&&P_.Helm)for(const i in P_.Helm)P_.Helm[i].forEach(n=>n.setEnabled(false));
   if(!L)return;const lk=RULES.lkParse(ap&&ap.lk&&ap.lk.mo)||RULES.lkParse(LK_DEF),LO=RULES.LOOK;
   const closed=['guerreiro','tanque','cavaleiro'].includes(o.cls)&&!o.fem,showHead=!closed||hh;
-  for(const n of[...L.head,...L.skin,...L.face])n.setEnabled(showHead);
-  const want=hh?lk.h+1:0;   /* com capacete/chapéu: só o penteado original da classe (se a classe não tem, nenhum) */
-  for(const k in L.hair)L.hair[k].forEach(n=>n.setEnabled(showHead&&+k===want));
-  /* v1.96: barba e bigode — aparecem também com capacete/chapéu, menos quando a máscara cobre a boca (Assassino, capuz 3 do Arqueiro) */
-  const masked=!hh&&(o.cls==='assassino'||(o.cls==='arqueiro'&&setOf(ap&&ap.helmet)===3)),bOn=showHead&&!masked&&!o.fem;
-  for(const k in L.beard)L.beard[k].forEach(n=>n.setEnabled(bOn&&+k===lk.bd));
-  for(const k in L.must)L.must[k].forEach(n=>n.setEnabled(bOn&&+k===lk.m));
-  const sig=RULES.lkStr(lk);if(L._sig===sig)return;L._sig=sig;   /* a marca fica no modelo (um modelo novo é pintado de novo) */
-  const hc=C3.FromHexString(LO.hairCols[lk.hc][1]).toLinearSpace(),sc=C3.FromHexString(LO.skins[lk.s][1]).toLinearSpace();
+  for(const n of[...L.head,...L.face,...L.skin])n.setEnabled(showHead);
+  const hex=LO.hairCols[lk.hc][1];
+  setX(o,L,'hairM',o.fem?'hf':'hm','Hair'+lk.h,hh&&lk.h>0,hex);   /* cabelo só com o capacete/chapéu escondido */
+  const masked=!hh&&(o.cls==='assassino'||(o.cls==='arqueiro'&&setOf(ap&&ap.helmet)===3));
+  setX(o,L,'beardM','bm','Beard'+lk.bd,!o.fem&&showHead&&!masked&&lk.bd>0,hex);
+  const sig=RULES.lkStr(lk)+(o.fem?'f':'m');if(L._sig===sig)return;L._sig=sig;
+  const sc=C3.FromHexString(LO.skins[lk.s][1]).toLinearSpace();
   const meshes=ns=>{const r=[];for(const n of ns){if(n.material)r.push(n);if(n.getChildMeshes)r.push(...n.getChildMeshes(false));}return r;};
-  for(const g of[L.hair,L.beard,L.must])for(const k in g)for(const m of meshes(g[k]))if(m.material&&/^HairTint/.test(m.material.name))m.material.albedoColor=hc;
-  for(const m of meshes([...L.head,...L.skin]))if(m.material)m.material.albedoColor=sc;
-  const tx=faceTex(!!o.fem,lk,o.cls);
+  for(const m of meshes([...L.head,...L.body,...L.skin]))if(m.material)m.material.albedoColor=sc;
+  const tx=faceTex(!!o.fem,lk);
   for(const m of meshes(L.face))if(m.material){const pm=m.material;pm.albedoTexture=tx;pm.useAlphaFromAlbedoTexture=true;pm.transparencyMode=2;pm.albedoColor=new C3(1,1,1);pm.backFaceCulling=true;m.alphaIndex=10;}}
- /* rosto montado no navegador a partir das camadas (rostos_m.png / rostos_f.png): íris na cor dos olhos, sobrancelha na cor do cabelo */
- const FACE_SH={},FACE_TX=new Map(),FCELL=512;
+ /* v2.0: rosto montado no navegador com as camadas desenhadas (rosto2_m/f.png): linha 0 olhos, 1 sobrancelhas (na cor do cabelo), 2 bocas */
+ const FACE_SH={},FACE_TX=new Map(),FCELL={m:[442,292],f:[374,282]};
  function faceSheet(g){let e=FACE_SH[g];if(e)return e;const im=new Image();e=FACE_SH[g]={im,ok:false,cb:[]};im.crossOrigin='anonymous';
   im.onload=()=>{e.ok=true;e.cb.splice(0).forEach(f=>{try{f();}catch(er){}});};im.onerror=()=>console.warn('rostos',g);
-  im.src=(window.GLB_BASE||'modelos/')+'rostos_'+g+'.png?v='+GLBV;return e;}
- function faceTex(fem,lk,cls){const g=fem?'f':'m',pr=cls==='pierrot',key=g+RULES.lkStr(lk)+(pr?'p':'');let dt=FACE_TX.get(key);if(dt)return dt;
-  dt=new BABYLON.DynamicTexture('face_'+key,{width:FCELL,height:FCELL},scene,true);dt.hasAlpha=true;FACE_TX.set(key,dt);
-  const LO=RULES.LOOK,eyeC=LO.eyeCols[lk.ec][1],browC=LO.hairCols[lk.hc][0]==='Prata'?'#9aa0ac':LO.hairCols[lk.hc][1],e=lk.e,f=lk.f,sh=faceSheet(g);
-  const draw=()=>{const ctx=dt.getContext(),C=FCELL,im=sh.im,blit=(c2,i)=>c2.drawImage(im,(i%5)*C,Math.floor(i/5)*C,C,C,0,0,C,C);ctx.clearRect(0,0,C,C);
-   const lay=(i,fn)=>{const t=document.createElement('canvas');t.width=t.height=C;const tc=t.getContext('2d');blit(tc,i);fn(tc,i);ctx.drawImage(t,0,0);};
-   blit(ctx,21+f);
-   lay(e*3+f,(tc,i)=>{tc.globalCompositeOperation='multiply';tc.fillStyle=eyeC;tc.fillRect(0,0,C,C);tc.globalCompositeOperation='destination-in';blit(tc,i);});
-   blit(ctx,9+e*3+f);
-   lay(lk.b?24+lk.b:18+f,tc=>{   /* v1.96: sobrancelha do rosto ou uma das de "mau" (células 25 e 26) */tc.globalCompositeOperation='source-in';tc.fillStyle=browC;tc.fillRect(0,0,C,C);});
-   if(pr)blit(ctx,24);
-   dt.update(false);};   /* v1.96: a malha veio do glTF (UV com o topo em v=0): sem inverter, senão o rosto fica de cabeça para baixo */
+  im.src=(window.GLB_BASE||'modelos/')+'rosto2_'+g+'.png?v='+GLBV;return e;}
+ function faceTex(fem,lk){const g=fem?'f':'m',key=g+RULES.lkStr(lk);let dt=FACE_TX.get(key);if(dt)return dt;
+  const [CW,CH]=FCELL[g];dt=new BABYLON.DynamicTexture('face_'+key,{width:CW,height:CH},scene,true);dt.hasAlpha=true;FACE_TX.set(key,dt);
+  const hc=C3.FromHexString(RULES.LOOK.hairCols[lk.hc][1]),bc=new C3(hc.r*.55,hc.g*.55,hc.b*.55).toHexString(),sh=faceSheet(g);
+  const draw=()=>{const ctx=dt.getContext(),im=sh.im,blit=(c2,col,row)=>c2.drawImage(im,col*CW,row*CH,CW,CH,0,0,CW,CH);ctx.clearRect(0,0,CW,CH);
+   blit(ctx,lk.m,2);blit(ctx,lk.e,0);
+   const t=document.createElement('canvas');t.width=CW;t.height=CH;const tc=t.getContext('2d');blit(tc,lk.b,1);tc.globalCompositeOperation='source-in';tc.fillStyle=bc;tc.fillRect(0,0,CW,CH);ctx.drawImage(t,0,0);
+   dt.update(false);};
   if(sh.ok)draw();else sh.cb.push(draw);return dt;}
  /* equipamento: cada peça mostra o conjunto do seu nível; capa só com o item de capa */
  /* v1.82: fantasia — arquivo pelo sexo (cai para o ♂ se o ♀ falhar) e para a classe se a fantasia não carregar */
@@ -4013,7 +4029,7 @@ const GLB=(()=>{
   CAPE(o,o.glbTop,ap,tk?{sx:.5,sy:1.56,hy:1.95,hr:.4,bz:-.52,R:y=>y>.95&&y<1.7?.46:0,len:1.3}:pl?{sx:.4,sy:1.56,hy:1.95,hr:.4,bz:-.44,R:y=>y>.95&&y<1.7?.38:0,len:1.3}:{sx:.36,sy:1.54,hy:1.88,hr:.32,bz:-.34,R:y=>y>.95&&y<1.65?.3:0,len:1.25});
  }
  /* cada classe é baixada só quando aparece um personagem dela */
- return{build,anim,gear,load,ready,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet};
+ return{build,anim,gear,load,ready,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet,xload};
 })();
 
 /* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago e Pierrot, dano mágico),
@@ -7511,88 +7527,109 @@ function maxAp(cls){const a=(m,p,r)=>({mo:m,plus:p,rar:r}),F='farao',ap={weapon:
 function pvShow(cls,ap,fem){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}
  const o={cls,swingAt:0,fem:fem?1:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();if(PV.face)pvFront();r.rotation.y=PV.rot;}
 function pvFront(){try{const d=camera.position.subtract(new BABYLON.Vector3(PV.x,0,PV.z));PV.rot=Math.atan2(d.x,d.z)-.35;}catch(e){}}   /* v1.95: rosto de frente para a câmera (um pouco de lado) */
-function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?1.6:1.5):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.7:1.62):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
+function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?2.1:1.9):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.55:1.45):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
 function pvHide(){PV.on=false;PV.face=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
-const SEL={t:null,id:null,fem:0,edit:null,lk:{e:0,ec:0,h:0,hc:1,f:0,s:1,b:0,bd:0,m:0}};
-/* v1.95: personalização (olhos, cabelo, rosto e pele) — na criação e, para personagens antigos, antes de entrar */
-function lkHtml(fem,only){const L=RULES.LOOK,v=SEL.lk,hn=fem?L.hairF:L.hairM,fn=fem?L.facesF:L.facesM;
- const optT=(k,list)=>list.map((x,i)=>`<button data-lk="${k}:${i}" class="${(v[k]||0)===i?'on':''}">${esc(x)}</button>`).join('');   /* v1.96: botões com o nome */
- const extra=`<div class="lkRow"><b>Sobrancelha</b>${optT('b',L.brows)}</div>`+(fem?'':`<div class="lkRow"><b>Barba</b>${optT('bd',L.beardsS)}</div><div class="lkRow"><b>Bigode</b>${optT('m',L.mustsS)}</div>`);
- if(only)return `<div id="lkBox"><div class="lkTop"><b style="color:#ffe28a">✏️ Sobrancelha${fem?'':', barba e bigode'}</b><span><button data-pvz="1" title="Aproximar/afastar a câmera">${PV.face?'🧍 Corpo':'🔍 Rosto'}</button></span></div>${extra}</div>`;
- const opt=(k,list,lab)=>list.map((x,i)=>`<button data-lk="${k}:${i}" class="${v[k]===i?'on':''}" title="${esc(lab?lab(x,i):x)}">${i+1}</button>`).join('');
- const sw=(k,list)=>list.map((x,i)=>`<button data-lk="${k}:${i}" class="sw${v[k]===i?' on':''}" style="background:${x[1]}" title="${esc(x[0])}"></button>`).join('');
- return `<div id="lkBox"><div class="lkTop"><b style="color:#ffe28a">🎨 Visual do personagem</b><span><button data-lkrand="1" title="Sortear tudo">🎲 Sortear</button> <button data-pvz="1" title="Aproximar/afastar a câmera">${PV.face?'🧍 Corpo':'🔍 Rosto'}</button></span></div>
-  <div class="lkRow"><b>Olhos</b>${opt('e',L.eyes)}<span class="muted">${esc(L.eyes[v.e])}</span></div>
-  <div class="lkRow"><b>Cor dos olhos</b>${sw('ec',L.eyeCols)}</div>
-  <div class="lkRow"><b>Cabelo</b>${opt('h',hn,(x,i)=>x+' ('+L.hairLen[i]+')')}<span class="muted">${esc(hn[v.h])} • ${esc(L.hairLen[v.h])}</span></div>
-  <div class="lkRow"><b>Cor do cabelo</b>${sw('hc',L.hairCols)}</div>
-  <div class="lkRow"><b>Rosto</b>${opt('f',fn)}<span class="muted">${esc(fn[v.f])}</span></div>
-  <div class="lkRow"><b>Pele</b>${sw('s',L.skins)}</div>${extra}</div>`;}
-function lkShow(h){const w=$('lkWrap');if(!w)return;w.innerHTML=h;w.style.display=h?'':'none';}
-const lkAp=ap=>Object.assign({},ap,{lk:{mo:RULES.lkStr(SEL.lk)},hh:{mo:'1'}});   /* prévia: capacete escondido para ver o rosto */
-function lkPreview(){if(!PV.o)return;let ap;if(SEL.t==='cls')ap=maxAp(SEL.id);else{const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;ap=parseAp(RULES.apOf(c));}try{applyGear(PV.o,lkAp(ap));}catch(e){console.warn(e);}}
-/* v1.78: masculino e feminino usam o mesmo nome de classe (só a aparência muda) */
+/* ===== v2.0: duas telas — CRIAÇÃO (classe à esquerda, personagem no meio, visual à direita) e ESCOLHA (personagem no meio, lista à direita) ===== */
+const SEL={mode:'pick',t:null,id:null,fem:0,edit:null,nofz:0,lk:RULES.lkParse(RULES.LK_DEF)};
 const clsName=k=>CLASSES[k].n;
+const lkNeed=c=>!RULES.lkOk(c.lk);
+function lkHtml(fem){const L=RULES.LOOK,v=SEL.lk,nb=fem?L.browsF:L.browsM;
+ const num=(k,n)=>Array.from({length:n},(_,i)=>`<button data-lk="${k}:${i}" class="${v[k]===i?'on':''}">${i+1}</button>`).join('');
+ const sw=(k,list)=>list.map((x,i)=>`<button data-lk="${k}:${i}" class="sw${v[k]===i?' on':''}" style="background:${x[1]}" title="${esc(x[0])}"></button>`).join('');
+ const hairs=L.hairs.map((x,i)=>`<button data-lk="h:${i}" class="${v.h===i?'on':''}" title="${esc(x)}">${i?i:'✕'}</button>`).join('');
+ const beards=L.beards.map((x,i)=>`<button data-lk="bd:${i}" class="${v.bd===i?'on':''}" title="${esc(x)}">${i?i:'✕'}</button>`).join('');
+ return `<div id="lkBox"><div class="lkTop"><b style="color:#ffe28a">🎨 Visual do personagem</b><span><button data-lkrand="1" title="Sortear tudo">🎲 Sortear</button> <button data-pvz="1" title="Aproximar/afastar a câmera">${PV.face?'🧍 Corpo':'🔍 Rosto'}</button></span></div>
+  <div class="lkRow"><b>Olhos</b>${num('e',L.eyesN)}</div>
+  <div class="lkRow"><b>Sobrancelha</b>${num('b',nb)}</div>
+  <div class="lkRow"><b>Boca</b>${num('m',L.mouthsN)}</div>
+  <div class="lkRow"><b>Cabelo</b>${hairs}<span class="muted" style="flex-basis:100%">${esc(L.hairs[v.h])}</span></div>
+  <div class="lkRow"><b>Cor do cabelo</b>${sw('hc',L.hairCols)}</div>
+  ${fem?'':`<div class="lkRow"><b>Barba</b>${beards}<span class="muted" style="flex-basis:100%">${esc(L.beards[v.bd])}</span></div>`}
+  <div class="lkRow"><b>Pele</b>${sw('s',L.skins)}</div>
+  <div class="muted" style="font-size:11px">O cabelo aparece com o capacete/chapéu escondido (⚙️ Opções no jogo).</div></div>`;}
+function lkShow(h){const w=$('lkWrap');if(!w)return;w.innerHTML=h;w.style.display=h?'':'none';}
+const lkAp=ap=>Object.assign({},ap,{lk:{mo:RULES.lkStr(SEL.lk)},hh:{mo:'1'}});   /* prévia: capacete escondido para ver o rosto e o cabelo */
+const charAp=c=>{const ap=parseAp(RULES.apOf(c));if(SEL.nofz)delete ap.fz;return ap;};   /* 🎭 esconder fantasia (só na prévia) */
+function lkPreview(){if(!PV.o)return;let ap;if(SEL.t==='cls')ap=maxAp(SEL.id);else{const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;ap=charAp(c);}try{applyGear(PV.o,lkAp(ap));}catch(e){console.warn(e);}}
+/* janela de confirmação (sem o confirm() do navegador) */
+function askConfirm(msg,yes){let w=$('cfmBox');if(!w){w=document.createElement('div');w.id='cfmBox';document.body.appendChild(w);}
+ w.innerHTML=`<div class="cfmIn"><div class="cfmT">${msg}</div><div class="cfmB"><button data-cfm="0">Cancelar</button><button data-cfm="1" class="cfmY">Sim, excluir</button></div></div>`;w.style.display='grid';
+ w.onclick=e=>{const b=e.target.closest('[data-cfm]');if(!b&&e.target!==w)return;w.style.display='none';if(b&&b.dataset.cfm==='1')yes();};}
 function renderSelect(){
- if(!ACC)ACC=loadAcc();const full=ACC.chars.length>=6;
+ if(!ACC)ACC=loadAcc();const full=ACC.chars.length>=6,sel=$('select');
+ if(SEL.mode==='pick'&&!ACC.chars.length)SEL.mode='create';
+ sel.classList.toggle('pick',SEL.mode==='pick');sel.classList.toggle('create',SEL.mode==='create');
+ const info=$('clsInfo'),cap=$('selCap'),act=$('selAct'),hasFz=c=>{try{return !!parseAp(RULES.apOf(c)).fz;}catch(e){return false;}};
+ const fzBtn=c=>c&&hasFz(c)?`<button data-nofz="1" class="selB">${SEL.nofz?'🎭 Mostrar fantasia':'🎭 Esconder fantasia'}</button>`:'';
+ if(SEL.mode==='pick'){
+  $('selL').style.display='none';lkShow('');
+  $('chars').innerHTML=ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">🗑</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${clsName(c.cls,c.fem)}${c.fem?' ♀':' ♂'} • Nv ${c.level}${lkNeed(c)?'<br><span style="color:#ffe28a">🎨 personalizar visual (obrigatório)</span>':''}</small></div></div>`).join('')+
+   `<button data-new="1" class="selB newC" ${full?'disabled':''}>➕ Criar novo personagem</button>`;
+  $('secChars').textContent='Seus personagens ('+ACC.chars.length+'/6)';$('chars').style.display='';
+  $('selNote').textContent=full?'Limite de 6 personagens. Exclua um para criar outro.':'O baú da cidade é compartilhado entre todos os seus personagens.';
+  const c=SEL.t==='chr'&&ACC.chars.find(x=>x.id===SEL.id);
+  if(!c){cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em um personagem na lista à direita</small>';act.style.display='none';return;}
+  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${clsName(c.cls,c.fem)} • Nível ${c.level}</small>`;
+  act.innerHTML=`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name||'')}</button><div class="selRow"><button data-lkedit="1" class="selB">✏️ Editar visual</button>${fzBtn(c)}</div>`;act.style.display='flex';return;}
+ /* ---- criação / edição do visual ---- */
+ $('selL').style.display='';$('secChars').textContent='';$('chars').style.display='none';$('selNote').textContent='';
+ const back=ACC.chars.length?`<button data-back="1" class="selB">◀ Voltar</button>`:'';
+ if(SEL.edit){const c=ACC.chars.find(x=>x.id===SEL.edit);if(!c){SEL.edit=null;SEL.mode='pick';return renderSelect();}const k=CLASSES[c.cls];
+  $('clsList').innerHTML='';info.innerHTML=`<div class="sec">${k.i} ${k.n}</div><p>${k.d}</p><div class="sg">${k.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div>`;
+  lkShow(lkHtml(c.fem));const need=lkNeed(c);
+  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório)':'Editar visual'}</small>`;
+  act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">${need?'✔ Salvar visual e entrar no jogo':'💾 Salvar visual'}</button><div class="selRow">${back}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
- $('chars').innerHTML=ACC.chars.length?ACC.chars.map(c=>`<div class="opt char${SEL.t==='chr'&&SEL.id===c.id?' sel':''}" data-play="${c.id}"><button class="del" data-del="${c.id}" title="Excluir personagem">✕</button><span class="oi">${CLASSES[c.cls].i}</span><div><b>${c.name?esc(c.name):'<i>(sem nome)</i>'}</b><small>${clsName(c.cls,c.fem)}${c.fem?' ♀':''} • Nv ${c.level}<br>💰 ${c.gold} • ☠ ${c.kills}${c.lk?'':' • <span style="color:#ffe28a">🎨 escolher visual</span>'}</small></div></div>`).join(''):'<div class="muted">Você ainda não tem personagens. Escolha uma classe à esquerda.</div>';
- $('secChars').textContent='Seus personagens ('+ACC.chars.length+'/6)';
- $('selNote').textContent=full?'Limite de 6 personagens. Exclua um para criar outro.':'O baú da cidade é compartilhado entre todos os seus personagens.';
- const info=$('clsInfo'),cap=$('selCap'),act=$('selAct');
- if(SEL.t==='cls'){const c=CLASSES[SEL.id];
-  info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo (+10, brilho e efeitos). É só visual: o personagem novo começa sem esses itens.</p>`;
-  const nm0=$('newName')?$('newName').value:'',cn=clsName(SEL.id,SEL.fem);
-  cap.innerHTML=`<b>${c.i} ${cn} ${SEL.fem?'♀':'♂'}</b><small>Prévia: equipamento máximo (apenas visual)</small>`;
-  lkShow(lkHtml(SEL.fem));act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><div class="muted" style="text-align:center">🎨 Escolha o visual no painel da direita</div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${cn} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
- else if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c){SEL.t=null;return renderSelect();}
-  info.innerHTML='<p class="muted">Selecione uma classe aqui para criar outro personagem e ver a prévia dela.</p>';
-  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${clsName(c.cls,c.fem)} • Nível ${c.level} • com os itens equipados</small>`;
-  const needLk=!c.lk,lkPart=needLk?`<div class="muted" style="color:#ffe28a;text-align:center">✨ Novo: escolha o visual de ${c.name?esc(c.name):'seu personagem'} no painel da direita antes de entrar (obrigatório).</div>`:'';
-  const ed=!needLk&&SEL.edit===c.id;lkShow(needLk?lkHtml(c.fem):ed?lkHtml(c.fem,1):'');   /* v1.96: personagem com visual pode trocar sobrancelha, barba e bigode */
-  if(ed){act.innerHTML=`<button class="go" data-lksave="1">💾 Salvar visual</button><button data-lkcancel="1" style="padding:10px 14px;border-radius:9px;border:1px solid var(--line);background:#1d2b3a;color:#e6eef7;cursor:pointer">Cancelar</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
-  const edBtn=!needLk&&c.name?`<button data-lkedit="1" style="padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:#1d2b3a;color:#e6eef7;cursor:pointer">✏️ ${c.fem?'Mudar sobrancelha':'Mudar sobrancelha, barba e bigode'}</button>`:'';
-  act.innerHTML=c.name?(needLk?`${lkPart}<button class="go" id="selGo">✔ Salvar visual e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`:`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name)}</button>${edBtn}`):`${lkPart}<input id="newName" maxlength="16" value="" placeholder="Escolha o nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo">✔ Confirmar ${needLk?'nome e visual':'nome'} e entrar no jogo</button><div id="nameMsg" class="muted" style="flex-basis:100%;color:#ff8a7a;min-height:1.2em"></div>`;}
- else{lkShow('');info.innerHTML='<p class="muted">Clique em uma classe para ver a descrição e a prévia.</p>';cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em uma classe (esquerda) ou em um personagem seu (direita)</small>';act.style.display='none';return;}
- act.style.display='flex';
-}
-function selPick(t,id){SEL.t=t;SEL.id=id;SEL.edit=null;if(!ACC)ACC=loadAcc();
- if(t==='cls')pvShow(id,lkAp(maxAp(id)),SEL.fem);else{const c=ACC.chars.find(x=>x.id===id);if(c){if(!c.lk){PV.face=true;}pvShow(c.cls,c.lk?parseAp(RULES.apOf(c)):lkAp(parseAp(RULES.apOf(c))),c.fem);}}
+ if(SEL.t!=='cls'){info.innerHTML='<p class="muted">Escolha uma classe para ver a descrição.</p>';lkShow('');cap.innerHTML='<b>Criar personagem</b><small>Escolha uma classe à esquerda</small>';act.innerHTML=back?`<div class="selRow">${back}</div>`:'';act.style.display=back?'flex':'none';return;}
+ const c=CLASSES[SEL.id],nm0=$('newName')?$('newName').value:'';
+ info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo. É só visual: o personagem novo começa sem esses itens.</p>`;
+ lkShow(lkHtml(SEL.fem));
+ cap.innerHTML=`<b>${c.i} ${clsName(SEL.id,SEL.fem)} ${SEL.fem?'♀':'♂'}</b><small>Prévia com o capacete escondido</small>`;
+ act.innerHTML=`<div class="sexSel"><button data-sex="0" class="${SEL.fem?'':'on'}">♂ Masculino</button><button data-sex="1" class="${SEL.fem?'on':''}">♀ Feminino</button></div><input id="newName" maxlength="16" value="${esc(nm0)}" placeholder="Nome do personagem (obrigatório)" autocomplete="off"><button class="go" id="selGo" ${full?'disabled':''}>✔ Criar ${clsName(SEL.id,SEL.fem)} e entrar no jogo</button><div class="selRow">${back}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';}
+function selPick(t,id){SEL.t=t;SEL.id=id;if(!ACC)ACC=loadAcc();
+ if(t==='cls'){SEL.edit=null;pvShow(id,lkAp(maxAp(id)),SEL.fem);}
+ else{const c=ACC.chars.find(x=>x.id===id);if(c){if(lkNeed(c)){SEL.mode='create';SEL.edit=c.id;SEL.lk=RULES.lkParse(RULES.lkFix(RULES.LK_DEF,c.fem));PV.face=true;pvShow(c.cls,lkAp(charAp(c)),c.fem);pvCam();pvFront();}else{SEL.mode='pick';SEL.edit=null;PV.face=false;pvShow(c.cls,charAp(c),c.fem);pvCam();}}}
  renderSelect();}
 function showSelect(){
- if(!ACC)ACC=loadAcc();SEL.t=null;SEL.id=null;
+ if(!ACC)ACC=loadAcc();SEL.t=null;SEL.id=null;SEL.edit=null;SEL.mode=ACC.chars.length?'pick':'create';
  $('lgOut').style.display=TOKEN?'':'none';
- $('select').style.display='grid';renderSelect();pvStage();PV.on=true;pvCam();
+ $('select').style.display='grid';pvStage();PV.on=true;PV.face=false;pvCam();
+ if(SEL.mode==='pick'&&ACC.chars.length)selPick('chr',ACC.chars[0].id);else renderSelect();
 }
+const keepName=f=>{const nm=$('newName')?$('newName').value:null;f();if(nm!==null&&$('newName'))$('newName').value=nm;};
 $('select').addEventListener('click',e=>{
  const del=e.target.closest('[data-del]');
- if(del){e.stopPropagation();if(confirm('Excluir este personagem permanentemente? (O baú compartilhado não é afetado.)')){const id=del.dataset.del;(async()=>{try{if(TOKEN)await api('chars/'+encodeURIComponent(id),'DELETE');ACC.chars=ACC.chars.filter(c=>c.id!==id);save();if(SEL.id===id){SEL.t=null;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}}renderSelect();}catch(er){alert(er.message);}})();}return;}
+ if(del){e.stopPropagation();const id=del.dataset.del,c=ACC.chars.find(x=>x.id===id);
+  askConfirm(`Tem certeza que deseja excluir <b>${esc((c&&c.name)||'este personagem')}</b>?<br><small>Essa ação não pode ser desfeita. O baú compartilhado não é afetado.</small>`,()=>{(async()=>{try{if(TOKEN)await api('chars/'+encodeURIComponent(id),'DELETE');ACC.chars=ACC.chars.filter(x=>x.id!==id);save();if(SEL.id===id){SEL.t=null;SEL.id=null;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}}if(ACC.chars.length&&SEL.mode==='pick'&&!SEL.id)selPick('chr',ACC.chars[0].id);else renderSelect();}catch(er){alert(er.message);}})();});return;}
  const pl=e.target.closest('[data-play]');if(pl){selPick('chr',pl.dataset.play);return;}
- const cl=e.target.closest('[data-cls]');if(cl){selPick('cls',cl.dataset.cls);return;}
- const sx=e.target.closest('[data-sex]');if(sx&&SEL.t==='cls'){SEL.fem=+sx.dataset.sex?1:0;pvShow(SEL.id,lkAp(maxAp(SEL.id)),SEL.fem);renderSelect();return;}
- const lkb=e.target.closest('[data-lk]');if(lkb){const [k,v]=lkb.dataset.lk.split(':');SEL.lk[k]=+v;lkPreview();const nm=$('newName')?$('newName').value:null;renderSelect();if(nm!==null&&$('newName'))$('newName').value=nm;return;}
- if(e.target.closest('[data-lkedit]')){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c||!c.lk)return;SEL.edit=c.id;SEL.lk=Object.assign({},RULES.lkParse(c.lk));PV.face=true;pvCam();pvFront();lkPreview();renderSelect();return;}
- if(e.target.closest('[data-lkcancel]')){selPick('chr',SEL.id);return;}
- if(e.target.closest('[data-lksave]')){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;const lk=RULES.lkFix(RULES.lkStr(SEL.lk),c.fem),b=e.target.closest('[data-lksave]');b.disabled=true;
-  (async()=>{try{if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;}else{c.lk=lk;save();}PV.face=false;selPick('chr',c.id);}catch(er){const m=$('nameMsg');if(m)m.textContent=er.message;b.disabled=false;}})();return;}
- if(e.target.closest('[data-lkrand]')){const L=RULES.LOOK,r=n=>Math.floor(Math.random()*n);SEL.lk={e:r(3),ec:r(6),h:r(6),hc:r(6),f:r(3),s:r(4),b:r(3),bd:r(2)?r(5):0,m:r(2)?r(3):0};lkPreview();const nm=$('newName')?$('newName').value:null;renderSelect();if(nm!==null&&$('newName'))$('newName').value=nm;return;}
- if(e.target.closest('[data-pvz]')){PV.face=!PV.face;pvCam();if(PV.face)pvFront();const nm=$('newName')?$('newName').value:null;renderSelect();if(nm!==null&&$('newName'))$('newName').value=nm;return;}   /* v1.77: masculino/feminino na criação */
+ if(e.target.closest('[data-new]')){SEL.mode='create';SEL.edit=null;SEL.t=null;SEL.lk=RULES.lkParse(RULES.lkFix(RULES.LK_DEF,SEL.fem));if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}PV.face=false;pvCam();selPick('cls',Object.keys(CLASSES)[0]);return;}
+ if(e.target.closest('[data-back]')){SEL.mode='pick';SEL.edit=null;PV.face=false;selPick('chr',(SEL.t==='chr'&&SEL.id)||ACC.chars[0].id);return;}
+ if(e.target.closest('[data-nofz]')){SEL.nofz=SEL.nofz?0:1;const c=ACC.chars.find(x=>x.id===SEL.id);if(c)pvShow(c.cls,SEL.mode==='create'?lkAp(charAp(c)):charAp(c),c.fem);renderSelect();return;}
+ const cl=e.target.closest('[data-cls]');if(cl){keepName(()=>selPick('cls',cl.dataset.cls));return;}
+ const sx=e.target.closest('[data-sex]');if(sx&&SEL.t==='cls'){SEL.fem=+sx.dataset.sex?1:0;SEL.lk=RULES.lkParse(RULES.lkFix(RULES.lkStr(SEL.lk),SEL.fem));keepName(()=>{pvShow(SEL.id,lkAp(maxAp(SEL.id)),SEL.fem);renderSelect();});return;}
+ const lkb=e.target.closest('[data-lk]');if(lkb){const [k,v]=lkb.dataset.lk.split(':');SEL.lk[k]=+v;
+  if(k!=='s'&&!PV.face){PV.face=true;pvCam();pvFront();}   /* itens do rosto: zoom para ver de perto */
+  lkPreview();keepName(renderSelect);return;}
+ if(e.target.closest('[data-lkedit]')){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;SEL.mode='create';SEL.edit=c.id;SEL.lk=RULES.lkParse(c.lk)||RULES.lkParse(RULES.LK_DEF);PV.face=true;pvShow(c.cls,lkAp(charAp(c)),c.fem);pvCam();pvFront();renderSelect();return;}
+ if(e.target.closest('[data-lkrand]')){const L=RULES.LOOK,r=n=>Math.floor(Math.random()*n),fem=SEL.edit?(ACC.chars.find(x=>x.id===SEL.edit)||{}).fem:SEL.fem;
+  SEL.lk={e:r(L.eyesN),b:r(fem?L.browsF:L.browsM),m:r(L.mouthsN),h:1+r(L.hairs.length-1),hc:r(L.hairCols.length),s:r(L.skins.length),bd:fem||r(2)?0:1+r(L.beards.length-1)};lkPreview();keepName(renderSelect);return;}
+ if(e.target.closest('[data-pvz]')){PV.face=!PV.face;pvCam();if(PV.face)pvFront();keepName(renderSelect);return;}
  if(e.target.closest('#selGo')){
   const nmMsg=t=>{const m=$('nameMsg');if(m)m.textContent=t||'';if(t&&!m)alert(t);};
   const readName=()=>(($('newName')&&$('newName').value)||'').replace(/[\u0000-\u001f<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,16);
   const taken=(nm,exId)=>(ACC.chars||[]).some(x=>x.id!==exId&&(x.name||'').toLowerCase()===nm.toLowerCase());
-  if(SEL.t==='chr'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;if(c.name&&c.lk){play(c);return;}
-   const nm=c.name?'':readName();if(!c.name){if(nm.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
-   if(taken(nm,c.id)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}}
-   $('selGo').disabled=true;nmMsg('');const lk=RULES.lkStr(SEL.lk);
+  if(SEL.mode==='pick'){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;if(lkNeed(c)){selPick('chr',c.id);return;}if(c.name){play(c);return;}SEL.mode='create';SEL.edit=c.id;SEL.lk=RULES.lkParse(c.lk);renderSelect();return;}
+  if(SEL.edit){const c=ACC.chars.find(x=>x.id===SEL.edit);if(!c)return;const need=lkNeed(c);
+   const nm=c.name?'':readName();if(!c.name){if(nm.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}if(taken(nm,c.id)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}}
+   $('selGo').disabled=true;nmMsg('');const lk=RULES.lkFix(RULES.lkStr(SEL.lk),c.fem);
    (async()=>{try{if(!c.name){if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/name','POST',{name:nm})).char;c.name=r.name;c.nmOk=1;}else{c.name=nm;c.nmOk=1;save();}}
-    if(!c.lk){if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;}else{c.lk=lk;save();}}
-    PV.face=false;play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
+    if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;}else{c.lk=lk;save();}
+    PV.face=false;if(need)play(c);else{SEL.mode='pick';SEL.edit=null;selPick('chr',c.id);}}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
   if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,name=readName();
    if(name.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
    if(taken(name)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}
    $('selGo').disabled=true;nmMsg('');
-   const lk=RULES.lkStr(SEL.lk);(async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name,fem:!!SEL.fem,lk})).char;}else{c=newChar(k,name,SEL.fem,lk);c.nmOk=1;}ACC.chars.push(c);PV.face=false;play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
+   const lk=RULES.lkFix(RULES.lkStr(SEL.lk),SEL.fem);(async()=>{try{let c;if(TOKEN){c=(await api('chars','POST',{cls:k,name,fem:!!SEL.fem,lk})).char;}else{c=newChar(k,name,SEL.fem,lk);c.nmOk=1;}ACC.chars.push(c);PV.face=false;play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();}}
 });
 {const m=$('selMid');m.addEventListener('pointerdown',e=>{if(e.target.closest('#selAct'))return;PV.drag=e.clientX;});window.addEventListener('pointermove',e=>{if(PV.drag!==false&&PV.drag!==undefined&&PV.drag!==null){PV.rot+=(e.clientX-PV.drag)*.012;PV.drag=e.clientX;}});window.addEventListener('pointerup',()=>{PV.drag=false;});}
 window.addEventListener('beforeunload',()=>{save();});
