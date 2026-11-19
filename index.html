@@ -1078,10 +1078,14 @@ const spat=(pos,range)=>{range=range||26;const dx=pos.x-P.pos.x,dz=pos.z-P.pos.z
 const canvas=$("renderCanvas");
 if(!BABYLON.Engine.isSupported()) throw new Error("WebGL não está disponível ou está desativado neste navegador.");
 /* v2.1.4: celular/tablet (tela de toque) -> controles de toque + modo leve. ?mob=1/0 ou ⚙️ Opções forçam */
+/* v2.1.9: iPhone/iPad — o iOS fecha a aba quando a página passa do limite de memória ("Um problema ocorreu repetidamente").
+   Modo leve: texturas em no máximo 512px, sem antialias, resolução um pouco menor e poucas classes carregadas ao mesmo tempo. */
+const IOS=(()=>{const q=/[?&]ios=([01])/.exec(location.search);if(q)return q[1]==='1';const u=navigator.userAgent||'';return /iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1);})();
 const MOB=(()=>{const q=/[?&]mob=([01])/.exec(location.search);if(q)return q[1]==='1';try{const v=localStorage.getItem('mmo_mob');if(v==='1'||v==='0')return v==='1';}catch(e){}return matchMedia('(hover:none) and (pointer:coarse)').matches;})();
 const PMUL=MOB?.5:1;   // celular: metade das partículas
 let FPS30=MOB&&(()=>{try{return localStorage.getItem('mmo_fps')!=='60';}catch(e){return true;}})();   // celular: 30 FPS estáveis (esquenta menos e não oscila)
-const engine=new BABYLON.Engine(canvas,true,{powerPreference:'high-performance'});   /* v2.1.5: antialias também no celular (nas GPUs de celular o MSAA é quase de graça e o serrilhado era o 'gráfico ruim') */
+const engine=new BABYLON.Engine(canvas,!IOS,IOS?{powerPreference:'default',preserveDrawingBuffer:false}:{powerPreference:'high-performance'});
+if(IOS){try{const c=engine.getCaps();c.maxTextureSize=Math.min(c.maxTextureSize||4096,512);c.maxCubemapTextureSize=Math.min(c.maxCubemapTextureSize||4096,512);}catch(e){}}   /* texturas maiores são reduzidas ao enviar para a placa de vídeo (4x menos memória) */   /* v2.1.5: antialias também no celular (nas GPUs de celular o MSAA é quase de graça e o serrilhado era o 'gráfico ruim') */
 const scene=new BABYLON.Scene(engine,{useGeometryUniqueIdsMap:true,useMaterialMeshMap:true,useClonedMeshMap:true});   /* v1.83: descartar/criar malhas e materiais sem varrer a cena inteira */
 scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
 scene.skipPointerMovePicking=true;
@@ -1444,7 +1448,7 @@ const PAINT=(()=>{
  /* gera sob demanda (cada estilo é pintado 1x e compartilhado) */
  function tex(name,size){
   if(STY[name])return STY[name];
-  const S=size||SZ[name]||256;
+  const S=Math.min(IOS?512:4096,size||SZ[name]||256);   /* v2.1.9: iPhone usa no máximo 512 */
   const cv=document.createElement('canvas');cv.width=cv.height=S;
   const g=cv.getContext('2d',{willReadFrequently:true}),T=tools(g,S,rng(name.split('').reduce((a,c)=>a*31+c.charCodeAt(0)|0,7)));
   (P[name]||P.cloud)(T);
@@ -3933,6 +3937,8 @@ const GLB=(()=>{
     for(const w of WAIT.splice(0)){if(w.cls===cls){w.o._gw=0;try{w.g.setEnabled(true);if(w.o.gap)ORG.gear(w.o,w.o.gap);}catch(e){}}else WAIT.push(w);}});
   return e.p;}
  const ready=cls=>!!(C[cls]&&C[cls].st===1);
+ /* v2.1.9: no iPhone, no máximo 5 modelos de classe/fantasia carregados; os outros jogadores ficam com o boneco simples (o seu sempre carrega) */
+ const capped=(k,o)=>IOS&&S&&!(typeof P!=='undefined'&&o===P)&&!C[k]&&Object.keys(C).filter(x=>C[x].st!==-1).length>=5;
  /* monta uma cópia do modelo dentro de r */
  function inst(key,o,r){
   const fz=/^fz_/.test(key),ct=C[key].ct,I=ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true}),cls=fz?o.cls:key.replace(/_f$/,'');   /* key = arquivo (cls, cls_f ou fz_<id>[_f]) */
@@ -3977,7 +3983,7 @@ const GLB=(()=>{
  /* v1.77: arquivo do modelo pela classe e sexo (cai para o masculino se o feminino não existir/falhar) */
  const key=(cls,fem)=>{const k=cls+'_f';return fem&&FILES[k]&&!(C[k]&&C[k].st===-1)?k:cls;};
  function build(cls,o,r){
-  if(!FILES[cls])return false;const k=key(cls,o&&o.fem);
+  if(!FILES[cls])return false;const k=key(cls,o&&o.fem);if(capped(k,o))return false;
   if(ready(k)){quiet(()=>inst(k,o,r));return true;}
   if(!C[k]||C[k].st===0){load(k);quiet(()=>ORG.build(cls,o,r));const g=o.orgG;try{g.setEnabled(false);}catch(e){}o._gw=1;WAIT.push({o,r,g,cls:k});return true;}   /* v1.68: o boneco antigo fica escondido; só aparece se o modelo novo falhar */
   return false;}
@@ -4149,7 +4155,7 @@ const GLB=(()=>{
    n.parent.computeWorldMatrix(true);const F=V3.TransformNormal(new V3(0,0,1),par.getWorldMatrix());F.y=0;if(F.lengthSquared()<1e-6)continue;F.normalize();
    const inv=BABYLON.Matrix.Invert(n.parent.getWorldMatrix()),d=V3.TransformNormal(F.scale(-.16),inv);n.position.addInPlace(d);}}
  /* cada classe é baixada só quando aparece um personagem dela */
- return{build,anim,gear,load,ready,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet,xload};
+ return{build,anim,gear,load,ready,capped,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet,xload};
 })();
 
 /* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago e Pierrot, dano mágico),
@@ -5823,7 +5829,7 @@ function clMark(col){
  n.setEnabled(false);return n;}
 /* cria um boneco de clone (escondido). Devolve null se o modelo da classe ainda está baixando. */
 function clRigNew(ow){
- const cls=clCls(ow),fem=ow===P?(S&&S.fem?1:0):(ow.fem||0),gk=GLBMODE?GLB.key(cls,fem):cls;if(GLBMODE&&GLB.FILES[cls]&&!GLB.ready(gk)){GLB.load(gk);return null;}
+ const cls=clCls(ow),fem=ow===P?(S&&S.fem?1:0):(ow.fem||0),gk=GLBMODE?GLB.key(cls,fem):cls;if(GLBMODE&&GLB.FILES[cls]&&!GLB.ready(gk)&&!GLB.capped(gk,ow)){GLB.load(gk);return null;}
  const o={cls,swingAt:0,isClone:1,fem};let r=null;quiet(()=>{r=buildModel(cls,o);o.root=r;});
  const sh=r.getChildren(n=>n.name==='sh',true)[0];
  const g={o,root:r,ap:null,busy:false,mk:null,sh};r.setEnabled(false);return g;}
@@ -8565,7 +8571,7 @@ function octTick(now){
    ficava borrada. Agora começa perto da resolução real (até 1,6x) e um regulador ajusta sozinho: se a placa de vídeo não dá conta
    (quadro demorando e a CPU sobrando), reduz um degrau; se sobra folga por um tempo, volta a melhorar. Se o gargalo é a CPU, não borra à toa. */
 const MG={hs:1,best:1,ema:33,cpu:10,t:0,good:0,bad:0,dt:33,c0:0};
-if(MOB){const dpr=Math.max(1,window.devicePixelRatio||1);MG.best=1/Math.min(dpr,1.6);MG.hs=Math.max(MG.best,1/Math.min(dpr,1.4));engine.setHardwareScalingLevel(MG.hs);}
+if(MOB){const dpr=Math.max(1,window.devicePixelRatio||1);MG.best=1/Math.min(dpr,IOS?1.3:1.6);MG.hs=Math.max(MG.best,1/Math.min(dpr,IOS?1.15:1.4));engine.setHardwareScalingLevel(MG.hs);}
 function mobGov(now){
  MG.ema=MG.ema*.9+Math.min(MG.dt,250)*.1;MG.cpu=MG.cpu*.9+Math.min(now-MG.c0,250)*.1;
  if(now<MG.t||!S)return;MG.t=now+1000;
