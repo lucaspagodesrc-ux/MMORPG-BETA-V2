@@ -3831,7 +3831,7 @@ const GLB=(()=>{
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},WIDE={}   /* v2.1: corpo antigo (o Tanque já vem mais largo do modelo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='210';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ let ldr=null,IPC=null;const GLBV='212';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -4027,7 +4027,13 @@ const GLB=(()=>{
   if(o.orgCape){try{o.orgCape.dispose();}catch(e){}o.orgCape=null;}
   const pl=o.cls==='cavaleiro'||o.cls==='guerreiro',tk=o.cls==='tanque';
   CAPE(o,o.glbTop,ap,tk?{sx:.5,sy:1.56,hy:1.95,hr:.4,bz:-.52,R:y=>y>.95&&y<1.7?.46:0,len:1.3}:pl?{sx:.4,sy:1.56,hy:1.95,hr:.4,bz:-.44,R:y=>y>.95&&y<1.7?.38:0,len:1.3}:{sx:.36,sy:1.54,hy:1.88,hr:.32,bz:-.34,R:y=>y>.95&&y<1.65?.3:0,len:1.25});
+  if(o.cls==='arqueiro')try{quiverOut(o,!!(ap.cape&&!ap.fz));}catch(e){console.warn('aljava',e);}   /* v2.1: com capa, a aljava fica por cima dela */
  }
+ function quiverOut(o,on){const T=o.glbTop;if(!T)return;const V3=BABYLON.Vector3,par=T.parent;
+  for(const n of[...(o.glbOW||[]),...(o.glbAW||[])]){if(!/^A?Quiver$/.test(n.name)||!n.parent)continue;
+   if(!n._q0)n._q0=n.position.clone();n.position.copyFrom(n._q0);if(!on)continue;
+   n.parent.computeWorldMatrix(true);const F=V3.TransformNormal(new V3(0,0,1),par.getWorldMatrix());F.y=0;if(F.lengthSquared()<1e-6)continue;F.normalize();
+   const inv=BABYLON.Matrix.Invert(n.parent.getWorldMatrix()),d=V3.TransformNormal(F.scale(-.16),inv);n.position.addInPlace(d);}}
  /* cada classe é baixada só quando aparece um personagem dela */
  return{build,anim,gear,load,ready,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet,xload};
 })();
