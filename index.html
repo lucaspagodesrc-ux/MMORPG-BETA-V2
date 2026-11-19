@@ -1081,7 +1081,7 @@ if(!BABYLON.Engine.isSupported()) throw new Error("WebGL não está disponível 
 const MOB=(()=>{const q=/[?&]mob=([01])/.exec(location.search);if(q)return q[1]==='1';try{const v=localStorage.getItem('mmo_mob');if(v==='1'||v==='0')return v==='1';}catch(e){}return matchMedia('(hover:none) and (pointer:coarse)').matches;})();
 const PMUL=MOB?.5:1;   // celular: metade das partículas
 let FPS30=MOB&&(()=>{try{return localStorage.getItem('mmo_fps')!=='60';}catch(e){return true;}})();   // celular: 30 FPS estáveis (esquenta menos e não oscila)
-const engine=new BABYLON.Engine(canvas,!MOB,{powerPreference:'high-performance'});   /* celular: sem antialias (MSAA pesa muito na GPU do celular) */
+const engine=new BABYLON.Engine(canvas,true,{powerPreference:'high-performance'});   /* v2.1.5: antialias também no celular (nas GPUs de celular o MSAA é quase de graça e o serrilhado era o 'gráfico ruim') */
 const scene=new BABYLON.Scene(engine,{useGeometryUniqueIdsMap:true,useMaterialMeshMap:true,useClonedMeshMap:true});   /* v1.83: descartar/criar malhas e materiais sem varrer a cena inteira */
 scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
 scene.skipPointerMovePicking=true;
@@ -1245,7 +1245,7 @@ function give(it){if(!addItem(it))spawnDrop(it,P.pos);}
 
 /* =================== CÂMERA / LUZES =================== */
 const camera=new BABYLON.ArcRotateCamera("cam",-Math.PI/4,.95,70,new V3(0,0,0),scene);
-camera.mode=BABYLON.Camera.ORTHOGRAPHIC_CAMERA;camera.minZ=1;camera.maxZ=300;
+camera.mode=BABYLON.Camera.ORTHOGRAPHIC_CAMERA;camera.minZ=1;camera.maxZ=125;   /* v2.1.5: era 300; a câmera olha para baixo e tudo além de ~100 está debaixo do chão (menos coisas testadas por quadro) */
 let zoom=MOB?9:11;   // celular: câmera um pouco mais perto (tela pequena)
 function setOrtho(){const a=engine.getRenderWidth()/engine.getRenderHeight();const h=a<1?zoom/a*.8:zoom;camera.orthoTop=h;camera.orthoBottom=-h;camera.orthoLeft=-h*a;camera.orthoRight=h*a;}
 setOrtho();
@@ -1728,7 +1728,7 @@ function inkLOD(now){
 /* PC lento (degraus): FPS < 26 por ~15 s seguidos jogando (aba visível) -> contorno só nas peças grandes (2x o limiar); se persistir mais ~15 s -> contorno desligado.
    Nunca age se o jogador mexeu na opção (GSET.man) e fica desativado no modo de teste (?dbg). */
 function perfWatch(now){
- if(!S||PAUSED||document.hidden||PERF.dbg||(!INK_ON&&engine.getHardwareScalingLevel()>=1.5)||GSET.man){PERF.t0=0;PERF.low=0;PERF.chk=0;return;}
+ if(MOB||!S||PAUSED||document.hidden||PERF.dbg||(!INK_ON&&engine.getHardwareScalingLevel()>=1.5)||GSET.man){PERF.t0=0;PERF.low=0;PERF.chk=0;return;}   /* celular: quem cuida é o mobGov */
  if(!PERF.t0){PERF.t0=now;PERF.chk=now+15000;return;}
  if(now<PERF.chk)return;PERF.chk=now+5000;
  if(engine.getFps()>=26){PERF.low=0;return;}
@@ -1848,11 +1848,11 @@ const LOD={list:[],t:0,back:0};
 function lodAdd(e,root,cfg){
  const grp=new BABYLON.TransformNode('rig',scene);grp.parent=root;
  for(const c of root.getChildren(n=>n!==grp&&n.name!=='sh',true))c.parent=grp;
- e.lod={root,grp,px:null,st:0,rm:(cfg&&cfg.rm)||1,meta:(cfg&&cfg.meta)||null,pick:!!(cfg&&cfg.pick),fail:0};
+ e.lod={root,grp,px:null,st:0,rm:(cfg&&cfg.rm)||1,meta:(cfg&&cfg.meta)||null,pick:!!(cfg&&cfg.pick),fail:0,sh:root.getChildren(n=>n.name==='sh',true)[0]||null};
  LOD.list.push(e);
 }
 /* raio (em unidades do mundo) dentro do qual o boneco é completo: depende do tamanho dele na tela (zoom/resolução) e do ajuste automático */
-function lodR(){const H=engine.getRenderHeight(),ex=Math.abs(camera.orthoTop-camera.orthoBottom)||22;return Math.max(4.5,Math.min(14,2*H/ex*.11))*PERF.lodK;}
+function lodR(){const H=engine.getRenderHeight()*(MOB?engine.getHardwareScalingLevel():1),ex=Math.abs(camera.orthoTop-camera.orthoBottom)||22;return Math.max(4.5,Math.min(14,2*H/ex*.11))*PERF.lodK;}
 function lodUpdate(now){
  if(now<LOD.t)return;LOD.t=now+(LOD.back?30:250);LOD.back=0;
  const R=lodR(),px=P.pos.x,pz=P.pos.z,T0=performance.now();
@@ -1861,13 +1861,14 @@ function lodUpdate(now){
   if(want===L.st)continue;
   if(want===1&&!L.px){
    let ok=false;
-   if(L.fail<=1&&performance.now()-T0<=5){const en=PX.bake(L.grp,e);if(en){en.uses=0;L.px=PX.spawn(en,L.root,L.meta,L.pick);ok=true;}else L.fail++;}
+   if(L.fail<=1&&performance.now()-T0<=(MOB?2.5:5)){const en=PX.bake(L.grp,e);if(en){en.uses=0;L.px=PX.spawn(en,L.root,L.meta,L.pick);ok=true;}else L.fail++;}
    else if(L.fail<=1)LOD.back=1;
    if(!ok){if(L.st===0)continue;want=0;}   // sem versão leve: nunca deixa o monstro invisível, mostra o completo
   }
   if(want===0){L.grp.setEnabled(true);if(L.px)L.px.show(false);}
   else if(want===1){L.grp.setEnabled(false);L.px.show(true);}
   else{L.grp.setEnabled(false);if(L.px)L.px.show(false);}
+  if(L.sh)L.sh.setEnabled(want!==2);   // v2.1.5: longe/fora da tela também apaga a sombra (eram ~600 sombras ligadas no mapa todo)
   L.st=want;
  }
 }
@@ -5075,7 +5076,7 @@ function buildCripta(def){
 /** entra no cenário de uma dungeon (constrói na primeira vez; depois só reativa) */
 function buildDungeon(id){
   const def=DUNGEONS.find(d=>d.id===id)||DUNGEONS[0];let rec=DG.recs[def.id];
-  if(!rec){rec=def.rooms?buildGridDungeon(def):buildCripta(def);DG.recs[def.id]=rec;}
+  if(!rec){rec=def.rooms?buildGridDungeon(def):buildCripta(def);DG.recs[def.id]=rec;try{if(OCT.o)octAddTree(rec.root);}catch(e){console.warn('octree dg',e);}}
   if(DG.rec&&DG.rec!==rec){DG.rec.root.setEnabled(false);for(const o of DG.rec.objs)o.label.style.display='none';if(DG.rec.cart){DG.rec.cart.on=false;DG.rec.cart.lab.style.display='none';}}
   DG.rec=rec;DG.cur=def;DG.root=rec.root;DG.gates=rec.gates;DG.objs=rec.objs;DG.exit2=rec.exit2;DG.ground=rec.ground;
   rec.root.setEnabled(true);for(const o of rec.objs)o.label.style.display='';
@@ -8445,9 +8446,96 @@ let MOODK='';function updRegionMood(){const k=NET.inst?'dg':PKS.mode==='arena'?'
 let last=performance.now();
 const PROF=/dbg/.test(location.search)?{t:0,n:0}:null;   // perfil por etapa do quadro (só no modo de teste ?dbg)
 const pf=PROF?n=>{const t=performance.now();PROF[n]=(PROF[n]||0)+t-PROF.t;PROF.t=t;}:()=>{};
+/* v2.1.5: ÁRVORE DE SELEÇÃO (octree). O mapa tem ~7 mil enfeites ligados (as 3 regiões) e a Babylon testava TODOS a cada quadro
+   (~25 ms/quadro num PC, 3-5x mais num celular = o "travando"). Com a octree ela só testa os blocos que a câmera enxerga.
+   Cenário parado entra na árvore; o que se mexe (você, outros jogadores, monstros, NPCs, mascotes, efeitos e tudo criado depois) fica fora,
+   testado normalmente. Uma vigia confere aos poucos se algum enfeite "parado" se mexeu e, se sim, tira ele da árvore. ?oct=0 desliga. */
+const OCT={o:null,dyn:new Set(),st:[],snap:null,i:0,t:0,at:0,R:60,ents:new Set(),off:/[?&]oct=0/.test(location.search)};if(PERF.dbg)window.__OCT=OCT;
+function octRoots(){const r=[P.root];for(const e of LOD.list)if(e.lod&&e.lod.root)r.push(e.lod.root);
+ try{for(const o of NET.others.values())if(o&&o.root)r.push(o.root);}catch(e){}
+ try{for(const L of PETM.list.values())for(const n of L.nodes)if(n.top)r.push(n.top);}catch(e){}
+ try{for(const c of CLN.act.values())if(c&&c.rig&&c.rig.root)r.push(c.rig.root);}catch(e){}
+ return r;}
+function octDyn(m){const o=OCT.o;if(!o||OCT.dyn.has(m))return;OCT.dyn.add(m);o.removeMesh(m);o.dynamicContent.push(m);}
+function octBuild(){
+ const dyn=OCT.dyn;dyn.clear();
+ for(const r of octRoots()){if(!r)continue;if(r instanceof BABYLON.AbstractMesh)dyn.add(r);for(const m of r.getChildMeshes(false))dyn.add(m);}
+ const st=[];
+ for(const m of scene.meshes){
+  if(dyn.has(m))continue;
+  if(m.skeleton||m.alwaysSelectAsActiveMesh||m.infiniteDistance||(m.hasThinInstances)||(m.isAnInstance&&m.sourceMesh&&m.sourceMesh.skeleton)){dyn.add(m);continue;}
+  m.computeWorldMatrix(true);st.push(m);}
+ const mn=new V3(1e9,1e9,1e9),mx=new V3(-1e9,-1e9,-1e9);
+ for(const m of st){const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld);}
+ const o=new BABYLON.Octree(BABYLON.Octree.CreationFuncForMeshes,32,6);o.update(mn,mx,st);OCT.o=o;   // árvore própria (não mexe no clique/colisão da Babylon)
+ o.dynamicContent=[...dyn];
+ OCT.st=st;OCT.snap=new Float32Array(st.length*4);for(let i=0;i<st.length;i++)octSnap(st[i],i);
+ if(!OCT.hooked){OCT.hooked=1;
+  scene.onNewMeshAddedObservable.add(m=>{if(OCT.o&&!OCT.dyn.has(m)){OCT.dyn.add(m);OCT.o.dynamicContent.push(m);}});
+  scene.onMeshRemovedObservable.add(m=>{const o=OCT.o;if(!o)return;if(OCT.dyn.delete(m)){const a=o.dynamicContent,i=a.indexOf(m);if(i>=0)a.splice(i,1);}else o.removeMesh(m);});}
+ if(PERF.dbg)console.log('octree',st.length,'parados',dyn.size,'móveis');
+}
+/* candidatos do quadro: só malhas LIGADAS (a Babylon chama isReady() até nas desligadas — ~10 mil bonecos/peças fora da tela) */
+const CAND={data:[],length:0},NODC=[];
+scene.getActiveMeshCandidates=function(){
+ const a=CAND.data;let n=0;const o=OCT.o;
+ if(o){const dc=o.dynamicContent;o.dynamicContent=NODC;const sel=o.select(scene.frustumPlanes,false);o.dynamicContent=dc;
+  for(let i=0;i<sel.length;i++){const m=sel.data[i];if(m.isEnabled())a[n++]=m;}if(PERF.dbg)window.__CS=n+'/'+sel.length;
+  /* móveis: personagens/monstros/NPCs longe da área da câmera nem entram (o LOD deixa ligado até 110 m) */
+  const t=camera.target,R=OCT.R,ents=OCT.ents;
+  for(let i=0;i<dc.length;i++){const m=dc[i];if(!m.isEnabled())continue;
+   let top=m.__top;if(top===undefined||m.__tp!==m.parent){top=m;while(top.parent)top=top.parent;m.__top=top;m.__tp=m.parent;}
+   if(ents.has(top)){const p=top.position;if(Math.abs(p.x-t.x)>R||Math.abs(p.z-t.z)>R)continue;}
+   a[n++]=m;}}
+ else{const ms=scene.meshes;for(let i=0;i<ms.length;i++){const m=ms[i];if(m.isEnabled())a[n++]=m;}}
+ if(a.length>n*2+256)a.length=n;CAND.length=n;if(PERF.dbg)window.__CN=n;return CAND;};
+/* calabouço recém-montado: o cenário dele entra na árvore (a árvore é refeita com os novos limites) */
+function octAddTree(root){
+ const o=OCT.o;if(!o||!root)return;const ent=new Set();
+ for(const r of octRoots()){if(!r)continue;ent.add(r);for(const m of r.getChildMeshes(false))ent.add(m);}
+ const add=[];for(const m of root.getChildMeshes(false)){if(ent.has(m)||!OCT.dyn.has(m)||m.skeleton||m.alwaysSelectAsActiveMesh||m.hasThinInstances)continue;add.push(m);}
+ if(!add.length)return;
+ for(const m of add){OCT.dyn.delete(m);m.computeWorldMatrix(true);}
+ const rm=new Set(add);o.dynamicContent=o.dynamicContent.filter(m=>!rm.has(m));
+ const st=OCT.st.filter(m=>!m.isDisposed()).concat(add);
+ const mn=new V3(1e9,1e9,1e9),mx=new V3(-1e9,-1e9,-1e9);
+ for(const m of st){const b=m.getBoundingInfo().boundingBox;mn.minimizeInPlace(b.minimumWorld);mx.maximizeInPlace(b.maximumWorld);}
+ const n=new BABYLON.Octree(BABYLON.Octree.CreationFuncForMeshes,32,6);n.update(mn,mx,st);n.dynamicContent=o.dynamicContent;OCT.o=n;
+ OCT.st=st;OCT.snap=new Float32Array(st.length*4);for(let i=0;i<st.length;i++)octSnap(st[i],i);OCT.i=0;
+}
+function octSnap(m,i){const w=m.getWorldMatrix().m;OCT.snap[i*4]=w[12];OCT.snap[i*4+1]=w[13];OCT.snap[i*4+2]=w[14];OCT.snap[i*4+3]=w[0]+w[5]*3+w[10]*7+w[1]*11+w[8]*13;}
+function octTick(now){
+ if(OCT.off||!S)return;
+ if(!OCT.o){if(!OCT.at)OCT.at=now+2500;if(now>=OCT.at)try{octBuild();}catch(e){console.warn('octree',e);OCT.off=true;scene._selectionOctree=null;}return;}
+ if(now<OCT.t)return;OCT.t=now+300;
+ /* raio da área visível (câmera ortográfica olhando de cima em diagonal) + folga */
+ OCT.R=Math.hypot(camera.orthoRight-camera.orthoLeft,(camera.orthoTop-camera.orthoBottom)*1.75)/2+12;
+ {const e=OCT.ents;e.clear();for(const r of octRoots())if(r&&r!==P.root)e.add(r);}
+ /* vigia: confere ~600 enfeites por vez (todos a cada ~2-3 s); quem se mexeu sai da árvore */
+ const st=OCT.st,sn=OCT.snap,n=st.length;if(!n)return;
+ for(let k=0;k<600;k++){const i=OCT.i=(OCT.i+1)%n,m=st[i];if(!m||OCT.dyn.has(m)||m.isDisposed())continue;
+  const w=m.computeWorldMatrix().m,j=i*4;
+  if(Math.abs(w[12]-sn[j])+Math.abs(w[13]-sn[j+1])+Math.abs(w[14]-sn[j+2])>.05||Math.abs(w[0]+w[5]*3+w[10]*7+w[1]*11+w[8]*13-sn[j+3])>.02)octDyn(m);}
+ /* raízes novas que já existiam antes (ex.: jogador que entrou logo no início) */
+ for(const r of octRoots()){if(!r||r.__oct)continue;r.__oct=1;if(r instanceof BABYLON.AbstractMesh)octDyn(r);for(const m of r.getChildMeshes(false))octDyn(m);}
+}
+/* v2.1.5: RESOLUÇÃO NO CELULAR. Antes a cena era desenhada na resolução "CSS" (≈1/3 dos pixels de um celular moderno) e esticada:
+   ficava borrada. Agora começa perto da resolução real (até 1,6x) e um regulador ajusta sozinho: se a placa de vídeo não dá conta
+   (quadro demorando e a CPU sobrando), reduz um degrau; se sobra folga por um tempo, volta a melhorar. Se o gargalo é a CPU, não borra à toa. */
+const MG={hs:1,best:1,ema:33,cpu:10,t:0,good:0,bad:0,dt:33,c0:0};
+if(MOB){const dpr=Math.max(1,window.devicePixelRatio||1);MG.best=1/Math.min(dpr,1.6);MG.hs=Math.max(MG.best,1/Math.min(dpr,1.4));engine.setHardwareScalingLevel(MG.hs);}
+function mobGov(now){
+ MG.ema=MG.ema*.9+Math.min(MG.dt,250)*.1;MG.cpu=MG.cpu*.9+Math.min(now-MG.c0,250)*.1;
+ if(now<MG.t||!S)return;MG.t=now+1000;
+ const tgt=FPS30?34:17.5,gpuWait=MG.ema-MG.cpu;
+ if(MG.ema>tgt*1.25&&gpuWait>tgt*.35){MG.good=0;if(++MG.bad>=3){MG.bad=0;if(MG.hs<1.25){MG.hs=Math.min(1.25,MG.hs+.12);engine.setHardwareScalingLevel(MG.hs);}}}
+ else if(MG.ema<tgt*1.1){MG.bad=0;if(++MG.good>=8){MG.good=0;if(MG.hs>MG.best+.005){MG.hs=Math.max(MG.best,MG.hs-.08);engine.setHardwareScalingLevel(MG.hs);}}}
+ else{MG.bad=0;MG.good=0;}
+ if(PERF.dbg)window.__MG=MG;
+}
 let RLT=0;
 engine.runRenderLoop(()=>{
- if(FPS30){const n0=performance.now();if(n0-RLT<30)return;RLT=n0;}   // v2.1.4: celular a 30 FPS
+ if(MOB){const n0=performance.now();if(FPS30&&n0-RLT<30)return;MG.dt=n0-RLT;RLT=n0;MG.c0=n0;}   // v2.1.4: celular a 30 FPS
  const now=performance.now(),dt=Math.min((now-last)/1000,.05);last=now;
  if(PROF)PROF.t=now;
  if(PAUSED&&S){scene.render();return;}
@@ -8456,8 +8544,8 @@ engine.runRenderLoop(()=>{
   const t=camera.target;t.x+=(P.pos.x-t.x)*.15;t.y=.6;t.z+=(P.pos.z-t.z)*.15;
  }
  if(!S&&PV.on&&PV.o){if(!PV.drag&&!PV.face)PV.rot+=dt*.55;PV.o.root.rotation.y=PV.rot;const L_=PV.o.limbs;if(L_&&L_.glb)try{GLB.anim(PV.o,PV.x,PV.z,now,0);}catch(e){}}   /* v1.87: prévia com a pose parada (arma na mão, para a frente) */
- if(S)try{petsTick(Math.min((now-(PETM.t||now))/1000,.1),now);}catch(e){console.warn('pets',e);}PETM.t=now;updateFx(now);pf('fx');updateGear(now);pf('equip');updateClones(now);lodUpdate(now);inkLOD(now);perfWatch(now);pf('lod');
- scene.render();pf('render');
+ if(S)try{petsTick(Math.min((now-(PETM.t||now))/1000,.1),now);}catch(e){console.warn('pets',e);}PETM.t=now;updateFx(now);pf('fx');updateGear(now);pf('equip');updateClones(now);lodUpdate(now);octTick(now);inkLOD(now);perfWatch(now);pf('lod');
+ scene.render();pf('render');if(MOB)mobGov(performance.now());
  if(S){updateLabels(now);updateSkillbar(now);}
  if(PROF){pf('ui');PROF.n=(PROF.n||0)+1;}
 });
