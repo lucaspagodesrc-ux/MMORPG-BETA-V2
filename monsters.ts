@@ -16,7 +16,7 @@ export type Sim = {
   m: Monster; T: any; zone: any; atk: number; def: number; bs: number;
   sx: number; sz: number; aggro: string | null; returning: boolean;
   atkAt: number; slowUntil: number; stunUntil: number; rootUntil: number; liftUntil: number; tauntUntil: number; slamAt: number; wanderAt: number; wx: number; wz: number; deadAt: number;
-  markUntil: number; slot?: number; lastDmgAt?: number; decoy?: string; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
+  markUntil: number; slot?: number; lastDmgAt?: number; dMovedAt?: number; dlx?: number; dlz?: number; decoy?: string; contrib: Map<string, number>; boss: boolean; lastHitBy: string;
   xpp?: Map<string, number>;   // fração da vida do monstro já paga em XP por golpe (por jogador)
   inst: number; noResp: boolean; tier: number;   // instância de dungeon (0 = mundo), sem renascimento, nível do baú
   home?: number; lazy?: boolean; immune?: boolean; side?: number;   // dungeons em grade: sala de origem (etapa em que acorda) • criado durante a luta • escudo do chefe • lado preferido p/ contornar paredes
@@ -177,6 +177,11 @@ export class MonsterSim {
       if (gst >= 0 && (s.home || 0) > gst) continue;                           // monstro de sala ainda trancada: adormecido
       if (T.dummy) {                            // espantalho: parado, regenera rápido depois de 1s sem apanhar
         if (m.hp < m.maxHp && now - (s.lastDmgAt || 0) > 1000) m.hp = Math.min(m.maxHp, m.hp + m.maxHp * 0.05 * dt);
+        /* v2.1.9: puxado/empurrado por habilidade -> volta para o lugar 5 s depois do último movimento */
+        if (Math.abs(m.x - s.sx) + Math.abs(m.z - s.sz) > 0.05) {
+          if (s.dlx !== m.x || s.dlz !== m.z || !s.dMovedAt) { s.dlx = m.x; s.dlz = m.z; s.dMovedAt = now; }
+          else if (now - s.dMovedAt > 5000) { m.x = s.sx; m.z = s.sz; s.dMovedAt = 0; }
+        } else s.dMovedAt = 0;
         continue;
       }
       const lifted = now < s.liftUntil, stunned = lifted || now < s.stunUntil, rooted = now < s.rootUntil;

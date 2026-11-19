@@ -6239,7 +6239,12 @@ function updateMonsters(dt,now){
    if(now-m.deadAt>T.resp*1000)respawn(m);
    continue;
   }
-  if(T.dummy){if(now-(m.lastHit||-1e9)>1000&&m.hp<m.maxHp){m.hp=Math.min(m.maxHp,m.hp+m.maxHp*.05*dt);m.pf.style.width=(m.hp/m.maxHp*100)+'%';}continue;}
+  if(T.dummy){if(now-(m.lastHit||-1e9)>1000&&m.hp<m.maxHp){m.hp=Math.min(m.maxHp,m.hp+m.maxHp*.05*dt);m.pf.style.width=(m.hp/m.maxHp*100)+'%';}
+   /* v2.1.9: empurrado/puxado por habilidade -> volta para o lugar 5 s depois do último movimento */
+   if(m.spawn){const off=Math.hypot(p.x-m.spawn.x,p.z-m.spawn.z)>.05||Math.abs(p.y)>.05;
+    if(!off)m.dOff=0;else{const lp=m._dlp;if(!lp||Math.abs(lp[0]-p.x)+Math.abs(lp[1]-p.z)+Math.abs(lp[2]-p.y)>.01){m._dlp=[p.x,p.z,p.y];m.dOff=now;}
+     if(m.dOff&&now-m.dOff>5000){p.set(m.spawn.x,0,m.spawn.z);m.root.rotation.set(0,Math.PI,0);m.dOff=0;m._dlp=null;}}}
+   continue;}
   const dP=P.dead?1e9:hyp(p,pp),dS=hyp(p,m.spawn);
   if(!m.aggro&&!m.returning&&now>m.idleAt){m.idleAt=now+rnd(7000,18000);if(dP<24)AUD.mon(m.type,'idle',spat(p));}   // som ambiente da criatura
   if(!m.aggro&&!m.returning&&!safe&&!P.dead&&dP<T.aggro){m.aggro=true;AUD.mon(m.type,'aggro',spat(p,T.boss?45:28));}
