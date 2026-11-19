@@ -3918,7 +3918,7 @@ const GLB=(()=>{
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},WIDE={}   /* v2.1: corpo antigo (o Tanque já vem mais largo do modelo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='214';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ let ldr=null,IPC=null;const GLBV='216';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -4012,7 +4012,7 @@ const GLB=(()=>{
   const L=o.limbs,first=!L.t;let dt=first?.016:Math.min(.1,(now-L.t)/1000);if(dt<=0)return;
   const sp=first?0:Math.hypot(px-L.x,pz-L.z)/dt;L.t=now;L.x=px;L.z=pz;L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
   const a=Math.min(1,L.spd/3.2),AG=L.AG;
-  const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,D=DUR[kind]||420,sw=(now-(sa||0))/D,act=sw>0&&sw<1,clip=act?(KA[kind]||(L.cls==='arqueiro'||L.cls==='mago'?'Cast':'Attack')):null;
+  const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,shoot=L.cls==='arqueiro'&&AG.Shoot&&(!kind||!KA[kind]),D=shoot?560:(DUR[kind]||420),sw=(now-(sa||0))/D,act=sw>0&&sw<1,clip=act?(shoot?'Shoot':(KA[kind]||(L.cls==='arqueiro'||L.cls==='mago'?'Cast':'Attack'))):null;   /* v2.1.6: arqueiro puxa a corda com a mão direita e solta (animação de tiro com os dois braços) */
   const fa=act?Math.min(1,sw/.08,(1-sw)/.12):0;
   L.ph+=(L.spd*dt)/(1.6*(SCALE[L.cls]||1));            // passos acompanham a distância andada
   const W=[],set=(n,w,f)=>{const g=AG[n];if(!g||!(w>1e-3))return;W.push([n,w,g.from+(g.to-g.from)*f]);};
