@@ -1665,6 +1665,10 @@ const LOOK = {
   beards: ['Sem barba', 'Cavanhaque', 'Bigode', 'Bigode com voltinha', 'Cavanhaque + bigode', 'Barba + bigode', 'Barba grande + voltinha']
 };
 const LK_DEF = 'n00002110';
+/* v2.1.9: o visual escolhido na criação é definitivo. Para liberar UMA nova edição para todos (ex.: atualização com cabelos/rostos novos),
+   aumente LOOK_VER (0 -> 1 -> 2...): quem personalizou numa versão menor pode editar mais uma vez. */
+const LOOK_VER = 0;
+const lkCanEdit = c => !!c && (!lkOk(c.lk) || (c.lkv | 0) < LOOK_VER);
 const lkOk = s => typeof s === 'string' && /^n[0-8][0-8][0-5](0\d|1[0-8])[0-5][0-3][0-6]$/.test(s);
 const lkParse = s => lkOk(s) ? { e: +s[1], b: +s[2], m: +s[3], h: +s.slice(4, 6), hc: +s[6], s: +s[7], bd: +s[8] } : null;
 const lkStr = o => { const c = (v, mx) => Math.max(0, Math.min(mx, Math.floor(v) || 0)); return 'n' + c(o.e, 8) + c(o.b, 8) + c(o.m, 5) + String(c(o.h, 18)).padStart(2, '0') + c(o.hc, 5) + c(o.s, 3) + c(o.bd, 6); };
@@ -1926,7 +1930,8 @@ function newChar(cls, name, fem, lk) {
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
   if (fem) c.fem = 1;   // v1.77: personagem feminino (só aparência; escolhido na criação, não muda depois)
-  if (lkOk(lk)) c.lk = lkFix(lk, fem);   // v1.95: visual escolhido na criação (v1.96: feminino sem barba/bigode)
+  if (lkOk(lk)) { c.lk = lkFix(lk, fem); c.lkv = LOOK_VER; }   // v2.1.9: versão do visual (trava a edição)
+  // v1.95: visual escolhido na criação (v1.96: feminino sem barba/bigode)
   if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }
@@ -2508,7 +2513,7 @@ const castMs = (cls, i, x) => {
   return Math.round(Math.max(a, t));
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
-Object.assign(R, { LOOK, LK_DEF, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
+Object.assign(R, { LOOK, LK_DEF, LOOK_VER, lkCanEdit, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
   SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;

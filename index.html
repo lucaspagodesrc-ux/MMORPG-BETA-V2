@@ -7863,14 +7863,14 @@ function renderSelect(){
   const c=SEL.t==='chr'&&ACC.chars.find(x=>x.id===SEL.id);
   if(!c){cap.innerHTML='<b>Escolha seu personagem</b><small>Clique em um personagem na lista à direita</small>';act.style.display='none';return;}
   cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${clsName(c.cls,c.fem)} • Nível ${c.level}</small>`;
-  act.innerHTML=`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name||'')}</button><div class="selRow"><button data-lkedit="1" class="selB">✏️ Editar visual</button>${fzBtn(c)}</div>`;act.style.display='flex';return;}
+  act.innerHTML=`<button class="go" id="selGo">▶ Entrar no jogo com ${esc(c.name||'')}</button><div class="selRow">${RULES.lkCanEdit(c)?'<button data-lkedit="1" class="selB">✏️ Editar visual (1 vez)</button>':''}${fzBtn(c)}</div>`;act.style.display='flex';return;}
  /* ---- criação / edição do visual ---- */
  $('selL').style.display='';$('secChars').textContent='';$('chars').style.display='none';$('selNote').textContent='';
  const back=ACC.chars.length?`<button data-back="1" class="selB">◀ Voltar</button>`:'';
  if(SEL.edit){const c=ACC.chars.find(x=>x.id===SEL.edit);if(!c){SEL.edit=null;SEL.mode='pick';return renderSelect();}const k=CLASSES[c.cls];
   $('clsList').innerHTML='';info.innerHTML=`<div class="sec">${k.i} ${k.n}</div><p>${k.d}</p><div class="sg">${k.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div>`;
   lkShow(lkHtml(c.fem));const need=lkNeed(c);
-  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório)':'Editar visual'}</small>`;
+  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório). Depois de salvo, ele não muda mais.':'Editar visual: liberado nesta atualização, só 1 vez'}</small>`;
   act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">${need?'✔ Salvar visual e entrar no jogo':'💾 Salvar visual'}</button><div class="selRow">${back}${helmBtn}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
  if(SEL.t!=='cls'){info.innerHTML='<p class="muted">Escolha uma classe para ver a descrição.</p>';lkShow('');cap.innerHTML='<b>Criar personagem</b><small>Escolha uma classe à esquerda</small>';act.innerHTML=back?`<div class="selRow">${back}</div>`:'';act.style.display=back?'flex':'none';return;}
@@ -7904,7 +7904,7 @@ $('select').addEventListener('click',e=>{
  const lkb=e.target.closest('[data-lk]');if(lkb){const [k,v]=lkb.dataset.lk.split(':');SEL.lk[k]=+v;
   if(k!=='s'&&!PV.face){PV.face=true;pvCam();pvFront();}   /* itens do rosto: zoom para ver de perto */
   lkPreview();keepName(renderSelect);return;}
- if(e.target.closest('[data-lkedit]')){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c)return;SEL.mode='create';SEL.edit=c.id;SEL.lk=RULES.lkParse(c.lk)||RULES.lkParse(RULES.LK_DEF);PV.face=true;pvShow(c.cls,lkAp(charAp(c)),c.fem);pvCam();pvFront();renderSelect();return;}
+ if(e.target.closest('[data-lkedit]')){const c=ACC.chars.find(x=>x.id===SEL.id);if(!c||!RULES.lkCanEdit(c))return;SEL.mode='create';SEL.edit=c.id;SEL.lk=RULES.lkParse(c.lk)||RULES.lkParse(RULES.LK_DEF);PV.face=true;pvShow(c.cls,lkAp(charAp(c)),c.fem);pvCam();pvFront();renderSelect();return;}
  if(e.target.closest('[data-lkrand]')){const L=RULES.LOOK,r=n=>Math.floor(Math.random()*n),fem=SEL.edit?(ACC.chars.find(x=>x.id===SEL.edit)||{}).fem:SEL.fem;
   SEL.lk={e:r(L.eyesN),b:r(fem?L.browsF:L.browsM),m:r(L.mouthsN),h:1+r(L.hairs.length-1),hc:r(L.hairCols.length),s:r(L.skins.length),bd:fem||r(2)?0:1+r(L.beards.length-1)};lkPreview();keepName(renderSelect);return;}
  if(e.target.closest('[data-pvz]')){PV.face=!PV.face;pvCam();if(PV.face)pvFront();keepName(renderSelect);return;}
@@ -7917,7 +7917,7 @@ $('select').addEventListener('click',e=>{
    const nm=c.name?'':readName();if(!c.name){if(nm.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}if(taken(nm,c.id)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}}
    $('selGo').disabled=true;nmMsg('');const lk=RULES.lkFix(RULES.lkStr(SEL.lk),c.fem);
    (async()=>{try{if(!c.name){if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/name','POST',{name:nm})).char;c.name=r.name;c.nmOk=1;}else{c.name=nm;c.nmOk=1;save();}}
-    if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;}else{c.lk=lk;save();}
+    if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;c.lkv=r.lkv;}else{c.lk=lk;c.lkv=RULES.LOOK_VER;save();}
     PV.face=false;if(need)play(c);else{SEL.mode='pick';SEL.edit=null;selPick('chr',c.id);}}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
   if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,name=readName();
    if(name.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}

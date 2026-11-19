@@ -163,8 +163,9 @@ authRouter.post("/chars/:id/look", authed, async (req, res) => {
   const cur = await pool.query("select data from characters where id=$1 and account_id=$2", [id, u.id]);
   if (!cur.rows[0]) return res.status(404).json({ error: "Personagem não encontrado." });
   const c = R.migrate(cur.rows[0].data || {});
-  // v2.0: o visual pode ser trocado a qualquer momento (só aparência)
-  c.lk = R.lkFix(lk, c.fem); await saveChar(u.id, c);
+  // v2.1.9: o visual é definitivo depois de escolhido (só volta a ser editável quando R.LOOK_VER sobe numa atualização)
+  if (!R.lkCanEdit(c)) return res.status(403).json({ error: "O visual deste personagem já foi definido e não pode mais ser alterado." });
+  c.lk = R.lkFix(lk, c.fem); c.lkv = R.LOOK_VER; await saveChar(u.id, c);
   res.json({ char: c });
 });
 
