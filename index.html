@@ -3918,7 +3918,7 @@ const GLB=(()=>{
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},WIDE={}   /* v2.1: corpo antigo (o Tanque já vem mais largo do modelo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='217';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ let ldr=null,IPC=null;const GLBV='218';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -3956,7 +3956,10 @@ const GLB=(()=>{
   o.glbAW=all.filter(n=>/^A(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));o.glbOW=all.filter(n=>/^(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));   /* v1.92: arma Astral (troca quando a arma equipada é Astral) */
   o.glbLook=null;{const LK={head:[],skin:[],face:[],body:[],hd:by('head'),top,hairM:null,beardM:null};let any=0;   /* v2.0: corpo novo — cabeça, corpo, rosto; cabelo e barba vêm de arquivos à parte e são presos no osso da cabeça */
    for(const n of all){const mm=/^(Head0|BodySkin0|Face0|Skin0)(?:$|_)/.exec(n.name);if(!mm)continue;any=1;LK[mm[1]==='Head0'?'head':mm[1]==='BodySkin0'?'body':mm[1]==='Skin0'?'skin':'face'].push(n);}
-   if(any&&LK.hd){try{for(const sk of I.skeletons)sk.returnToRest();}catch(e){}try{for(const n of [top,...all])if(n.computeWorldMatrix)n.computeWorldMatrix(true);LK.rest=LK.hd.getWorldMatrix().multiply(BABYLON.Matrix.Invert(top.getWorldMatrix()));}catch(e){}}   /* osso da cabeça parado (antes da animação) */
+   if(any&&LK.hd){try{for(const sk of I.skeletons)sk.returnToRest();}catch(e){}try{for(const n of [top,...all])if(n.computeWorldMatrix)n.computeWorldMatrix(true);LK.rest=LK.hd.getWorldMatrix().multiply(BABYLON.Matrix.Invert(top.getWorldMatrix()));}catch(e){}}
+   /* v2.1.8: osso do peito parado (a capa fica presa nele e acompanha as animações) */
+   o.glbChest=null;{const ch=by('chest');if(ch){try{if(!LK.rest){for(const sk of I.skeletons)sk.returnToRest();for(const n of [top,...all])if(n.computeWorldMatrix)n.computeWorldMatrix(true);}
+    const M=BABYLON.Matrix.Invert(ch.getWorldMatrix().multiply(BABYLON.Matrix.Invert(top.getWorldMatrix()))),sc=new BABYLON.Vector3(),rq=new BABYLON.Quaternion(),ps=new BABYLON.Vector3();M.decompose(sc,rq,ps);o.glbChest={n:ch,sc,rq,ps};}catch(e){}}}   /* osso da cabeça parado (antes da animação) */
    if(any)o.glbLook=LK;}
   o.glbParts={};for(const n of all){const mm=/^(Armor|Boots|Helm|Shield)([1-6])(?:$|_)/.exec(n.name);if(mm){const g=(o.glbParts[mm[1]]=o.glbParts[mm[1]]||{});(g[mm[2]]=g[mm[2]]||[]).push(n);}}
   if(cls==='mago'&&!fz)magoHats(o);   /* v1.76: chapéu pontudo em todos os trajes do mago */
@@ -3980,7 +3983,7 @@ const GLB=(()=>{
   return false;}
  /* animação: escolhe e posiciona os clipes pelo estado do personagem (andar/parado/golpe/habilidade) */
  const KA={shield:'Shield',throw:'Throw',beam:'Cast',jump:'Jump',stomp:'Jump',sky:'Jump',spin:'Attack',spin3:'Attack',stab:'Attack',both:'Attack',sumo:'Attack',dash:'Attack',pick:'PickUp',talk:'Interact'};
- const KA2={stab:['Swing'],dash:['DashA','Swing'],throw:['Throw2'],stomp:['NJump'],buff:['Block'],pick:['PickUp'],talk:['Interact'],chest:['Chest'],drink:['Drink']};   /* v2.1.7: clipes novos (Quaternius UAL 1 e 2) usados quando o modelo já tem */
+ const KA2={stab:['Swing'],dash:['DashA','Swing'],throw:['Throw2'],stomp:['NJump'],buff:['ShieldUp','Block'],beam:['ShieldHold'],spin:['Spin'],spin3:['Spin3','Spin'],pick:['PickUp'],talk:['Interact'],chest:['Chest'],drink:['Drink']};   /* v2.1.7: clipes novos (Quaternius UAL 1 e 2) usados quando o modelo já tem */
  const EMOC={dance:{c:'Dance',ms:15000,loop:1000},yes:{c:'Yes',ms:2400},no:{c:'No',ms:2400}};   /* emotes */
  const pick2=(AG,k)=>{const l=KA2[k];if(l)for(const n of l)if(AG[n])return n;return null;};
  const DUR={shield:420,jump:800,beam:750,throw:520,spin:700,spin3:1500,stomp:650,sumo:1100,stab:650,sky:700,dash:650,pick:650,talk:1100,chest:1000,drink:900,buff:700};
@@ -4041,7 +4044,8 @@ const GLB=(()=>{
   if(hw)set(o._hitC,hw,Math.min(.999,hs));
   if(dw)set(EM.c,dw*(1-fa),EM.loop?((now-E_.t)/EM.loop)%1:Math.min(.999,(now-E_.t)/EM.ms));
   set('Walk',rest*a,(L.ph%1+1)%1);
-  set('Idle',rest*(1-a),((now/2000+L.ph0)%1+1)%1);
+  {const it=((now/2000+L.ph0)%1+1)%1,ci=AG.CIdle&&sa?Math.max(0,Math.min(1,(4000-(now-sa))/500)):0;   /* v2.1.8: cavaleiro fica com o escudo erguido por uns segundos depois de lutar */
+   if(ci>0)set('CIdle',rest*(1-a)*ci,((now/2000)%1+1)%1);set('Idle',rest*(1-a)*(1-ci),it);}
   pose(L,W);
   if(kind==='jump'){if(act){o.root.position.y=sw<.8?3*Math.sin(Math.PI*sw/.8):0;o._jy=1;}else if(o._jy){o.root.position.y=0;o._jy=0;}}
   else if(o._jy){o.root.position.y=0;o._jy=0;}
@@ -4155,7 +4159,8 @@ function CAPE(o,parent,ap,A){
  clearGear(o);const cp=ap.cape;if(!cp||!parent)return;
  const kind=capeLook(o.cls),arm=ap.armor,pl=arm?arm.plus:0,ael=arm?gcols(arm)[2]:'gold';
  const pal={p:['#c4302b','#f2a548'],m:['#2f6fe0','#a8d0ff'],a:['#34304a','#9a6bff']}[kind],m1=cmat(pal[0],pl),m2=cmat(pal[1],pl),s1=gmat(pal[0],pl,0,'cloth');
- const g=new BABYLON.TransformNode('capeG',scene);g.parent=parent;o.gear=g;o.gx=[];o.gfx=[];o.gbolts=[];
+ const g=new BABYLON.TransformNode('capeG',scene);g.parent=parent;o.gear=g;
+ {const ch=o.glbChest;if(o.glb&&parent===o.glbTop&&ch&&ch.n&&!ch.n.isDisposed()){g.parent=ch.n;g.position.copyFrom(ch.ps);g.rotationQuaternion=ch.rq.clone();g.scaling.copyFrom(ch.sc);}}   /* v2.1.8: capa presa no peito (segue golpes, giros, morte e dança) */o.gx=[];o.gfx=[];o.gbolts=[];
  const add=(m,x,y,z,mt)=>{m.parent=g;m.position.set(x,y,z);m.material=mt;m.isPickable=false;o.gx.push(m);try{GINK_(m,.015);}catch(e){}return m;};
  CLOTH_R=A.R||null;
  if(kind==='m'){   // cachecol: volta grossa no pescoço e pontas caindo na frente e atrás
