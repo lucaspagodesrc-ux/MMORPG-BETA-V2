@@ -490,6 +490,85 @@
   #pkProt{display:none;position:fixed;top:23%;left:50%;transform:translateX(-50%);z-index:20;font-size:20px;font-weight:800;color:#9fe7ff;text-shadow:0 2px 8px #000,0 0 14px #3aa0ff;pointer-events:none}
   #pkDead{display:none;position:fixed;inset:0;z-index:12;background:rgba(80,10,0,.42);flex-direction:column;align-items:center;justify-content:center;gap:8px;pointer-events:none;color:#fff;font-weight:800;text-shadow:0 2px 8px #000}
   #pkDead .t{font-size:34px}#pkDead .c{font-size:84px;color:#ffe28a;line-height:1}#pkDead .s{font-size:15px;font-weight:600;color:#ffd0c0}
+  /* ===== v2.1.4: MODO CELULAR (deitado) — só vale com body.mob (tela de toque) ===== */
+  #mJoy,#mAct,#mTop,#mRot{display:none}
+  body.mob{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+  body.mob #hud{top:6px;left:calc(6px + env(safe-area-inset-left,0px));width:218px;padding:6px 9px 7px;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;column-gap:7px}
+  body.mob #hud .row{font-size:11.5px;line-height:15px;margin:0;width:auto}
+  body.mob #hud .row:nth-of-type(1) .name{font-size:13px}
+  body.mob #pClass,body.mob #zoneText,body.mob #hud .row:nth-of-type(6){display:none!important}
+  body.mob #levelText{color:#ffd56a;font-weight:700;font-size:12px}
+  body.mob #hud .bar{width:100%;height:13px;margin:3px 0 0}
+  body.mob #hud .bar span{font-size:9.5px;line-height:13px}
+  body.mob #hud .bar:nth-of-type(5){height:5px}body.mob #hud .bar:nth-of-type(5) span{display:none}
+  body.mob #ptsBtn{position:absolute;top:4px;right:6px;width:auto;margin:0;padding:0 6px;font-size:0;line-height:17px;border-radius:8px}
+  body.mob #ptsBtn::before{content:'⭐ +';font-size:11px}
+  body.mob #tr{top:6px;right:calc(6px + env(safe-area-inset-right,0px));width:auto}
+  body.mob #mm{width:96px;height:96px;border-radius:50%}
+  body.mob #tracker{top:84px;right:auto;left:calc(6px + env(safe-area-inset-left,0px));position:fixed;width:196px;font-size:10.5px;line-height:1.35;padding:5px 8px;max-height:92px;overflow:hidden;background:rgba(10,14,24,.62)}
+  body.mob #tracker .dwt{display:none}
+  body.mob #target{top:6px;min-width:170px;padding:5px 10px;font-size:12px}
+  body.mob #buffwrap{top:70px}
+  body.mob #menu{display:none;position:fixed;top:158px;right:calc(6px + env(safe-area-inset-right,0px));bottom:auto;left:auto;flex-direction:row;flex-wrap:wrap;width:188px;gap:6px;padding:8px;background:rgba(10,14,24,.92);border:1px solid rgba(255,255,255,.14);border-radius:14px;z-index:31;pointer-events:auto}
+  body.mob.mobMenu #menu{display:flex}
+  body.mob #menu button{width:40px;height:40px;font-size:19px;border-radius:10px}
+  body.mob #mTop{display:flex;position:fixed;top:108px;right:calc(6px + env(safe-area-inset-right,0px));gap:6px;z-index:30}
+  body.mob .mBtn{width:40px;height:40px;border-radius:12px;background:rgba(14,18,30,.8);border:1px solid rgba(255,255,255,.15);display:grid;place-items:center;font-size:19px;position:relative;color:#fff;padding:0;box-shadow:0 2px 6px rgba(0,0,0,.4);touch-action:manipulation}
+  body.mob .mBtn.on{border-color:#ffd56a;background:rgba(60,44,10,.9)}
+  body.mob .mBtn .bdg{position:absolute;top:-4px;right:-4px}
+  body.mob #chatBox{display:none;left:50%;transform:translateX(-50%);top:8px;bottom:auto;width:min(440px,56vw);height:min(250px,62vh);z-index:32}
+  body.mob.mobChat #chatBox{display:flex}
+  body.mob #chatBox .cwk{display:none}
+  body.mob #log{left:50%;right:auto;transform:translateX(-50%);bottom:6px;top:auto;width:min(380px,44vw);height:auto;max-height:46px;background:rgba(8,10,18,.45);border:0;box-shadow:none;pointer-events:none;display:flex}
+  body.mob #log .cwh{display:none}
+  body.mob #log .cwb{display:block!important;font-size:10.5px;line-height:1.35;padding:3px 8px;max-height:46px;overflow:hidden}
+  body.mob #tutBox{top:6px;left:50%;transform:translateX(-50%);width:min(330px,42vw);padding:7px 10px;font-size:11px;z-index:28}
+  body.mob #tutBox *{font-size:11px;line-height:1.3}
+  body.mob #tutBox button{padding:1px 6px;font-size:10px}
+  /* joystick */
+  body.mob #mJoy{display:block;position:fixed;left:calc(20px + env(safe-area-inset-left,0px));bottom:16px;width:128px;height:128px;border-radius:50%;background:radial-gradient(circle,rgba(10,14,24,.18),rgba(10,14,24,.38));border:3px solid rgba(255,255,255,.42);z-index:30;touch-action:none}
+  body.mob #mJoy i{position:absolute;width:54px;height:54px;border-radius:50%;left:37px;top:37px;background:radial-gradient(circle at 40% 35%,#fff,#c9d3e6);box-shadow:0 3px 10px rgba(0,0,0,.45);will-change:transform}
+  body.mob #mJoy.on{border-color:rgba(255,213,106,.7)}
+  /* botões de ação (lado direito): mesma caixa para a barra de habilidades e para os botões do celular */
+  body.mob #skillbar,body.mob #mAct{position:fixed;left:auto;right:calc(12px + env(safe-area-inset-right,0px));bottom:10px;width:230px;height:200px;transform:none;display:block;background:none;border:0;padding:0;z-index:30;pointer-events:none}
+  body.mob #mAct{z-index:29}
+  body.mob #skillbar .sbrow{display:block;position:static}
+  body.mob #skillbar .sk{position:absolute;display:none;width:50px;height:50px;border-radius:50%;margin:0;font-size:23px;pointer-events:auto;touch-action:manipulation}
+  body.mob #skillbar .sk .key{display:none}
+  body.mob #skillbar .sk.pot{display:grid;place-items:center;width:42px;height:42px;font-size:19px;left:12px}
+  body.mob #skillbar .sk.pot[data-pot="hp"]{top:148px}body.mob #skillbar .sk.pot[data-pot="mp"]{top:99px}
+  body.mob #mAct>*{pointer-events:auto;position:absolute;display:grid;place-items:center;border-radius:50%;touch-action:manipulation;color:#fff;padding:0}
+  body.mob #mAtk{right:6px;bottom:8px;width:84px;height:84px;background:radial-gradient(circle at 40% 35%,#ffcf6b,#c47a12);border:3px solid #ffe3a0;font-size:34px;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+  body.mob #mAtk:active,body.mob #skillbar .sk:active,body.mob #mAct>*:active{transform:scale(.92)}
+  body.mob #mSwap{left:127px;top:95px;width:30px;height:30px;background:rgba(14,18,30,.85);border:1px solid rgba(255,255,255,.28);font-size:14px}
+  body.mob #mSwap b{position:absolute;bottom:-6px;font-size:8px;background:#222a3a;border-radius:6px;padding:0 3px}
+  body.mob #mTgt{left:13px;top:50px;width:40px;height:40px;background:rgba(14,18,30,.85);border:1px solid rgba(255,120,120,.6);font-size:16px;line-height:1;align-content:center}body.mob #mTgt small{display:block;font-size:8px;color:#ffb3b3;font-weight:700}
+  /* janelas: cabem na tela deitada */
+  body.mob .win,body.mob #dialog{top:6px!important;max-height:calc(100vh - 12px);overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:33}
+  body.mob .win{left:50%!important;right:auto!important;transform:translateX(-50%)}
+  /* celular em pé: pede para girar */
+  body.mob #mRot{position:fixed;inset:0;z-index:99;background:#0b0e18;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:16px;text-align:center;padding:24px}
+  body.mob #mRot b{font-size:44px;animation:mRot 1.6s ease-in-out infinite}
+  @keyframes mRot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
+  @media (orientation:portrait){body.mob.inGame #mRot{display:flex}}
+  /* missões: painel arrastável (PC e celular) */
+  body.mob:not(.inGame) #mJoy,body.mob:not(.inGame) #mAct,body.mob:not(.inGame) #mTop{display:none!important}
+  /* tela de seleção/criação num celular deitado: 3 colunas compactas */
+  @media (max-height:540px) and (orientation:landscape){
+   #select,#select.pick{grid-template-columns:minmax(180px,230px) 1fr minmax(200px,250px);grid-template-rows:100%;gap:8px;padding:6px max(6px,env(safe-area-inset-right,0px)) 6px max(6px,env(safe-area-inset-left,0px));overflow:hidden}
+   #select.pick{grid-template-columns:1fr minmax(210px,260px)}
+   #selL{grid-row:1;grid-column:1}#selMid{grid-row:1;grid-column:2}#selR{grid-row:1;grid-column:3}
+   #select.pick #selMid{grid-row:1;grid-column:1}#select.pick #selR{grid-row:1;grid-column:2}
+   .selp{max-height:calc(100vh - 12px);padding:8px;gap:6px}
+   #selMid h1{font-size:18px}#selMid .vlogo{transform:scale(.62);margin:-16px 0 -20px}#selCap{margin-top:2px}#selCap b{font-size:16px}#selCap small{font-size:11px}
+   #selAct{padding:7px;gap:6px;display:grid!important;grid-template-columns:1fr 1fr;align-items:center;width:min(560px,100%)}#selAct>#nameMsg{grid-column:1/-1;min-height:0!important}#selAct>#nameMsg:empty{display:none}#selAct>:only-child{grid-column:1/-1}#selAct input{padding:6px;font-size:13px;min-width:0}#selAct button.go{padding:7px;font-size:13px}#selAct .sexSel button{padding:5px;font-size:12px}#selAct .selRow{gap:5px}
+   .opt{padding:5px 8px}.opt .oi{font-size:20px;width:26px}.opt b{font-size:13px}#clsInfo{font-size:11px;line-height:1.4}
+   .selB{padding:6px 10px;font-size:12px}.lkRow button{min-width:25px;height:25px}
+  }
+  #tracker{cursor:grab;touch-action:none}
+  #tracker.drag{cursor:grabbing;opacity:.85;outline:1px dashed rgba(255,213,106,.7)}
+  #tracker.moved{position:fixed!important;right:auto!important;margin:0;z-index:4}
+  #tracker::after{content:'⠿';position:absolute;top:2px;right:5px;font-size:11px;opacity:.4;pointer-events:none}
 </style>
 </head>
 <body>
@@ -592,6 +671,8 @@
   <div class="muted ohint">Some só da sua tela — os outros jogadores continuam vendo.</div>
   <div class="arow osep"><span>🪖 Esconder capacete</span><button id="oHideHelm" class="amute" title="Esconde o capacete/chapéu para mostrar o rosto (o item continua equipado)">🪖</button></div>
   <div class="muted ohint">O item continua equipado. Todos os jogadores veem seu rosto e cabelo.</div>
+  <div class="arow osep"><span>📱 Controles de toque</span><button id="oMob" class="amute" title="Joystick e botões grandes para celular/tablet (recarrega o jogo)">✔</button></div>
+  <div class="arow" id="oFpsRow"><span>🎞️ FPS no celular</span><button id="oFps" class="amute" title="30 FPS esquenta menos e não oscila; 60 FPS é mais suave">30</button></div>
   <div class="arow osep"><span>🌐 Idioma / Language</span><span class="olang" data-notr><button class="alang" data-lang="pt">🇧🇷 PT</button><button class="alang" data-lang="en">🇺🇸 EN</button></span></div>
   <div class="arow" style="margin-top:8px;display:none"><span>✒️ Contorno de tinta</span><button id="gInk" class="amute" title="Liga/desliga o contorno desenhado à mão (desligar melhora o desempenho)">✔</button></div>
    <div class="arow" style="display:none"><span>🌈 Realce de cores</span><button id="gFx" class="amute" title="Contraste, saturação e vinheta suave">✔</button></div>
@@ -996,7 +1077,11 @@ const hyp=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const spat=(pos,range)=>{range=range||26;const dx=pos.x-P.pos.x,dz=pos.z-P.pos.z,d=Math.hypot(dx,dz);if(d>=range)return {v:0,pan:0};const a=camera.alpha;return {v:Math.pow(1-d/range,1.4),pan:Math.max(-.8,Math.min(.8,(-dx*Math.sin(a)+dz*Math.cos(a))/16))};}; // som 3D simples: some com a distância e vai para o lado certo da tela
 const canvas=$("renderCanvas");
 if(!BABYLON.Engine.isSupported()) throw new Error("WebGL não está disponível ou está desativado neste navegador.");
-const engine=new BABYLON.Engine(canvas,true,{powerPreference:'high-performance'});
+/* v2.1.4: celular/tablet (tela de toque) -> controles de toque + modo leve. ?mob=1/0 ou ⚙️ Opções forçam */
+const MOB=(()=>{const q=/[?&]mob=([01])/.exec(location.search);if(q)return q[1]==='1';try{const v=localStorage.getItem('mmo_mob');if(v==='1'||v==='0')return v==='1';}catch(e){}return matchMedia('(hover:none) and (pointer:coarse)').matches;})();
+const PMUL=MOB?.5:1;   // celular: metade das partículas
+let FPS30=MOB&&(()=>{try{return localStorage.getItem('mmo_fps')!=='60';}catch(e){return true;}})();   // celular: 30 FPS estáveis (esquenta menos e não oscila)
+const engine=new BABYLON.Engine(canvas,!MOB,{powerPreference:'high-performance'});   /* celular: sem antialias (MSAA pesa muito na GPU do celular) */
 const scene=new BABYLON.Scene(engine,{useGeometryUniqueIdsMap:true,useMaterialMeshMap:true,useClonedMeshMap:true});   /* v1.83: descartar/criar malhas e materiais sem varrer a cena inteira */
 scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);
 scene.skipPointerMovePicking=true;
@@ -1018,6 +1103,7 @@ let S=null;            // dados do personagem (salvos)
 let dcache=null;
 const P={root:null,pos:new V3(0,0,5),hp:1,mp:1,dead:false,moveTo:null,atkTarget:null,interact:null,sel:null,cd:Array(9).fill(0),cdMax:Array(9).fill(1),lastSkill:-1,lastSkillAt:0,cst:0,cstAt:0,nextAtk:0,swingAt:0,potCd:0,lastCombat:0,buffs:{},moving:false,wMat:null,hand:null,rg:0};
 const monsters=[],drops=[],obstacles=[],fx=[],floaters=[],keys={};
+const JOY={on:false,x:0,y:0};   // v2.1.4: joystick do celular
 let hover=null,ACC=null; // ACC = conta: {chars:[], stash:[40]} (baú compartilhado)
 
 let tipEp=0;
@@ -1160,7 +1246,7 @@ function give(it){if(!addItem(it))spawnDrop(it,P.pos);}
 /* =================== CÂMERA / LUZES =================== */
 const camera=new BABYLON.ArcRotateCamera("cam",-Math.PI/4,.95,70,new V3(0,0,0),scene);
 camera.mode=BABYLON.Camera.ORTHOGRAPHIC_CAMERA;camera.minZ=1;camera.maxZ=300;
-let zoom=11;
+let zoom=MOB?9:11;   // celular: câmera um pouco mais perto (tela pequena)
 function setOrtho(){const a=engine.getRenderWidth()/engine.getRenderHeight();const h=a<1?zoom/a*.8:zoom;camera.orthoTop=h;camera.orthoBottom=-h;camera.orthoLeft=-h*a;camera.orthoRight=h*a;}
 setOrtho();
 canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(7,Math.min(18,zoom+(e.deltaY>0?1:-1)));setOrtho();},{passive:false});
@@ -3831,7 +3917,7 @@ const GLB=(()=>{
   cavaleiro_f:'cavaleiro_f.glb',guerreiro_f:'guerreiro_f.glb',tanque_f:'tanque_f.glb',assassino_f:'assassino_f.glb',arqueiro_f:'arqueiro_f.glb',mago_f:'mago_f.glb',pierrot_f:'pierrot_f.glb'},C={},WAIT=[],TINT=['Armor','Helmet','Boots'],DEF='#e8b84a';
  for(const id in RULES.FZS){FILES['fz_'+id]='fz_'+id+'.glb';FILES['fz_'+id+'_f']='fz_'+id+'_f.glb';}   /* v1.82: fantasias (♂ e ♀) */
  const SCALE={cavaleiro:1.12,guerreiro:1.12,tanque:1.14,assassino:1.05,arqueiro:1.05,mago:1.05,pierrot:1.05},WIDE={}   /* v2.1: corpo antigo (o Tanque já vem mais largo do modelo) */,LOADER=['https://cdn.jsdelivr.net/npm/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js','https://unpkg.com/babylonjs-loaders@7.54.3/babylon.glTF2FileLoader.min.js'];
- let ldr=null,IPC=null;const GLBV='212';   /* troque ao atualizar os modelos para o navegador baixar de novo */
+ let ldr=null,IPC=null;const GLBV='214';   /* troque ao atualizar os modelos para o navegador baixar de novo */
  /* acabamento fosco: os modelos não passam pelo contraste/saturação extra da cena (era isso que fazia brilhar) */
  const MATTE=()=>{if(!IPC){IPC=new BABYLON.ImageProcessingConfiguration();IPC.isEnabled=false;}return IPC;};
  const loadLoader=()=>ldr||(ldr=new Promise((ok,no)=>{if(BABYLON.SceneLoader&&BABYLON.SceneLoader.IsPluginForExtensionAvailable&&BABYLON.SceneLoader.IsPluginForExtensionAvailable('.glb'))return ok();
@@ -4283,7 +4369,7 @@ function clearGear(o){for(const m of o.gx||[])try{m.dispose(false,false);}catch(
 function mkPs(o,anchor,el,rate,sc,pl){
  /* pl = aprimoramento do item: cada nível acima de +7 deixa o efeito mais forte (mais partículas, maiores, mais vivas e brilhantes) */
  const T=Math.max(0,Math.min(3,(pl||7)-7)),E=EL[el]||EL.gold,em=B.CreateBox('em',{size:.02},scene);em.isVisible=false;em.isPickable=false;em.parent=anchor;
- rate=rate*(1+.35*T);const bst=1+.22*T;
+ rate=rate*(1+.35*T)*PMUL;const bst=1+.22*T;
  const ps=new BABYLON.ParticleSystem('gfx',Math.ceil(rate*1.8)+8,scene);ps.particleTexture=ptex();ps.emitter=em;sc=(sc||1)*bst;
  ps.minEmitBox=new V3(-.1*sc,0,-.1*sc);ps.maxEmitBox=new V3(.1*sc,.05,.1*sc);
  ps.color1=BABYLON.Color4.FromHexString(E.c1+(T>=2?'ff':T>=1?'e8':'b8'));ps.color2=BABYLON.Color4.FromHexString(E.c2+(T>=2?'f0':T>=1?'d8':'b0'));ps.colorDead=BABYLON.Color4.FromHexString(E.c3+'00');
@@ -5603,7 +5689,7 @@ const SKEL={
 };
 const GFX=[];
 function skPs(emitter,E,rate,box,cap){
- const ps=new BABYLON.ParticleSystem('skp',cap||90,scene);ps.particleTexture=ptex();ps.emitter=emitter;
+ const ps=new BABYLON.ParticleSystem('skp',Math.ceil((cap||90)*PMUL),scene);rate*=PMUL;ps.particleTexture=ptex();ps.emitter=emitter;
  ps.minEmitBox=new V3(-box,0,-box);ps.maxEmitBox=new V3(box,.1,box);
  ps.color1=BABYLON.Color4.FromHexString(E.c1+'d0');ps.color2=BABYLON.Color4.FromHexString(E.c2+'c0');ps.colorDead=BABYLON.Color4.FromHexString(E.c3+'00');
  ps.minSize=E.sz[0];ps.maxSize=E.sz[1];ps.minLifeTime=E.life[0];ps.maxLifeTime=E.life[1];ps.emitRate=rate;
@@ -6150,7 +6236,7 @@ function updatePlayer(dt,now){
  if(now<PKS.cc.stun){P.moving=false;P.moveTo=null;return;}
  const spd=6*(1+getBuff('haste'))*(now<PKS.cc.slow?.6:1),rooted=now<PKS.cc.root;
  const f=camera.target.subtract(camera.position);f.y=0;f.normalize();const rt=new V3(f.z,0,-f.x);
- const ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),iy=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
+ let ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),iy=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);if(JOY.x||JOY.y){ix=JOY.x;iy=JOY.y;}
  P.moving=false;
  if((ix||iy)&&!rooted){
   let mx=f.x*iy+rt.x*ix,mz=f.z*iy+rt.z*ix;const l=Math.hypot(mx,mz);mx/=l;mz/=l;
@@ -6235,6 +6321,88 @@ window.addEventListener('keydown',e=>{
  else if(k==='escape'){AUDUI.panel(false);closeDialog();guClose();['inv','char','quest','skill','party','friends','gm','titles','help','pets','fz'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
 });
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+/* =================== v2.1.4: MODO CELULAR (controles de toque) =================== */
+const MOBUI=(()=>{
+ if(!MOB)return null;
+ const B=document.body,mk=(t,id,h,cls)=>{const e=document.createElement(t);if(id)e.id=id;if(cls)e.className=cls;if(h)e.innerHTML=h;return e;};
+ B.classList.add('mob');
+ /* habilidades em arco em volta do botão de ataque: 4 por página (⟳ troca a página) */
+ const POS=[[74,126],[87,82],[121,51],[167,43]];let css='';
+ for(let p=0;p<4;p++)for(let i=0;i<4;i++)css+=`body.mob #skillbar.pg${p} .sk[data-slot="${p*4+i}"]{display:grid;place-items:center;left:${POS[i][0]}px;top:${POS[i][1]}px}`;
+ B.appendChild(mk('style','',css));
+ const sb=$('skillbar');let pg=0;sb.classList.add('pg0');
+ const act=mk('div','mAct','<button id="mTgt" title="Trocar alvo">⇆<small>alvo</small></button><button id="mSwap" title="Outras habilidades">⟳<b>1</b></button><button id="mAtk" title="Atacar • falar • pegar">⚔️</button>');B.appendChild(act);
+ const pages=()=>{const r2=$('sbr2');return r2&&!r2.classList.contains('hide')?4:2;};
+ const tap=(el,fn)=>el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();fs();fn(e);});
+ tap($('mSwap'),()=>{sb.classList.remove('pg'+pg);pg=(pg+1)%pages();sb.classList.add('pg'+pg);$('mSwap').querySelector('b').textContent=pg+1;AUD.sfx('ui');});
+ /* ⚔️ = ação do contexto: pegar itens > (na vila) falar com NPC > atacar o alvo/inimigo mais perto > falar com NPC */
+ const npcNear=()=>allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);
+ tap($('mAtk'),()=>{
+  if(!S||P.dead)return;
+  if(drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6)){collectNear(3.6);return;}
+  const town=inTown(P.pos);if(town){const n=npcNear();if(n){openDialog(n);return;}}
+  const m=(P.sel&&P.sel.alive?P.sel:null)||nearestMonster(CLASSES[S.cls].range+6);
+  if(m){selectMonster(m);P.atkTarget=m;P.moveTo=null;P.interact=null;return;}
+  const n=npcNear();if(n){openDialog(n);return;}
+  toast('Nenhum inimigo por perto');});
+ /* 🎯 = próximo inimigo (do mais perto para o mais longe) */
+ tap($('mTgt'),()=>{
+  if(!S||P.dead)return;const R=CLASSES[S.cls].range+10,L=[];
+  if(PKS.mode!=='duel')for(const m of monsters)if(m.alive&&hyp(P.pos,m.pos)<=R)L.push(m);
+  if(PKS.mode)for(const f of pkFoes())if(hyp(P.pos,f.pos)<=R)L.push(f);
+  if(!L.length){toast('Nenhum inimigo por perto');return;}
+  L.sort((a,b)=>hyp(P.pos,a.pos)-hyp(P.pos,b.pos));selectMonster(L[(L.indexOf(P.sel)+1)%L.length]);});
+ /* atalhos do topo: chat, missões, mochila e ☰ (abre o resto do menu) */
+ const top=mk('div','mTop','<button class="mBtn" id="mChat" title="Chat">💬</button><button class="mBtn" data-win="quest" title="Missões">📜</button><button class="mBtn" data-win="inv" title="Mochila">🎒</button><button class="mBtn" id="mMenu" title="Menu">☰</button>');B.appendChild(top);
+ const menuSet=on=>{B.classList.toggle('mobMenu',on);$('mMenu').textContent=on?'✕':'☰';$('mMenu').classList.toggle('on',on);};
+ $('mMenu').addEventListener('click',e=>{e.stopPropagation();menuSet(!B.classList.contains('mobMenu'));});
+ $('menu').addEventListener('click',()=>setTimeout(()=>menuSet(false),0));
+ const chatSet=on=>{B.classList.toggle('mobChat',on);$('mChat').classList.toggle('on',on);if(on)chatOpen();else chatClose();};
+ $('mChat').addEventListener('click',e=>{e.stopPropagation();chatSet(!B.classList.contains('mobChat'));});
+ canvas.addEventListener('pointerdown',()=>{if(B.classList.contains('mobMenu'))menuSet(false);if(B.classList.contains('mobChat')&&document.activeElement!==$('chatIn'))chatSet(false);});
+ if(document.fullscreenEnabled){const b=mk('button','','⛶');b.title='Tela cheia';b.addEventListener('click',()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen({navigationUI:'hide'}).then(()=>{try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>{});}catch(e){}});$('menu').appendChild(b);}
+ /* tela cheia automática no 1º toque nos controles (Android) — some a barra do navegador */
+ let fsTried=false;function fs(){if(fsTried||!document.fullscreenEnabled||document.fullscreenElement)return;fsTried=true;try{document.documentElement.requestFullscreen({navigationUI:'hide'}).then(()=>{try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>{});}catch(e){}}
+ /* joystick: o personagem anda para onde o polegar aponta (mesma lógica do WASD) */
+ const J=mk('div','mJoy','<i></i>');B.appendChild(J);const K=J.firstChild;let jid=null;
+ const jm=e=>{const r=J.getBoundingClientRect(),R=r.width/2-12;let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l;}
+  K.style.transform=`translate(${dx}px,${dy}px)`;if(Math.hypot(dx,dy)<R*.2){JOY.x=JOY.y=0;}else{JOY.x=dx/R;JOY.y=-dy/R;}};
+ J.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();fs();jid=e.pointerId;try{J.setPointerCapture(jid);}catch(_){}J.classList.add('on');JOY.on=true;jm(e);});
+ J.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e);});
+ const je=e=>{if(e.pointerId!==jid)return;jid=null;JOY.on=false;JOY.x=JOY.y=0;K.style.transform='';J.classList.remove('on');};
+ J.addEventListener('pointerup',je);J.addEventListener('pointercancel',je);J.addEventListener('lostpointercapture',je);
+ /* pinça com 2 dedos no mapa = zoom */
+ const tp=new Map();let pd=0;
+ canvas.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;tp.set(e.pointerId,[e.clientX,e.clientY]);if(tp.size===2){const[a,b]=[...tp.values()];pd=Math.hypot(a[0]-b[0],a[1]-b[1]);held=false;P.moveTo=null;}});
+ canvas.addEventListener('pointermove',e=>{if(!tp.has(e.pointerId))return;tp.set(e.pointerId,[e.clientX,e.clientY]);if(tp.size===2&&pd){const[a,b]=[...tp.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(Math.abs(d-pd)>28){zoom=Math.max(6,Math.min(16,zoom+(d<pd?1:-1)));setOrtho();pd=d;}}});
+ const tu=e=>{tp.delete(e.pointerId);if(tp.size<2)pd=0;};canvas.addEventListener('pointerup',tu);canvas.addEventListener('pointercancel',tu);
+ /* celular em pé: aviso para girar */
+ B.appendChild(mk('div','mRot','<b>📱</b><div>Gire o celular para jogar deitado</div>'));
+ setInterval(()=>{B.classList.toggle('inGame',!!S&&$('select').style.display!=='grid');const q=$('qBdg'),bq=top.querySelector('[data-win="quest"]');if(q&&bq){let d=bq.querySelector('.bdg');if(q.textContent&&getComputedStyle(q).display!=='none'){if(!d){d=mk('span','','','bdg');bq.appendChild(d);}d.textContent=q.textContent;}else if(d)d.remove();}},1000);
+ return {menuSet,chatSet};
+})();
+
+{const b=$('oMob'),f=$('oFps');
+ if(b){b.textContent=MOB?'✔':'✖';b.classList.toggle('off',!MOB);b.addEventListener('click',()=>{try{localStorage.setItem('mmo_mob',MOB?'0':'1');}catch(e){}if(confirm('O jogo vai recarregar para trocar os controles. Continuar?')){save();location.reload();}});}
+ if(f){if(!MOB)$('oFpsRow').style.display='none';const pf_=()=>{f.textContent=FPS30?'30':'60';};pf_();f.addEventListener('click',()=>{FPS30=!FPS30;try{localStorage.setItem('mmo_fps',FPS30?'30':'60');}catch(e){}pf_();});}}
+/* =================== v2.1.4: PAINEL DE MISSÕES ARRASTÁVEL (PC e celular) =================== */
+(()=>{
+ const T=$('tracker'),KEY='mmo_trk_'+(MOB?'m':'d');let st=null;
+ const clamp=(x,y)=>[Math.max(0,Math.min(innerWidth-T.offsetWidth,x)),Math.max(0,Math.min(innerHeight-Math.min(T.offsetHeight,60),y))];
+ const place=(x,y)=>{[x,y]=clamp(x,y);T.classList.add('moved');T.style.left=x+'px';T.style.top=y+'px';};
+ try{const p=JSON.parse(localStorage.getItem(KEY)||'null');if(p)requestAnimationFrame(()=>place(p[0],p[1]));}catch(e){}
+ T.title='Arraste para mover • toque duplo para voltar ao lugar';
+ T.addEventListener('pointerdown',e=>{if(e.button)return;const r=T.getBoundingClientRect();st={id:e.pointerId,x:e.clientX,y:e.clientY,ox:r.left,oy:r.top,on:false};});
+ window.addEventListener('pointermove',e=>{if(!st||e.pointerId!==st.id)return;const dx=e.clientX-st.x,dy=e.clientY-st.y;
+  if(!st.on){if(Math.hypot(dx,dy)<7)return;st.on=true;T.classList.add('drag');try{T.setPointerCapture(st.id);}catch(_){}}
+  place(st.ox+dx,st.oy+dy);});
+ const end=e=>{if(!st||e.pointerId!==st.id)return;if(st.on){T.classList.remove('drag');const r=T.getBoundingClientRect();try{localStorage.setItem(KEY,JSON.stringify([Math.round(r.left),Math.round(r.top)]));}catch(_){}
+  const blk=ev=>{ev.stopPropagation();ev.preventDefault();};T.addEventListener('click',blk,{capture:true,once:true});setTimeout(()=>T.removeEventListener('click',blk,{capture:true}),50);}st=null;};
+ window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);
+ T.addEventListener('dblclick',()=>{T.classList.remove('moved');T.style.left=T.style.top='';try{localStorage.removeItem(KEY);}catch(_){}});
+ window.addEventListener('resize',()=>{if(T.classList.contains('moved'))place(parseFloat(T.style.left)||0,parseFloat(T.style.top)||0);});
+})();
+
 
 /* =================== JANELAS =================== */
 const WINID={fz:'win-fz',pets:'win-pets',inv:'win-inv',char:'win-char',quest:'win-quest',skill:'win-skill',party:'win-party',friends:'win-friends',gm:'win-gm',titles:'win-titles',help:'help'};
@@ -7534,7 +7702,7 @@ function pvShow(cls,ap,fem){pvStage();if(PV.o){try{PV.o.root.dispose();}catch(e)
  const o={cls,swingAt:0,fem:fem?1:0},r=buildModel(cls,o);r.position.set(PV.x,0,PV.z);o.root=r;PV.o=o;applyGear(o,ap);PV.on=true;pvCam();if(PV.face)pvFront();r.rotation.y=PV.rot;}
 function pvFront(){try{const d=camera.position.subtract(new BABYLON.Vector3(PV.x,0,PV.z));PV.rot=Math.atan2(d.x,d.z)-.35;}catch(e){}}   /* v1.95: rosto de frente para a câmera (um pouco de lado) */
 function pvCam(){const nar=window.innerWidth<860;zoom=PV.face?(nar?1.7:1.6):(nar?3.4:2.8);setOrtho();camera.target.copyFromFloats(PV.x,PV.face?(nar?1.75:1.68):(nar?.5:.7),PV.z);scene.clearColor=new BABYLON.Color4(.03,.05,.09,1);}
-function pvHide(){PV.on=false;PV.face=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
+function pvHide(){PV.on=false;PV.face=false;if(PV.o){try{PV.o.root.dispose();}catch(e){}PV.o=null;}zoom=MOB?9:11;setOrtho();scene.clearColor=new BABYLON.Color4(.05,.08,.11,1);}
 /* ===== v2.0: duas telas — CRIAÇÃO (classe à esquerda, personagem no meio, visual à direita) e ESCOLHA (personagem no meio, lista à direita) ===== */
 const SEL={mode:'pick',t:null,id:null,fem:0,edit:null,nofz:0,helm:0,lk:RULES.lkParse(RULES.LK_DEF)};
 const clsName=k=>CLASSES[k].n;
@@ -8267,7 +8435,7 @@ const SNOWF=(()=>{const em=B.CreateBox('snowem',{size:.1},scene);em.isVisible=fa
 const EMBF=(()=>{const em=B.CreateBox('embem',{size:.1},scene);em.isVisible=false;em.isPickable=false;const ps=new BABYLON.ParticleSystem('embps',500,scene);ps.particleTexture=ptex();ps.emitter=em;
  ps.minEmitBox=new V3(-24,0,-24);ps.maxEmitBox=new V3(24,0,24);ps.color1=new BABYLON.Color4(1,.55,.12,.95);ps.color2=new BABYLON.Color4(1,.82,.3,.85);ps.colorDead=new BABYLON.Color4(.6,.1,0,0);ps.blendMode=BABYLON.ParticleSystem.BLENDMODE_ADD;
  ps.minSize=.07;ps.maxSize=.18;ps.minLifeTime=2.5;ps.maxLifeTime=4.5;ps.emitRate=0;ps.direction1=new V3(-.5,1.6,-.3);ps.direction2=new V3(.5,2.6,.3);ps.gravity=new V3(0,.25,0);ps.minEmitPower=.8;ps.maxEmitPower=1.3;ps.updateSpeed=.02;ps.start();return {em,ps};})();
-function updSnow(){const rg=NET.inst?-1:regionOf(P.pos),on=rg===3,ev=rg===5||rg===6;SNOWF.ps.emitRate=on?260:0;if(on)SNOWF.em.position.set(P.pos.x,17,P.pos.z);EMBF.ps.emitRate=ev?70:0;if(ev)EMBF.em.position.set(P.pos.x,.2,P.pos.z);}
+function updSnow(){const rg=NET.inst?-1:regionOf(P.pos),on=rg===3,ev=rg===5||rg===6;SNOWF.ps.emitRate=on?260*PMUL:0;if(on)SNOWF.em.position.set(P.pos.x,17,P.pos.z);EMBF.ps.emitRate=ev?70*PMUL:0;if(ev)EMBF.em.position.set(P.pos.x,.2,P.pos.z);}
 /** v1.91: clima sombrio na Cidade das Máquinas (céu cor de fuligem, luz fria e avermelhada); fora dela volta ao normal */
 let MOODK='';function updRegionMood(){const k=NET.inst?'dg':PKS.mode==='arena'?'ar':regionOf(P.pos)===6?'mc':'n';if(k===MOODK)return;const was=MOODK;MOODK=k;
  if(k==='mc'){hemi.intensity=.62;hemi.diffuse=new C3(.85,.86,1);hemi.groundColor=new C3(.16,.12,.14);sun.intensity=.72;sun.diffuse=new C3(1,.78,.7);scene.clearColor=new BABYLON.Color4(.07,.06,.07,1);}
@@ -8277,7 +8445,9 @@ let MOODK='';function updRegionMood(){const k=NET.inst?'dg':PKS.mode==='arena'?'
 let last=performance.now();
 const PROF=/dbg/.test(location.search)?{t:0,n:0}:null;   // perfil por etapa do quadro (só no modo de teste ?dbg)
 const pf=PROF?n=>{const t=performance.now();PROF[n]=(PROF[n]||0)+t-PROF.t;PROF.t=t;}:()=>{};
+let RLT=0;
 engine.runRenderLoop(()=>{
+ if(FPS30){const n0=performance.now();if(n0-RLT<30)return;RLT=n0;}   // v2.1.4: celular a 30 FPS
  const now=performance.now(),dt=Math.min((now-last)/1000,.05);last=now;
  if(PROF)PROF.t=now;
  if(PAUSED&&S){scene.render();return;}
