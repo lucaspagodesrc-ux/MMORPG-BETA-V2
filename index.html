@@ -1760,7 +1760,23 @@ const tor=(d,th,x,y,z,mt,o)=>PB(B.CreateTorus('p',{diameter:d,thickness:th,tesse
 const MERGE=(name,parts,w,c)=>{const m=BABYLON.Mesh.MergeMeshes(parts,true,true,undefined,false,true);m.name=name;m.isPickable=false;if(w!==0)ink(m,w,c);return m;};
 const staticMesh=m=>{m.isPickable=false;return m;};
 const MS={};
-function getInst(key,factory){if(!MS[key]){MS[key]=staticMesh(factory());return MS[key];}unhull(MS[key]);return MS[key].createInstance(key+Math.random());}
+/* =================== v2.1.9: CENÁRIO NOVO (Quaternius, CC0) =================== */
+/* modelos/cenario.glb: árvores, pinheiros, pedras, arbustos, cactos, palmeiras, árvores secas, casas e objetos da vila — cada um 1 malha,
+   1 material de cor por vértice, poucos triângulos. Quando chega, troca as peças antigas (mesmo lugar, giro e tamanho) por variações.
+   Peças criadas depois (zonas montadas mais tarde) já nascem com o modelo novo. ?scen=0 desliga. */
+var SCEN={on:!/[?&]scen=0/.test(location.search),ready:false,V:{},MAP:{
+ tree0:['aTree1','aTree2','aTree3','aTree4','aTree5'],tree1:['aBirch1','aBirch2','aBirch3','aTree4'],pine:['aPine1','aPine2','aPine3','aPine4','aPine5'],
+ rock:['aRock1','aRock2','aRock3','aRock4','aRock5','aRock6','aRock7'],bush:['aBush1','aBush2','aBushBerries1','aBushBerries2'],
+ cact0:['sCact1','sCact2','sCact3','sCact4','sCact5'],cact1:['sCactF2','sCactF3','sCactF4','sCactF5'],palm:['sPalm1','sPalm2','sPalm3','sPalm4'],
+ vtree:['vDead1','vDead2','vDead3','vDead4','vDead5']},
+ /* parte das peças continua com o modelo antigo (mistura os dois estilos, mais variedade) */
+ KEEP:{pine:.5,palm:.5,cact0:.35,cact1:.35},
+ /* ajuste de tamanho: pela altura (árvores) ou pela largura (pedras, arbustos, casas e objetos) do modelo antigo */
+ BYH:{tree0:1,tree1:1,pine:1,cact0:1,cact1:1,palm:1,vtree:1},
+ pick(key,x,z){const L=SCEN.V[key];const h=Math.abs(Math.sin(x*12.9898+z*78.233)*43758.5453)%1;return L[Math.floor(h*L.length)%L.length];},
+ /* nova peça de uma chave trocada: o 1º uso de cada variação é a própria malha (como no getInst) */
+ inst(key,x,z){const v=SCEN.pick(key,x==null?Math.random()*999:x,z==null?Math.random()*999:z);if(!v.__used){v.__used=1;v.setEnabled(true);return v;}return v.createInstance(key+Math.random());}};
+function getInst(key,factory){if(SCEN.ready&&SCEN.V[key]&&!(Math.random()<(SCEN.KEEP[key]||0)))return SCEN.inst(key);if(!MS[key]){MS[key]=staticMesh(factory());return MS[key];}unhull(MS[key]);return MS[key].createInstance(key+Math.random());}
 /* =================== OTIMIZAÇÃO (v1.31): versão leve ("proxy") dos bonecos ===================
    Um boneco completo custa de 50 a 130 chamadas de desenho (cada peça + o contorno). O proxy junta o boneco numa malha só
    (cor de vértice, com a mesma iluminação) + 1 casco de contorno invertido = 2 chamadas; proxies iguais são instâncias e
@@ -4157,6 +4173,60 @@ const GLB=(()=>{
  /* cada classe é baixada só quando aparece um personagem dela */
  return{build,anim,gear,load,ready,capped,FILES,setOf,key,loader:loadLoader,MATTE,faceSheet,xload};
 })();
+/* v2.1.9: baixa o cenário novo e troca as peças antigas */
+SCEN.start=function(){
+ if(!SCEN.on||!GLBMODE||SCEN.p)return;
+ SCEN.p=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','cenario.glb?v=219',scene,null,'.glb')).then(ct=>{
+  /* cada peça usa os materiais PINTADOS do jogo (mesmo nome); as partes da malha viram uma malha só com submalhas, como as peças antigas */
+  const grp={};if(PERF.dbg)window.__SCT=ct.meshes.slice(0,14).map(m=>m.name+' '+m.getClassName()+' p='+(m.parent&&m.parent.name)+' v='+(m.getTotalVertices&&m.getTotalVertices())+' mat='+(m.material&&m.material.name+':'+m.material.getClassName())+' sub='+(m.subMeshes||[]).length).join('\n');
+  for(const m of ct.meshes){if(!m.getTotalVertices||!m.getTotalVertices())continue;const nm=(m.parent&&m.parent.name!=='__root__'&&!/^__/.test(m.parent.name)?m.parent.name:m.name).replace(/_primitive\d+$/,'');(grp[nm]=grp[nm]||[]).push(m);
+   const G=mt=>{if(!mt)return mt;let r=null;for(const x of scene.materials)if(x.name===mt.name.replace(/\.\d+$/,'')&&!ct.materials.includes(x)&&!(x instanceof BABYLON.MultiMaterial)){r=x;break;}if(!r)console.warn('cenário: sem material',mt.name);return r||mt;};
+   if(m.material instanceof BABYLON.MultiMaterial){const mm=new BABYLON.MultiMaterial(nm+'_mm',scene);mm.subMaterials=m.material.subMaterials.map(G);m.material=mm;}else m.material=G(m.material);}
+  for(const t of ct.textures.slice())try{t.dispose();}catch(e){}
+  for(const mt of ct.materials.slice())try{mt.dispose();}catch(e){}
+  ct.materials.length=0;ct.textures.length=0;
+  ct.addAllToScene();
+  const byN={};
+  for(const nm in grp){const P_=grp[nm];
+   for(const m of P_){m.setParent(null);m.bakeCurrentTransformIntoVertices();}
+   const m=P_.length>1?BABYLON.Mesh.MergeMeshes(P_,true,true,undefined,false,true):P_[0];
+   m.name=nm;m.isPickable=false;m.receiveShadows=false;m.alwaysSelectAsActiveMesh=false;m.setEnabled(false);m.refreshBoundingInfo();byN[nm]=m;}
+  for(const t of ct.transformNodes.slice())try{t.dispose();}catch(e){}
+  for(const r of ct.meshes.slice())try{if(!r.isDisposed()&&!byN[r.name]&&!(r.getTotalVertices&&r.getTotalVertices()))r.dispose();}catch(e){}
+  const ext=(m,byH)=>{const b=m.getBoundingInfo().boundingBox,mn=b.minimum,mx=b.maximum;return byH?mx.y-mn.y:Math.max(mx.x-mn.x,mx.z-mn.z);};
+  const used=new Set(),lim=MOB?3:99;   /* celular: menos variações = menos desenhos por quadro */
+  for(const key in SCEN.MAP){
+   const old=MS[key],L=[];
+   for(const nm of SCEN.MAP[key].slice(0,lim)){let v=byN[nm];if(!v)continue;if(used.has(v))v=v.clone(nm+'_'+key);used.add(v);L.push(v);}
+   if(!L.length)continue;
+   /* tamanho igual ao antigo (o padrão de cada chave é a média das variações) */
+   const byH=!!SCEN.BYH[key];let ref=0;
+   if(old){old.refreshBoundingInfo();ref=ext(old,byH);}
+   const refH=old?ext(old,1):0;
+   for(const v of L){const e=ext(v,byH);let k=ref>0&&e>0?ref/e:1;if(!byH&&refH>0)k=Math.min(k,refH/Math.max(.05,ext(v,1)));   /* pedras/arbustos/casas: cabe na largura E na altura do antigo */
+    if(Math.abs(k-1)>1e-3){v.scaling.setAll(k);v.bakeCurrentTransformIntoVertices();v.refreshBoundingInfo();
+     const uv=v.getVerticesData(BABYLON.VertexBuffer.UVKind);if(uv){for(let i=0;i<uv.length;i++)uv[i]*=k;v.setVerticesData(BABYLON.VertexBuffer.UVKind,uv,false,2);}}   /* pintura do mesmo tamanho depois do ajuste */
+    v.position.setAll(0);v.rotation.setAll(0);}
+   SCEN.V[key]=L;
+   if(!old)continue;
+   const all=[old,...old.instances];
+   const kp=SCEN.KEEP[key]||0,gone=[];
+   for(const it of all){if(it.isDisposed())continue;const p=it.position;
+    if(kp&&(Math.abs(Math.sin(p.x*7.13+p.z*3.71)*9631.7)%1)<kp)continue;   /* esta fica com o modelo antigo */
+    gone.push(it);
+    const n=SCEN.inst(key,p.x,p.z);n.parent=it.parent;n.position.copyFrom(p);
+    if(it.rotationQuaternion)n.rotationQuaternion=it.rotationQuaternion.clone();else n.rotation.copyFrom(it.rotation);
+    n.scaling.copyFrom(it.scaling);n.isPickable=false;if(!it.isEnabled(false))n.setEnabled(false);}
+   if(!kp){for(const it of old.instances.slice())it.dispose();try{unhull(old);}catch(e){}old.dispose();delete MS[key];}
+   else for(const it of gone){if(it===old){old.position.y=-200;old.scaling.setAll(.01);}else it.dispose();}   /* a malha-fonte antiga segue viva (sem aparecer) para as que ficaram */
+  }
+  for(const n in byN)if(!byN[n].__used&&!byN[n].isDisposed())byN[n].dispose();   /* variações sem uso: livra a memória */
+  SCEN.ready=true;if(PERF.dbg)window.__SCEN=SCEN;
+  if(OCT.o){OCT.o=null;OCT.at=0;}   /* árvore de seleção refeita com as peças novas */
+  if(PERF.dbg)console.log('cenário novo pronto',Object.keys(SCEN.V).length,'tipos');
+ }).catch(e=>{console.warn('cenário',e);SCEN.on=false;});
+};
+setTimeout(()=>SCEN.start(),0);
 
 /* capa: aparece só com o item de capa equipado. Formato pela classe: manto com capuz (Assassino e Arqueiro), dragona tipo cachecol (Mago e Pierrot, dano mágico),
    capa (demais). Tecido animado (balança parado e abre para trás ao correr). A = medidas do modelo: ombro (sx, sy), cabeça (hy, hr), costas (bz). */
