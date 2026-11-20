@@ -7960,7 +7960,7 @@ function renderFz(){
   h+='<p class="muted">Diamantes são a moeda especial do jogo. As fantasias compradas podem ser vendidas para outros jogadores por ouro (troca e leilão).</p>';
   /* v2.2.9: montarias */
   h+='<div class="dsec" style="margin-top:12px">🐎 Montarias</div><p class="muted" style="margin-top:0">Montado você anda mais rápido. A montaria não leva dano; você continua levando. Vinculadas à conta (não vendem nem trocam).</p>';
-  for(let r=0;r<3;r++){const ks=Object.keys(RULES.MTS).filter(k=>RULES.MTS[k].rar===r);if(!ks.length)continue;const R=PRAR[r],cost=RULES.MT_PRICE[r];
+  for(let r=0;r<3;r++){const ks=Object.keys(RULES.MTS).filter(k=>RULES.MTS[k].rar===r&&!RULES.MTS[k].off);if(!ks.length)continue;const R=PRAR[r],cost=RULES.MT_PRICE[r];
    h+=`<div class="fzh" style="color:${R.c}">${R.n.toUpperCase()} • +${Math.round(RULES.MT_SPD[r]*100)}% velocidade • 💎 ${fmt(cost)}</div>`;
    h+=ks.map(k=>{const Z=RULES.MTS[k],ok=S.gm||dia>=cost,own=(S.mtq&&S.mtq.id===k)||S.inv.some(x=>x&&x.k==='mt'&&x.id===k);
     return `<div class="fzrow"><div class="fzi" style="border-color:${R.c}">${Z.i}</div><div class="fzt"><b style="color:${R.c}">${Z.n}</b><small>${Z.d}${own?' • <span style="color:#6fdc7f">você já tem</span>':''}</small></div><div class="fzp"><div class="${ok&&!own?'ok':'no'}">${S.gm?'Grátis (GM)':'💎 '+fmt(cost)}</div><button data-mtbuy="${k}" ${ok&&!own?'':'disabled'}>${own?'Já tem':'Comprar'}</button></div></div>`;}).join('');}
@@ -9070,9 +9070,9 @@ function updateRecall(dt,now){
    animações Idle, Walk, Run, IdleHead, IdlePaw (só 4 patas). Botão 🐎 (tecla V): 4 s de chamada e você já aparece montado.
    Montado: +20/25/30% de velocidade (pela raridade). Sai no mesmo botão (desce normal) ou apertando uma habilidade (salto mortal; a habilidade não sai
    e não entra em recarga). A montaria fica parada 4 s e some. Ela não leva dano — quem leva é o personagem, como sempre. */
-const MTV='229';
+const MTV='230';
 const MTDEF={   /* sc: escala • seat: [frente, altura] da sela no modelo • legs • voz: [som, tom] • passo: tom do passo */
- cavalo:{sc:2.3,seat:[.134,.90],legs:4,voz:['shriek2',1.45],pas:.75},
+ cavalo:{sc:2.3,seat:[.004,.888],by:.655,legs:4,voz:['shriek2',1.45],pas:.75,tex:1,run:7.2,walk:4},   /* v2.3.0: modelo do Meshy com textura e animações próprias (by: os pés ficam abaixo da origem) */
  veado:{sc:2.15,seat:[-.127,.93],legs:4,voz:['borb',.7],pas:.95},
  cavalo2:{sc:2.3,seat:[.056,.89],legs:4,voz:['shriek2',1.3],pas:.72},
  lobo:{sc:2.1,seat:[.083,.96],legs:4,voz:['wargT',1],pas:1},
@@ -9085,12 +9085,13 @@ MNT.load=function(id){if(!MTDEF[id])return Promise.reject('?');if(MNT.ld[id])ret
  return MNT.ld[id]=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','mt_'+id+'.glb?v='+MTV,scene,null,'.glb')).then(ct=>{
   const m=new BABYLON.StandardMaterial('mt_'+id,scene);m.specularColor=new C3(.04,.04,.04);m.diffuseColor=new C3(1,1,1);m.emissiveColor=new C3(.06,.06,.06);m.noTint=true;MNT.mats[id]=m;
   MNT.ct=MNT.ct||{};MNT.ct[id]=ct;
+  if(MTDEF[id].tex){const t0=ct.materials.find(x=>x.albedoTexture||x.diffuseTexture);const tx=t0&&(t0.albedoTexture||t0.diffuseTexture);if(tx){m.diffuseTexture=tx;m.emissiveColor=new C3(.1,.1,.1);}}
   const o=MNT.make(id);MNT.free(o);   /* um pronto na reserva */
   try{for(const ms of o.meshes)m.forceCompilation(ms);}catch(e){}
   return ct;});};
 MNT.make=function(id){const D=MTDEF[id],ct=MNT.ct[id];
  const I=ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true}),root=new BABYLON.TransformNode('mt_'+id,scene),top=new BABYLON.TransformNode('mtt',scene);
- top.parent=root;top.scaling.setAll(D.sc);for(const r of I.rootNodes)r.parent=top;
+ top.parent=root;top.scaling.setAll(D.sc);top.position.y=(D.by||0)*D.sc;for(const r of I.rootNodes)r.parent=top;
  const meshes=[];for(const r of I.rootNodes)for(const ms of r.getChildMeshes(false)){ms.material=MNT.mats[id];ms.isPickable=false;ms.alwaysSelectAsActiveMesh=false;meshes.push(ms);try{if(window.SHADOW&&SHADOW.addShadowCaster)SHADOW.addShadowCaster(ms);}catch(e){}}
  const AG={};for(const g of I.animationGroups){g.stop();g.enableBlending=true;g.blendingSpeed=.12;AG[g.name]=g;}
  return {id,D,root,top,meshes,AG,cur:null,still:0,nextIdle:0,nextVoz:0,stepT:0,dead:0,owner:null};};
@@ -9101,8 +9102,8 @@ MNT.play=function(o,n,sp,once){if(o.cur===n&&!once)return;const g=o.AG[n]||o.AG.
 MNT.drive=function(o,pos,yaw,spd,dt,now,near){
  const D=o.D,f=D.seat[0]*D.sc;o.root.position.set(pos.x-Math.sin(yaw)*f,0,pos.z-Math.cos(yaw)*f);o.root.rotation.y=yaw;
  if(o.dead)return;
- if(spd>4.2){MNT.play(o,'Run',Math.min(1.5,spd/7.5));o.still=now;}
- else if(spd>.35){MNT.play(o,'Walk',Math.max(.6,Math.min(1.6,spd/2.6)));o.still=now;}
+ if(spd>4.2){MNT.play(o,'Run',Math.min(1.5,spd/(D.run||7.5)));o.still=now;}
+ else if(spd>.35){MNT.play(o,'Walk',Math.max(.6,Math.min(1.6,spd/(D.walk||2.6))));o.still=now;}
  else if(o.cur==='Run'||o.cur==='Walk'||!o.cur)MNT.play(o,'Idle');
  /* parado há 1 minuto: balança a cabeça ou levanta uma pata de vez em quando */
  if(spd<=.35&&now-o.still>60000&&now>o.nextIdle&&o.cur==='Idle'){o.nextIdle=now+7000+Math.random()*6000;MNT.play(o,o.D.legs===4&&Math.random()<.5?'IdlePaw':'IdleHead',1,true);}
@@ -9124,7 +9125,7 @@ const RIDE={tp:-1.25,tr:.42,sp:1.45};
 /* barra de chamada (igual à do retorno à cidade) */
 document.body.insertAdjacentHTML('beforeend','<div id="mtBar" style="display:none;position:absolute;left:50%;bottom:170px;transform:translateX(-50%);width:240px;z-index:6;text-align:center;font-size:12px;color:#ffe2b0;pointer-events:none">Chamando a montaria…<div style="height:8px;margin-top:4px;border-radius:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,226,176,.5);overflow:hidden"><div id="mtFill" style="height:100%;width:0;background:linear-gradient(90deg,#c98a3a,#ffe2b0)"></div></div></div>');
 const MT_CAST=4000;
-function mtCan(){if(!S||P.dead)return 'x';if(NET.inst)return 'Montarias não entram em calabouços.';if(PKS.mode==='arena'||PKS.mode==='duel')return 'Sem montaria na arena e em duelos.';if(!S.mtq||!MTDEF[S.mtq.id])return 'Equipe uma montaria na janela 💎 (aba 🐎 Montaria).';return '';}
+function mtCan(){if(!S||P.dead)return 'x';if(NET.inst)return 'Montarias não entram em calabouços.';if(PKS.mode==='arena'||PKS.mode==='duel')return 'Sem montaria na arena e em duelos.';if(!S.mtq||!MTDEF[S.mtq.id])return 'Equipe uma montaria na janela 💎 (aba 🐎 Montaria).';if((RULES.MTS[S.mtq.id]||{}).off)return 'Essa montaria está sendo refeita e volta em breve.';return '';}
 function mountBtn(){
  if(P.mnt){dismount(false);return;}
  if(MNT.cast){mtCancel('Chamada cancelada.');return;}
@@ -9181,7 +9182,7 @@ function mtRemote(o,p,pos,dt,now){MNT.now=now;const id=p&&!p.dead&&o.rig?p.mt||'
  MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
 function mtRemoteKill(o){if(o&&o._mo){MNT.free(o._mo);o._mo=null;}}
 /* quando equipa (ou ao entrar no jogo): já deixa o modelo baixado e compilado */
-let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id)MNT.load(id).catch(()=>{});if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
+let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id&&!(RULES.MTS[id]||{}).off)MNT.load(id).catch(()=>{});if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
 
 /* =================== NEVE CAINDO (região 3) =================== */
 const SNOWF=(()=>{const em=B.CreateBox('snowem',{size:.1},scene);em.isVisible=false;em.isPickable=false;const ps=new BABYLON.ParticleSystem('snowps',1200,scene);ps.particleTexture=ptex();ps.emitter=em;
