@@ -1153,8 +1153,8 @@ R.TOWN_R = MON_TOWN_R;
 R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }, { x: -600, z: 0, r: 15 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
 R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
-const nm = it => it.k === 'fz' ? 'Fantasia: ' + ((FZS[it.id] || {}).n || '?') : it.k === 'pet' ? ((PETS[it.id] || {}).n || 'Mascote') : it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
-const sellPrice = it => it.bd || it.k === 'fz' ? 0 : it.k === 'pet' ? Math.round(((PETS[it.id] || {}).price || 0) * .1) : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
+const nm = it => it.k === 'mt' ? 'Montaria: ' + ((MTS[it.id] || {}).n || '?') : it.k === 'fz' ? 'Fantasia: ' + ((FZS[it.id] || {}).n || '?') : it.k === 'pet' ? ((PETS[it.id] || {}).n || 'Mascote') : it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
+const sellPrice = it => it.bd || it.k === 'fz' || it.k === 'mt' ? 0 : it.k === 'pet' ? Math.round(((PETS[it.id] || {}).price || 0) * .1) : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
 const MAXPLUS = 10;
 /** chave de "modelo" do item para o histórico de preços do leilão: itens iguais (nome, nível, raridade, refino, engastes) compartilham o histórico */
 const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
@@ -1305,6 +1305,22 @@ const FZS = {
   realeza: { n: 'Majestade de Valdoria', i: '👑', rar: 3, m: 'Rei', f: 'Rainha' },
   anjo:    { n: 'Anjo da Aurora', i: '😇', rar: 3, m: 'Anjo Guardião', f: 'Anjo da Aurora' },
   demonio: { n: 'Diabrete das Brasas', i: '😈', rar: 3, m: 'Diabrete', f: 'Diabinha' }};
+/* ====================== MONTARIAS (v2.2.9) ======================
+   Item k:'mt' (n = 1, não empilha, vinculado: não vende, não troca, não vai a leilão). Compradas com DIAMANTES na loja 💎 (GM: grátis).
+   Só 1 equipada (c.mtq). Montado: +20% de velocidade (comum), +5% a cada raridade acima. A montaria não leva dano. */
+const MT_PRICE = [600, 1000, 1400];
+const MT_SPD = [.20, .25, .30];
+const MTS = {
+  cavalo:  { n: 'Cavalo de Guerra Dourado', i: '🐎', rar: 0, d: 'Cavalo marrom com armadura dourada e manta azul. Fiel e resistente.' },
+  veado:   { n: 'Cervo da Floresta Real', i: '🦌', rar: 0, d: 'Cervo de galhada imponente, enfeitado com folhas.' },
+  cavalo2: { n: 'Corcel Sombrio', i: '🐴', rar: 1, d: 'Cavalo negro de armadura violeta e olhos em brasa.' },
+  lobo:    { n: 'Lobo da Tempestade', i: '🐺', rar: 1, d: 'Lobo cinzento com sela de couro e espinhos.' },
+  porco:   { n: 'Javali Couraçado', i: '🐗', rar: 1, d: 'Javali de presas enormes e sela de batalha.' },
+  ave:     { n: 'Grifo Batedor', i: '🦅', rar: 2, d: 'Ave de bico forte e penas douradas e azuis. Corre sobre duas patas.' },
+  urso:    { n: 'Urso Blindado', i: '🐻', rar: 2, d: 'Urso pardo com escudos e sela reforçada.' }};
+const newMt = id => ({ k: 'mt', id, n: 1 });
+const mtPrice = id => MT_PRICE[(MTS[id] || { rar: 0 }).rar];
+const mtSpd = id => MT_SPD[(MTS[id] || { rar: 0 }).rar] || .2;
 const DIA_MAX = 1e9;
 const newFz = id => ({ k: 'fz', id, n: 1 });
 const fzPrice = id => FZ_PRICE[(FZS[id] || { rar: 0 }).rar];
@@ -1978,6 +1994,7 @@ function cleanItem(it) {
   if (it.k === 'pet') { const P = PETS[it.id]; if (!P) return null; const sl = Math.max(0, Math.min(PET_MAXSL, Number.isInteger(it.sl) ? it.sl : P.rar + 2)); const o = { k: 'pet', id: it.id, sl };
     if (Array.isArray(it.gm)) { const gm = it.gm.slice(0, sl).map(g => (g && GEMD[g] && GEMD[g].cat === 'p') ? g : null); while (gm.length < sl) gm.push(null); if (gm.some(Boolean)) o.gm = gm; } return o; }
   if (it.k === 'fz') return FZS[it.id] ? newFz(it.id) : null;
+  if (it.k === 'mt') return MTS[it.id] ? newMt(it.id) : null;
   if (it.k === 'tix') return DUNGEONS.some(d => d.id === it.id) && Number.isFinite(it.n) ? { k: 'tix', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
@@ -2053,6 +2070,7 @@ function migrate(c) {
   if (c.quests && typeof c.quests === 'object') for (const q of MAINQ) { if (c.quests[q.id]) continue; if (q.need <= c.level - 4) c.quests[q.id] = { n: q.qty, done: true, sk: 1 }; else break; }
   { const ps = Array.isArray(c.pets) ? c.pets.slice(0, PET_EQ).map(x => x ? cleanItem(x) : null).map(x => x && x.k === 'pet' ? x : null) : []; while (ps.length < PET_EQ) ps.push(null); c.pets = ps;   // v1.80: mascotes
     c.pcf = cleanPcf(c.pcf); }
+  { const q = c.mtq ? cleanItem(c.mtq) : null; c.mtq = q && q.k === 'mt' ? q : null; }   // v2.2.9: montaria equipada
   { const z = c.fzq ? cleanItem(c.fzq) : null; c.fzq = z && z.k === 'fz' ? z : null; c.dia = Math.max(0, Math.min(DIA_MAX, Math.floor(Number(c.dia)) || 0)); }   // v1.82: fantasia equipada e diamantes
   purgeExp(c);
   return c;
@@ -2220,7 +2238,7 @@ function act(sess, m, ctx) {
     if (!npcFor('vender')) return fail('Chegue perto de um comerciante.');
     const idx = t === 'sell' ? [m.i] : (Array.isArray(m.idx) ? [...new Set(m.idx)] : []);
     let total = 0, n = 0;
-    for (const i of idx) { if (!intIn(i, 0, c.inv.length) || !c.inv[i] || c.inv[i].k === 'fz') continue; const it = c.inv[i], q = (t === 'sell' && !m.all && it.n > 1) ? 1 : (it.n || 1);
+    for (const i of idx) { if (!intIn(i, 0, c.inv.length) || !c.inv[i] || c.inv[i].k === 'fz' || c.inv[i].k === 'mt') continue; const it = c.inv[i], q = (t === 'sell' && !m.all && it.n > 1) ? 1 : (it.n || 1);
       total += sellPrice(it) * q; n++; if (t === 'sell' && !m.all && it.n > 1) it.n--; else c.inv[i] = null; }
     if (!n) return fail('Nada para vender.'); c.gold += total; F('coin');
     if (t === 'sellmany') { L(`💰 Você vendeu <b>${n}</b> item(ns) por <b style="color:#ffe28a">${total}</b> ouro.`); T('Vendido: ' + n + ' item(ns) por ' + total + ' 💰'); }
@@ -2272,6 +2290,21 @@ function act(sess, m, ctx) {
   }
   if (t === 'fzun') {
     if (!c.fzq) return fail(); if (!addItem(c.inv, c.fzq)) return fail('Mochila cheia!'); T('🎭 Fantasia guardada na mochila'); c.fzq = null; return done();
+  }
+  if (t === 'buymt') {                                                    // v2.2.9: loja de montarias (diamantes; GM grátis)
+    const Z = MTS[m.id]; if (!Z) return fail(); const cost = c.gm ? 0 : mtPrice(m.id);
+    if ((c.mtq && c.mtq.id === m.id) || c.inv.some(x => x && x.k === 'mt' && x.id === m.id)) return fail('Você já tem essa montaria.');
+    if ((c.dia || 0) < cost) return fail('💎 Diamantes insuficientes.');
+    if (!addItem(c.inv, newMt(m.id))) return fail('Mochila cheia: libere um espaço para a montaria.');
+    c.dia = (c.dia || 0) - cost; F('coin'); T('🐎 Nova montaria: ' + Z.n);
+    L(`<span style="color:${PRAR[Z.rar].c}">🐎 Você comprou a montaria <b>${Z.n}</b> (${PRAR[Z.rar].n})${cost ? ' por 💎 ' + cost : ''}! Equipe na janela 💎 (aba 🐎 Montaria) e chame com o botão 🐎.</span>`); return done();
+  }
+  if (t === 'mteq') {                                                     // equipa uma montaria da mochila (só 1; a anterior volta para o mesmo espaço)
+    if (!intIn(m.i, 0, c.inv.length)) return fail(); const it = c.inv[m.i]; if (!it || it.k !== 'mt' || !MTS[it.id]) return fail('Escolha uma montaria.');
+    const old = c.mtq || null; c.mtq = newMt(it.id); c.inv[m.i] = old; T('🐎 Montaria equipada: ' + MTS[it.id].n); return done();
+  }
+  if (t === 'mtun') {
+    if (!c.mtq) return fail(); if (!addItem(c.inv, c.mtq)) return fail('Mochila cheia!'); T('🐎 Montaria guardada na mochila'); c.mtq = null; return done();
   }
   if (t === 'buyticket') {
     const n = npcFor('dungeon'); if (!n) return fail('Chegue perto do Guardião das Criptas.');
@@ -2516,7 +2549,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return (s && ANIM[s.anim]) || 260; };
 Object.assign(R, { LOOK, LK_DEF, LOOK_VER, lkCanEdit, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

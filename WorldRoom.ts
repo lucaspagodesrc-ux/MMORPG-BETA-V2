@@ -816,6 +816,11 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("pdown", (client) => { const s = this.S(client); if (s && this.okRate(s, 1)) this.pvp.down(s); });                   // "minha vida acabou" (PvP)
     this.onMessage("arena", (client, m) => { const s = this.S(client); if (s && m && typeof m.op === "string" && this.okRate(s, 2)) this.pvp.arenaMsg(s, m); });
     this.onMessage("tr", (client, m) => { const s = this.S(client); if (s && m && typeof m.op === "string" && this.okRate(s, 1)) tradeMsg(this, s, m); });
+    // v2.2.9: montar / desmontar (só a montaria equipada; morto não monta)
+    this.onMessage("mnt", (client, m) => {
+      const s = this.S(client), p = this.state.players.get(client.sessionId); if (!s || !p || !this.okRate(s, 1)) return;
+      const id = m && m.on && !p.dead && s.c.mtq && R.MTS[s.c.mtq.id] ? String(s.c.mtq.id) : ""; if (p.mt !== id) p.mt = id;
+    });
     this.onMessage("cast", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.cast(s, m); });
     this.onMessage("atk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.basic(s, m); });
     this.onMessage("pick", (client, m) => {
@@ -841,7 +846,7 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("died", (client) => {
       const s = this.S(client), p = this.state.players.get(client.sessionId);
       if (!s || !p || p.dead) return;
-      p.dead = true;
+      p.dead = true; p.mt = "";
       if (s.pv && s.pv.mode && this.pvp.onDied(s)) return;          // PvP: sem penalidade de morte (na Cidade das Máquinas só se um inimigo te derrubou)
       const r = R.act(s, { t: "died" }, { now: Date.now() });
       this.touch(s); this.sync(s); this.res(s, r.out);

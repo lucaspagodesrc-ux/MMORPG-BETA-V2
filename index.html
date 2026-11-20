@@ -556,6 +556,8 @@
   body.mob #skillbar .sk .key{display:none}
   body.mob #skillbar .sk.pot{display:grid;place-items:center;width:42px;height:42px;font-size:19px;left:12px}
   body.mob #skillbar .sk.pot[data-pot="hp"]{top:148px}body.mob #skillbar .sk.pot[data-pot="mp"]{top:99px}
+  body.mob #skillbar .sk.mtb{display:grid;place-items:center;width:42px;height:42px;font-size:19px;left:12px;top:50px}
+  #skillbar .sk.mtb i{font-style:normal;font-size:20px}#skillbar .sk.mtb.on{border-color:#ffd28a;box-shadow:0 0 10px rgba(255,210,138,.6)}
   body.mob #mAct>*{pointer-events:auto;position:absolute;display:grid;place-items:center;border-radius:50%;touch-action:manipulation;color:#fff;padding:0}
   body.mob #mAtk{right:6px;bottom:8px;width:84px;height:84px;background:radial-gradient(circle at 40% 35%,#ffcf6b,#c47a12);border:3px solid #ffe3a0;font-size:34px;box-shadow:0 4px 14px rgba(0,0,0,.5)}
   body.mob #mAtk:active,body.mob #skillbar .sk:active,body.mob #mAct>*:active{transform:scale(.92)}
@@ -630,7 +632,7 @@
     <button data-win="gm" id="mnuGm" title="Painel do GM (Y)" style="display:none">✨</button>
     <button data-win="titles" title="Títulos (T)">🏅</button>
     <button data-win="pets" title="Mascotes (P)">🐾</button>
-    <button data-win="fz" id="btnFz" title="Loja de Diamantes • Fantasias (J)">💎</button>
+    <button data-win="fz" id="btnFz" title="Loja de Diamantes • Fantasias e Montarias (J)">💎</button>
     <button data-win="help" title="Ajuda (H)">❔</button><button id="btnDance" title="Dançar (/dançar)">💃</button>
     <button id="btnAudio" title="Opções: áudio, idioma e nome">⚙️</button>
     <button id="btnMenu" title="Trocar personagem">🚪</button>
@@ -1353,8 +1355,8 @@ const QA=['Armor_Leather','Armor_Metal','Armor_Metal2','Armor_Golden'],QR=['Ring
 const QM={osso:'Bone',ossogelo:'Bone',cristal:'Crystal5',cristalpuro:'Crystal5',nucleo:'Crystal4',essencia:'Crystal1',essenciagelo:'Snowflake1',nucleogelo:'Snowflake3',selo:'Coin_Star'};
 const eqIco=it=>{const r=Math.max(0,Math.min(3,it.rar|0));if(it.slot==='weapon'&&QIW[it.cls])return qi(QIW[it.cls][r]);if(it.slot==='armor')return qi(it.wb||(it.ilvl>=100&&r>=3)?'Armor_Black':QA[r]);if(it.slot==='ring'||it.slot==='ring2')return qi((it.ilvl>=100&&r>=3)?'Ring7':QR[r]);return '';};
 const ico=it=>{if(it.k==='eq'){const ic=eqIco(it)||it.icon;return it.plus||it.wb?`<span class="ig${it.plus>=7||it.wb?' hi'+(it.plus>=10?' s10':it.plus>=9?' s9':it.plus>=8?' s8':''):''}" style="--gp:${it.plus||8};--gc:${it.wb?'#ffcf4a':(it.mo&&OG[it.mo])?OG[it.mo].col:RAR[it.rar].c}">${ic}</span>`:ic;}
- return it.k==='fz'?((FZS[it.id]||{}).i||'🎭'):it.k==='pet'?((PETS[it.id]||{}).i||'🐾'):it.k==='tix'?qi('Scroll'):it.k==='mat'?(MATS[it.id].gem?gemSvg(MATS[it.id].gem):(QM[it.id]?qi(QM[it.id]):MATS[it.id].i)):it.k==='pot'?(QP[it.id]?qi(QP[it.id]):POTS[it.id].i):qi('Coin');};
-const col=it=>it.k==='fz'?PRAR[(FZS[it.id]||{rar:0}).rar].c:it.k==='pet'?PRAR[(PETS[it.id]||{rar:0}).rar].c:it.k==='mat'&&MATS[it.id].gem?GRADES[GEMD[MATS[it.id].gem].g].c:it.k==='mat'&&MATS[it.id].ext?'#c9a8ff':it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):it.wb?'#ffcf4a':RAR[it.rar].c):'#455568';
+ return it.k==='mt'?((RULES.MTS[it.id]||{}).i||'🐎'):it.k==='fz'?((FZS[it.id]||{}).i||'🎭'):it.k==='pet'?((PETS[it.id]||{}).i||'🐾'):it.k==='tix'?qi('Scroll'):it.k==='mat'?(MATS[it.id].gem?gemSvg(MATS[it.id].gem):(QM[it.id]?qi(QM[it.id]):MATS[it.id].i)):it.k==='pot'?(QP[it.id]?qi(QP[it.id]):POTS[it.id].i):qi('Coin');};
+const col=it=>it.k==='mt'?PRAR[(RULES.MTS[it.id]||{rar:0}).rar].c:it.k==='fz'?PRAR[(FZS[it.id]||{rar:0}).rar].c:it.k==='pet'?PRAR[(PETS[it.id]||{rar:0}).rar].c:it.k==='mat'&&MATS[it.id].gem?GRADES[GEMD[MATS[it.id].gem].g].c:it.k==='mat'&&MATS[it.id].ext?'#c9a8ff':it.k==='eq'?(it.slot==='cape'?(it.cs==='m'?'#4d8dff':it.cs==='a'?'#9a6bff':'#e0483f'):it.wb?'#ffcf4a':RAR[it.rar].c):'#455568';
 /* =================== EVENTO: BOAS-VINDAS, INAUGURAÇÃO E NATAL =================== */
 const evtEndTxt=()=>'25/12/2026 às 23:59';
 function evtLeft(){let ms=RULES.EVT.end-Date.now();if(ms<=0)return 'encerrado';const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);return d>0?`restam ${d}d ${h}h`:h>0?`restam ${h}h ${m}min`:`restam ${m}min`;}
@@ -1388,6 +1390,7 @@ function evtTabHtml(){
  return h;
 }
 function tipOf(it){
+ if(it.k==='mt'){const Z=RULES.MTS[it.id]||{},r=PRAR[Z.rar||0];return `<b style="color:${r.c}">${Z.i||'🐎'} ${Z.n}</b><br><span style="color:${r.c}">Montaria ${r.n}</span> • +${Math.round(RULES.mtSpd(it.id)*100)}% de velocidade<br>${Z.d||''}<br><span class="muted">Vinculada (não vende nem troca)<br>Clique para equipar • chame com o botão 🐎 (tecla V)</span>`;}
  if(it.k==='fz'){const Z=FZS[it.id]||{},r=PRAR[Z.rar||0];return `<b style="color:${r.c}">${Z.i||'🎭'} ${Z.n}</b><br><span style="color:${r.c}">Fantasia ${r.n}</span><br>♂ ${Z.m} • ♀ ${Z.f}<br><span class="muted">Muda só a aparência (a arma da classe continua na mão) e esconde a capa.<br>Veste a versão do sexo do personagem • ocupa 1 espaço • negociável na troca e no leilão • pode ir para o baú</span><br><span class="muted">Clique para vestir • janela 💎 Fantasias: tecla J</span>`;}
  if(it.k==='pet'){const P=PETS[it.id]||{},r=PRAR[P.rar||0];let h=`<b style="color:${r.c}">${P.i||'🐾'} ${P.n}</b><br><span style="color:${r.c}">Mascote ${r.n}</span><br>${P.d||''}<br>`;
   h+=`<span class="muted">Engastes: ${it.sl||0}/${RULES.PET_MAXSL}</span> ${socksH(it)}<br>`;
@@ -4495,7 +4498,7 @@ const GLB=(()=>{
   if(!L.wfix){L.wfix=1;try{flipW(L);}catch(e){console.warn('flipW',e);}}}
  function anim(o,px,pz,now,sa){
   const L=o.limbs,first=!L.t;let dt=first?.016:Math.min(.1,(now-L.t)/1000);if(dt<=0)return;
-  const sp=first?0:Math.hypot(px-L.x,pz-L.z)/dt;L.t=now;L.x=px;L.z=pz;L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);
+  const sp=first?0:Math.hypot(px-L.x,pz-L.z)/dt;L.t=now;L.x=px;L.z=pz;L.spd+=(Math.min(sp,12)-L.spd)*Math.min(1,dt*10);if(o._ride)L.spd=0;   /* montado: as pernas não andam */
   const a=Math.min(1,L.spd/3.2),AG=L.AG;
   const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,free=!kind||!KA[kind],dflt=L.cls==='arqueiro'||L.cls==='mago'?'Cast':'Attack';
   /* v2.1.6/2.1.7: ataque básico por classe — arqueiro puxa a corda e solta; mago lança com a mão livre; tanque alterna jab e direto */
@@ -4525,7 +4528,7 @@ const GLB=(()=>{
   set('Walk',rest*a,(L.ph%1+1)%1);
   {const it=((now/2000+L.ph0)%1+1)%1,ci=AG.CIdle&&sa?Math.max(0,Math.min(1,(4000-(now-sa))/500)):0;   /* v2.1.8: cavaleiro fica com o escudo erguido por uns segundos depois de lutar */
    if(ci>0)set('CIdle',rest*(1-a)*ci,((now/2000)%1+1)%1);set('Idle',rest*(1-a)*(1-ci),it);}
-  pose(L,W);
+  pose(L,W);if(o._ride)rideLegs(o);
   if(kind==='jump'){if(act){o.root.position.y=sw<.8?3*Math.sin(Math.PI*sw/.8):0;o._jy=1;}else if(o._jy){o.root.position.y=0;o._jy=0;}}
   else if(o._jy){o.root.position.y=0;o._jy=0;}
   const spn=kind==='spin'?2:kind==='spin3'?3:0;   /* voltas completas: Pirueta 2, Redemoinho Circense 3 (em 1,5 s) */
@@ -6222,7 +6225,7 @@ let invT=null;
 function showInvite(from){$('invTxt').innerHTML='👥 <b>'+esc(from)+'</b> convidou você para um grupo.';$('invBox').style.display='flex';AUD.sfx('questAccept');clearTimeout(invT);invT=setTimeout(()=>$('invBox').style.display='none',30000);}
 $('invOk').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:true});};
 $('invNo').onclick=()=>{$('invBox').style.display='none';if(NET.room)NET.room.send('pans',{ok:false});};
-if(/^\?dbg/.test(location.search))window.__G={PVo:()=>PV.o,tipOf,spawnDrop,buildMonster,renderTracker,openDialog,get drops(){return drops;},get PETM(){return PETM;},get CLN(){return CLN;},updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},VFX,hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,killRemote:o=>killRemote(o),nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;},usePortal};
+if(/^\?dbg/.test(location.search))window.__G={PVo:()=>PV.o,tipOf,spawnDrop,buildMonster,renderTracker,openDialog,get drops(){return drops;},get PETM(){return PETM;},get CLN(){return CLN;},updWeaponVisual,get GU(){return GU;},RULES,gemSvg,buildDungeon,enterDungeonLocal,dgApplyStage,setWin:(typeof setWin!=='undefined'?setWin:null),get RP(){return RP;},get quiet(){return quiet;},get S(){return S},get NET(){return NET},get P(){return P},DG,get PARTY(){return PARTY},set PARTY(v){PARTY=v;},openDialog,NPCS,get monsters(){return monsters},get camera(){return camera},get PV(){return PV},VFX,hookFx,barbFx,frostMon,iceCage,arcRayFx,apoBalls,buildModel,buildMonster,tintModel,scene,mat,PAINT,applyGear,mkWalker,person,animal,buildNpc,MT,PERF,INKED,GSET,setInk,get PROF(){return PROF;},PX,LOD,lodR,walkers,shadowDisc,get CH(){return typeof CH!=='undefined'?CH:null},get PKS(){return PKS;},foeOf,foeOk,selectMonster,ACT,mountBtn,get MNT(){return MNT},dismount,get RIDE(){return RIDE},castSkill,ORG,GLB,damagePlayer,ARX:{arrowFly,arrowFall,bigShot,chargeFx,fanFx,rainFx,blastDash,spiritFx,gustFx,vortexFx,mkArrow},usePot,basicAttack,killRemote:o=>killRemote(o),nearestMonster,get ARN(){return ARN;},get dlg(){return dlg;},usePortal};
 
 /* =================== LOOT =================== */
 function spawnDrop(item,pos,life){
@@ -6494,7 +6497,7 @@ function damagePlayer(raw,src){
  {const av=RULES.defRoll(D(),null,getBuff('evade'));if(av){floatText(av==='block'?'Bloqueou!':'Esquivou!',P.pos,av==='block'?'#ffe28a':'#9fe7ff');AUD.sfx(av==='block'?'block':'dodge');return;}}
  const def=D().def*(1-getBuff('defloss'));let dmg=raw*(1-def/(def+80));dmg*=(1-Math.min(.85,getBuff('shield')));dmg=RULES.flatRed(D(),null,dmg);
  dmg=wardAbsorb(dmg);if(dmg<=0){P.lastCombat=now;return;}
- P.hp-=dmg;P.lastCombat=now;floatText('-'+dmg,P.pos,'#ff6b6b');VFX.hurt(P);AUD.sfx('playerHurt');if(P.recall)cancelRecall('Retorno interrompido: você sofreu dano.');
+ P.hp-=dmg;P.lastCombat=now;floatText('-'+dmg,P.pos,'#ff6b6b');VFX.hurt(P);AUD.sfx('playerHurt');if(P.recall)cancelRecall('Retorno interrompido: você sofreu dano.');if(MNT.cast)mtCancel('Chamada da montaria interrompida: você sofreu dano.');
  if(P.hp<=0){P.hp=0;die();}
 }
 function die(){
@@ -6519,6 +6522,7 @@ function skStat(i){return RULES.skStat(S.cls,i,rk(i));}
 function castSkill(i){
  TUT.cast=performance.now();
  if(!S||P.dead)return;const C=CLASSES[S.cls];if(!C.skills[i])return;
+ if(P.mnt){dismount(true);return;}if(P.flip)return;   /* v2.2.9: apertar habilidade montado = desce da montaria (a habilidade não sai nem entra em recarga) */
  if(!rk(i)){toast(S.level>=C.skills[i].lv?'Aprenda esta habilidade em K':'Habilidade disponível no nível '+C.skills[i].lv);return;}
  if(P.barbUntil&&performance.now()<P.barbUntil){toast('😡 Metamorfose: só o ataque básico funciona');return;}
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');return;}
@@ -6820,11 +6824,14 @@ function updateMonsters(dt,now){
 
 /* =================== PLAYER UPDATE =================== */
 function updatePlayer(dt,now){
+ if(P.dead&&P.flip){P.flip=null;P.root.rotation.x=0;P._ride=false;}
+ mtTick(dt,now);
+ if(P.flip){flipTick(now);if(!P.flip)P._ride=false;if(P.limbs&&P.limbs.glb)animEnt(P,P.pos.x,P.pos.z,now,P.swingAt,false);return;}   /* v2.2.9 salto mortal ao descer */
  if(P.dead){if(P.roll)endRoll();if(P.barbUntil)endBarb(P);if(P.limbs&&P.limbs.glb)animEnt(P,P.pos.x,P.pos.z,now,P.swingAt,false);return;}   /* v2.1.7: anima a queda */
  if(P.roll){rollStep(dt,now);return;}
  if(now<(P.lock||0)){P.moving=false;return;}
  if(now<PKS.cc.stun){P.moving=false;P.moveTo=null;return;}
- const spd=6*(1+getBuff('haste'))*(now<PKS.cc.slow?.6:1),rooted=now<PKS.cc.root;
+ const spd=6*(1+getBuff('haste'))*(now<PKS.cc.slow?.6:1)*(P.mnt?1+P.mnt.spd:1),rooted=now<PKS.cc.root;   /* v2.2.9: montado anda mais rápido */
  const f=camera.target.subtract(camera.position);f.y=0;f.normalize();const rt=new V3(f.z,0,-f.x);
  let ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),iy=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);if(JOY.x||JOY.y){ix=JOY.x;iy=JOY.y;}
  P.moving=false;
@@ -6840,7 +6847,7 @@ function updatePlayer(dt,now){
    else{
     const d=hyp(P.pos,m.pos),rng=CLASSES[S.cls].range+mReach(m);
     if(d>rng-.2){tgt=m.pos;stop=rng-.5;}
-    else{P.root.rotation.y=Math.atan2(m.pos.x-P.pos.x,m.pos.z-P.pos.z);if(now>=P.nextAtk)basicAttack(m,now);}
+    else{P.root.rotation.y=Math.atan2(m.pos.x-P.pos.x,m.pos.z-P.pos.z);if(now>=P.nextAtk&&!P.mnt)basicAttack(m,now);}
    }
   }else if(P.interact){
    const n=P.interact,d=hyp(P.pos,n.pos);
@@ -6857,8 +6864,8 @@ function updatePlayer(dt,now){
  collide(P.pos,.4);clampMap(P.pos);P._lp={x:P.pos.x,z:P.pos.z};
  // animação
  const sw=(now-P.swingAt)/260;
- P.pos.y=P.moving?Math.abs(Math.sin(now*.013))*.09:0;
- {const ph=Math.floor(now*.013/Math.PI);if(P.moving&&!P.roll&&ph!==P.stPh){P.stPh=ph;if(ph%2===0)AUD.step(...stepKind());}else if(!P.moving)P.stPh=-1;}   /* v2.2.6 passos */
+ if(!P.mnt)P.pos.y=P.moving?Math.abs(Math.sin(now*.013))*.09:0;else P.pos.y=MNT.seatY(P.mnt.o,P)+(P.moving?Math.abs(Math.sin(now*.0108))*.07:0);
+ {const ph=Math.floor(now*.013/Math.PI);if(P.moving&&!P.roll&&!P.mnt&&ph!==P.stPh){P.stPh=ph;if(ph%2===0)AUD.step(...stepKind());}else if(!P.moving)P.stPh=-1;}   /* v2.2.6 passos */
  animEnt(P,P.pos.x,P.pos.z,now,P.swingAt,MELEE.has(S.cls));
  gmFx(P,(S.gmu||0)>Date.now(),now);
  // auto coleta
@@ -6908,6 +6915,7 @@ window.addEventListener('keydown',e=>{
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){if(MB.open)mbClose();else mbOpen();return;}   /* v1.78: M abre o mapa; a música fica nas ⚙️ Opções */
  if(k==='b'){startRecall();return;}
+ if(k==='v'){mountBtn();return;}
  if(k==='i')toggleWin('inv');else if(k==='c')toggleWin('char');else if(k==='g')toggleWin('party');else if(k==='q')toggleWin('quest');else if(k==='k')toggleWin('skill');else if(k==='t')toggleWin('titles');else if(k==='p')toggleWin('pets');else if(k==='j')toggleWin('fz');else if(k==='f')toggleWin('friends');else if(k==='y'&&S&&S.gm)toggleWin('gm');else if(k==='h')toggleWin('help');else if(k==='u')guToggle();
  else if(k==='escape'){AUDUI.panel(false);closeDialog();guClose();['inv','char','quest','skill','party','friends','gm','titles','help','pets','fz'].forEach(w=>setWin(w,false));$('pmenu').style.display='none';}
 });
@@ -7087,6 +7095,7 @@ function useItem(i){
  if(it.k==='pot'){usePot(it.id.startsWith('hp')?'hp':'mp');return;}
  if(it.k==='pet'){ACT({t:'peteq',i});return;}
  if(it.k==='fz'){ACT({t:'fzeq',i});return;}
+ if(it.k==='mt'){ACT({t:'mteq',i});return;}
  if(it.k==='mat'){toast('Material de criação — use com o Ferreiro');return;}
  if(it.k==='tix'){toast('🎟️ Ingresso de calabouço — fale com o portal do calabouço para entrar');return;}
  if(S.level<it.req){toast('Nível '+it.req+' necessário');return;}
@@ -7782,10 +7791,10 @@ function buildSkillbar(){
  const C=CLASSES[S.cls];if(!S.bar)S.bar=RULES.defBar();
  const slot=n=>{const si=S.bar[n],s=si>=0?C.skills[si]:null;return `<div class="sk${n>=8?' sk2':''}${s?'':' empty'}" data-slot="${n}"${s?` title="${s.n} — ${s.d}"`:''}><span class="key">${n>=8?'⇧'+(n-7):n+1}</span>${s?s.i:''}<div class="cdm"></div><span class="cdt"></span><span class="rk"></span></div>`;};
  const r=(a,b)=>Array.from({length:b-a},(_,j)=>slot(a+j)).join('');
- $('skillbar').innerHTML=`<div class="sbrow${S.bar.slice(8).some(v=>v>=0)?'':' hide'}" id="sbr2">${r(8,16)}</div><div class="sbrow">${r(0,8)}`+['hp','mp'].map((k,i)=>`<div class="sk pot" data-pot="${k}" title="${POTS[k].n}"><span class="key">${i?0:9}</span>${qi(QP[k])}<span class="cnt"></span></div>`).join('')+'</div>';
+ $('skillbar').innerHTML=`<div class="sbrow${S.bar.slice(8).some(v=>v>=0)?'':' hide'}" id="sbr2">${r(8,16)}</div><div class="sbrow">${r(0,8)}`+['hp','mp'].map((k,i)=>`<div class="sk pot" data-pot="${k}" title="${POTS[k].n}"><span class="key">${i?0:9}</span>${qi(QP[k])}<span class="cnt"></span></div>`).join('')+'<div class="sk mtb" id="mtBtn" title="Montaria (V)"><span class="key">V</span><i>🐎</i></div></div>';setTimeout(()=>{try{mtBtnSync();}catch(e){}},0);
  SBSIG=S.bar.join();SBEL=[...$('skillbar').querySelectorAll('[data-slot]')];POTEL=[...$('skillbar').querySelectorAll('.pot')];
 }
-$('skillbar').addEventListener('pointerdown',e=>{const s=e.target.closest('[data-slot]');if(s){e.stopPropagation();const si=S.bar[+s.dataset.slot];if(si>=0)castSkill(si);return;}const p=e.target.closest('[data-pot]');if(p){e.stopPropagation();usePot(p.dataset.pot);}});
+$('skillbar').addEventListener('pointerdown',e=>{if(e.target.closest('#mtBtn')){e.stopPropagation();mountBtn();return;}const s=e.target.closest('[data-slot]');if(s){e.stopPropagation();const si=S.bar[+s.dataset.slot];if(si>=0)castSkill(si);return;}const p=e.target.closest('[data-pot]');if(p){e.stopPropagation();usePot(p.dataset.pot);}});
 function updateSkillbar(now){
  if(!S.bar)S.bar=RULES.defBar();if(S.bar.join()!==SBSIG||!SBEL.length)buildSkillbar();
  const C=CLASSES[S.cls];
@@ -7940,7 +7949,7 @@ $('petsBody').addEventListener('change',e=>{const k=e.target.dataset&&e.target.d
 let FZTAB='loja';
 function renderFz(){
  const fem=!!S.fem,dia=S.dia||0;$('fzDia').textContent=S.gm?'💎 GM: grátis':'💎 '+fmt(dia);
- $('fzTabs').innerHTML=[['loja','💎 Loja'],['vestir','🎭 Vestir']].map(([k,n])=>`<button data-fzt="${k}" class="${FZTAB===k?'on':''}">${n}</button>`).join('');
+ $('fzTabs').innerHTML=[['loja','💎 Loja'],['vestir','🎭 Vestir'],['montar','🐎 Montaria']].map(([k,n])=>`<button data-fzt="${k}" class="${FZTAB===k?'on':''}">${n}</button>`).join('');
  let h='';
  if(FZTAB==='loja'){
   h+=`<p class="muted" style="margin-top:0">Fantasias mudam a aparência do personagem inteiro (a arma da classe continua na mão) e escondem a capa/manto. Você recebe a versão <b>${fem?'♀ feminina':'♂ masculina'}</b>. Sem atributos — só estilo.</p>`;
@@ -7949,6 +7958,20 @@ function renderFz(){
    h+=ks.map(k=>{const Z=FZS[k],ok=S.gm||dia>=cost,own=(S.fzq&&S.fzq.id===k)||S.inv.some(x=>x&&x.k==='fz'&&x.id===k);
     return `<div class="fzrow"><div class="fzi" style="border-color:${R.c}">${Z.i}</div><div class="fzt"><b style="color:${R.c}">${Z.n}</b><small>♂ ${Z.m} • ♀ ${Z.f}${own?' • <span style="color:#6fdc7f">você já tem</span>':''}</small></div><div class="fzp"><div class="${ok?'ok':'no'}">${S.gm?'Grátis (GM)':'💎 '+fmt(cost)}</div><button data-fzbuy="${k}" ${ok?'':'disabled'}>Comprar</button></div></div>`;}).join('');}
   h+='<p class="muted">Diamantes são a moeda especial do jogo. As fantasias compradas podem ser vendidas para outros jogadores por ouro (troca e leilão).</p>';
+  /* v2.2.9: montarias */
+  h+='<div class="dsec" style="margin-top:12px">🐎 Montarias</div><p class="muted" style="margin-top:0">Montado você anda mais rápido. A montaria não leva dano; você continua levando. Vinculadas à conta (não vendem nem trocam).</p>';
+  for(let r=0;r<3;r++){const ks=Object.keys(RULES.MTS).filter(k=>RULES.MTS[k].rar===r);if(!ks.length)continue;const R=PRAR[r],cost=RULES.MT_PRICE[r];
+   h+=`<div class="fzh" style="color:${R.c}">${R.n.toUpperCase()} • +${Math.round(RULES.MT_SPD[r]*100)}% velocidade • 💎 ${fmt(cost)}</div>`;
+   h+=ks.map(k=>{const Z=RULES.MTS[k],ok=S.gm||dia>=cost,own=(S.mtq&&S.mtq.id===k)||S.inv.some(x=>x&&x.k==='mt'&&x.id===k);
+    return `<div class="fzrow"><div class="fzi" style="border-color:${R.c}">${Z.i}</div><div class="fzt"><b style="color:${R.c}">${Z.n}</b><small>${Z.d}${own?' • <span style="color:#6fdc7f">você já tem</span>':''}</small></div><div class="fzp"><div class="${ok&&!own?'ok':'no'}">${S.gm?'Grátis (GM)':'💎 '+fmt(cost)}</div><button data-mtbuy="${k}" ${ok&&!own?'':'disabled'}>${own?'Já tem':'Comprar'}</button></div></div>`;}).join('');}
+ }else if(FZTAB==='montar'){
+  const z=S.mtq,Z=z&&RULES.MTS[z.id];
+  h+='<div class="dsec">Montaria equipada</div>';
+  h+=Z?`<div class="fzrow fzon"><div class="fzi" style="border-color:${col(z)}">${Z.i}</div><div class="fzt"><b style="color:${col(z)}">${Z.n}</b><small>+${Math.round(RULES.mtSpd(z.id)*100)}% de velocidade • chame com o botão 🐎 (tecla V): 4 s</small></div><div class="fzp"><button data-mtun="1">Tirar</button></div></div>`
+   :'<div class="fzrow"><div class="fzi">➕</div><div class="muted" style="flex:1">Nenhuma — equipe uma montaria da mochila.</div></div>';
+  const inv=S.inv.map((it,i)=>it&&it.k==='mt'?{it,i}:null).filter(Boolean);
+  h+=`<div class="dsec">Na mochila (${inv.length})</div>`+(inv.length?inv.map(o=>{const Q=RULES.MTS[o.it.id]||{};return `<div class="fzrow"><div class="fzi" data-inv="${o.i}" style="border-color:${col(o.it)}">${Q.i}</div><div class="fzt"><b style="color:${col(o.it)}">${Q.n}</b><small>${PRAR[Q.rar||0].n} • +${Math.round(RULES.mtSpd(o.it.id)*100)}% de velocidade</small></div><div class="fzp"><button data-mteq="${o.i}">Equipar</button></div></div>`;}).join(''):'<p class="muted">Nenhuma montaria na mochila. Compre na aba 💎 Loja.</p>');
+  h+='<p class="muted">Para descer: aperte 🐎 de novo, ou use uma habilidade (você salta da montaria com um mortal; a habilidade não sai e não gasta a recarga). Não dá para montar em calabouços, na arena e em duelos.</p>';
  }else{
   const z=S.fzq,Z=z&&FZS[z.id];
   h+='<div class="dsec">Vestindo agora</div>';
@@ -7960,6 +7983,7 @@ function renderFz(){
  $('fzBody').innerHTML=h;}
 $('win-fz').addEventListener('click',e=>{const t=e.target.closest('[data-fzt]');if(t){FZTAB=t.dataset.fzt;AUD.sfx('ui');renderFz();return;}
  const b=e.target.closest('[data-fzbuy]');if(b){ACT({t:'buyfz',id:b.dataset.fzbuy});return;}
+ {const x=e.target.closest('[data-mtbuy]');if(x){ACT({t:'buymt',id:x.dataset.mtbuy});return;}const q2=e.target.closest('[data-mteq]');if(q2){ACT({t:'mteq',i:+q2.dataset.mteq});return;}if(e.target.closest('[data-mtun]')){ACT({t:'mtun'});return;}}
  const q=e.target.closest('[data-fzeq]');if(q){ACT({t:'fzeq',i:+q.dataset.fzeq});return;}
  if(e.target.closest('[data-fzun]')){ACT({t:'fzun'});return;}});
 function refreshUI(){
@@ -8443,7 +8467,7 @@ async function startFlow(){
 const NET={room:null,others:new Map(),lv:0,tm:0,stop:false,off:0,ack:false,inst:0};
 const sharedNow=()=>Date.now()+NET.off;   // relógio do servidor: todos veem os NPCs no mesmo ponto
 const PCOL={tanque:'#4b5a6b',pierrot:'#d6336c',guerreiro:'#b5543a',arqueiro:'#4a9a5a',mago:'#6a4ab5',assassino:'#3a3a4a',cavaleiro:'#8a95a5'};
-function killRemote(o){pkGone(o);disposeGm(o);if(o.foil){foilPlantOff(o.foil.node);o.foil=null;}if(o.px){o.px.dispose();o.px=null;}try{clearGear(o);}catch(e){}freeRoot(o);o.label.remove();}
+function killRemote(o){mtRemoteKill(o);pkGone(o);disposeGm(o);if(o.foil){foilPlantOff(o.foil.node);o.foil=null;}if(o.px){o.px.dispose();o.px=null;}try{clearGear(o);}catch(e){}freeRoot(o);o.label.remove();}
 /* v1.89: ao sair de perto, descarta também os materiais próprios do modelo (antes ficavam acumulados na cena e deixavam tudo mais lento) */
 function freeRoot(o){const r=o.root;if(!r)return;const ms=new Set();try{for(const m of r.getChildMeshes(false))if(m.material)ms.add(m.material);}catch(e){}
  quiet(()=>{try{r.dispose();}catch(e){}for(const m of ms){try{if(!m.getBindedMeshes().length)m.dispose(false,false);}catch(e){}}});}
@@ -8604,6 +8628,7 @@ function updateNet(dt,now){const room=NET.room,ni=$('netInfo');if(!room||!S){if(
   if(dd>25){pos.x=p.x;pos.z=p.z;}else{const k=Math.min(1,dt*10);pos.x+=dx*k;pos.z+=dz*k;}
   if(dd>.05)o.root.rotation.y=Math.atan2(dx,dz);
   pos.y=dd>.15?Math.abs(Math.sin(now*.012))*.07:0;
+  mtRemote(o,p,pos,dt,now);   /* v2.2.9: montado? */
   if(o.rig){animEnt(o,pos.x,pos.z,now,o.swingAt,MELEE.has(o.cls));gmFx(o,!!p.gb,now);}
   o.root.rotation.z=p.dead&&!(o.limbs&&o.limbs.AG&&o.limbs.AG.Death)?Math.PI/2:0;   /* v2.1.7: com a animação de morte não precisa tombar */
   if(o.lv!==p.level||o.tt!==p.tt||o.gt!==p.gt||o.sp!==p.sp||o.nt!==(p.nt||0)){o.lv=p.level;o.tt=p.tt;o.gt=p.gt;o.sp=p.sp;o.nt=p.nt||0;o.label.innerHTML=plateHtml(p.name,p.level,p.tt,p.gt,p.sp,o.nt);}o.maxHp=p.mhp||1;o.hp=p.mhp?p.hp:1;o.dead=!!p.dead;
@@ -8777,7 +8802,7 @@ function pkHit(m){
  if(!S||!PKS.mode||P.dead||!Number.isFinite(m.d))return;
  const now=performance.now();
  P.hp-=m.d;P.lastCombat=now;PKS.at=now;floatText('-'+m.d,P.pos,'#ff6b6b');AUD.sfx('playerHurt');
- if(P.recall)cancelRecall('Retorno interrompido: você sofreu dano.');
+ if(P.recall)cancelRecall('Retorno interrompido: você sofreu dano.');if(MNT.cast)mtCancel('Chamada da montaria interrompida: você sofreu dano.');
  if(P.hp<=0){P.hp=0;if(PKS.mode==='war')die();else pkDown(now);}
 }
 function pkDown(now){if(now-PKS.downAt<1200)return;PKS.downAt=now;if(NET.room)NET.room.send('pdown');}
@@ -9039,6 +9064,124 @@ function updateRecall(dt,now){
   ring(t.x,t.z,2.6,'#8fd3ff',700);AUD.sfx('teleport');P.cdRecall=now+RECALL_CD;toast('Você voltou à '+t.name+'.');
   if(NET.room)NET.room.send('recall');save();}
 }
+
+/* =================== MONTARIAS (v2.2.9) ===================
+   Modelos mt_<id>.glb (Meshy, reduzidos para 4 mil triângulos, pintados por vértice e com esqueleto simples):
+   animações Idle, Walk, Run, IdleHead, IdlePaw (só 4 patas). Botão 🐎 (tecla V): 4 s de chamada e você já aparece montado.
+   Montado: +20/25/30% de velocidade (pela raridade). Sai no mesmo botão (desce normal) ou apertando uma habilidade (salto mortal; a habilidade não sai
+   e não entra em recarga). A montaria fica parada 4 s e some. Ela não leva dano — quem leva é o personagem, como sempre. */
+const MTV='229';
+const MTDEF={   /* sc: escala • seat: [frente, altura] da sela no modelo • legs • voz: [som, tom] • passo: tom do passo */
+ cavalo:{sc:2.3,seat:[.134,.90],legs:4,voz:['shriek2',1.45],pas:.75},
+ veado:{sc:2.15,seat:[-.127,.93],legs:4,voz:['borb',.7],pas:.95},
+ cavalo2:{sc:2.3,seat:[.056,.89],legs:4,voz:['shriek2',1.3],pas:.72},
+ lobo:{sc:2.1,seat:[.083,.96],legs:4,voz:['wargT',1],pas:1},
+ porco:{sc:2.1,seat:[.308,.87],legs:4,voz:['grunt',1.25],pas:.85},
+ ave:{sc:1.85,seat:[.327,1.12],legs:2,voz:['shriek',1.9],pas:1.25},
+ urso:{sc:1.85,seat:[-.16,1.12],legs:4,voz:['giantG',.95],pas:.6}};
+const MNT={ld:{},pool:{},mats:{},live:new Set(),cast:null,now:0};   /* now: o mesmo relógio do jogo (o do quadro) */
+/* carrega o modelo (uma vez) e já compila o material com esqueleto — para não engasgar quando a montaria aparece */
+MNT.load=function(id){if(!MTDEF[id])return Promise.reject('?');if(MNT.ld[id])return MNT.ld[id];
+ return MNT.ld[id]=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','mt_'+id+'.glb?v='+MTV,scene,null,'.glb')).then(ct=>{
+  const m=new BABYLON.StandardMaterial('mt_'+id,scene);m.specularColor=new C3(.04,.04,.04);m.diffuseColor=new C3(1,1,1);m.emissiveColor=new C3(.06,.06,.06);m.noTint=true;MNT.mats[id]=m;
+  MNT.ct=MNT.ct||{};MNT.ct[id]=ct;
+  const o=MNT.make(id);MNT.free(o);   /* um pronto na reserva */
+  try{for(const ms of o.meshes)m.forceCompilation(ms);}catch(e){}
+  return ct;});};
+MNT.make=function(id){const D=MTDEF[id],ct=MNT.ct[id];
+ const I=ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true}),root=new BABYLON.TransformNode('mt_'+id,scene),top=new BABYLON.TransformNode('mtt',scene);
+ top.parent=root;top.scaling.setAll(D.sc);for(const r of I.rootNodes)r.parent=top;
+ const meshes=[];for(const r of I.rootNodes)for(const ms of r.getChildMeshes(false)){ms.material=MNT.mats[id];ms.isPickable=false;ms.alwaysSelectAsActiveMesh=false;meshes.push(ms);try{if(window.SHADOW&&SHADOW.addShadowCaster)SHADOW.addShadowCaster(ms);}catch(e){}}
+ const AG={};for(const g of I.animationGroups){g.stop();g.enableBlending=true;g.blendingSpeed=.12;AG[g.name]=g;}
+ return {id,D,root,top,meshes,AG,cur:null,still:0,nextIdle:0,nextVoz:0,stepT:0,dead:0,owner:null};};
+MNT.get=function(id){const p=MNT.pool[id];const o=p&&p.length?p.pop():MNT.make(id);o.root.setEnabled(true);o.top.scaling.setAll(o.D.sc);o.dead=0;o.cur=null;o.still=MNT.now;o.nextVoz=MNT.now+8000+Math.random()*10000;MNT.live.add(o);MNT.play(o,'Idle');return o;};
+MNT.free=function(o){for(const n in o.AG)o.AG[n].stop();o.cur=null;o.root.setEnabled(false);o.owner=null;MNT.live.delete(o);(MNT.pool[o.id]||(MNT.pool[o.id]=[])).push(o);};
+MNT.play=function(o,n,sp,once){if(o.cur===n&&!once)return;const g=o.AG[n]||o.AG.Idle;if(!g)return;for(const k in o.AG)if(o.AG[k]!==g&&o.AG[k].isPlaying)o.AG[k].stop();g.start(!once,sp||1,g.from,g.to);o.cur=n;if(once){g.onAnimationGroupEndObservable.addOnce(()=>{if(o.cur===n){o.cur=null;MNT.play(o,'Idle');}});}};
+/* coloca a montaria embaixo de quem monta (pos = posição do cavaleiro; a sela fica nela) e escolhe a animação pelo movimento */
+MNT.drive=function(o,pos,yaw,spd,dt,now,near){
+ const D=o.D,f=D.seat[0]*D.sc;o.root.position.set(pos.x-Math.sin(yaw)*f,0,pos.z-Math.cos(yaw)*f);o.root.rotation.y=yaw;
+ if(o.dead)return;
+ if(spd>4.2){MNT.play(o,'Run',Math.min(1.5,spd/7.5));o.still=now;}
+ else if(spd>.35){MNT.play(o,'Walk',Math.max(.6,Math.min(1.6,spd/2.6)));o.still=now;}
+ else if(o.cur==='Run'||o.cur==='Walk'||!o.cur)MNT.play(o,'Idle');
+ /* parado há 1 minuto: balança a cabeça ou levanta uma pata de vez em quando */
+ if(spd<=.35&&now-o.still>60000&&now>o.nextIdle&&o.cur==='Idle'){o.nextIdle=now+7000+Math.random()*6000;MNT.play(o,o.D.legs===4&&Math.random()<.5?'IdlePaw':'IdleHead',1,true);}
+ if(!near)return;
+ /* passos (bem baixinhos) e a voz de vez em quando */
+ if(spd>.35){o.stepT-=dt*(spd>4.2?3.4:2.2);if(o.stepT<=0){o.stepT=1;const k=stepKind();AUD.smp('st_'+k[0],spd>4.2?.13:.09,k[1]*D.pas*(.9+Math.random()*.2));}}
+ if(now>o.nextVoz){o.nextVoz=now+16000+Math.random()*20000;AUD.smp(D.voz[0],.32,D.voz[1]);}
+};
+/* sela: altura do quadril do cavaleiro sentado */
+MNT.seatY=function(o,rider){const D=o.D;let hy=rider._hipsR===rider.root?rider._hipsH:null;if(hy==null){rider._hipsR=rider.root;const h=(rider.root.getChildTransformNodes(false)||[]).find(n=>/(^|\W)hips$/.test(n.name));hy=rider._hipsH=h?Math.max(.5,Math.min(1.4,h.getAbsolutePosition().y-rider.root.position.y)):.92;}
+ return D.seat[1]*D.sc-hy+.12;};
+/* pernas abertas e dobradas por cima do pose normal (o jogo não tem animação de montar: o quadril fica parado e as pernas abraçam a sela) */
+const RQ={th:null,sh:null};
+function rideLegs(o){let b=o._rl;if(b&&(b.r!==o.root||(b.tL&&b.tL.isDisposed())))b=null;if(!b){const ns=o.root.getChildTransformNodes(false),f=s=>ns.find(n=>n.name===s||n.name.endsWith('.'+s)||n.name.endsWith(' '+s)||n.name.endsWith(s));b=o._rl={r:o.root,tL:f('thigh.L'),tR:f('thigh.R'),sL:f('shin.L'),sR:f('shin.R')};}
+ if(!RQ.th){RQ.thL=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.tp,RIDE.tr);RQ.thR=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.tp,-RIDE.tr);RQ.sh=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.sp,0);RQ.th=1;}
+ const ap=(n,q)=>{if(!n)return;if(!n.rotationQuaternion)n.rotationQuaternion=BABYLON.Quaternion.FromEulerVector(n.rotation);n.rotationQuaternion.multiplyInPlace(q);};
+ ap(b.tL,RQ.thL);ap(b.tR,RQ.thR);ap(b.sL,RQ.sh);ap(b.sR,RQ.sh);}
+const RIDE={tp:-1.25,tr:.42,sp:1.45};
+/* barra de chamada (igual à do retorno à cidade) */
+document.body.insertAdjacentHTML('beforeend','<div id="mtBar" style="display:none;position:absolute;left:50%;bottom:170px;transform:translateX(-50%);width:240px;z-index:6;text-align:center;font-size:12px;color:#ffe2b0;pointer-events:none">Chamando a montaria…<div style="height:8px;margin-top:4px;border-radius:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,226,176,.5);overflow:hidden"><div id="mtFill" style="height:100%;width:0;background:linear-gradient(90deg,#c98a3a,#ffe2b0)"></div></div></div>');
+const MT_CAST=4000;
+function mtCan(){if(!S||P.dead)return 'x';if(NET.inst)return 'Montarias não entram em calabouços.';if(PKS.mode==='arena'||PKS.mode==='duel')return 'Sem montaria na arena e em duelos.';if(!S.mtq||!MTDEF[S.mtq.id])return 'Equipe uma montaria na janela 💎 (aba 🐎 Montaria).';return '';}
+function mountBtn(){
+ if(P.mnt){dismount(false);return;}
+ if(MNT.cast){mtCancel('Chamada cancelada.');return;}
+ const why=mtCan();if(why){if(why!=='x')toast(why);return;}
+ if(P.recall)cancelRecall();
+ const id=S.mtq.id;MNT.load(id).catch(()=>{});
+ MNT.cast={t0:MNT.now,x:P.pos.x,z:P.pos.z,id,pulse:0};$('mtBar').style.display='block';$('mtFill').style.width='0%';AUD.sfx('ui');
+}
+function mtCancel(msg){if(!MNT.cast)return;MNT.cast=null;$('mtBar').style.display='none';if(msg)toast(msg);}
+function mtCastTick(now){const c=MNT.cast;if(!c)return;
+ if(P.dead||NET.inst){mtCancel();return;}
+ if(hyp(P.pos,c)>.8){mtCancel('Chamada cancelada: você se moveu.');return;}
+ const k=Math.min(1,(now-c.t0)/MT_CAST);$('mtFill').style.width=(k*100)+'%';
+ if(now>c.pulse){c.pulse=now+900;ring(P.pos.x,P.pos.z,1.4+k,'#ffd28a',700);}
+ if(k>=1){const e=MNT.ct&&MNT.ct[c.id];if(!e){if(now-c.t0>MT_CAST+12000)mtCancel('Não foi possível carregar a montaria.');return;}   /* ainda baixando: espera um pouco mais */
+  mtCancel();mountUp(c.id);}}
+function mountUp(id){
+ const o=MNT.get(id);o.owner=P;P.mnt={id,o,spd:RULES.mtSpd(id)};P._ride=true;P.moveTo=null;P.atkTarget=null;
+ MNT.drive(o,P.pos,P.root.rotation.y,0,0,MNT.now,false);
+ try{VFX.spawn('vortex',{x:P.pos.x,y:1,z:P.pos.z},3.2,'#ffe2b0',480,0);}catch(e){}ring(P.pos.x,P.pos.z,2.6,'#ffd28a',600);
+ AUD.smp('tele',.5,1.1);AUD.smp(o.D.voz[0],.4,o.D.voz[1]);
+ if(NET.room)NET.room.send('mnt',{on:1});mtBtnSync();
+ toast('🐎 '+((RULES.MTS[id]||{}).n||'Montaria')+' • +'+Math.round(P.mnt.spd*100)+'% de velocidade');}
+/* desce. flip = salto mortal para trás (quando aperta uma habilidade). A montaria fica 4 s parada e some. */
+function dismount(flip){const m=P.mnt;if(!m)return;P.mnt=null;P._ride=!!flip;   /* no mortal as pernas continuam dobradas (fica encolhido) */
+ const o=m.o;o.dead=MNT.now||1;o.owner=null;MNT.play(o,'Idle');P.pos.y=0;
+ if(flip){const yaw=P.root.rotation.y;P.flip={t0:MNT.now,x0:P.pos.x,z0:P.pos.z,y0:MNT.seatY(o,P)+.0,dx:-Math.sin(yaw),dz:-Math.cos(yaw)};AUD.smp('jump',.6,1);}
+ if(NET.room)NET.room.send('mnt',{on:0});mtBtnSync();}
+/* salto mortal: 0,7 s, para trás, girando 360° em volta do meio do corpo */
+function flipTick(now){const f=P.flip;if(!f)return false;const t=Math.min(1,(now-f.t0)/(MNT.flipMs||700)),c=.9,th=-t*Math.PI*2,back=1.9*t,y=f.y0*(1-t)+2.1*Math.sin(Math.PI*t);
+ const cx=f.x0+f.dx*back,cz=f.z0+f.dz*back,cy=y+c;   /* centro do corpo */
+ /* raiz = centro − (giro do ponto do meio do corpo): o corpo gira em volta do próprio meio, não dos pés */
+ P.root.rotation.x=th;P.pos.x=cx+f.dx*c*Math.sin(th);P.pos.z=cz+f.dz*c*Math.sin(th);P.pos.y=Math.max(0,cy-Math.cos(th)*c);
+ if(t>=1){P.root.rotation.x=0;P.pos.y=0;P.flip=null;AUD.smp('land',.5,1);ring(P.pos.x,P.pos.z,1.2,'#fff2a8',300);}
+ return true;}
+function mtBtnSync(){const b=$('mtBtn');if(!b)return;b.classList.toggle('on',!!P.mnt);const id=P.mnt?P.mnt.id:S&&S.mtq&&S.mtq.id;b.querySelector('i').textContent=(id&&RULES.MTS[id]&&RULES.MTS[id].i)||'🐎';
+ b.title=P.mnt?'Descer da montaria (V)':S&&S.mtq?'Chamar a montaria (V) • 4 s':'Montaria (V) — compre na loja 💎 e equipe na aba 🐎';b.style.opacity=S&&(S.mtq||P.mnt)?1:.55;}
+/* por quadro: montaria do jogador, as que estão sumindo e as dos outros jogadores */
+function mtTick(dt,now){MNT.now=now;
+ mtCastTick(now);
+ if(P.mnt){const o=P.mnt.o;if(P.dead||NET.inst){dismount(false);}else{
+  const sp=P.moving?6*(1+P.mnt.spd):0;MNT.drive(o,P.pos,P.root.rotation.y,sp,dt,now,true);
+  P.pos.y=MNT.seatY(o,P)+(sp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}}
+ for(const o of [...MNT.live]){if(o.dead){if(now-o.dead>4000){try{VFX.spawn('vortex',{x:o.root.position.x,y:1,z:o.root.position.z},2.8,'#ffe2b0',420,0);}catch(e){}MNT.free(o);}
+   else if(now-o.dead>3400){const k=1-(now-o.dead-3400)/600;o.top.scaling.setAll(o.D.sc*Math.max(.05,k));}}}
+}
+/* outro jogador montado (p.mt do servidor) */
+function mtRemote(o,p,pos,dt,now){MNT.now=now;const id=p&&!p.dead&&o.rig?p.mt||'':'';
+ if(o._mo&&o._mo.id!==id){if(!o._mo.dead){o._mo.dead=now;o._mo.owner=null;}o._mo=null;o._ride=false;o._rl=null;}
+ if(!id||!MTDEF[id])return;
+ if(!o._mo){if(!MNT.ct||!MNT.ct[id]){MNT.load(id).catch(()=>{});return;}o._mo=MNT.get(id);o._mo.owner=o;o._ride=true;}
+ const mo=o._mo,lx=o._mlx==null?pos.x:o._mlx,lz=o._mlz==null?pos.z:o._mlz,sp=dt>0?Math.hypot(pos.x-lx,pos.z-lz)/dt:0;o._mlx=pos.x;o._mlz=pos.z;
+ o._msp=(o._msp||0)+(Math.min(12,sp)-(o._msp||0))*Math.min(1,dt*8);
+ MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
+function mtRemoteKill(o){if(o&&o._mo){MNT.free(o._mo);o._mo=null;}}
+/* quando equipa (ou ao entrar no jogo): já deixa o modelo baixado e compilado */
+let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id)MNT.load(id).catch(()=>{});if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
 
 /* =================== NEVE CAINDO (região 3) =================== */
 const SNOWF=(()=>{const em=B.CreateBox('snowem',{size:.1},scene);em.isVisible=false;em.isPickable=false;const ps=new BABYLON.ParticleSystem('snowps',1200,scene);ps.particleTexture=ptex();ps.emitter=em;

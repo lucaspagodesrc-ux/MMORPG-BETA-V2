@@ -18,8 +18,9 @@ export class Player extends Schema {
   fm = 0;          // v1.77: 1 = personagem feminino (só aparência)
   pt = "";         // v1.80: mascotes equipados (ids separados por vírgula)
   nt = 0;          // v1.91: nação (0 = nenhuma, 1 = Kharzun, 2 = Azurath) — cor do nome
+  mt = "";         // v2.2.9: montaria em que está montado agora ("" = a pé) — os outros jogadores veem
 }
-defineTypes(Player, { name: "string", cls: "string", level: "number", x: "float32", z: "float32", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8", hp: "uint32", mhp: "uint32", gt: "string", sp: "string", fm: "uint8", pt: "string", nt: "uint8" });
+defineTypes(Player, { name: "string", cls: "string", level: "number", x: "float32", z: "float32", dead: "boolean", inst: "uint16", ap: "string", tt: "string", gb: "uint8", hp: "uint32", mhp: "uint32", gt: "string", sp: "string", fm: "uint8", pt: "string", nt: "uint8", mt: "string" });
 
 // Monstro simulado no servidor: todos os jogadores veem o mesmo monstro, na mesma posição e com a mesma vida.
 export class Monster extends Schema {
