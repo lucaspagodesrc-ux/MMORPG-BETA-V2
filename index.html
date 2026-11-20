@@ -8269,7 +8269,7 @@ function cmpPanel(it){
 // tooltip
 const tip=$('tip'),tip2=$('tip2');
 let tipCtx=null;
-function tipHide(){tip.style.display='none';tip2.style.display='none';tipCtx=null;}
+function tipHide(){tip.style.display='none';tip2.style.display='none';tipCtx=null;if(typeof MTAP!=='undefined')MTAP.k=null;}
 function tipPlace(x,y){
  const two=tip2.style.display==='block',w1=tip.offsetWidth,h1=tip.offsetHeight,w2=two?tip2.offsetWidth:0,h2=two?tip2.offsetHeight:0,g=8,W=innerWidth,H=innerHeight,need=w1+(two?w2+g:0);
  let l1,l2,t1=Math.max(8,Math.min(y+14,H-h1-8)),t2=Math.max(8,Math.min(y+14,H-h2-8));
@@ -8287,7 +8287,8 @@ function tipDraw(){
  if(c.hk)histReq([c.hk]);
 }
 function tipRefresh(){if(tipCtx&&tip.style.display==='block'){const c=tipCtx;tipDraw();c.ep=tipEp;}}
-document.addEventListener('mousemove',e=>{
+document.addEventListener('mousemove',e=>tipMove(e));
+function tipMove(e){
  const t=S&&e.target.closest?e.target.closest('[data-inv],[data-eq],[data-st],[data-ah],[data-mi],[data-ti],[data-gc],[data-pet]'):null;
  if(!t){if(tipCtx)tipHide();return;}
  const it=t.dataset.pet!==undefined?(S.pets||[])[+t.dataset.pet]:t.dataset.gc!==undefined?(GU.g&&GU.g.chest&&GU.g.chest[+t.dataset.gc]):t.dataset.mi!==undefined?tipMail(t.dataset.mi):t.dataset.ti!==undefined?tipTrade(t.dataset.ti):t.dataset.ah!==undefined?(AH.list[+t.dataset.ah]||{}).item:t.dataset.st!==undefined?ACC.stash[+t.dataset.st]:t.dataset.inv!==undefined?S.inv[+t.dataset.inv]:S.eq[t.dataset.eq];
@@ -8295,7 +8296,21 @@ document.addEventListener('mousemove',e=>{
  const own=t.dataset.eq!==undefined,js=JSON.stringify(it),hk=hkOf(it);
  if(tipCtx&&tipCtx.js===js&&tipCtx.own===own&&tipCtx.ep===tipEp){tipCtx.x=e.clientX;tipCtx.y=e.clientY;tipPlace(e.clientX,e.clientY);return;}
  tipCtx={it,own,js,hk,ep:tipEp,x:e.clientX,y:e.clientY};tipDraw();
-});
+}
+/* v2.3.3 CELULAR: na mochila / baú, 1 toque mostra o item e a comparação com o equipado; 2º toque no mesmo item faz a ação (equipar/trocar).
+   Nos equipados, 1 toque mostra as propriedades; 2º toque desequipa. (No PC continua igual: passar o mouse mostra, clicar faz.) */
+var MTAP={k:null};
+document.addEventListener('click',e=>{
+ if(!document.body.classList.contains('mob')||!S||!e.target.closest)return;
+ const t=e.target.closest('[data-inv],[data-st],[data-unequip],[data-eq]');if(!t)return;
+ if(!t.closest('#win-inv,#win-char,#stashWin,.win'))return;
+ const k=t.dataset.inv!==undefined?'i'+t.dataset.inv:t.dataset.st!==undefined?'s'+t.dataset.st:'e'+(t.dataset.unequip||t.dataset.eq);
+ const it=t.dataset.inv!==undefined?S.inv[+t.dataset.inv]:t.dataset.st!==undefined?(ACC&&ACC.stash[+t.dataset.st]):S.eq[t.dataset.unequip||t.dataset.eq];
+ if(!it)return;   /* espaço vazio: segue normal */
+ if(MTAP.k===k&&tipCtx){MTAP.k=null;tipHide();return;}   /* 2º toque: deixa a ação acontecer */
+ e.preventDefault();e.stopPropagation();MTAP.k=k;
+ const r=t.getBoundingClientRect();tipCtx=null;tipMove({target:t,clientX:r.right,clientY:r.top});
+},true);
 
 /* =================== SAVE / START =================== */
 const NEWSTASH=()=>Array(RULES.STASH_SIZE).fill(null);
