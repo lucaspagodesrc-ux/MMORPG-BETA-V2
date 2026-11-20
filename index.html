@@ -6017,63 +6017,7 @@ function rollRemote(o,dur){
 
 
 /* =================== GUERREIRO: Metamorfose (bárbaro) =================== */
-function animEnt(o,px,pz,now,sa,melee){animLimbs(o,px,pz,now,sa,melee);if(o.glbOW)try{if(PV.o!==o)sheath(o,now);}catch(e){}}
-/* v2.3.2: armas nas costas. Andando, parado ou montado a arma (e o escudo) fica nas costas; sai para a mão no golpe básico ou na habilidade
-   e volta para as costas 5 s depois do último golpe. Funciona trocando o "pai" da arma: da mão para um suporte preso no osso do peito. */
-const SHEATH_MS=5000;
-function sheath(o,now){const T=o.glbTop;if(!T)return;
- const armed=!o._ride&&!o.dead&&o.swingAt&&now-o.swingAt<SHEATH_MS&&o.swingAt<=now+50;
- let c=o._shc;
- if(!c||c.T!==T){c=o._shc=shSetup(o);if(!c)return;}
- const w=o._wpn||null;
- if(c.st===!armed&&c.w===w)return;
- c.st=!armed;c.w=w;
- const RX=/^(A?Sword|A?Weapon|A?WeaponL|Shield\d*|wpi_)/;
- for(const [hand,hold] of [[c.hR,c.bR],[c.hL,c.bL],[c.fL,c.bS]]){if(!hand||!hold)continue;
-  const from=armed?hold:hand,to=armed?hand:hold;
-  for(const n of from.getChildren(x=>RX.test(x.name),true))n.parent=to;}}
-function shSetup(o){const T=o.glbTop,ch=o.glbChest;if(!ch||!ch.n)return null;
- const ns=T.getChildTransformNodes(false),by=s=>ns.find(n=>n.name===s);
- const hR=by('hand.R'),hL=by('hand.L'),fL=by('forearm.L');if(!hR&&!hL)return null;
- const V3=BABYLON.Vector3,M=BABYLON.Matrix;
- T.computeWorldMatrix(true);const topInv=M.Invert(T.getWorldMatrix());
- const chInv=M.Compose(ch.sc,ch.rq,ch.ps),cp=M.Invert(chInv).getTranslation();   /* peito em repouso, no espaço do modelo */
- const bz=(o.cls==='tanque'?-.38:(o.cls==='cavaleiro'||o.cls==='guerreiro')?-.32:-.25)+(SHB.z||0);
- const RX=/^(A?Sword|A?Weapon|A?WeaponL|Shield\d*|wpi_)/;
- /* suporte = uma "mão" nas costas: calculado para que a arma (do jeito que está presa na mão) fique com o meio no centro das costas,
-    a lâmina na direção d e a parte chata virada para trás. O suporte copia a escala (espelhada) do osso da mão. */
- const mk=(nm,hand,cx,cy,d0,flat)=>{if(!hand)return null;
-  const wn=hand.getChildren(x=>RX.test(x.name)&&(x.getChildMeshes(false).length||x.getTotalVertices&&x.getTotalVertices()),false).find(x=>x.isEnabled())||hand.getChildren(x=>RX.test(x.name),false)[0];
-  if(!wn)return null;
-  hand.computeWorldMatrix(true);const Hrel=hand.getWorldMatrix().multiply(topInv),sh=new V3(),qh=new BABYLON.Quaternion(),ph=new V3();Hrel.decompose(sh,qh,ph);
-  let bmin,bmax;try{const b=wn.getHierarchyBoundingVectors(true);bmin=b.min;bmax=b.max;}catch(e){return null;}
-  const cw=bmin.add(bmax).scale(.5),cl=V3.TransformCoordinates(cw,M.Invert(hand.getWorldMatrix())),pw=wn.position.clone();
-  let bl=cl.subtract(pw);if(bl.length()<1e-4)bl=new V3(0,1,0);
-  const mul=(v)=>new V3(v.x*sh.x,v.y*sh.y,v.z*sh.z),blen=mul(bl).length();
-  let a,u,d,n;
-  if(flat){   /* escudo: a face (eixo mais fino da malha, no espaço da mão) vira para trás; o eixo mais comprido fica em pé */
-   const ex=[0,0,0],hi=M.Invert(hand.getWorldMatrix()),mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];
-   for(const ms of [wn,...wn.getChildMeshes(false)]){if(!ms.getVerticesData)continue;const P_=ms.getVerticesData('position');if(!P_)continue;ms.computeWorldMatrix(true);const W=ms.getWorldMatrix().multiply(hi);
-    for(let k=0;k<P_.length;k+=3*Math.max(1,Math.floor(P_.length/3/400))){const v=V3.TransformCoordinates(new V3(P_[k],P_[k+1],P_[k+2]),W);mn[0]=Math.min(mn[0],v.x);mn[1]=Math.min(mn[1],v.y);mn[2]=Math.min(mn[2],v.z);mx[0]=Math.max(mx[0],v.x);mx[1]=Math.max(mx[1],v.y);mx[2]=Math.max(mx[2],v.z);}}
-   const sz=[0,1,2].map(k=>mx[k]-mn[k]),ord=[0,1,2].sort((p,q)=>sz[p]-sz[q]),ax=k=>new V3(k===0?1:0,k===1?1:0,k===2?1:0);
-   a=mul(ax(ord[0])).normalize();u=mul(ax(ord[2]));u=u.subtract(a.scale(V3.Dot(u,a))).normalize();
-   d=new V3(0,0,-1);n=new V3(0,1,0);
-  }else{
-   a=mul(bl).normalize();const e=Math.abs(a.z)<.8?new V3(0,0,1):new V3(1,0,0);u=mul(e);u=u.subtract(a.scale(V3.Dot(u,a))).normalize();
-   d=d0.clone().normalize();const n0=new V3(0,0,-1);n=n0.subtract(d.scale(V3.Dot(n0,d))).normalize();}
-  const w3=V3.Cross(a,u),w4=V3.Cross(d,n);
-  const A=M.FromValues(a.x,a.y,a.z,0,u.x,u.y,u.z,0,w3.x,w3.y,w3.z,0,0,0,0,1),B=M.FromValues(d.x,d.y,d.z,0,n.x,n.y,n.z,0,w4.x,w4.y,w4.z,0,0,0,0,1);
-  const R=A.transpose().multiply(B),q=BABYLON.Quaternion.FromRotationMatrix(R);
-  const ctr=new V3(cp.x+cx,cp.y+cy+(SHB.y||0),cp.z+bz);
-  /* põe o MEIO da arma (centro da caixa) no ponto ctr das costas */
-  const t=ctr.subtract(V3.TransformNormal(mul(cl),R));
-  const L=M.Compose(sh,q,t).multiply(chInv),sc=new V3(),rq=new BABYLON.Quaternion(),ps=new V3();L.decompose(sc,rq,ps);
-  const nd=new BABYLON.TransformNode(nm,scene);nd.parent=ch.n;nd.position.copyFrom(ps);nd.rotationQuaternion=rq;nd.scaling.copyFrom(sc);return nd;};
- return {T,st:null,w:null,hR,hL,fL,
-  bR:mk('shR',hR,.02,.12,new V3(-.55,-.83,0)),    /* direita: lâmina descendo da direita para a esquerda */
-  bL:mk('shL',hL,-.02,.12,new V3(.55,-.83,0)),    /* esquerda (arco, adaga da mão esquerda): espelhado */
-  bS:mk('shS',fL,0,.15,null,1)};}      /* escudo: no meio das costas */
-const SHB={y:0,z:0};       /* escudo: no meio das costas */
+function animEnt(o,px,pz,now,sa,melee){animLimbs(o,px,pz,now,sa,melee);}       /* escudo: no meio das costas */
 
 function swordFire(o,on){
  try{
