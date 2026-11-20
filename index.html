@@ -465,7 +465,16 @@
   #mPlayer{display:flex;align-items:center;gap:5px;margin:2px 0 8px;padding:5px 6px;border-radius:8px;background:rgba(0,0,0,.22)}
   #mPlayer button{cursor:pointer;min-width:30px;height:28px;padding:0 6px;font-size:14px;border-radius:6px}
   #mPlayer #mAuto.off{opacity:.45;filter:grayscale(1)}
-  #mPlayer{flex-wrap:wrap}#mName{order:-1;flex-basis:100%;min-width:0;font-size:12px;padding:1px 2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mAuto{margin-left:auto}
+  #mPlayer{flex-wrap:wrap}
+  /* v2.2.7: tocador fino na tela (arrastável, fecha no ×) */
+  #mpMini{display:none;position:fixed;left:12px;top:182px;z-index:30;align-items:center;gap:2px;height:26px;padding:0 4px 0 2px;max-width:min(330px,calc(100vw - 16px));border-radius:13px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;font-size:12px}
+  #mpMini.drag{cursor:grabbing;opacity:.85}
+  #mpMini button{cursor:pointer;background:none;border:0;padding:0 4px;height:24px;min-width:22px;font-size:12px;line-height:1;color:inherit;border-radius:8px}
+  #mpMini button:hover{background:rgba(255,255,255,.1)}
+  #mpGrip{opacity:.45;padding:0 3px;font-size:11px;letter-spacing:-2px}
+  #mpName{min-width:0;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;opacity:.9}
+  #mpMini #mpAuto.off,#mPin.off{opacity:.4;filter:grayscale(1)}
+  #mpX{opacity:.6}#mName{order:-1;flex-basis:100%;min-width:0;font-size:12px;padding:1px 2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mAuto{margin-left:auto}
   /* ---- PvP: duelos e Arena (v1.38) ---- */
   #duInv{display:none;top:222px;left:50%;transform:translateX(-50%);padding:10px 14px;z-index:9;gap:12px;align-items:center;font-size:13px;border-color:#a8452a;box-shadow:0 0 18px #a8452a66}
   #duInv button{margin-left:6px;cursor:pointer}
@@ -671,12 +680,13 @@
 <div id="tip"></div>
 <div id="tip2"></div>
 <button id="audioFab" title="Opções: áudio, idioma e nome">⚙️</button>
+<div id="mpMini" class="panel" title="Arraste para mover"><span id="mpGrip">⋮⋮</span><button id="mpPrev" title="Música anterior">⏮</button><button id="mpPlay" title="Pausar / tocar (M)">⏸</button><button id="mpNext" title="Próxima música">⏭</button><span id="mpName"></span><button id="mpAuto" title="Música do mapa: troca sozinha conforme o lugar onde você está">🗺️</button><button id="mpX" title="Fechar (abre de novo em ⚙️ Opções → 📌)">×</button></div>
 <div id="audioPanel" class="panel">
   <h3><span>⚙️ Opções</span><button class="x" id="aClose" title="Fechar">✕</button></h3>
   <div class="arow"><span>🎵 Música</span><button id="aMm" class="amute" title="Mutar / ativar a música (M)">🔊</button></div>
   <div class="aslide"><input type="range" id="aMv" min="0" max="100" step="1" aria-label="Volume da música"><b id="aMvT"></b></div>
   <div id="mPlayer"><button id="mPrev" title="Música anterior">⏮</button><button id="mPlay" title="Pausar / tocar (M)">⏸</button><button id="mNext" title="Próxima música">⏭</button>
-   <span id="mName"></span><button id="mAuto" title="Música do mapa: troca sozinha conforme o lugar onde você está">🗺️</button></div>
+   <span id="mName"></span><button id="mPin" title="Mostrar o tocador na tela do jogo">📌</button><button id="mAuto" title="Música do mapa: troca sozinha conforme o lugar onde você está">🗺️</button></div>
   <div class="arow"><span>⚔️ Efeitos (monstros, skills…)</span><button id="aSm" class="amute" title="Mutar / ativar os efeitos">🔊</button></div>
   <div class="aslide"><input type="range" id="aSv" min="0" max="100" step="1" aria-label="Volume dos efeitos"><b id="aSvT"></b></div>
   <div class="arow osep"><span>🏷️ Esconder meu nome</span><button id="oHideName" class="amute" title="Esconde o nome, título, guilda e nível em cima do seu personagem (só para você)">👁️</button></div>
@@ -707,8 +717,8 @@ const MUSIC_SRC=(location.protocol.indexOf('http')===0?'audio/':'')+'tema.mp3'+(
 const cfg={mv:.4,sv:.7,mm:false,sm:false};
 try{const j=JSON.parse(localStorage.getItem('mmo_audio')||'null');if(j){
  if(typeof j.mv==='number')cfg.mv=Math.min(1,Math.max(0,j.mv));if(typeof j.sv==='number')cfg.sv=Math.min(1,Math.max(0,j.sv));
- cfg.mm=!!j.mm;cfg.sm=!!j.sm;if(j.auto===false)cfg.auto=false;if(typeof j.trk==='string')cfg.trk=j.trk;}}catch(e){}
-const saveCfg=()=>{try{localStorage.setItem('mmo_audio',JSON.stringify(cfg));}catch(e){}};
+ cfg.mm=!!j.mm;cfg.sm=!!j.sm;}}catch(e){}   /* v2.2.7: a música do mapa sempre começa ligada (a escolha manual vale só até fechar o jogo) */
+const saveCfg=()=>{try{localStorage.setItem('mmo_audio',JSON.stringify({mv:cfg.mv,sv:cfg.sv,mm:cfg.mm,sm:cfg.sm}));}catch(e){}};
 const listeners=[];const fire=()=>{for(const f of listeners){try{f();}catch(e){}}};
 const sq=v=>v*v, rnd=(a,b)=>a+Math.random()*(b-a), mf=n=>440*Math.pow(2,(n-69)/12);
 let ctx=null,bus=null,mbus=null,noiseBuf=null,cur=null,force=false;
@@ -1110,7 +1120,7 @@ function go(id,quiet){if(id==='tema'&&M.mp3bad)id='valdoria';const t=TRK[TRKI(id
  if(t.mp3){genStop();mp3Start();}else{mp3Fade();genStart(t);M.mode='gen';}
  fire();if(was&&!quiet)np(t);}
 let npT=0;function np(t){try{if(typeof toast==='function'&&Date.now()-npT>1500){npT=Date.now();toast('♪ '+t.ic+' '+t.n);}}catch(e){}}
-let WANT='tema';   /* faixa do lugar onde o jogador está (menu, mapa, calabouço...) */
+let WANT='valdoria';   /* faixa do lugar onde o jogador está (mapa, calabouço...). A do hangar (tema) só toca se o jogador pular até ela no tocador */
 function musicStart(){if(cfg.mm)return;const id=cfg.auto===false&&cfg.trk?cfg.trk:WANT;M.cur=null;go(id,1);}
 function musicStop(){if(M.el&&!M.el.paused)M.el.pause();genStop();}
 
@@ -1134,6 +1144,8 @@ return {cfg,ensure,sfx,skill,basic,hit,mon,step,amb,smp:play2,setMusicVol,setSfx
 })();
 
 /* ---------- painel de áudio (volume + mutar) ---------- */
+/* v2.2.7: estado do tocador na tela (aberto, posição) */
+var MPM={on:true,x:null,y:null};try{const j=JSON.parse(localStorage.getItem('mmo_mp')||'null');if(j){MPM.on=j.on!==false;if(typeof j.x==='number'){MPM.x=j.x;MPM.y=j.y;}}}catch(e){}
 const AUDUI=(function(){
  const $=id=>document.getElementById(id),pn=$('audioPanel');
  function sync(){
@@ -1147,6 +1159,7 @@ const AUDUI=(function(){
   const st=AUD.status();
   const tk=AUD.track(),on=AUD.playing();$('mName').innerHTML=tk.ic+' <b>'+tk.n+'</b>';$('mName').title=tk.n;
   $('mPlay').textContent=on?'⏸':'▶️';$('mAuto').classList.toggle('off',c.auto===false);
+  $('mpName').textContent=tk.ic+' '+tk.n;$('mpName').title=tk.n;$('mpPlay').textContent=on?'⏸':'▶️';$('mpAuto').classList.toggle('off',c.auto===false);$('mPin').classList.toggle('off',!MPM.on);
   $('aStat').innerHTML=c.mm?'Música pausada.':c.auto===false?'🎧 Você escolheu a música — toque em 🗺️ para voltar à música de cada mapa.':'🗺️ A música muda sozinha conforme o mapa.';
  }
  function panel(show){const open=show===undefined?pn.style.display!=='block':show;pn.style.display=open?'block':'none';if(open){sync();try{window.hhSync&&hhSync();}catch(e){}}}
@@ -1159,6 +1172,23 @@ const AUDUI=(function(){
  $('mPlay').addEventListener('click',()=>{AUD.ensure();AUD.toggleMusic();});
  $('mPrev').addEventListener('click',()=>AUD.skip(-1));$('mNext').addEventListener('click',()=>AUD.skip(1));
  $('mAuto').addEventListener('click',()=>AUD.setAuto(AUD.cfg.auto===false));
+ /* tocador na tela: liga/desliga, posição guardada no navegador */
+ const mp=$('mpMini');
+ const mpSave=()=>{try{localStorage.setItem('mmo_mp',JSON.stringify({on:MPM.on,x:MPM.x,y:MPM.y}));}catch(e){}};
+ const mpClamp=()=>{if(MPM.x==null)return;const W=mp.offsetWidth||200,H=mp.offsetHeight||26;MPM.x=Math.max(4,Math.min(innerWidth-W-4,MPM.x));MPM.y=Math.max(4,Math.min(innerHeight-H-4,MPM.y));mp.style.left=MPM.x+'px';mp.style.top=MPM.y+'px';};
+ window.mpShow=()=>{const inGame=!!window.INGAME;mp.style.display=MPM.on&&inGame?'flex':'none';if(MPM.on&&inGame)mpClamp();};
+ $('mPin').addEventListener('click',()=>{MPM.on=!MPM.on;mpSave();mpShow();sync();});
+ $('mpX').addEventListener('click',e=>{e.stopPropagation();MPM.on=false;mpSave();mpShow();sync();});
+ $('mpPlay').addEventListener('click',e=>{e.stopPropagation();AUD.ensure();AUD.toggleMusic();});
+ $('mpPrev').addEventListener('click',e=>{e.stopPropagation();AUD.skip(-1);});$('mpNext').addEventListener('click',e=>{e.stopPropagation();AUD.skip(1);});
+ $('mpAuto').addEventListener('click',e=>{e.stopPropagation();AUD.setAuto(AUD.cfg.auto===false);});
+ let dg=null;
+ mp.addEventListener('pointerdown',e=>{e.stopPropagation();if(e.target.closest('button'))return;const r=mp.getBoundingClientRect();dg={dx:e.clientX-r.left,dy:e.clientY-r.top,id:e.pointerId};mp.classList.add('drag');try{mp.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();});
+ mp.addEventListener('pointermove',e=>{if(!dg||e.pointerId!==dg.id)return;MPM.x=e.clientX-dg.dx;MPM.y=e.clientY-dg.dy;mpClamp();});
+ const end=e=>{if(!dg)return;dg=null;mp.classList.remove('drag');mpSave();};mp.addEventListener('pointerup',end);mp.addEventListener('pointercancel',end);
+ addEventListener('resize',()=>{if(MPM.on)mpClamp();});
+ for(const ev of ['click','dblclick','wheel','mousedown','touchstart'])mp.addEventListener(ev,e=>e.stopPropagation(),{passive:true});
+ setInterval(()=>{try{mpShow();}catch(e){}},1000);
  $('aSm').addEventListener('click',()=>{if(!AUD.toggleSfx())AUD.sfx('coin');});
  $('audioFab').addEventListener('click',()=>panel());
  $('btnAudio').addEventListener('click',()=>panel());
@@ -9015,7 +9045,7 @@ function updSnow(){const rg=NET.inst?-1:regionOf(P.pos),on=rg===3,ev=rg===5||rg=
 /** v1.91: clima sombrio na Cidade das Máquinas (céu cor de fuligem, luz fria e avermelhada); fora dela volta ao normal */
 /* v2.2.7: música de cada lugar (menu/hangar: tema; cada região, calabouço e arena têm a sua) */
 const MUSREG=['valdoria','solara','calabouco','nevasca','arena','vulcania','maquinas'];
-setInterval(()=>{try{let id='tema';if(typeof S!=='undefined'&&S&&P&&P.root){
+setInterval(()=>{try{let id='valdoria';const ig=!!(typeof S!=='undefined'&&S&&P&&P.root);if(ig!==!!window.INGAME){window.INGAME=ig;try{mpShow();}catch(e){}}if(ig){
   id=NET.inst&&DG.cur?'calabouco':PKS.mode==='arena'?'arena':MUSREG[regionOf(P.pos)]||'valdoria';}AUD.scene(id);}catch(e){}},1500);
 let MOODK='';function updRegionMood(){const k=NET.inst?'dg':PKS.mode==='arena'?'ar':regionOf(P.pos)===6?'mc':'n';if(k===MOODK)return;const was=MOODK;MOODK=k;
  if(k==='mc'){hemi.intensity=.62;hemi.diffuse=new C3(.85,.86,1);hemi.groundColor=new C3(.16,.12,.14);sun.intensity=.72;sun.diffuse=new C3(1,.78,.7);scene.clearColor=new BABYLON.Color4(.07,.06,.07,1);}
