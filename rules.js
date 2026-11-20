@@ -1308,17 +1308,17 @@ const FZS = {
 /* ====================== MONTARIAS (v2.2.9) ======================
    v2.3.0: off: 1 = fora da loja por enquanto (modelos sendo refeitos com textura); quem já tem continua com o item, mas não chama.
    Item k:'mt' (n = 1, não empilha, vinculado: não vende, não troca, não vai a leilão). Compradas com DIAMANTES na loja 💎 (GM: grátis).
-   Só 1 equipada (c.mtq). Montado: +20% de velocidade (comum), +5% a cada raridade acima. A montaria não leva dano. */
+   Só 1 equipada (c.mtq). Montado: +30% de velocidade (comum), +5% a cada raridade acima. A montaria não leva dano. */
 const MT_PRICE = [600, 1000, 1400];
-const MT_SPD = [.20, .25, .30];
+const MT_SPD = [.30, .35, .40];   // v2.3.1: +30% na comum, +5% a cada raridade
 const MTS = {
   cavalo:  { n: 'Cavalo de Batalha', i: '🐎', rar: 0, d: 'Cavalo de guerra com armadura. Fiel e resistente.' },
-  veado:   { off: 1, n: 'Cervo da Floresta Real', i: '🦌', rar: 0, d: 'Cervo de galhada imponente, enfeitado com folhas.' },
-  cavalo2: { off: 1, n: 'Corcel Sombrio', i: '🐴', rar: 1, d: 'Cavalo negro de armadura violeta e olhos em brasa.' },
-  lobo:    { off: 1, n: 'Lobo da Tempestade', i: '🐺', rar: 1, d: 'Lobo cinzento com sela de couro e espinhos.' },
-  porco:   { off: 1, n: 'Javali Couraçado', i: '🐗', rar: 1, d: 'Javali de presas enormes e sela de batalha.' },
-  ave:     { off: 1, n: 'Grifo Batedor', i: '🦅', rar: 2, d: 'Ave de bico forte e penas douradas e azuis. Corre sobre duas patas.' },
-  urso:    { off: 1, n: 'Urso Blindado', i: '🐻', rar: 2, d: 'Urso pardo com escudos e sela reforçada.' }};
+  veado:   { n: 'Cervo da Floresta Real', i: '🦌', rar: 0, d: 'Cervo de galhada imponente, enfeitado com folhas.' },
+  cavalo2: { n: 'Corcel Sombrio', i: '🐴', rar: 1, d: 'Cavalo negro de armadura violeta e olhos em brasa.' },
+  lobo:    { n: 'Lobo da Tempestade', i: '🐺', rar: 1, d: 'Lobo cinzento com sela de couro e espinhos.' },
+  porco:   { n: 'Javali Couraçado', i: '🐗', rar: 1, d: 'Javali de presas enormes e sela de batalha.' },
+  ave:     { n: 'Grifo Batedor', i: '🦅', rar: 2, d: 'Ave de bico forte e penas douradas e azuis. Corre sobre duas patas.' },
+  urso:    { n: 'Urso Blindado', i: '🐻', rar: 2, d: 'Urso pardo com escudos e sela reforçada.' }};
 const newMt = id => ({ k: 'mt', id, n: 1 });
 const mtPrice = id => MT_PRICE[(MTS[id] || { rar: 0 }).rar];
 const mtSpd = id => MT_SPD[(MTS[id] || { rar: 0 }).rar] || .2;

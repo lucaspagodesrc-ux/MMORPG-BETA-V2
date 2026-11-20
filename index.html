@@ -6826,7 +6826,7 @@ function updateMonsters(dt,now){
 function updatePlayer(dt,now){
  if(P.dead&&P.flip){P.flip=null;P.root.rotation.x=0;P._ride=false;}
  mtTick(dt,now);
- if(P.flip){flipTick(now);if(!P.flip)P._ride=false;if(P.limbs&&P.limbs.glb)animEnt(P,P.pos.x,P.pos.z,now,P.swingAt,false);return;}   /* v2.2.9 salto mortal ao descer */
+ if(P.flip){flipTick(now);if(!P.flip)P._ride=false;if(P.limbs&&P.limbs.glb)animEnt(P,P.pos.x,P.pos.z,now,P.swingAt,false);return;}   /* v2.3.1 pulo ao descer */
  if(P.dead){if(P.roll)endRoll();if(P.barbUntil)endBarb(P);if(P.limbs&&P.limbs.glb)animEnt(P,P.pos.x,P.pos.z,now,P.swingAt,false);return;}   /* v2.1.7: anima a queda */
  if(P.roll){rollStep(dt,now);return;}
  if(now<(P.lock||0)){P.moving=false;return;}
@@ -7971,7 +7971,7 @@ function renderFz(){
    :'<div class="fzrow"><div class="fzi">➕</div><div class="muted" style="flex:1">Nenhuma — equipe uma montaria da mochila.</div></div>';
   const inv=S.inv.map((it,i)=>it&&it.k==='mt'?{it,i}:null).filter(Boolean);
   h+=`<div class="dsec">Na mochila (${inv.length})</div>`+(inv.length?inv.map(o=>{const Q=RULES.MTS[o.it.id]||{};return `<div class="fzrow"><div class="fzi" data-inv="${o.i}" style="border-color:${col(o.it)}">${Q.i}</div><div class="fzt"><b style="color:${col(o.it)}">${Q.n}</b><small>${PRAR[Q.rar||0].n} • +${Math.round(RULES.mtSpd(o.it.id)*100)}% de velocidade</small></div><div class="fzp"><button data-mteq="${o.i}">Equipar</button></div></div>`;}).join(''):'<p class="muted">Nenhuma montaria na mochila. Compre na aba 💎 Loja.</p>');
-  h+='<p class="muted">Para descer: aperte 🐎 de novo, ou use uma habilidade (você salta da montaria com um mortal; a habilidade não sai e não gasta a recarga). Não dá para montar em calabouços, na arena e em duelos.</p>';
+  h+='<p class="muted">Para descer: aperte 🐎 de novo, ou use uma habilidade (você pula da montaria; a habilidade não sai e não gasta a recarga). Não dá para montar em calabouços, na arena e em duelos.</p>';
  }else{
   const z=S.fzq,Z=z&&FZS[z.id];
   h+='<div class="dsec">Vestindo agora</div>';
@@ -9068,24 +9068,24 @@ function updateRecall(dt,now){
 /* =================== MONTARIAS (v2.2.9) ===================
    Modelos mt_<id>.glb (Meshy, reduzidos para 4 mil triângulos, pintados por vértice e com esqueleto simples):
    animações Idle, Walk, Run, IdleHead, IdlePaw (só 4 patas). Botão 🐎 (tecla V): 4 s de chamada e você já aparece montado.
-   Montado: +20/25/30% de velocidade (pela raridade). Sai no mesmo botão (desce normal) ou apertando uma habilidade (salto mortal; a habilidade não sai
+   Montado: +30/35/40% de velocidade (pela raridade). Sai no mesmo botão (desce normal) ou apertando uma habilidade (pulo; a habilidade não sai
    e não entra em recarga). A montaria fica parada 4 s e some. Ela não leva dano — quem leva é o personagem, como sempre. */
-const MTV='230';
-const MTDEF={   /* sc: escala • seat: [frente, altura] da sela no modelo • legs • voz: [som, tom] • passo: tom do passo */
- cavalo:{sc:2.3,seat:[.004,.888],by:.655,legs:4,voz:['shriek2',1.45],pas:.75,tex:1,run:7.2,walk:4},   /* v2.3.0: modelo do Meshy com textura e animações próprias (by: os pés ficam abaixo da origem) */
- veado:{sc:2.15,seat:[-.127,.93],legs:4,voz:['borb',.7],pas:.95},
- cavalo2:{sc:2.3,seat:[.056,.89],legs:4,voz:['shriek2',1.3],pas:.72},
- lobo:{sc:2.1,seat:[.083,.96],legs:4,voz:['wargT',1],pas:1},
- porco:{sc:2.1,seat:[.308,.87],legs:4,voz:['grunt',1.25],pas:.85},
- ave:{sc:1.85,seat:[.327,1.12],legs:2,voz:['shriek',1.9],pas:1.25},
- urso:{sc:1.85,seat:[-.16,1.12],legs:4,voz:['giantG',.95],pas:.6}};
+const MTV='231';
+const MTDEF={   /* sc: escala • seat: [frente, altura] da sela no modelo • by: quanto os pés ficam abaixo da origem • voz: [som, tom] • passo: tom do passo • run/walk: velocidade em que a animação casa */
+ cavalo:{sc:2.00,seat:[.004,.888],by:.655,legs:4,voz:['shriek2',1.45],pas:.75,run:7.2,walk:4},
+ cavalo2:{sc:2.00,seat:[.003,.869],by:.627,legs:4,voz:['shriek2',1.3],pas:.72,run:7.2,walk:4},
+ veado:{sc:1.87,seat:[-.109,.925],legs:4,voz:['borb',.7],pas:.95},
+ lobo:{sc:1.83,seat:[.085,.953],legs:4,voz:['wargT',1],pas:1},
+ porco:{sc:1.83,seat:[-.298,.873],legs:4,voz:['grunt',1.25],pas:.85},
+ ave:{sc:1.52,seat:[.333,1.145],legs:2,voz:['shriek',1.9],pas:1.25},
+ urso:{sc:1.52,seat:[-.132,1.10],legs:4,voz:['giantG',.95],pas:.6}};
 const MNT={ld:{},pool:{},mats:{},live:new Set(),cast:null,now:0};   /* now: o mesmo relógio do jogo (o do quadro) */
 /* carrega o modelo (uma vez) e já compila o material com esqueleto — para não engasgar quando a montaria aparece */
 MNT.load=function(id){if(!MTDEF[id])return Promise.reject('?');if(MNT.ld[id])return MNT.ld[id];
  return MNT.ld[id]=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','mt_'+id+'.glb?v='+MTV,scene,null,'.glb')).then(ct=>{
   const m=new BABYLON.StandardMaterial('mt_'+id,scene);m.specularColor=new C3(.04,.04,.04);m.diffuseColor=new C3(1,1,1);m.emissiveColor=new C3(.06,.06,.06);m.noTint=true;MNT.mats[id]=m;
   MNT.ct=MNT.ct||{};MNT.ct[id]=ct;
-  if(MTDEF[id].tex){const t0=ct.materials.find(x=>x.albedoTexture||x.diffuseTexture);const tx=t0&&(t0.albedoTexture||t0.diffuseTexture);if(tx){m.diffuseTexture=tx;m.emissiveColor=new C3(.1,.1,.1);}}
+  {const t0=ct.materials.find(x=>x.albedoTexture||x.diffuseTexture);const tx=t0&&(t0.albedoTexture||t0.diffuseTexture);if(tx){m.diffuseTexture=tx;m.emissiveColor=new C3(.1,.1,.1);}}   /* modelos com textura */
   const o=MNT.make(id);MNT.free(o);   /* um pronto na reserva */
   try{for(const ms of o.meshes)m.forceCompilation(ms);}catch(e){}
   return ct;});};
@@ -9094,6 +9094,7 @@ MNT.make=function(id){const D=MTDEF[id],ct=MNT.ct[id];
  top.parent=root;top.scaling.setAll(D.sc);top.position.y=(D.by||0)*D.sc;for(const r of I.rootNodes)r.parent=top;
  const meshes=[];for(const r of I.rootNodes)for(const ms of r.getChildMeshes(false)){ms.material=MNT.mats[id];ms.isPickable=false;ms.alwaysSelectAsActiveMesh=false;meshes.push(ms);try{if(window.SHADOW&&SHADOW.addShadowCaster)SHADOW.addShadowCaster(ms);}catch(e){}}
  const AG={};for(const g of I.animationGroups){g.stop();g.enableBlending=true;g.blendingSpeed=.12;AG[g.name]=g;}
+ const sh=shadowDisc(root,1);sh.scaling.set(.75*D.sc*.55,1.05*D.sc*.55,1);   /* sombra só da montaria (oval) */
  return {id,D,root,top,meshes,AG,cur:null,still:0,nextIdle:0,nextVoz:0,stepT:0,dead:0,owner:null};};
 MNT.get=function(id){const p=MNT.pool[id];const o=p&&p.length?p.pop():MNT.make(id);o.root.setEnabled(true);o.top.scaling.setAll(o.D.sc);o.dead=0;o.cur=null;o.still=MNT.now;o.nextVoz=MNT.now+8000+Math.random()*10000;MNT.live.add(o);MNT.play(o,'Idle');return o;};
 MNT.free=function(o){for(const n in o.AG)o.AG[n].stop();o.cur=null;o.root.setEnabled(false);o.owner=null;MNT.live.delete(o);(MNT.pool[o.id]||(MNT.pool[o.id]=[])).push(o);};
@@ -9114,14 +9115,15 @@ MNT.drive=function(o,pos,yaw,spd,dt,now,near){
 };
 /* sela: altura do quadril do cavaleiro sentado */
 MNT.seatY=function(o,rider){const D=o.D;let hy=rider._hipsR===rider.root?rider._hipsH:null;if(hy==null){rider._hipsR=rider.root;const h=(rider.root.getChildTransformNodes(false)||[]).find(n=>/(^|\W)hips$/.test(n.name));hy=rider._hipsH=h?Math.max(.5,Math.min(1.4,h.getAbsolutePosition().y-rider.root.position.y)):.92;}
- return D.seat[1]*D.sc-hy+.12;};
+ return D.seat[1]*D.sc-hy+(RIDE.hy==null?-.02:RIDE.hy);};
 /* pernas abertas e dobradas por cima do pose normal (o jogo não tem animação de montar: o quadril fica parado e as pernas abraçam a sela) */
 const RQ={th:null,sh:null};
 function rideLegs(o){let b=o._rl;if(b&&(b.r!==o.root||(b.tL&&b.tL.isDisposed())))b=null;if(!b){const ns=o.root.getChildTransformNodes(false),f=s=>ns.find(n=>n.name===s||n.name.endsWith('.'+s)||n.name.endsWith(' '+s)||n.name.endsWith(s));b=o._rl={r:o.root,tL:f('thigh.L'),tR:f('thigh.R'),sL:f('shin.L'),sR:f('shin.R')};}
- if(!RQ.th){RQ.thL=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.tp,RIDE.tr);RQ.thR=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.tp,-RIDE.tr);RQ.sh=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.sp,0);RQ.th=1;}
+ const rk=RIDE.tp+','+RIDE.tr+','+RIDE.sp+','+(RIDE.sr||0);if(RQ.k!==rk){RQ.k=rk;RQ.th=null;}
+ if(!RQ.th){RQ.thL=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.tp,RIDE.tr);RQ.thR=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.tp,-RIDE.tr);RQ.shL=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.sp,RIDE.sr||0);RQ.shR=BABYLON.Quaternion.RotationYawPitchRoll(0,RIDE.sp,-(RIDE.sr||0));RQ.th=1;}
  const ap=(n,q)=>{if(!n)return;if(!n.rotationQuaternion)n.rotationQuaternion=BABYLON.Quaternion.FromEulerVector(n.rotation);n.rotationQuaternion.multiplyInPlace(q);};
- ap(b.tL,RQ.thL);ap(b.tR,RQ.thR);ap(b.sL,RQ.sh);ap(b.sR,RQ.sh);}
-const RIDE={tp:-1.25,tr:.42,sp:1.45};
+ ap(b.tL,RQ.thL);ap(b.tR,RQ.thR);ap(b.sL,RQ.shL);ap(b.sR,RQ.shR);}
+const RIDE={tp:-.5,tr:.9,sp:.5,sr:-.7,hy:-.02};   /* pernas abertas (coxa para fora) e canela caindo do lado da montaria */
 /* barra de chamada (igual à do retorno à cidade) */
 document.body.insertAdjacentHTML('beforeend','<div id="mtBar" style="display:none;position:absolute;left:50%;bottom:170px;transform:translateX(-50%);width:240px;z-index:6;text-align:center;font-size:12px;color:#ffe2b0;pointer-events:none">Chamando a montaria…<div style="height:8px;margin-top:4px;border-radius:5px;background:rgba(0,0,0,.55);border:1px solid rgba(255,226,176,.5);overflow:hidden"><div id="mtFill" style="height:100%;width:0;background:linear-gradient(90deg,#c98a3a,#ffe2b0)"></div></div></div>');
 const MT_CAST=4000;
@@ -9149,37 +9151,38 @@ function mountUp(id){
  AUD.smp('tele',.5,1.1);AUD.smp(o.D.voz[0],.4,o.D.voz[1]);
  if(NET.room)NET.room.send('mnt',{on:1});mtBtnSync();
  toast('🐎 '+((RULES.MTS[id]||{}).n||'Montaria')+' • +'+Math.round(P.mnt.spd*100)+'% de velocidade');}
-/* desce. flip = salto mortal para trás (quando aperta uma habilidade). A montaria fica 4 s parada e some. */
-function dismount(flip){const m=P.mnt;if(!m)return;P.mnt=null;P._ride=!!flip;   /* no mortal as pernas continuam dobradas (fica encolhido) */
+/* desce. jump = pulo para o lado (quando aperta uma habilidade). A montaria fica 4 s parada e some. */
+function dismount(jump){const m=P.mnt;if(!m)return;P.mnt=null;P._ride=!!jump;   /* no pulo as pernas continuam dobradas até tocar o chão */
  const o=m.o;o.dead=MNT.now||1;o.owner=null;MNT.play(o,'Idle');P.pos.y=0;
- if(flip){const yaw=P.root.rotation.y;P.flip={t0:MNT.now,x0:P.pos.x,z0:P.pos.z,y0:MNT.seatY(o,P)+.0,dx:-Math.sin(yaw),dz:-Math.cos(yaw)};AUD.smp('jump',.6,1);}
+ if(jump){const yaw=P.root.rotation.y;P.flip={t0:MNT.now,x0:P.pos.x,z0:P.pos.z,y0:MNT.seatY(o,P),dx:Math.cos(yaw),dz:-Math.sin(yaw)};AUD.smp('jump',.6,1);}
  if(NET.room)NET.room.send('mnt',{on:0});mtBtnSync();}
-/* salto mortal: 0,7 s, para trás, girando 360° em volta do meio do corpo */
-function flipTick(now){const f=P.flip;if(!f)return false;const t=Math.min(1,(now-f.t0)/(MNT.flipMs||700)),c=.9,th=-t*Math.PI*2,back=1.9*t,y=f.y0*(1-t)+2.1*Math.sin(Math.PI*t);
- const cx=f.x0+f.dx*back,cz=f.z0+f.dz*back,cy=y+c;   /* centro do corpo */
- /* raiz = centro − (giro do ponto do meio do corpo): o corpo gira em volta do próprio meio, não dos pés */
- P.root.rotation.x=th;P.pos.x=cx+f.dx*c*Math.sin(th);P.pos.z=cz+f.dz*c*Math.sin(th);P.pos.y=Math.max(0,cy-Math.cos(th)*c);
- if(t>=1){P.root.rotation.x=0;P.pos.y=0;P.flip=null;AUD.smp('land',.5,1);ring(P.pos.x,P.pos.z,1.2,'#fff2a8',300);}
+/* pulo: 0,55 s, para o lado direito da montaria, caindo em pé */
+function flipTick(now){const f=P.flip;if(!f)return false;const t=Math.min(1,(now-f.t0)/(MNT.flipMs||550)),side=1.5*t;
+ P.root.rotation.x=0;P.pos.x=f.x0+f.dx*side;P.pos.z=f.z0+f.dz*side;P.pos.y=Math.max(0,f.y0*(1-t)+1.1*Math.sin(Math.PI*t));
+ if(t>.85)P._ride=false;
+ if(t>=1){P.pos.y=0;P.flip=null;AUD.smp('land',.5,1);ring(P.pos.x,P.pos.z,1.1,'#fff2a8',300);}
  return true;}
 function mtBtnSync(){const b=$('mtBtn');if(!b)return;b.classList.toggle('on',!!P.mnt);const id=P.mnt?P.mnt.id:S&&S.mtq&&S.mtq.id;b.querySelector('i').textContent=(id&&RULES.MTS[id]&&RULES.MTS[id].i)||'🐎';
  b.title=P.mnt?'Descer da montaria (V)':S&&S.mtq?'Chamar a montaria (V) • 4 s':'Montaria (V) — compre na loja 💎 e equipe na aba 🐎';b.style.opacity=S&&(S.mtq||P.mnt)?1:.55;}
 /* por quadro: montaria do jogador, as que estão sumindo e as dos outros jogadores */
-function mtTick(dt,now){MNT.now=now;
+/* sombra redonda do cavaleiro: escondida enquanto montado */
+function riderShadow(o,on){const r=o.root;if(!r)return;let s=o._shdN;if(!s||s.isDisposed()){s=o._shdN=r.getChildren(n=>n.name==='sh',true)[0]||null;}if(s&&s.isEnabled()!==on)s.setEnabled(on);}
+function mtTick(dt,now){MNT.now=now;riderShadow(P,!P._ride);
  mtCastTick(now);
  if(P.mnt){const o=P.mnt.o;if(P.dead||NET.inst){dismount(false);}else{
   const sp=P.moving?6*(1+P.mnt.spd):0;MNT.drive(o,P.pos,P.root.rotation.y,sp,dt,now,true);
   P.pos.y=MNT.seatY(o,P)+(sp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}}
- for(const o of [...MNT.live]){if(o.dead){if(now-o.dead>4000){try{VFX.spawn('vortex',{x:o.root.position.x,y:1,z:o.root.position.z},2.8,'#ffe2b0',420,0);}catch(e){}MNT.free(o);}
-   else if(now-o.dead>3400){const k=1-(now-o.dead-3400)/600;o.top.scaling.setAll(o.D.sc*Math.max(.05,k));}}}
+ for(const o of [...MNT.live]){if(o.dead){if(now-o.dead>4000)MNT.free(o);   /* 4 s depois de descer: some */
+}}
 }
 /* outro jogador montado (p.mt do servidor) */
 function mtRemote(o,p,pos,dt,now){MNT.now=now;const id=p&&!p.dead&&o.rig?p.mt||'':'';
- if(o._mo&&o._mo.id!==id){if(!o._mo.dead){o._mo.dead=now;o._mo.owner=null;}o._mo=null;o._ride=false;o._rl=null;}
+ if(o._mo&&o._mo.id!==id){if(!o._mo.dead){o._mo.dead=now;o._mo.owner=null;}o._mo=null;o._ride=false;o._rl=null;riderShadow(o,true);}
  if(!id||!MTDEF[id])return;
  if(!o._mo){if(!MNT.ct||!MNT.ct[id]){MNT.load(id).catch(()=>{});return;}o._mo=MNT.get(id);o._mo.owner=o;o._ride=true;}
  const mo=o._mo,lx=o._mlx==null?pos.x:o._mlx,lz=o._mlz==null?pos.z:o._mlz,sp=dt>0?Math.hypot(pos.x-lx,pos.z-lz)/dt:0;o._mlx=pos.x;o._mlz=pos.z;
  o._msp=(o._msp||0)+(Math.min(12,sp)-(o._msp||0))*Math.min(1,dt*8);
- MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
+ riderShadow(o,false);MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
 function mtRemoteKill(o){if(o&&o._mo){MNT.free(o._mo);o._mo=null;}}
 /* quando equipa (ou ao entrar no jogo): já deixa o modelo baixado e compilado */
 let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id&&!(RULES.MTS[id]||{}).off)MNT.load(id).catch(()=>{});if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
