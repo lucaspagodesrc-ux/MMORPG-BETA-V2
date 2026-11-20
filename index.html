@@ -9077,8 +9077,8 @@ const MTDEF={   /* sc: escala • seat: [frente, altura] da sela no modelo • b
  veado:{sc:1.87,seat:[-.109,.925],legs:4,voz:['borb',.7],pas:.95},
  lobo:{sc:1.83,seat:[.085,.953],legs:4,voz:['wargT',1],pas:1},
  porco:{sc:1.83,seat:[-.298,.873],legs:4,voz:['grunt',1.25],pas:.85},
- ave:{sc:1.52,seat:[.333,1.145],legs:2,voz:['shriek',1.9],pas:1.25},
- urso:{sc:1.52,seat:[-.132,1.10],legs:4,voz:['giantG',.95],pas:.6}};
+ ave:{sc:3.04,seat:[-.02,.90],legs:2,voz:['shriek',1.9],pas:1.25},
+ urso:{sc:1.9,seat:[-.132,1.10],legs:4,voz:['giantG',.95],pas:.6}};
 const MNT={ld:{},pool:{},mats:{},live:new Set(),cast:null,now:0};   /* now: o mesmo relógio do jogo (o do quadro) */
 /* carrega o modelo (uma vez) e já compila o material com esqueleto — para não engasgar quando a montaria aparece */
 MNT.load=function(id){if(!MTDEF[id])return Promise.reject('?');if(MNT.ld[id])return MNT.ld[id];
