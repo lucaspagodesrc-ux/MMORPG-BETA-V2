@@ -1248,6 +1248,13 @@ if(!BABYLON.Engine.isSupported()) throw new Error("WebGL não está disponível 
    Modo leve: texturas em no máximo 512px, sem antialias, resolução um pouco menor e poucas classes carregadas ao mesmo tempo. */
 const IOS=(()=>{const q=/[?&]ios=([01])/.exec(location.search);if(q)return q[1]==='1';const u=navigator.userAgent||'';return /iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1);})();
 const MOB=(()=>{const q=/[?&]mob=([01])/.exec(location.search);if(q)return q[1]==='1';try{const v=localStorage.getItem('mmo_mob');if(v==='1'||v==='0')return v==='1';}catch(e){}return matchMedia('(hover:none) and (pointer:coarse)').matches;})();
+/* v2.3.3: celular — os dados das malhas ficam em listas tipadas (Float32/Uint32: metade da memória das listas comuns).
+   O iPhone fechava a aba ("Um problema ocorreu repetidamente") por passar do limite de memória. */
+if(IOS||MOB){const G=BABYLON.Geometry.prototype,F=d=>Array.isArray(d)?new Float32Array(d):d,U=d=>{if(!Array.isArray(d))return d;let mx=0;for(let i=0;i<d.length;i++)if(d[i]>mx)mx=d[i];return mx<65536?new Uint16Array(d):new Uint32Array(d);};
+ const sv=G.setVerticesData,uv=G.updateVerticesData,si=G.setIndices;
+ G.setVerticesData=function(k,d,a,b){return sv.call(this,k,F(d),a,b);};
+ G.updateVerticesData=function(k,d,a){return uv.call(this,k,F(d),a);};
+ G.setIndices=function(d,a,b){return si.call(this,U(d),a,b);};}
 const PMUL=MOB?.5:1;   // celular: metade das partículas
 let FPS30=MOB&&(()=>{try{return localStorage.getItem('mmo_fps')!=='60';}catch(e){return true;}})();   // celular: 30 FPS estáveis (esquenta menos e não oscila)
 const engine=new BABYLON.Engine(canvas,!IOS,IOS?{powerPreference:'default',preserveDrawingBuffer:false}:{powerPreference:'high-performance'});
@@ -2348,10 +2355,12 @@ function srcWell(){return MERGE('well',[cyl(.9,2.0,2.2,14,0,.45,0,AM.stone),tor(
 }
 // árvores e pedras (instâncias pintadas, com contorno e sombra suave)
 const nearZone=(x,z,pad)=>ZONES.some(zn=>Math.hypot(x-zn.x,z-zn.z)<zn.r+(pad||0));
-function addTree(x,z){const s=rnd(.8,1.5),pine=Math.random()<.45;let m;if(pine)m=getInst('pine',srcPine);else{const v=Math.random()<.5?1:0;m=getInst('tree'+v,()=>srcTree(v));}
+/* v2.3.3: iPhone — menos árvores/pedras decorativas (escolha fixa pela posição) para caber na memória */
+const THIN=(x,z)=>IOS&&(Math.abs(Math.sin(x*12.9898+z*78.233)*43758.5453)%1)<.45;
+function addTree(x,z){if(THIN(x,z))return;const s=rnd(.8,1.5),pine=Math.random()<.45;let m;if(pine)m=getInst('pine',srcPine);else{const v=Math.random()<.5?1:0;m=getInst('tree'+v,()=>srcTree(v));}
  m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.45*s});SHS.a.add(x,z,(pine?1.15:1.4)*s);}
-function addRock(x,z){const s=rnd(.8,1.8),m=getInst('rock',srcRock);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.7*s});SHS.a.add(x,z,1.05*s);}
-function addBush(x,z){const s=rnd(.8,1.3),m=getInst('bush',srcBush);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;SHS.a.add(x,z,.8*s);}
+function addRock(x,z){if(THIN(x,z))return;const s=rnd(.8,1.8),m=getInst('rock',srcRock);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.7*s});SHS.a.add(x,z,1.05*s);}
+function addBush(x,z){if(THIN(x,z))return;const s=rnd(.8,1.3),m=getInst('bush',srcBush);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;SHS.a.add(x,z,.8*s);}
 
 /* =================== RIO, PONTES, CERCAS, PLACAS =================== */
 const RES=[],SIGNS=[];let WATER=null;
@@ -2443,11 +2452,11 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
  function srcTorch(){return MERGE('torchS',[cyl(2.2,.12,.18,6,0,1.1,0,SM.iron),cyl(.3,.34,.2,8,0,2.3,0,SM.iron),sph(.46,0,2.6,0,SM.torch,{s:[1,1.2,1]},6)],.025);}
  function srcObelisk(){return MERGE('obelisk',[box(1.5,.35,1.5,0,.18,0,SM.stone2),cyl(2.6,.2,.62,4,0,1.6,0,SM.gold,{ry:Math.PI/4}),cyl(.4,.02,.2,4,0,3.05,0,SM.gold,{ry:Math.PI/4}),sph(.22,0,3.35,0,SM.torch,null,5)],.04);}
  function srcFountainS(){return MERGE('fountS',[cyl(.6,4.2,4.5,24,0,.3,0,SM.stone),tor(4.3,.3,0,.62,0,SM.stone2,{t:28}),cyl(.1,3.8,3.8,24,0,.58,0,SM.water)],.04);}
- function addCactus(x,z){const s=rnd(.8,1.4),v=Math.random()<.5?1:0,m=getInst('cact'+v,()=>srcCactus(v));m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.45*s});SHS.c.add(x,z,.8*s);}
+ function addCactus(x,z){if(THIN(x,z))return;const s=rnd(.8,1.4),v=Math.random()<.5?1:0,m=getInst('cact'+v,()=>srcCactus(v));m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.45*s});SHS.c.add(x,z,.8*s);}
  function addBarrelC(x,z){const s=rnd(.8,1.3),m=getInst('barrelc',srcBarrelC);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.8*s});SHS.c.add(x,z,1.0*s);}
- function addAgave(x,z){const s=rnd(.8,1.4),m=getInst('agave',srcAgave);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.7*s});SHS.c.add(x,z,.95*s);}
- function addPalm(x,z){const s=rnd(.9,1.4),m=getInst('palm',srcPalm);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.4*s});SHS.c.add(x,z,1.3*s);}
- function addSRock(x,z){const s=rnd(.9,1.9),v=Math.random()<.5?1:0,m=getInst('srock'+v,()=>srcSRock(v));m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.8*s});SHS.c.add(x,z,1.15*s);}
+ function addAgave(x,z){if(THIN(x,z))return;const s=rnd(.8,1.4),m=getInst('agave',srcAgave);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.7*s});SHS.c.add(x,z,.95*s);}
+ function addPalm(x,z){if(THIN(x,z))return;const s=rnd(.9,1.4),m=getInst('palm',srcPalm);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.4*s});SHS.c.add(x,z,1.3*s);}
+ function addSRock(x,z){if(THIN(x,z))return;const s=rnd(.9,1.9),v=Math.random()<.5?1:0,m=getInst('srock'+v,()=>srcSRock(v));m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.8*s});SHS.c.add(x,z,1.15*s);}
  function addDune(x,z){const d=getInst('dune',()=>{const m=B.CreateSphere('dune',{diameter:8,segments:10},scene);m.material=SM.dune;return m;});const w=rnd(7,13)/8;d.position.set(x,-.08,z);d.scaling.set(w,rnd(.1,.18),w*rnd(.7,1.2));d.rotation.y=rnd(0,3);d.isPickable=false;}
  // dunas, cactos, rochas e palmeiras espalhados (fora da cidade e das zonas de caça)
  for(let i=0;i<70;i++){const x=SC.x+rnd(-MAP,MAP),z=rnd(-MAP,MAP);if(nearT2(x,z,4))continue;addDune(x,z);}
@@ -2533,8 +2542,8 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
   for(const sx of[-1,1])for(const sz of[-1,1])P_.push(box(.05,.54,.05,sx*.22,2.55,sz*.22,NM.iron));return MERGE('lampN',P_,.025,INKN);}
  function srcFountainN(){const P_=[cyl(.65,3.9,4.2,24,0,.32,0,NM.stone),tor(4.0,.3,0,.66,0,NM.stone2,{t:28}),cyl(.1,3.5,3.5,24,0,.72,0,NM.iceS)];
   [[0,0,2.8,.9],[.9,.4,1.8,.6],[-.8,.5,1.5,.55],[.2,-.9,2.1,.6]].forEach((c,i)=>{const b=cyl(c[2],.02,c[3],6,c[0],.7+c[2]/2,c[1],NM.iceS);b.rotation.z=(i-1.5)*.08;P_.push(b);});return MERGE('fountN',P_,.04,INKN);}
- function addPine(x,z){const s=rnd(.9,1.7),m=getInst('npine',srcPineN);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.5*s});SHS.n.add(x,z,1.25*s);}
- function addIRock(x,z){const s=rnd(.9,1.9),m=getInst('nrock',srcIRock);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.75*s});SHS.n.add(x,z,1.1*s);}
+ function addPine(x,z){if(THIN(x,z))return;const s=rnd(.9,1.7),m=getInst('npine',srcPineN);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.5*s});SHS.n.add(x,z,1.25*s);}
+ function addIRock(x,z){if(THIN(x,z))return;const s=rnd(.9,1.9),m=getInst('nrock',srcIRock);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.75*s});SHS.n.add(x,z,1.1*s);}
  function addDrift(x,z){const d=getInst('ndr',()=>{const m=B.CreateSphere('ndr',{diameter:8,segments:10},scene);m.material=NM.snow;return m;});const w=rnd(5,10)/8;d.position.set(x,-.06,z);d.scaling.set(w,rnd(.1,.17),w*rnd(.7,1.2));d.rotation.y=rnd(0,3);d.isPickable=false;}
  function addCrystal(x,z,hh){const s=hh?hh/1.7:rnd(.7,1.4),m=getInst('ncrys',srcCrystal);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.5*s});SHS.n.add(x,z,.7*s);}
  for(let i=0;i<90;i++){const x=SN.x+rnd(-MAP,MAP),z=rnd(-MAP,MAP);if(nearT3(x,z,4))continue;addDrift(x,z);}
@@ -2612,9 +2621,9 @@ for(let i=0;i<6;i++){const a=rnd(0,6.28),r=rnd(0,7),x=-18+Math.cos(a)*r,z=-10+Ma
  function srcLampV(){return MERGE('lampV',[cyl(.25,.4,.52,8,0,.12,0,VM.iron),cyl(1.9,.1,.16,6,0,1.15,0,VM.iron),cyl(.42,.78,.3,8,0,2.25,0,VM.iron),tor(.78,.07,0,2.46,0,VM.gold,{t:12}),sph(.56,0,2.56,0,VM.lava,{s:[1,1.15,1]},5),sph(.3,0,2.84,0,VM.lavaY,{s:[1,1.5,1]},5)],.025,INKV);}
  function srcForgeV(){const P_=[cyl(.65,3.9,4.2,24,0,.32,0,VM.stone),tor(4.0,.3,0,.66,0,VM.stone2,{t:28}),cyl(.1,3.5,3.5,24,0,.72,0,VM.lava),cyl(.06,2.2,2.2,20,0,.78,0,VM.lavaY),cyl(2.6,.4,1.1,6,0,2.0,0,VM.obs),sph(.72,0,3.75,0,VM.lavaY,null,6),tor(1.35,.09,0,3.75,0,VM.gold,{t:18,rx:.5}),tor(1.35,.09,0,3.75,0,VM.gold,{t:18,rx:-.5,ry:1.57})];
   for(let i=0;i<4;i++){const a=i*Math.PI/2+.5;P_.push(cyl(1.2,0,.5,5,Math.cos(a)*1.25,1.1,Math.sin(a)*1.25,VM.bas2));}return MERGE('forgeV',P_,.04,INKV);}
- function addVRock(x,z,sc){const s=sc||rnd(.9,1.9),v=Math.random()<.45?1:0,m=getInst('vrock'+v,()=>srcVRock(v));m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.78*s});SHS.v.add(x,z,1.15*s);}
+ function addVRock(x,z,sc){if(!sc&&THIN(x,z))return;const s=sc||rnd(.9,1.9),v=Math.random()<.45?1:0,m=getInst('vrock'+v,()=>srcVRock(v));m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.78*s});SHS.v.add(x,z,1.15*s);}
  function addVSpire(x,z,sc){const s=sc||rnd(.8,1.7),m=getInst('vspire',srcVSpire);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.62*s});SHS.v.add(x,z,.9*s);}
- function addVTree(x,z){const s=rnd(.9,1.6),m=getInst('vtree',srcVTree);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.4*s});SHS.v.add(x,z,.7*s);}
+ function addVTree(x,z){if(THIN(x,z))return;const s=rnd(.9,1.6),m=getInst('vtree',srcVTree);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:.4*s});SHS.v.add(x,z,.7*s);}
  function addVent(x,z){const s=rnd(.9,1.5),m=getInst('vvent',srcVent);m.position.set(x,0,z);m.scaling.setAll(s);m.rotation.y=rnd(0,6.28);m.isPickable=false;obstacles.push({x,z,r:1.55*s});SHS.v.add(x,z,2.0*s);}
  const farPool=(x,z,pad)=>POOLS.every(q=>Math.hypot(x-q.x,z-q.z)>q.r+pad);
  /* lagos de lava (não dá para atravessar) */
@@ -4145,8 +4154,8 @@ DRG.anim=function(m,now){const D=m.root._drg;if(!D)return;
  const want=m.dying?'Die':now-(m.lungeAt||-1e9)<1000?'Attack':m.moving?'Walk':'Idle';if(want===D.cur)return;
  const o=D.G[D.cur],g=D.G[want];if(o)o.stop();D.cur=want;if(!g)return;g.start(want==='Idle'||want==='Walk',want==='Walk'?1.25:want==='Attack'?1.15:1,g.from,g.to);};
 setTimeout(()=>DRG.start(),0);
-function buildMonster(type,id,key){
- const r=new BABYLON.TransformNode('m'+id,scene);
+function buildMonster(type,id,key,r0){
+ const r=r0||new BABYLON.TransformNode('m'+id,scene);
  {const cn=CR.pick(type,key);if(cn&&GLBMODE_()){const T_=MT[key]||{};   /* v2.2: criatura animada */
   if(CR.ready(cn)){const C=CR.build(r,cn,key,T_.tint,null);r._cr=C;shadowDisc(r,cn==='chest'?.8:Math.max(.6,CR.defs[cn].sz*.42));r._sr=1;return r;}
   CR.load(cn);CR.wait.push({n:cn,fn:()=>CR.swap(r,cn,key,T_.tint)});}}
@@ -4321,12 +4330,25 @@ function respawn(m){
 }
 const tintCache=new Map();
 function tintModel(root,hex,key){if(key==='barbaro')return;const t=C3.FromHexString(hex);root.getChildMeshes().forEach(m=>{const mt=m.material;if(!mt||mt.noTint||mt.disableLighting)return;const kk=mt.name+hex;let c=tintCache.get(kk);if(!c){c=mt.clone(kk);if(mt.diffuseTexture){const od=c.diffuseTexture;c.diffuseTexture=mt.diffuseTexture;if(od&&od!==mt.diffuseTexture)od.dispose();}if(c.diffuseColor){const d=C3.Lerp(c.diffuseColor,t,.62),mx=Math.max(d.r,d.g,d.b);if(mx>.74)d.scaleInPlace(.74/mx);else if(mx<.36)d.scaleInPlace(.36/Math.max(mx,.04));c.diffuseColor=d;}c.emissiveColor=t.scale(.16);tintCache.set(kk,c);}m.material=c;});}
-function spawnMonster(zone,slot){
- const T=MT[zone.t];const id=++mid;const root=buildMonster(T.model||zone.t,id,zone.t);if(T.tint)tintModel(root,T.tint,zone.t);
- const m={id,type:zone.t,T,zone,slot,root,pos:root.position,bs:(T.boss?1.6:1)*(T.sc||1),alive:false,plate:null};
+/* v2.3.3: iPhone — o boneco do monstro só é montado quando o jogador chega perto (antes eram todos os monstros do mundo
+   montados na abertura: ~6.700 peças, a maior parte da memória). Longe ele existe (vida, posição, rede), só sem o modelo. */
+const MLAZY=[];
+function monVis(m){const root=m.root,T=m.T;m.lazy=0;
+ const p=root.position.clone(),ry=root.rotation.y,sc=root.scaling.clone();root.position.set(0,0,0);root.rotation.y=0;root.scaling.setAll(1);
+ try{buildMonster(T.model||m.type,m.id,m.type,root);if(T.tint)tintModel(root,T.tint,m.type);}catch(e){console.warn('monVis',e);}
+ root.position.copyFrom(p);root.rotation.y=ry;root.scaling.copyFrom(sc);
  root.getChildMeshes().forEach(c=>{if(c.isPickable!==false)c.metadata={t:'m',ref:m};});
+ lodAdd(m,root,{meta:{t:'m',ref:m},pick:true,rm:.9});}
+if(IOS)setInterval(()=>{if(!MLAZY.length||typeof P==='undefined'||!P||!P.pos)return;const t0=performance.now(),px=P.pos.x,pz=P.pos.z;
+ const c=[];for(let i=MLAZY.length-1;i>=0;i--){const m=MLAZY[i];if(!m.lazy){MLAZY.splice(i,1);continue;}const d=Math.hypot(m.pos.x-px,m.pos.z-pz);if(d<70)c.push([d,m]);}
+ c.sort((a,b)=>a[0]-b[0]);   /* os mais perto primeiro; perto da tela monta mais de uma vez por rodada */
+ for(const [d,m] of c){if(performance.now()-t0>(d<30?40:12))break;MLAZY.splice(MLAZY.indexOf(m),1);monVis(m);}},200);
+function spawnMonster(zone,slot){
+ const T=MT[zone.t];const id=++mid,lazy=IOS;const root=lazy?new BABYLON.TransformNode('m'+id,scene):buildMonster(T.model||zone.t,id,zone.t);if(!lazy&&T.tint)tintModel(root,T.tint,zone.t);
+ const m={id,type:zone.t,T,zone,slot,root,pos:root.position,bs:(T.boss?1.6:1)*(T.sc||1),alive:false,plate:null};
+ if(!lazy)root.getChildMeshes().forEach(c=>{if(c.isPickable!==false)c.metadata={t:'m',ref:m};});
  m.plate=mkLabel('<div class="pn"></div><div class="pb"><i></i></div>','plate');m.pn=m.plate.querySelector('.pn');m.pf=m.plate.querySelector('i');
- lodAdd(m,root,{meta:{t:'m',ref:m},pick:true,rm:.9});respawn(m);monsters.push(m);
+ if(lazy){m.lazy=1;MLAZY.push(m);}else lodAdd(m,root,{meta:{t:'m',ref:m},pick:true,rm:.9});respawn(m);monsters.push(m);
  if(T.wb){m.alive=false;m.dying=false;root.setEnabled(false);m.plate.style.display='none';}   // chefe de mundo: só aparece no horário
 }
 ZONES.forEach(z=>{for(let i=0;i<z.n;i++)spawnMonster(z,i);});
