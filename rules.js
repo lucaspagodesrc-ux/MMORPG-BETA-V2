@@ -258,7 +258,7 @@ Object.assign(MT,{
  esq_gelo:snMob('esqueleto',{n:'Esqueleto Congelado',lv:[83,86],tint:'#8fd8ff',mats:{ossogelo:.45,essencia:.30}}),
  aranha_cristal:snMob('aranha',{n:'Aranha de Cristal',lv:[87,90],tint:'#b8e8ff',mats:{fiocristal:.45,essencia:.32}}),
  yeti_anciao:snMob('yeti',{n:'Yeti Ancião',lv:[91,94],tint:'#ffffff',sc:1.25,mats:{coracaogelo:.40,cristal:.2,essencia:.34}}),
- espectro:snMob('demonio',{n:'Espectro Glacial',lv:[95,98],tint:'#7fd8ff',mats:{essenciagelo:.42,essencia:.36}}),
+ espectro:snMob('demonio',{n:'Morcego Glacial',lv:[95,98],tint:'#7fd8ff',mats:{essenciagelo:.42,essencia:.36}}),
  golem_gelo:snBoss('golem',{n:'Golem de Gelo Eterno',lv:[88,88],tint:'#9fd8ff',sc:1.2,mats:{nucleogelo:1,cristalpuro:1,essencia:1}}),
  yeti_rei:snBoss('yeti',{n:'Yeti Rei',lv:[95,95],tint:'#cfe8ff',sc:1.6,rng:4,atkInt:1700,mats:{coracaogelo:1,cristalpuro:1,essencia:1}}),
  dragao_gelo:snBoss('dragao',{n:'Dragão Glacial',lv:[100,100],tint:'#8fd0ff',mats:{escamagelo:1,nucleogelo:1,cristalpuro:1,essencia:1}})
@@ -330,7 +330,7 @@ Object.assign(MT, {
   dg_nm2: dg2b('espectro', 86, { h: 12, a: 1.5, d: 1.4, xd: 6.5 }, { n: 'Feiticeira da Nevasca', tint: '#e0f6ff', sc: 1.8, rng: 5.5, atkInt: 1700 }),
   dg_nboss: dg2b('golem_gelo', 88, { h: 22, a: 1.8, d: 1.6, xd: 4.2 }, { n: 'Rei do Inverno', tint: '#d0f0ff', sc: 1.9, rng: 4.2, atkInt: 1800 }),
   /* Abismo do Vazio (Nevasca, Nv 92–100) */
-  dg_va: dg2m('espectro', [92, 94], { h: 1, a: 1, d: 1 }, { n: 'Sombra do Vazio', tint: '#b07aff' }),
+  dg_va: dg2m('espectro', [92, 94], { h: 1, a: 1, d: 1 }, { n: 'Morcego do Vazio', tint: '#b07aff' }),
   dg_vb: dg2m('aranha_cristal', [93, 95], { h: .9, a: 1.05, d: .9 }, { n: 'Aberração Rastejante', tint: '#7a3aff', spd: 3.8 }),
   dg_vc: dg2m('sacerdote', [94, 96], { h: .85, a: 1.2, d: .85 }, { n: 'Cultista do Vazio', tint: '#a04dff', rng: 5.5, atkInt: 1700 }),
   dg_vd: dg2m('demonio', [95, 97], { h: 1.6, a: 1.15, d: 1.3, x: 1.4 }, { n: 'Devorador Menor', tint: '#5a2aa8' }),
@@ -464,7 +464,7 @@ DUNGEONS.push({
     { id: 'ste2', kind: 'stele', at: [0, 46], name: 'Monólito das Cores', sym: '📜' },
     { id: 'altar', kind: 'altar', at: [0, 120], name: 'Fenda do Vazio', sym: '🌀', col: '#b06aff' }],
   stages: [
-    { k: 'kill', t: 'dg_va', n: 24, need: 20, room: [-10, -78, 10, -62], text: 'Elimine as Sombras do Vazio' },
+    { k: 'kill', t: 'dg_va', n: 24, need: 20, room: [-10, -78, 10, -62], text: 'Elimine os Morcegos do Vazio' },
     { k: 'kill', t: 'dg_vb', n: 18, need: 14, room: [-3, -58, 3, -38], text: 'Cruze a Ponte de Cristal: elimine as Aberrações', hz: { every: 3800, n: 2, r: 3.2, mult: 1.2, delay: 1600, c: '#b06aff', name: 'Fenda do Vazio' } },
     { k: 'crystals', ct: 'dg_vcrys', at: [[-14, -28], [14, -28], [-14, -4], [14, -4]], text: 'Destrua as Âncoras do Vazio', spawn: { every: 9000, t: ['dg_va', 'dg_vd'], n: [2, 3], cap: 12 } },
     { k: 'runes', objs: ['rv1', 'rv2', 'rv3', 'rv4'], stele: 'ste2', text: 'Ative as runas na ordem do monólito', guards: { t: 'dg_vc', n: 3 }, bad: { r: 5, mult: 2, delay: 1000, c: '#b06aff' } },
@@ -485,7 +485,7 @@ DUNGEONS.push({
 const vcMob=(base,o)=>{const L=(o.lv[0]+o.lv[1])/2,k=L-100,B0=MT[base];return Object.assign({},B0,{model:B0.model||base,eva:B0.eva||0,boss:false,hp:Math.round(16000+k*750),atk:Math.round(950+k*21),def:Math.round(240+k*5.2),xp:Math.round(xpNeed(L)/55),gold:[Math.round(1500+k*60),Math.round(2400+k*90)],aggro:9,resp:15,leash:20,eq:.17,pot:.07,mats:{}},o);};
 const vcBoss=(base,o)=>{const L=o.lv[0],k=L-100,B0=MT[base];return Object.assign({},B0,{model:B0.model||base,boss:true,hp:Math.round(320000+k*16000),atk:Math.round(1500+k*24),def:Math.round(300+k*5),xp:Math.round(xpNeed(L)*.45),gold:[30000+k*1200,45000+k*1800],resp:400,leash:26,eq:1,pot:1,rb:3,matMax:3,mats:{}},o);};
 Object.assign(MT,{
- vc_sal:vcMob('cobra',{n:'Salamandra de Magma',lv:[100,104],tint:'#ff7a2a',sc:1.15}),
+ vc_sal:vcMob('cobra',{n:'Serpente de Magma',lv:[100,104],tint:'#ff7a2a',sc:1.15}),
  vc_esc:vcMob('escorpiao',{n:'Escorpião de Obsidiana',lv:[105,109],tint:'#5a2a3a',sc:1.15}),
  vc_gol:vcMob('golem',{n:'Golem de Lava',lv:[110,114],tint:'#ff5a1a',sc:.62,rng:2.6,atkInt:1700,spd:2.4,h:3.6}),
  vc_ele:vcMob('elemental',{n:'Elemental de Fogo',lv:[115,119],tint:'#ff3a1a',rng:5.5,atkInt:1700}),
@@ -510,7 +510,7 @@ Object.assign(MT,{
  /* Fornalha dos Titãs (Nv 104+) */
  dg_fa:dg2m('vc_esc',[104,106],{h:1,a:1,d:1.1},{n:'Escorpião da Fornalha',tint:'#7a2a2a'}),
  dg_fb:dg2m('vc_ele',[105,107],{h:.85,a:1.15,d:.8},{n:'Brasa Viva',tint:'#ff6a1a',rng:5.5,atkInt:1700}),
- dg_fc:dg2m('vc_sal',[106,108],{h:.7,a:.9,d:.9},{n:'Salamandra Rubra',tint:'#ff3a2a',spd:3.9}),
+ dg_fc:dg2m('vc_sal',[106,108],{h:.7,a:.9,d:.9},{n:'Serpente Rubra',tint:'#ff3a2a',spd:3.9}),
  dg_fd:dg2m('vc_gol',[107,109],{h:1.1,a:1.1,d:1.1},{n:'Sentinela de Basalto',tint:'#8a5a4a'}),
  dg_fm1:dg2b('vc_colosso',108,{h:10,a:1.5,d:1.5,xd:8},{n:'Mestre da Forja',tint:'#ffa04a',sc:1.3,rng:3.8,atkInt:1800}),
  dg_fm2:dg2b('vc_ifrit',110,{h:13,a:1.55,d:1.4,xd:6.5},{n:'Arauto das Brasas',tint:'#ff7a2a',sc:1.5,rng:5,atkInt:1700}),
@@ -555,9 +555,9 @@ for(const k in MT)MT[k].id=k;
 const auMob=(base,o)=>{const L=(o.lv[0]+o.lv[1])/2,f=(L-24)/26,B0=MT[base],lerp=(a,b)=>Math.round(a+(b-a)*f);
  return Object.assign({},B0,{model:B0.model||base,boss:false,hp:lerp(2300,3300),atk:lerp(110,330),def:lerp(60,74),xp:Math.round(xpNeed(L)*.021),gold:[lerp(120,230),lerp(216,390)],aggro:9,resp:15,leash:20,eq:.14,pot:.06},o);};
 Object.assign(MT,{
- au_lobo:auMob('lobo',{n:'Lobo Sombrio',lv:[25,29],tint:'#3a3248',sc:1.35,eva:.25,mats:{couro:.45,garra:.2}}),
- au_orc:auMob('orc',{n:'Orc Berserker',lv:[30,34],tint:'#a83a2a',sc:1.12,mats:{presa:.45,couro:.2}}),
- au_esp:auMob('esqueleto',{n:'Cavaleiro Espectral',lv:[35,39],tint:'#6a8ad8',sc:1.2,mats:{osso:.45,selo:.12}}),
+ au_lobo:auMob('lobo',{n:'Ratazana Sombria',lv:[25,29],tint:'#3a3248',sc:1.35,eva:.25,mats:{couro:.45,garra:.2}}),
+ au_orc:auMob('orc',{n:'Sapo Venenoso',lv:[30,34],tint:'#a83a2a',sc:1.12,mats:{presa:.45,couro:.2}}),
+ au_esp:auMob('esqueleto',{n:'Vespa Gigante',lv:[35,39],tint:'#6a8ad8',sc:1.2,mats:{osso:.45,selo:.12}}),
  au_ara:auMob('aranha',{n:'Aranha Venenosa',lv:[40,44],tint:'#6a2a8a',sc:1.2,mats:{seda:.45,veneno:.2}}),
  au_gra:auMob('golem',{n:'Golem de Granito',lv:[45,49],tint:'#8a8a92',sc:.6,boss:false,rng:2.5,atkInt:1700,spd:2.4,h:3.4,mats:{nucleo:.3,cristal:.3}}),
  au_tita:Object.assign({},MT.golem,{n:'Titã de Granito',lv:[50,50],model:MT.golem.model||'golem',tint:'#b0a890',sc:1.35,boss:true,hp:30000,atk:420,def:115,xp:Math.round(xpNeed(50)*.4),gold:[3000,4500],resp:400,leash:24,eq:1,pot:1,rb:3,matMax:3,mats:{nucleo:1,cristal:1,escama:1}})
@@ -598,7 +598,7 @@ const ZONES=[
  {t:'esq_gelo',x:-334,z:22,r:10,n:10,col:'#6a8aa8',name:'Cemitério Congelado'},
  {t:'aranha_cristal',x:-264,z:24,r:10,n:10,col:'#8ab8d8',name:'Caverna de Cristal'},
  {t:'yeti_anciao',x:-302,z:-52,r:10,n:9,col:'#dbe8f5',name:'Cume dos Yetis'},
- {t:'espectro',x:-250,z:-48,r:10,n:9,col:'#5a8ab8',name:'Vale dos Espectros'},
+ {t:'espectro',x:-250,z:-48,r:10,n:9,col:'#5a8ab8',name:'Vale dos Morcegos'},
  {t:'golem_gelo',x:-352,z:-50,r:4,n:1,col:'#4a6a88',name:'Geleira do Golem Eterno'},
  {t:'yeti_rei',x:-356,z:38,r:4,n:1,col:'#c8dcee',name:'Trono do Yeti Rei'},
  {t:'dragao_gelo',x:-296,z:60,r:5,n:1,col:'#3a5a7a',name:'Pico do Dragão Glacial'},
@@ -671,7 +671,7 @@ const QUESTS=[
  Q('n4x','astrid','A Caverna de Cristal','Aranhas de cristal tomaram a caverna. Elimine 14.','aranha_cristal',14,87,15000,90000,{...E('boots',88,3),sp:1}),
  Q('n5x','astrid','O Golem de Gelo Eterno','Uma criatura de gelo milenar desperta na geleira. Derrote-a!','golem_gelo',1,88,30000,160000,{...E('weapon',89,3),sp:2}),
  Q('n6x','astrid','Cume dos Yetis','Yetis anciões descem das montanhas. Elimine 15.','yeti_anciao',15,91,19000,120000,E('ring',92,3)),
- Q('n7x','astrid','Vale dos Espectros','Espíritos do gelo vagam pelo vale. Elimine 15.','espectro',15,95,23000,150000,{...E('armor',96,3),sp:1}),
+ Q('n7x','astrid','Vale dos Morcegos','Morcegos do gelo infestam o vale. Elimine 15.','espectro',15,95,23000,150000,{...E('armor',96,3),sp:1}),
  Q('n8x','astrid','O Dragão Glacial','A lenda do pico acorda. Derrote o Dragão Glacial!','dragao_gelo',1,99,60000,320000,{...E('weapon',100,3),sp:3}),
  Q('b1x','bjorn','Peles Polares','Preciso de peles frescas. Elimine 25 lobos polares.','lobo_polar',25,76,12000,50000,{pot:{hp:10}}),
  Q('b2x','bjorn','A Alcateia','A alcateia não para de crescer. Elimine 35.','lobo_polar',35,77,16000,80000,E('boots',78,3)),
@@ -683,8 +683,8 @@ const QUESTS=[
  Q('i2x','ingrid','Ninho de Cristal','Destrua o ninho: elimine 35 aranhas.','aranha_cristal',35,89,28000,170000,E('armor',90,3)),
  Q('l1x','leif','Pegadas Gigantes','Os yetis anciões estão enormes. Elimine 20.','yeti_anciao',20,91,24000,150000,E('weapon',92,3)),
  Q('l2x','leif','Coração de Gelo','Colete corações de gelo: elimine 30 yetis.','yeti_anciao',30,93,32000,200000,{sp:1}),
- Q('v1x','solveig','Sussurros do Vale','Os espectros sussurram meu nome. Elimine 25.','espectro',25,95,30000,190000,E('ring',96,3)),
- Q('v2x','solveig','Almas Inquietas','Liberte as almas: elimine 35 espectros.','espectro',35,97,40000,260000,{sp:1}),
+ Q('v1x','solveig','Sussurros do Vale','Os morcegos guincham meu nome. Elimine 25.','espectro',25,95,30000,190000,E('ring',96,3)),
+ Q('v2x','solveig','Revoada Gelada','Espante a revoada: elimine 35 morcegos glaciais.','espectro',35,97,40000,260000,{sp:1}),
  Q('o1x','odin','O Rei das Neves','O Yeti Rei domina o trono de gelo. Derrote-o!','yeti_rei',1,95,50000,300000,{...E('helmet',96,3),sp:2}),
  Q('z1','zafira','Presas Venenosas','Preciso de veneno fresco. Elimine 20 najas.','cobra',20,58,7500,15000,E('boots',60,3)),
  Q('z2','zafira','Ninho das Najas','Destrua o ninho: elimine 30 najas.','cobra',30,60,10500,22000,E('weapon',61,3)),
@@ -694,15 +694,15 @@ const QUESTS=[
  Q('a2s','anuket','Fim da Vigília','Purifique o templo: elimine 20 sacerdotes.','sacerdote',20,70,13000,36000,E('helmet',71,3)),
  Q('h1','hamid','Relíquias Perdidas','Os sacerdotes guardam relíquias. Elimine 25.','sacerdote',25,71,14500,42000,E('boots',72,3)),
  Q('h2','hamid','A Maldição Eterna','Quebre a maldição: derrote o Faraó Imortal outra vez.','farao',1,74,20000,60000,{...E('weapon',76,3),sp:2})];
-const QNAME={slime:'gosmas',lobo:'lobos',goblin:'goblins',esqueleto:'esqueletos',golem:'Golem Ancião',aranha:'aranhas',orc:'orcs',yeti:'yetis',demonio:'demônios',dragao:'Dragão Rubro',escorpiao:'escorpiões',mumia:'múmias',cobra:'najas',elemental:'elementais',chacal:'chacais',sacerdote:'sacerdotes',colosso:'Colosso de Obsidiana',farao:'Faraó Imortal',lobo_polar:'lobos polares',barbaro:'bárbaros',esq_gelo:'esqueletos congelados',aranha_cristal:'aranhas de cristal',yeti_anciao:'yetis anciões',espectro:'espectros glaciais',golem_gelo:'Golem de Gelo Eterno',yeti_rei:'Yeti Rei',dragao_gelo:'Dragão Glacial'};
+const QNAME={slime:'gosmas',lobo:'lobos',goblin:'goblins',esqueleto:'esqueletos',golem:'Golem Ancião',aranha:'aranhas',orc:'orcs',yeti:'yetis',demonio:'demônios',dragao:'Dragão Rubro',escorpiao:'escorpiões',mumia:'múmias',cobra:'najas',elemental:'elementais',chacal:'chacais',sacerdote:'sacerdotes',colosso:'Colosso de Obsidiana',farao:'Faraó Imortal',lobo_polar:'lobos polares',barbaro:'bárbaros',esq_gelo:'esqueletos congelados',aranha_cristal:'aranhas de cristal',yeti_anciao:'yetis anciões',espectro:'morcegos glaciais',golem_gelo:'Golem de Gelo Eterno',yeti_rei:'Yeti Rei',dragao_gelo:'Dragão Glacial'};
 
-Object.assign(QNAME,{vc_sal:'salamandras de magma',vc_esc:'escorpiões de obsidiana',vc_gol:'golens de lava',vc_ele:'elementais de fogo',vc_dem:'demônios infernais',vc_cav:'cavaleiros das cinzas',vc_colosso:'Colosso de Magma',vc_ifrit:'Ifrit',vc_dragao:'Dragão Vulcânico Ancestral'});
+Object.assign(QNAME,{vc_sal:'serpentes de magma',vc_esc:'escorpiões de obsidiana',vc_gol:'golens de lava',vc_ele:'elementais de fogo',vc_dem:'demônios infernais',vc_cav:'cavaleiros das cinzas',vc_colosso:'Colosso de Magma',vc_ifrit:'Ifrit',vc_dragao:'Dragão Vulcânico Ancestral'});
 QUESTS.push(
- Q('vcm1','vc_ignis','Terra em Chamas','Vulcânia precisa de heróis. Elimine 20 salamandras de magma.','vc_sal',20,100,0,300000,{sp:1}),
+ Q('vcm1','vc_ignis','Terra em Chamas','Vulcânia precisa de heróis. Elimine 20 serpentes de magma.','vc_sal',20,100,0,300000,{sp:1}),
  Q('vcm2','vc_ignis','Pedra que Anda','Os golens de lava ameaçam o acampamento. Elimine 25.','vc_gol',25,110,0,450000,{sp:1}),
  Q('vcm3','vc_ignis','Portões Abertos','O inferno transborda. Elimine 30 demônios infernais.','vc_dem',30,120,0,650000,{sp:2}),
- Q('vcp1','vc_pyra','Couro que Não Queima','Preciso de couro de salamandra. Elimine 30.','vc_sal',30,101,0,320000,E('boots',104,3)),
- Q('vcp2','vc_pyra','O Charco Ferve','Elas não param de nascer. Elimine 45 salamandras.','vc_sal',45,103,0,380000,{sp:1}),
+ Q('vcp1','vc_pyra','Couro que Não Queima','Preciso de couro de serpente de magma. Elimine 30.','vc_sal',30,101,0,320000,E('boots',104,3)),
+ Q('vcp2','vc_pyra','O Charco Ferve','Elas não param de nascer. Elimine 45 serpentes de magma.','vc_sal',45,103,0,380000,{sp:1}),
  Q('vco1','vc_obsid','Ferrões Negros','Os escorpiões de obsidiana tomaram a mina. Elimine 30.','vc_esc',30,105,0,400000,E('ring',108,3)),
  Q('vco2','vc_obsid','Mina Livre','Limpe os campos: elimine 45 escorpiões.','vc_esc',45,107,0,460000,{sp:1}),
  Q('vcg1','vc_magnus','Amostras Vivas','Quero estudar os golens de lava. Elimine 30.','vc_gol',30,111,0,500000,E('armor',114,3)),
@@ -799,7 +799,7 @@ const NPCS=[
  {id:'hilda',name:'Coveira Hilda',icon:'⚰️',x:-322,z:14,col:'#6a7a98',tabs:SHOPT,greet:'Nem a morte descansa neste frio...',hat:'#3a4a68',camp:true,shop:'gelo'},
  {id:'ingrid',name:'Tecelã Ingrid',icon:'🕸️',x:-280,z:12,col:'#8ab8d0',tabs:SHOPT,greet:'Os fios de cristal valem mais que ouro, se você sobreviver para colhê-los.',hat:'#c8e8f8',camp:true,shop:'gelo'},
  {id:'leif',name:'Explorador Leif',icon:'🧭',x:-300,z:-34,col:'#a8b8c8',tabs:SHOPT,greet:'Vi pegadas do tamanho de uma carroça. Cuidado nos cumes!',hat:'#6a7a8a',camp:true,shop:'gelo'},
- {id:'solveig',name:'Vidente Solveig',icon:'🔮',x:-262,z:-34,col:'#5a8ad0',tabs:SHOPT,greet:'Os espectros me contaram seu nome antes de você chegar.',hat:'#2a4a8a',camp:true,shop:'gelo'},
+ {id:'solveig',name:'Vidente Solveig',icon:'🔮',x:-262,z:-34,col:'#5a8ad0',tabs:SHOPT,greet:'Os morcegos do vale me contaram seu nome antes de você chegar.',hat:'#2a4a8a',camp:true,shop:'gelo'},
  {id:'odin',name:'Sábio Odin',icon:'📖',x:-300,z:44,col:'#9a8ab8',tabs:SHOPT,greet:'O trono de gelo e o pico do dragão guardam o destino deste mundo.',hat:'#4a3a78',camp:true,shop:'gelo'},
  {id:'hamid',name:'Arqueólogo Hamid',icon:'🔭',x:300,z:44,col:'#8a6a4a',tabs:SHOPT,greet:'A grande pirâmide esconde o maior tesouro do mundo... e o maior perigo.',hat:'#a8833a',camp:true,shop:'solara'},
  // ===== Gemólogos: vendem pergaminhos de opção + extensor de slot e engastam as gemas nos equipamentos =====
@@ -830,7 +830,7 @@ NPCS.push(
  {id:'mercador4',name:'Ember, a Mercadora das Cinzas',icon:'💰',x:-592,z:-3,col:'#c05a2a',tabs:['comprar','vender'],greet:'Poções superiores e capas! No calor de Vulcânia, ninguém luta sem elas.',hat:'#ffd0a0',shop:'gelo'},
  {id:'gemas_v',name:'Lapidário Rubro',icon:'💎',x:-605.5,z:5,col:'#d03a2a',tabs:['comprar','engastar'],greet:'Gemas nascidas do magma. Vendo pergaminhos, amplio engastes e encaixo gemas no seu equipamento.',hat:'#5a1010',shop:'scr',gem:true},
  {id:'vc_ignis',name:'Comandante Ignis',icon:'🛡️',x:-606,z:-8,col:'#a8452a',tabs:['missoes'],greet:'O Forte de Vulcânia é a última linha antes do fogo. Cumpra as missões principais e mostre do que é feito.',hat:'#5a2418'},
- {id:'vc_pyra',name:'Caçadora Pyra',icon:'🦎',x:-584,z:-14,col:'#c06a3a',tabs:SHOPT,greet:'Salamandra boa é salamandra fria. Cuidado: elas cospem magma.',hat:'#7a3a1a',camp:true,shop:'gelo'},
+ {id:'vc_pyra',name:'Caçadora Pyra',icon:'🦎',x:-584,z:-14,col:'#c06a3a',tabs:SHOPT,greet:'Serpente boa é serpente fria. Cuidado: elas cospem magma.',hat:'#7a3a1a',camp:true,shop:'gelo'},
  {id:'vc_obsid',name:'Mineiro Obsid',icon:'⛏️',x:-620,z:-13,col:'#5a4a5a',tabs:SHOPT,greet:'A obsidiana daqui corta até aço. Pena que os escorpiões pensam o mesmo.',hat:'#2a1a22',camp:true,shop:'gelo'},
  {id:'vc_magnus',name:'Geólogo Magnus',icon:'🪨',x:-622,z:14,col:'#8a6a4a',tabs:SHOPT,greet:'Pedras que andam, pedras que queimam... este vulcão está acordando.',hat:'#5a4a3a',camp:true,shop:'gelo'},
  {id:'vc_cinder',name:'Xamã Cinder',icon:'🔥',x:-578,z:13,col:'#d05a2a',tabs:SHOPT,greet:'O fogo tem voz. Ultimamente, ele só grita.',hat:'#8a1a0a',camp:true,shop:'gelo'},
@@ -841,22 +841,22 @@ NPCS.push(
    need = nível mínimo para aceitar. Os alvos são os monstros mais fortes do primeiro mapa. */
 ZONES.push(
  {t:'au_lobo',x:15,z:-62,r:9,n:10,col:'#3a3248',name:'Bosque Sombrio'},
- {t:'au_orc',x:62,z:-64,r:9,n:10,col:'#7a2a1a',name:'Colina dos Berserkers'},
+ {t:'au_orc',x:62,z:-64,r:9,n:10,col:'#7a2a1a',name:'Charco dos Sapos'},
  {t:'au_esp',x:-66,z:30,r:9,n:9,col:'#3a4a7a',name:'Ruínas Assombradas'},
  {t:'au_ara',x:34,z:64,r:9,n:9,col:'#4a1a5a',name:'Ninho Venenoso'},
  {t:'au_gra',x:-68,z:-34,r:9,n:9,col:'#5a5a62',name:'Pedreira Antiga'},
  {t:'au_tita',x:-70,z:-54,r:3,n:1,col:'#8a8070',name:'Covil do Titã'});
-Object.assign(QNAME,{au_lobo:'Lobos Sombrios',au_orc:'Orcs Berserkers',au_esp:'Cavaleiros Espectrais',au_ara:'Aranhas Venenosas',au_gra:'Golens de Granito',au_tita:'Titã de Granito'});
+Object.assign(QNAME,{au_lobo:'Ratazanas Sombrias',au_orc:'Sapos Venenosos',au_esp:'Vespas Gigantes',au_ara:'Aranhas Venenosas',au_gra:'Golens de Granito',au_tita:'Titã de Granito'});
 NPCS.push({id:'valen',name:'Comandante Valen',icon:'⚔️',x:-13.4,z:-3.6,col:'#9a6a2a',tabs:['missoes'],greet:'Você já não é um novato. Aurora ainda precisa de alguém forte até você seguir para Solara.'});
 { const SL=['weapon','armor','helmet','boots','ring'];
   const L=[
-   [25,'au_lobo',25,'Uivos no Bosque','Lobos sombrios tomaram o Bosque Sombrio, ao sul. Elimine 25.'],
-   [27,'au_lobo',35,'Matilha Sombria','A matilha cresceu e já ataca as carroças. Elimine 35 Lobos Sombrios.'],
-   [29,'au_orc',30,'Fúria Orc','Berserkers acamparam na colina a sudeste. Elimine 30.'],
+   [25,'au_lobo',25,'Guinchos no Bosque','Ratazanas sombrias tomaram o Bosque Sombrio, ao sul. Elimine 25.'],
+   [27,'au_lobo',35,'Ninhada Sombria','A ninhada cresceu e já roí as carroças. Elimine 35 Ratazanas Sombrias.'],
+   [29,'au_orc',30,'Coaxar Venenoso','Sapos venenosos tomaram o charco a sudeste. Elimine 30.'],
    [31,'dragao',1,'Fogo no Ninho','O Dragão Rubro despertou de novo no ninho. Derrote-o.'],
-   [33,'au_orc',40,'Colina dos Berserkers','Os berserkers não recuam. Elimine mais 40.'],
-   [35,'au_esp',30,'Ruínas Assombradas','Cavaleiros espectrais vagam pelas ruínas a oeste. Elimine 30.'],
-   [37,'au_esp',40,'Juramento Quebrado','Liberte as almas presas nas ruínas: elimine 40 Cavaleiros Espectrais.'],
+   [33,'au_orc',40,'Charco dos Sapos','Os sapos não param de se multiplicar. Elimine mais 40.'],
+   [35,'au_esp',30,'Ruínas Zumbindo','Vespas gigantes fizeram ninho nas ruínas a oeste. Elimine 30.'],
+   [37,'au_esp',40,'Juramento Quebrado','Destrua o enxame das ruínas: elimine 40 Vespas Gigantes.'],
    [39,'au_ara',35,'O Ninho Venenoso','Aranhas venenosas infestam o nordeste. Elimine 35.'],
    [41,'au_ara',45,'Veneno nas Veias','O veneno já chegou aos poços da vila. Elimine 45 Aranhas Venenosas.'],
    [43,'dragao',2,'Escamas Rubras','Preciso de escamas frescas para os escudos da guarda. Derrote o Dragão Rubro 2 vezes.'],
@@ -887,7 +887,7 @@ Object.assign(QNAME,{dg_boss:'Faraó Devorador',dg_sboss:'Sumo-Sacerdote Ra-Tehe
   [0,'orion',26,'au_lobo',20,'A Lenda do Prisma','Os livros falam do Prisma do Amanhecer, partido em quatro fragmentos. Lobos sombrios guardam as ruínas: elimine 20.'],
   [0,'orion',29,'dragao',1,'O Dragão e o Estilhaço','O Dragão Rubro engoliu um estilhaço do Prisma. Derrote-o e recupere a luz.',E('weapon',30,2)],
   [0,'valen',31,'au_orc',25,'Berserkers Enlouquecidos','A luz roubada deixou os orcs da colina furiosos. Elimine 25 berserkers.',{pot:{hp:10}}],
-  [0,'anselmo',36,'au_esp',25,'Juramento Quebrado','Os cavaleiros espectrais são a antiga Ordem dos Guardiões, presa nas ruínas. Liberte 25.'],
+  [0,'anselmo',36,'au_esp',25,'Juramento Quebrado','As vespas gigantes cresceram com a magia antiga das ruínas. Elimine 25.'],
   [0,'capitao',39,'au_ara',25,'A Confissão de Aldric','Sou o último Guardião vivo. Enquanto conto o resto, o veneno chega aos poços: elimine 25 aranhas venenosas.',{pot:{hp:10}}],
   [0,'valen',44,'au_gra',30,'A Pedreira Desperta','Os golens de granito protegem o caminho até o Titã. Elimine 30.'],
   [0,'capitao',49,'au_tita',1,'O Mapa dos Fragmentos','O Titã de Granito guarda o mapa dos quatro fragmentos. Derrote-o — o portal de Solara espera por você.',E('armor',50,3)],
@@ -910,9 +910,9 @@ Object.assign(QNAME,{dg_boss:'Faraó Devorador',dg_sboss:'Sumo-Sacerdote Ra-Tehe
   [2,'solveig',92,'dg_vboss',1,'A Ferida do Mundo','Onde o Prisma se partiu abriu-se o Abismo do Vazio. Desça e derrote o Arauto do Vazio.'],
   [2,'leif',94,'yeti_anciao',20,'Gigantes da Montanha','Os yetis anciões guardam a trilha até o pico do dragão. Elimine 20.'],
   [2,'odin',96,'dg_nboss',1,'O Rei do Inverno','O Rei do Inverno não quer soltar Valdrak. Derrote-o no trono da Cidadela.',{pot:{hp:15}}],
-  [2,'solveig',97,'espectro',20,'Almas do Vale','Os espectros glaciais são ecos do Vazio. Elimine 20.'],
+  [2,'solveig',97,'espectro',20,'Almas do Vale','Os morcegos glaciais são atraídos pelos ecos do Vazio. Elimine 20.'],
   [2,'astrid',99,'dragao_gelo',1,'O Dragão Glacial','O Fragmento do Gelo bate no peito do Dragão Glacial. Derrote-o e Valdrak verá o sol de novo!',E('armor',100,3)],
-  [3,'vc_ignis',100,'vc_sal',25,'A Terra que Queima','O último fragmento, o da Chama, está aqui — e a Fornalha dos Titãs pode reforjar o Prisma. Elimine 25 salamandras.'],
+  [3,'vc_ignis',100,'vc_sal',25,'A Terra que Queima','O último fragmento, o da Chama, está aqui — e a Fornalha dos Titãs pode reforjar o Prisma. Elimine 25 serpentes de magma.'],
   [3,'vc_obsid',104,'vc_esc',25,'Ferrões de Obsidiana','Os escorpiões de obsidiana fecharam a mina que leva à Fornalha. Elimine 25.',{pot:{hp:15}}],
   [3,'vc_magnus',108,'dg_fboss',1,'A Fornalha dos Titãs','Vulcano, o Titã da Fornalha, não deixa ninguém tocar a bigorna. Derrote-o.'],
   [3,'vc_magnus',111,'vc_gol',25,'Pedra que Anda','Os golens de lava carregam o calor da Fornalha. Elimine 25.',E('boots',112,3)],
