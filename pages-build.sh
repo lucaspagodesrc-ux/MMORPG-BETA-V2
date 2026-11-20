@@ -9,7 +9,8 @@ cp colyseus-browser.js dist/colyseus-client/colyseus.js
 for f in *.glb; do [ -f "$f" ] && cp "$f" dist/modelos/; done
 for f in rostos_*.png rosto2_*.png; do [ -f "$f" ] && cp "$f" dist/modelos/; done   # v1.95: camadas do rosto (olhos, sobrancelhas, boca) montadas no navegador
 for f in tela_*.jpg; do [ -f "$f" ] && cp "$f" dist/telas/; done   # v1.85: artes do login e da tela de carregamento
-M=$(ls tema.mp3 2>/dev/null || ls *.mp3 2>/dev/null | head -1 || true); [ -n "$M" ] && cp "$M" dist/audio/tema.mp3
+M=$(ls tema.mp3 2>/dev/null || ls *.mp3 2>/dev/null | grep -v "^sfx" | head -1 || true); [ -n "$M" ] && cp "$M" dist/audio/tema.mp3
+[ -f sfx.mp3 ] && cp sfx.mp3 dist/audio/sfx.mp3   # v2.2.6: efeitos sonoros gravados (habilidades, monstros, passos, ambiente)
 echo "window.GAME_SERVER='${GAME_SERVER:-}';" > dist/config.js
 cat > dist/_headers <<'H'
 /
