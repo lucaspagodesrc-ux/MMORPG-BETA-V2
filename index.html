@@ -3690,8 +3690,62 @@ const MCM=()=>_MCM||(_MCM={st:mat('mcst','#6a6e78',null,null,'metal'),st2:mat('m
  red:fxMat('#ff2a2a'),org:fxMat('#ff7a1a'),haz:mat('mchz','#c8a02a',null,null,'metal'),haz2:mat('mchz2','#1c1a18',null,null,'dark'),glass:(()=>{const m=new BABYLON.StandardMaterial('mcgl',scene);m.diffuseColor=C3.FromHexString('#9ab4c8');m.emissiveColor=C3.FromHexString('#2a3a48');m.alpha=.38;m.backFaceCulling=false;m.specularColor=C3.Black();m.noTint=true;return m;})()});
 function mechMerge(r){const g=new Map();for(const m of r.getChildMeshes(true)){if(m.name==='sh'||m.name==='wg'||!m.material||m.getTotalVertices()===0)continue;const k=m.material;if(!g.has(k))g.set(k,[]);g.get(k).push(m);}
  for(const [mt,arr] of g){const m=arr.length>1?BABYLON.Mesh.MergeMeshes(arr,true,true):arr[0];m.name='mb';m.material=mt;m.parent=r;}}
+/* =================== v2.2: DRAGÃO NOVO (Cethiel/Drummyfish, OpenGameArt, CC0) =================== */
+/* modelos/dragao.glb: malha com esqueleto e 4 animações (Idle, Walk, Attack, Die). Todos os dragões usam o mesmo modelo, cada um pintado
+   com as cores do mapa dele (a textura é repintada no navegador: escamas, barriga e brilho). Enquanto o arquivo não chega, fica o dragão antigo. */
+var DRG={ready:false,wait:[],mats:{},
+ /* [escamas, barriga, brilho] por chave do monstro */
+ PAL:{dragao:['#b8321e','#f0c27a',0],dragao_gelo:['#4a96d8','#eef8ff',0],vc_dragao:['#3b2c2c','#ff7a1e',.9],dg_kboss:['#661a0c','#ffb43a',1]},
+ K:6.2};   /* escala: ~4,6 m de altura, como o dragão antigo */
+DRG.start=function(){if(DRG.p||!GLBMODE)return;
+ DRG.p=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','dragao.glb?v=220',scene,null,'.glb')).then(async ct=>{
+  ct.animationGroups.forEach(g=>g.stop());
+  const t=ct.materials[0]&&(ct.materials[0].albedoTexture||ct.materials[0].diffuseTexture);
+  if(t){await new Promise(r=>t.isReady()?r():t.onLoadObservable.addOnce(r));const sz=t.getSize(),px=await t.readPixels();DRG.base={w:sz.width,h:sz.height,px:new Uint8Array(px.buffer,px.byteOffset||0,sz.width*sz.height*4)};}
+  DRG.ct=ct;DRG.ready=true;
+  setTimeout(()=>{for(const w of DRG.wait.splice(0))try{if(DRG.ready)DRG.swap(w);}catch(e){console.warn('dragão',e);}},0);
+ }).catch(e=>{console.warn('dragão',e);DRG.wait.length=0;});};
+DRG.mat=function(key,tint){
+ const pal=DRG.PAL[key]||(tint?[tint,'#f2d6a0',0]:DRG.PAL.dragao),id=pal.join(',');if(DRG.mats[id])return DRG.mats[id];
+ const m=new BABYLON.StandardMaterial('drg_'+key,scene);m.specularColor=new C3(.06,.06,.06);m.noTint=true;
+ const B0=DRG.base;
+ if(B0){const n=B0.w*B0.h,o=new Uint8Array(n*4),g=pal[2]?new Uint8Array(n*4):null,S=C3.FromHexString(pal[0]),Be=C3.FromHexString(pal[1]);
+  for(let i=0;i<n*4;i+=4){const r=B0.px[i]/255,gg=B0.px[i+1]/255,b=B0.px[i+2]/255,l=.3*r+.59*gg+.11*b;
+   const bel=Math.max(0,Math.min(1,(l-.34)/.16))*Math.max(0,Math.min(1,(r-b-.04)/.12));   /* barriga/pescoço claros e amarelados */
+   const eye=r>.6&&gg>.4&&b<.25&&r-b>.45?1:0;   /* olhos amarelos ficam como estão */
+   const sh=Math.min(2.3,l/.27),bl=Math.min(1.35,l/.58);
+   let R_=S.r*sh*(1-bel)+Be.r*bl*bel,G_=S.g*sh*(1-bel)+Be.g*bl*bel,B_=S.b*sh*(1-bel)+Be.b*bl*bel;
+   if(eye){R_=r;G_=gg;B_=b;}
+   o[i]=Math.min(255,R_*255);o[i+1]=Math.min(255,G_*255);o[i+2]=Math.min(255,B_*255);o[i+3]=255;
+   if(g){const k=Math.max(bel,eye)*pal[2];g[i]=Be.r*k*255;g[i+1]=Be.g*k*255;g[i+2]=Be.b*k*255;g[i+3]=255;}}
+  const T=BABYLON.RawTexture.CreateRGBATexture(o,B0.w,B0.h,scene,true,false,BABYLON.Texture.TRILINEAR_SAMPLINGMODE);m.diffuseTexture=T;
+  if(g){m.emissiveTexture=BABYLON.RawTexture.CreateRGBATexture(g,B0.w,B0.h,scene,true,false,BABYLON.Texture.TRILINEAR_SAMPLINGMODE);m.emissiveColor=new C3(1,1,1);}
+ }else m.diffuseColor=C3.FromHexString(pal[0]);
+ return DRG.mats[id]=m;};
+/* monta o dragão dentro de host (o nó do boneco) */
+DRG.build=function(host,key,tint){
+ const I=DRG.ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true}),top=new BABYLON.TransformNode('drg',scene);top.parent=host;
+ top.scaling.setAll(DRG.K);top.position.y=.3*DRG.K;I.rootNodes[0].parent=top;const mt=DRG.mat(key,tint),ms=[];
+ for(const m of top.getChildMeshes(false)){m.material=mt;m.isPickable=true;ms.push(m);}
+ const G={};for(const g of I.animationGroups){g.stop();G[g.name.replace(/^.*\|/,'')]=g;}
+ top.onDisposeObservable.add(()=>{for(const g of I.animationGroups)try{g.dispose();}catch(e){}for(const k of I.skeletons)try{k.dispose();}catch(e){}});
+ return {top,G,cur:null,ms};};
+/* troca o dragão antigo (já montado) pelo novo */
+DRG.swap=function(w){const r=w.r;if(!r||r.isDisposed())return;
+ const host=r.getChildren(n=>n.name==='rig',false)[0]||r;let meta=null;
+ for(const c of host.getChildren(n=>n.name!=='sh',false).slice()){for(const m of (c.getChildMeshes?c.getChildMeshes(false):[]).concat(c instanceof BABYLON.AbstractMesh?[c]:[]))if(m.metadata&&!meta)meta=m.metadata;try{c.dispose();}catch(e){}}
+ const D=DRG.build(host,w.key,w.tint);if(meta)for(const m of D.ms)m.metadata=meta;r._drg=D;
+ const e=LOD.list.find(x=>x.lod&&x.lod.root===r);if(e&&e.lod.px){try{e.lod.px.dispose();}catch(_){}e.lod.px=null;e.lod.st=0;host.setEnabled(true);}if(e)e.lod.fail=9;};
+/* animação do quadro: morrendo > atacando > andando > parado */
+DRG.anim=function(m,now){const D=m.root._drg;if(!D)return;
+ const L=m.lod;if(L&&L.fail<9){L.fail=9;if(L.px){try{L.px.dispose();}catch(e){}L.px=null;}if(L.st===1){L.grp.setEnabled(true);L.st=0;}}   /* sem versão leve achatada: o dragão é um só e anima */
+ const want=m.dying?'Die':now-(m.lungeAt||-1e9)<1000?'Attack':m.moving?'Walk':'Idle';if(want===D.cur)return;
+ const o=D.G[D.cur],g=D.G[want];if(o)o.stop();D.cur=want;if(!g)return;g.start(want==='Idle'||want==='Walk',want==='Walk'?1.25:want==='Attack'?1.15:1,g.from,g.to);};
+setTimeout(()=>DRG.start(),0);
 function buildMonster(type,id,key){
  const r=new BABYLON.TransformNode('m'+id,scene);
+ if(type==='dragao'&&DRG.ready){const D=DRG.build(r,key,(MT[key]||{}).tint);r._drg=D;shadowDisc(r,2.8);r._sr=2.8;return r;}   /* v2.2: dragão novo */
+ if(type==='dragao')setTimeout(()=>{if(!r.isDisposed()&&!r._drg)DRG.wait.push({r,key,tint:(MT[key]||{}).tint});},0);
  const add=(m,x,y,z,mt)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;return m;};
  if(ORGMODE&&ORG.MON[type]){const s0=ORG.mon(type,r);r._sr=s0;shadowDisc(r,s0);return r;}
  let sr=.8,LM=null;
@@ -6240,7 +6294,7 @@ function syncMon(m,sm,dt,now){
  if(sm.alive&&!m.alive){m.alive=true;m.dying=false;m.root.setEnabled(true);m.root.scaling.setAll(m.bs);p.set(sm.x,0,sm.z);m.lvl=sm.lvl;m.pn.innerHTML=plateTxt(m);m.hp=sm.hp;m.maxHp=sm.maxHp;}
  if(!sm.alive){
   if(m.alive){m.alive=false;m.dying=true;m.deadAt=now;m.stv=0;m.ly=0;if(m.shell)m.shell.setEnabled(false);AUD.mon(m.type,'death',spat(p,T.boss?45:28));if(P.sel===m)selectMonster(null);if(P.atkTarget===m)P.atkTarget=null;m.plate.style.display='none';}
-  if(m.dying){const t=(now-m.deadAt)/350;if(t>=1){m.root.setEnabled(false);m.dying=false;}else m.root.scaling.y=m.bs*(1-t)+.01;}
+  if(m.dying){if(m.root._drg){DRG.anim(m,now);if(now-m.deadAt>2700){m.root.setEnabled(false);m.dying=false;}}else{const t=(now-m.deadAt)/350;if(t>=1){m.root.setEnabled(false);m.dying=false;}else m.root.scaling.y=m.bs*(1-t)+.01;}}
   return;
  }
  if(m.lvl!==sm.lvl){m.lvl=sm.lvl;m.pn.innerHTML=plateTxt(m);}
@@ -6250,7 +6304,7 @@ function syncMon(m,sm,dt,now){
  if(d>10){p.x=sm.x;p.z=sm.z;}else{const k=Math.min(1,dt*12);p.x+=dx*k;p.z+=dz*k;}
  if(d>.04)m.mvT=now;m.moving=now-(m.mvT||0)<260;if(d>.04)m.root.rotation.y=sm.rot;   /* v1.68: atualizações a 10/s — continua "andando" entre uma e outra */
  const hs=now-(m.hitAt||0)<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
- m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs&&(!m.lod||m.lod.st===0))animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);
+ m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs&&(!m.lod||m.lod.st===0))animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);if(m.root._drg)DRG.anim(m,now);
  m.ly=(m.ly||0)+(((sm.st&4)?1.7+Math.sin(now*.012)*.12:0)-(m.ly||0))*Math.min(1,dt*10);
  p.y=m.ly+(m.moving?(m.type==='slime'?Math.abs(Math.sin(now*.009+m.id))*.3:Math.abs(Math.sin(now*.012+m.id))*.07):0);
  if(T.fly)flyPose(m,dt,now);
@@ -6305,7 +6359,7 @@ function updateMonsters(dt,now){
   const T=m.T,p=m.pos;
   if(T.wb)continue;
   if(!m.alive){
-   if(m.dying){const t=(now-m.deadAt)/350;if(t>=1){m.root.setEnabled(false);m.dying=false;}else m.root.scaling.y=m.bs*(1-t)+.01;}
+   if(m.dying){if(m.root._drg){DRG.anim(m,now);if(now-m.deadAt>2700){m.root.setEnabled(false);m.dying=false;}}else{const t=(now-m.deadAt)/350;if(t>=1){m.root.setEnabled(false);m.dying=false;}else m.root.scaling.y=m.bs*(1-t)+.01;}}
    if(now-m.deadAt>T.resp*1000)respawn(m);
    continue;
   }
@@ -6338,7 +6392,7 @@ function updateMonsters(dt,now){
   for(const tw of TOWNZ){const tx_=p.x-tw.x,tz_=p.z-tw.z,dc=Math.hypot(tx_,tz_);if(dc<tw.r+.6&&dc>1e-3){p.x=tw.x+tx_/dc*(tw.r+.6);p.z=tw.z+tz_/dc*(tw.r+.6);}}
   collide(p,.55*m.bs);clampMap(p);
   const hs=now-m.hitAt<120?1.12:1,lg=now-(m.lungeAt||0)<200?1.15:1;
-  m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs&&(!m.lod||m.lod.st===0))animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);
+  m.root.scaling.set(m.bs*hs,m.bs*(2-hs),m.bs*lg);if(m.root.limbs&&(!m.lod||m.lod.st===0))animLimbs(m.root,p.x,p.z,now,m.lungeAt,true);if(m.root._drg)DRG.anim(m,now);
   p.y=m.moving?(m.type==='slime'?Math.abs(Math.sin(now*.009+m.id))*.3:Math.abs(Math.sin(now*.012+m.id))*.07):0;
   if(T.fly)flyPose(m,dt,now);
  }
