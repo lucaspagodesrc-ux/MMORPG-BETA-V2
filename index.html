@@ -9205,7 +9205,7 @@ function mtRemote(o,p,pos,dt,now){MNT.now=now;const id=p&&!p.dead&&o.rig?p.mt||'
  riderShadow(o,false);MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
 function mtRemoteKill(o){if(o&&o._mo){MNT.free(o._mo);o._mo=null;}}
 /* quando equipa (ou ao entrar no jogo): já deixa o modelo baixado e compilado */
-let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id&&!(RULES.MTS[id]||{}).off)MNT.load(id).catch(()=>{});if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
+let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id&&!IOS&&!(RULES.MTS[id]||{}).off)MNT.load(id).catch(()=>{});   /* iPhone: só carrega ao chamar a montaria (memória) */if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
 
 /* =================== NEVE CAINDO (região 3) =================== */
 const SNOWF=(()=>{const em=B.CreateBox('snowem',{size:.1},scene);em.isVisible=false;em.isPickable=false;const ps=new BABYLON.ParticleSystem('snowps',1200,scene);ps.particleTexture=ptex();ps.emitter=em;
@@ -9340,7 +9340,7 @@ scene.executeWhenReady(()=>{$("loading").style.display="none";startFlow();});
 }
 }
 loadBabylon([
-  "https://cdn.babylonjs.com/babylon.js",
+  /* v2.3.2: versão fixa (a mesma do carregador de modelos). O endereço sem versão passou a entregar a 9.x, não testada no iPhone */
   "https://cdn.jsdelivr.net/npm/babylonjs@7.54.3/babylon.js",
   "https://unpkg.com/babylonjs@7.54.3/babylon.js"
 ], 0);
