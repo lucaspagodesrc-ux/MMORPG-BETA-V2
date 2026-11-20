@@ -721,7 +721,7 @@ try{const j=JSON.parse(localStorage.getItem('mmo_audio')||'null');if(j){
 const saveCfg=()=>{try{localStorage.setItem('mmo_audio',JSON.stringify({mv:cfg.mv,sv:cfg.sv,mm:cfg.mm,sm:cfg.sm}));}catch(e){}};
 const listeners=[];const fire=()=>{for(const f of listeners){try{f();}catch(e){}}};
 const sq=v=>v*v, rnd=(a,b)=>a+Math.random()*(b-a), mf=n=>440*Math.pow(2,(n-69)/12);
-let ctx=null,bus=null,mbus=null,noiseBuf=null,cur=null,force=false;
+let ctx=null,bus=null,mbus=null,gbus=null,noiseBuf=null,cur=null,force=false;
 
 /* ---------- contexto ---------- */
 function setup(c,forced){
@@ -729,6 +729,7 @@ function setup(c,forced){
  const comp=c.createDynamicsCompressor();comp.threshold.value=-16;comp.knee.value=18;comp.ratio.value=5;comp.attack.value=.003;comp.release.value=.2;comp.connect(c.destination);
  bus=c.createGain();bus.gain.value=cfg.sm?0:sq(cfg.sv)*.9;bus.connect(comp);
  mbus=c.createGain();mbus.gain.value=cfg.mm?0:sq(cfg.mv)*.5;mbus.connect(comp);
+ gbus=c.createGain();gbus.gain.value=4.6;gbus.connect(mbus);   /* v2.2.8: as músicas dos mapas (geradas) eram ~15 dB mais baixas que a do hangar */
  const len=Math.floor(c.sampleRate*2),b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;noiseBuf=b;
 }
 function init(){
@@ -984,9 +985,10 @@ function smp(k,sp,vol,rate){if(SM.st!==2)return false;const r=SM.map[k];if(!r)re
  if(cfg.sm||(sp&&sp.v<.03))return true;if(!force&&ctx.state!=='running'){if(ctx.state==='suspended')ctx.resume().catch(()=>{});return true;}
  if(SM.live>=(PERFLOW()?8:14))return true;   /* teto de vozes: em lutas grandes não empilha dezenas de sons */
  const s=ctx.createBufferSource();s.buffer=SM.buf;s.playbackRate.value=(rate||1)*(.95+Math.random()*.1);
- const g=ctx.createGain();g.gain.value=(sp?sp.v:1)*(vol==null?1:vol);s.connect(g);
+ const g=ctx.createGain();g.gain.value=(sp?sp.v:1)*(vol==null?1:vol)*SMV;s.connect(g);
  if(sp&&sp.pan&&ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=Math.max(-1,Math.min(1,sp.pan));g.connect(pn);pn.connect(bus);}else g.connect(bus);
  SM.live++;s.onended=()=>{SM.live--;try{g.disconnect();}catch(e){}};s.start(0,r[0],r[1]);return true;}
+const SMV=.42;   /* v2.2.8: volume geral dos sons gravados (estavam altos demais perto dos sintetizados e da música) */
 const PERFLOW=()=>{try{return !!(window.IOS_LOW||(typeof PERF!=='undefined'&&PERF.low));}catch(e){return false;}};
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 /* efeitos gerais -> trecho gravado [chave, volume, tom] */
@@ -1052,7 +1054,7 @@ function mon(type,evt,sp){
   play(sp,f,undefined,TRIM[type+'.'+evt]);
 }
 /* passos do jogador (chão: grama, pedra, madeira, água) */
-function step(kind,rate){if(!gate('step',150))return;smp('st_'+(kind||'grass'),null,.28,rate||1);}
+function step(kind,rate){if(!gate('step',150))return;smp('st_'+(kind||'grass'),null,.07,rate||1);}   /* passos: bem baixinhos */
 /* ambiente: um som solto de vez em quando (calabouço: rosnados distantes; neve: vento; vulcão: tremor; máquinas: ruído metálico) */
 function amb(k,v,rate,pan){if(!gate('amb',3000))return;smp(k,{v:v||.15,pan:pan||0},1,rate||1);}
 function play2(k,v,rate){return smp(k,null,v,rate);}
@@ -1081,27 +1083,27 @@ const TRK=[
   pad:{w:'sawtooth',lp:1100,v:.015},bass:{w:'sawtooth',v:.035,each:.5,lp:420},drum:{k:[0,4,8,10,12],s:[4,12],h:[2,6,10,14],v:.34}}];
 const TRKI=id=>Math.max(0,TRK.findIndex(t=>t.id===id));
 function nz(at,dur,v,type,f,q){const c=ctx,s=c.createBufferSource(),g=c.createGain(),b=c.createBiquadFilter();s.buffer=noiseBuf;b.type=type;b.frequency.value=f;b.Q.value=q||1;
- g.gain.setValueAtTime(v,at);g.gain.exponentialRampToValueAtTime(.0001,at+dur);s.connect(b);b.connect(g);g.connect(mbus);s.start(at,Math.random()*1.5);s.stop(at+dur+.02);}
+ g.gain.setValueAtTime(v,at);g.gain.exponentialRampToValueAtTime(.0001,at+dur);s.connect(b);b.connect(g);g.connect(gbus);s.start(at,Math.random()*1.5);s.stop(at+dur+.02);}
 function tone(at,n,dur,v,w,lp,atk,det){const c=ctx,o=c.createOscillator(),g=c.createGain();o.type=w||'sine';o.frequency.value=mf(n);if(det)o.detune.value=det;let x=o;
  if(lp){const l=c.createBiquadFilter();l.type='lowpass';l.frequency.value=lp;o.connect(l);x=l;}
- const a=atk||.01;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(v,at+a);g.gain.exponentialRampToValueAtTime(.0001,at+dur);x.connect(g);g.connect(mbus);o.start(at);o.stop(at+dur+.05);}
+ const a=atk||.01;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(v,at+a);g.gain.exponentialRampToValueAtTime(.0001,at+dur);x.connect(g);g.connect(gbus);o.start(at);o.stop(at+dur+.05);}
 function genBar(t,st,notes){
  const c=ctx,beat=60/st.bpm,d=st.len*beat,lite=PERFLOW();
  if(st.pad){const p=st.pad;for(const n of notes)for(const dt of lite?[0]:[-7,7]){   /* fundo: acorde longo */
   const o=c.createOscillator(),g=c.createGain(),l=c.createBiquadFilter();o.type=p.w;o.frequency.value=mf(n);o.detune.value=dt;l.type='lowpass';l.frequency.value=p.lp;
   const v=p.v*(lite?1.4:1);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+Math.min(2.4,d*.3));g.gain.setValueAtTime(v,t+d-Math.min(1.4,d*.2));g.gain.linearRampToValueAtTime(.0001,t+d+1.2);
-  o.connect(l);l.connect(g);g.connect(mbus);o.start(t);o.stop(t+d+1.3);}}
+  o.connect(l);l.connect(g);g.connect(gbus);o.start(t);o.stop(t+d+1.3);}}
  if(st.bass){const b=st.bass,step=b.each*beat;for(let x=0;x<d-.01;x+=step)tone(t+x,notes[0]-12,Math.min(step*.95,1.6),b.v,b.w,b.lp||0,.01);}
  if(st.bell){const b=st.bell;for(let k=0;k<st.len*2;k++)if(Math.random()<b.p){const at=t+k*beat/2,n=notes[1+Math.floor(Math.random()*(notes.length-1))]+b.up;tone(at,n,b.dur,b.v,'sine',0,.02);if(!lite)tone(at,n+12,b.dur*.6,b.v*.3,'sine',0,.02);}}
  if(st.mel){const m=st.mel;for(let k=0;k<st.len;k+=m.every)if(Math.random()<m.p)tone(t+k*beat+.01,m.sc[Math.floor(Math.random()*m.sc.length)],m.dur,m.v,m.w||'sine',m.lp||0,.02);}
  if(st.arp&&!lite){const a=st.arp,step=beat/a.div;let i=0;for(let x=0;x<d-.01;x+=step,i++)if(Math.random()<a.p){const n=a.chord?notes[i%notes.length]+12:a.sc[Math.floor(Math.random()*a.sc.length)];tone(t+x,n,step*1.6,a.v,a.w,a.lp,.005);}}
  if(st.drum){const D=st.drum,s16=beat/4;for(let r=0;r<st.len/4;r++){const t0=t+r*4*beat;
   for(const k of D.k||[]){const at=t0+k*s16,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(D.taiko?110:150,at);o.frequency.exponentialRampToValueAtTime(D.taiko?42:48,at+.18);
-   g.gain.setValueAtTime(D.v*(D.taiko?1.1:.9),at);g.gain.exponentialRampToValueAtTime(.0001,at+(D.taiko?.6:.3));o.connect(g);g.connect(mbus);o.start(at);o.stop(at+.65);if(D.taiko)nz(at,.25,D.v*.25,'lowpass',400);}
+   g.gain.setValueAtTime(D.v*(D.taiko?1.1:.9),at);g.gain.exponentialRampToValueAtTime(.0001,at+(D.taiko?.6:.3));o.connect(g);g.connect(gbus);o.start(at);o.stop(at+.65);if(D.taiko)nz(at,.25,D.v*.25,'lowpass',400);}
   for(const k of D.s||[])nz(t0+k*s16,D.tak?.09:.16,D.v*(D.tak?.35:.4),'bandpass',D.tak?2200:1700,D.tak?3:.8);
   if(!lite)for(const k of D.h||[])nz(t0+k*s16,.04,D.v*.18,'highpass',7000);}}
 }
-function genTick(){if(!G||!ctx)return;const st=G.st,d=st.len*60/st.bpm;while(G.next<ctx.currentTime+1.4){genBar(G.next,st,st.ch[G.i%st.ch.length]);G.i++;G.next+=d;}}
+function genTick(){if(!G||!ctx)return;const st=G.st,d=st.len*60/st.bpm;if(G.next<ctx.currentTime)G.next=ctx.currentTime+.05;while(G.next<ctx.currentTime+3.5){genBar(G.next,st,st.ch[G.i%st.ch.length]);G.i++;G.next+=d;}}
 function genStart(st){st=st||TRK[1];if(G&&G.st===st)return;genStop();if(!init())return;G={st,next:ctx.currentTime+.2,i:0,iv:setInterval(genTick,400)};genTick();}
 function genStop(){if(!G)return;clearInterval(G.iv);G=null;}   /* as notas já marcadas terminam sozinhas (vira um "fade" natural) */
 function mp3Fade(){const a=M.el;if(!a||a.paused)return;const v0=a.volume;let k=0;const iv=setInterval(()=>{k++;a.volume=Math.max(0,v0*(1-k/8));if(k>=8){clearInterval(iv);a.pause();a.volume=sq(cfg.mv);}},90);}
@@ -1121,7 +1123,7 @@ function go(id,quiet){if(id==='tema'&&M.mp3bad)id='valdoria';const t=TRK[TRKI(id
  fire();if(was&&!quiet)np(t);}
 let npT=0;function np(t){try{if(typeof toast==='function'&&Date.now()-npT>1500){npT=Date.now();toast('♪ '+t.ic+' '+t.n);}}catch(e){}}
 let WANT='valdoria';   /* faixa do lugar onde o jogador está (mapa, calabouço...). A do hangar (tema) só toca se o jogador pular até ela no tocador */
-function musicStart(){if(cfg.mm)return;const id=cfg.auto===false&&cfg.trk?cfg.trk:WANT;M.cur=null;go(id,1);}
+function musicStart(){if(cfg.mm)return;const id=cfg.auto===false&&cfg.trk==='tema'?'tema':WANT;M.cur=null;go(id,1);}
 function musicStop(){if(M.el&&!M.el.paused)M.el.pause();genStop();}
 
 /* ---------- API pública ---------- */
@@ -1134,8 +1136,10 @@ function setSfxVol(v){cfg.sv=Math.min(1,Math.max(0,v));if(cfg.sv>0)cfg.sm=false;
 function toggleMusic(){cfg.mm=!cfg.mm;if(cfg.mm)musicStop();else{init();musicStart();}applyVols();saveCfg();fire();return cfg.mm;}
 function toggleSfx(){cfg.sm=!cfg.sm;applyVols();saveCfg();fire();return cfg.sm;}
 /* tocador: pular / voltar / música do mapa */
-function skip(dir){init();let i=TRKI(M.cur||WANT);do{i=(i+dir+TRK.length)%TRK.length;}while(TRK[i].mp3&&M.mp3bad);
- cfg.auto=false;cfg.trk=TRK[i].id;if(cfg.mm){cfg.mm=false;applyVols();}saveCfg();go(cfg.trk);}
+/* v2.2.8: cada mapa só tem a SUA música (temática) e a do hangar — pular/voltar alterna entre as duas */
+function skip(dir){init();if(cfg.mm){cfg.mm=false;applyVols();saveCfg();}
+ if(M.mp3bad){cfg.auto=true;go(WANT);fire();return;}
+ if((M.cur||WANT)==='tema'){cfg.auto=true;cfg.trk=null;go(WANT);}else{cfg.auto=false;cfg.trk='tema';go('tema');}fire();}
 function setAuto(b){cfg.auto=!!b;saveCfg();if(cfg.auto&&!cfg.mm)go(WANT);fire();}
 function scene(id){if(WANT===id)return;WANT=id;if(cfg.auto!==false&&!cfg.mm&&ctx)go(id);}
 return {cfg,ensure,sfx,skill,basic,hit,mon,step,amb,smp:play2,setMusicVol,setSfxVol,toggleMusic,toggleSfx,skip,setAuto,scene,tracks:TRK,track:()=>TRK[TRKI(M.cur||WANT)],playing:()=>!cfg.mm&&!!(G||(M.el&&!M.el.paused)),
