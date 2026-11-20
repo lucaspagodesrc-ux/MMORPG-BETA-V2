@@ -1663,6 +1663,7 @@ const LOOK = {
     /* v2.2: penteados novos (Quaternius, CC0) */ 'Raspado', 'Repartido com topete', 'Longo solto', 'Dois coques', 'Raspado curtinho'],
   hairCols: [['Preto', '#1e1a22'], ['Castanho', '#5a3418'], ['Loiro', '#e0b050'], ['Ruivo', '#b8461e'], ['Prata', '#d4d8e2'], ['Azul', '#3a6ad8']],
   skins: [['Clara', '#f8dcc4'], ['Média clara', '#e8b88e'], ['Morena', '#b47a4c'], ['Escura', '#6a3e26']],
+  hairsOff: [19, 23],   // v2.2.1: cabelos tirados da escolha (quem já usa continua com ele; o número não muda)
   beards: ['Sem barba', 'Cavanhaque', 'Bigode', 'Bigode com voltinha', 'Cavanhaque + bigode', 'Barba + bigode', 'Barba grande + voltinha', 'Cavanhaque cheio']
 };
 const LK_DEF = 'n00002110';
