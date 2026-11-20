@@ -4139,9 +4139,9 @@ const GLB=(()=>{
   lookApply(o,ap);}
  /* v2.0: visual escolhido — pele, rosto em camadas, cabelo (18, unissex) e barba (6). Com capacete/chapéu visível o cabelo fica escondido. */
  const LK_DEF=RULES.LK_DEF;
- const XF={hm:'cabelos_m.glb',hf:'cabelos_f.glb',bm:'barbas_m.glb'},XC={};
+ const XF={hm:'cabelos_m.glb',hf:'cabelos_f.glb',bm:'barbas_m.glb'},XC={},XFV='220';   /* v2.2: versão própria dos cabelos/barbas (não força baixar os personagens de novo) */
  function xload(k){let e=XC[k];if(e)return e;e=XC[k]={ok:false,m:{},cb:[]};
-  loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',XF[k]+'?v='+GLBV,scene,null,'.glb')).then(ct=>{
+  loadLoader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/',XF[k]+'?v='+XFV,scene,null,'.glb')).then(ct=>{
    const I=ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true}),root=I.rootNodes[0];root.setEnabled(false);
    for(const m of root.getChildMeshes(false)){m.computeWorldMatrix(true);e.m[m.name]={src:m,w:m.getWorldMatrix().clone()};}   /* posição da peça no "espaço do modelo" (igual ao corpo parado) */
    e.ok=true;e.cb.splice(0).forEach(f=>{try{f();}catch(er){console.warn(er);}});}).catch(er=>console.warn('extra',k,er));
@@ -7924,8 +7924,8 @@ function renderSelect(){
  if(SEL.edit){const c=ACC.chars.find(x=>x.id===SEL.edit);if(!c){SEL.edit=null;SEL.mode='pick';return renderSelect();}const k=CLASSES[c.cls];
   $('clsList').innerHTML='';info.innerHTML=`<div class="sec">${k.i} ${k.n}</div><p>${k.d}</p><div class="sg">${k.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div>`;
   lkShow(lkHtml(c.fem));const need=lkNeed(c);
-  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório). Depois de salvo, ele não muda mais.':'Editar visual: liberado nesta atualização, só 1 vez'}</small>`;
-  act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">${need?'✔ Salvar visual e entrar no jogo':'💾 Salvar visual'}</button><div class="selRow">${back}${helmBtn}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
+  cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório). Depois de salvo, ele não muda mais.':'Edição liberada nesta atualização (cabelos novos). Depois de salvar, o visual trava de novo.'}</small>`;
+  act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">✔ Salvar visual e entrar no jogo</button><div class="selRow">${back}${helmBtn}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
  $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
  if(SEL.t!=='cls'){info.innerHTML='<p class="muted">Escolha uma classe para ver a descrição.</p>';lkShow('');cap.innerHTML='<b>Criar personagem</b><small>Escolha uma classe à esquerda</small>';act.innerHTML=back?`<div class="selRow">${back}</div>`:'';act.style.display=back?'flex':'none';return;}
  const c=CLASSES[SEL.id],nm0=$('newName')?$('newName').value:'';
@@ -7972,7 +7972,7 @@ $('select').addEventListener('click',e=>{
    $('selGo').disabled=true;nmMsg('');const lk=RULES.lkFix(RULES.lkStr(SEL.lk),c.fem);
    (async()=>{try{if(!c.name){if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/name','POST',{name:nm})).char;c.name=r.name;c.nmOk=1;}else{c.name=nm;c.nmOk=1;save();}}
     if(TOKEN){const r=(await api('chars/'+encodeURIComponent(c.id)+'/look','POST',{lk})).char;c.lk=r.lk;c.lkv=r.lkv;}else{c.lk=lk;c.lkv=RULES.LOOK_VER;save();}
-    PV.face=false;if(need)play(c);else{SEL.mode='pick';SEL.edit=null;selPick('chr',c.id);}}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
+    PV.face=false;SEL.edit=null;play(c);}catch(er){nmMsg(er.message);const g=$('selGo');if(g)g.disabled=false;}})();return;}
   if(SEL.t==='cls'&&ACC.chars.length<6){const k=SEL.id,name=readName();
    if(name.length<2){nmMsg('O nome é obrigatório: de 2 a 16 caracteres.');return;}
    if(taken(name)){nmMsg('Esse nome já está em uso. Escolha outro.');return;}

@@ -1659,19 +1659,20 @@ function apOf(c) { const o = []; for (const k in c.eq) { const it = c.eq[k]; if 
 // código: 'n' + olhos(0-8) + sobrancelha(0-8) + boca(0-5) + cabelo(00-18, 0 = sem cabelo) + cor do cabelo(0-5) + pele(0-3) + barba(0-6, 0 = sem)
 const LOOK = {
   eyesN: 9, browsM: 9, browsF: 8, mouthsN: 6,
-  hairs: ['Sem cabelo', 'Espetado', 'Repartido', 'Médio', 'Coque', 'Rabo alto', 'Cortina', 'Moicano', 'Cacheado', 'Militar', 'Meio preso', 'Franja lateral', 'Pixie', 'Rabo de cavalo', 'Ondulado', 'Longo', 'Trança', 'Franja + rabo alto', 'Franja + rabo baixo'],
+  hairs: ['Sem cabelo', 'Espetado', 'Repartido', 'Médio', 'Coque', 'Rabo alto', 'Cortina', 'Moicano', 'Cacheado', 'Militar', 'Meio preso', 'Franja lateral', 'Pixie', 'Rabo de cavalo', 'Ondulado', 'Longo', 'Trança', 'Franja + rabo alto', 'Franja + rabo baixo',
+    /* v2.2: penteados novos (Quaternius, CC0) */ 'Raspado', 'Repartido com topete', 'Longo solto', 'Dois coques', 'Raspado curtinho'],
   hairCols: [['Preto', '#1e1a22'], ['Castanho', '#5a3418'], ['Loiro', '#e0b050'], ['Ruivo', '#b8461e'], ['Prata', '#d4d8e2'], ['Azul', '#3a6ad8']],
   skins: [['Clara', '#f8dcc4'], ['Média clara', '#e8b88e'], ['Morena', '#b47a4c'], ['Escura', '#6a3e26']],
-  beards: ['Sem barba', 'Cavanhaque', 'Bigode', 'Bigode com voltinha', 'Cavanhaque + bigode', 'Barba + bigode', 'Barba grande + voltinha']
+  beards: ['Sem barba', 'Cavanhaque', 'Bigode', 'Bigode com voltinha', 'Cavanhaque + bigode', 'Barba + bigode', 'Barba grande + voltinha', 'Cavanhaque cheio']
 };
 const LK_DEF = 'n00002110';
 /* v2.1.9: o visual escolhido na criação é definitivo. Para liberar UMA nova edição para todos (ex.: atualização com cabelos/rostos novos),
    aumente LOOK_VER (0 -> 1 -> 2...): quem personalizou numa versão menor pode editar mais uma vez. */
-const LOOK_VER = 0;
+const LOOK_VER = 1;   // v2.2: cabelos novos -> todos podem editar o visual 1 vez
 const lkCanEdit = c => !!c && (!lkOk(c.lk) || (c.lkv | 0) < LOOK_VER);
-const lkOk = s => typeof s === 'string' && /^n[0-8][0-8][0-5](0\d|1[0-8])[0-5][0-3][0-6]$/.test(s);
+const lkOk = s => typeof s === 'string' && /^n[0-8][0-8][0-5](0\d|1\d|2[0-3])[0-5][0-3][0-7]$/.test(s);
 const lkParse = s => lkOk(s) ? { e: +s[1], b: +s[2], m: +s[3], h: +s.slice(4, 6), hc: +s[6], s: +s[7], bd: +s[8] } : null;
-const lkStr = o => { const c = (v, mx) => Math.max(0, Math.min(mx, Math.floor(v) || 0)); return 'n' + c(o.e, 8) + c(o.b, 8) + c(o.m, 5) + String(c(o.h, 18)).padStart(2, '0') + c(o.hc, 5) + c(o.s, 3) + c(o.bd, 6); };
+const lkStr = o => { const c = (v, mx) => Math.max(0, Math.min(mx, Math.floor(v) || 0)); return 'n' + c(o.e, 8) + c(o.b, 8) + c(o.m, 5) + String(c(o.h, LOOK.hairs.length - 1)).padStart(2, '0') + c(o.hc, 5) + c(o.s, 3) + c(o.bd, LOOK.beards.length - 1); };
 const lkFix = (s, fem) => { const o = lkParse(s); if (!o) return null; if (fem) { o.bd = 0; o.b = Math.min(o.b, LOOK.browsF - 1); } return lkStr(o); };   // feminino: sem barba; 8 sobrancelhas
 /** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
 function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
