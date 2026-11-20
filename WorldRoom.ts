@@ -821,7 +821,11 @@ export class WorldRoom extends Room<WorldState> {
       const s = this.S(client), p = this.state.players.get(client.sessionId); if (!s || !p || !this.okRate(s, 1)) return;
       const id = m && m.on && !p.dead && s.c.mtq && R.MTS[s.c.mtq.id] ? String(s.c.mtq.id) : ""; if (p.mt !== id) p.mt = id;
     });
-    this.onMessage("cast", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.cast(s, m); });
+    this.onMessage("cast", (client, m) => { const s = this.S(client); if (!s || !this.okRate(s, 0.5)) return;
+      // v2.3.2: guerreiro 40% mais lento — os atrasos dos golpes (later) também são esticados
+      const K = (R as any).skSlow ? (R as any).skSlow(s.c.cls) : 1; if (K === 1) { this.cast(s, m); return; }
+      const self = this as any, L0 = self.later; self.later = (ms: number, fn: () => void) => L0.call(this, ms * K, fn);
+      try { this.cast(s, m); } finally { self.later = L0; } });
     this.onMessage("atk", (client, m) => { const s = this.S(client); if (s && this.okRate(s, 0.5)) this.basic(s, m); });
     this.onMessage("pick", (client, m) => {
       const s = this.S(client), p = this.state.players.get(client.sessionId);

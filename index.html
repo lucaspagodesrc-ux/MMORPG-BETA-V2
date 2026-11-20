@@ -4502,7 +4502,7 @@ const GLB=(()=>{
   const a=Math.min(1,L.spd/3.2),AG=L.AG;
   const kind=(o.swKind&&o.swKA===sa)?o.swKind:null,free=!kind||!KA[kind],dflt=L.cls==='arqueiro'||L.cls==='mago'?'Cast':'Attack';
   /* v2.1.6/2.1.7: ataque básico por classe — arqueiro puxa a corda e solta; mago lança com a mão livre; tanque alterna jab e direto */
-  let clip0=kind?pick2(AG,kind):null,D=DUR[kind]||420;
+  let clip0=kind?pick2(AG,kind):null,D=DUR[kind]||420;if(kind&&KA[kind]&&RULES.skSlow)D*=RULES.skSlow(L.cls);   /* v2.3.2: guerreiro 40% mais lento nas habilidades */
   const soft=kind==='pick'||kind==='talk'||kind==='chest'||kind==='drink';
   if(!clip0&&free&&!soft){if(o._pSa!==sa){o._pSa=sa;o._pN=(o._pN||0)+1;}
    if(L.cls==='arqueiro'&&AG.Shoot){clip0='Shoot';D=560;}else if(L.cls==='mago'&&AG.Spell){clip0='Spell';D=520;}
@@ -6520,7 +6520,10 @@ function nearestMonster(range){let b=null,bd=range;if(PKS.mode!=='duel')for(cons
 function hitArea(c,r,mult,opts){for(const m of nearMonsters(c,r))playerHit(m,mult,opts);}
 const rk=i=>(S.sk&&S.sk[i])||0;
 function skStat(i){return RULES.skStat(S.cls,i,rk(i));}
-function castSkill(i){
+/* v2.3.2: atrasos das habilidades (impactos) esticados pela lentidão da classe */
+function slowed(cls,fn){const K=RULES.skSlow?RULES.skSlow(cls):1;if(K===1)return fn();const L0=later;later=(ms,f)=>L0(ms*K,f);try{return fn();}finally{later=L0;}}
+function castSkill(i){return slowed(S&&S.cls,()=>castSkill0(i));}
+function castSkill0(i){
  TUT.cast=performance.now();
  if(!S||P.dead)return;const C=CLASSES[S.cls];if(!C.skills[i])return;
  if(P.mnt){dismount(true);return;}if(P.flip)return;   /* v2.2.9: apertar habilidade montado = desce da montaria (a habilidade não sai nem entra em recarga) */
@@ -8583,7 +8586,8 @@ function rpWork(o,p){
 }
 const remoteOf=id=>NET.others.get(id);
 const RIGFX=new Set(['shieldThrow','shieldBeam','daggerFan','cloak','starJump','chainPull','roll','transform']);
-function remoteSkill(m){
+function remoteSkill(m){const o=remoteOf(m.by);return slowed(o&&o.cls,()=>remoteSkill0(m));}
+function remoteSkill0(m){
  const o=remoteOf(m.by);if(!o||!S)return;const C=CLASSES[o.cls],s=C.skills[m.i];if(!s)return;
  const far=hyp(P.pos,o.root.position)>34;if(far)return;
  if(m.rc){if(s.type==='mark'||s.type==='cloak'){if(s.type==='cloak'&&o.cloakEnd)o.cloakEnd();smokeAt(m.x,m.z,5,1);ring(m.x,m.z,1.6,s.color,350);return;}   /* v1.89 */
