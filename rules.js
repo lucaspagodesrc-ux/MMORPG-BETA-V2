@@ -2519,7 +2519,7 @@ const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, spin3: 
 /* tempo de exibição de cada habilidade (ms): enquanto ele não acaba, outra habilidade não pode ser lançada.
    x = { dist: distância até o alvo, n: nº de alvos (saltos), hits } — o servidor chama sem x (usa o mínimo), o cliente passa os valores reais */
 /* v2.3.2: classes mais lentas nas habilidades (animação e lançamento) — guerreiro +40% */
-const SK_SLOW = { guerreiro: 10.0 };
+const SK_SLOW = { guerreiro: 3.0 };
 const skSlow = cls => SK_SLOW[cls] || 1;
 const castMs = (cls, i, x) => {
   const C = CLASSES[cls], s = C && C.skills[i]; if (!s) return 260; x = x || {};
