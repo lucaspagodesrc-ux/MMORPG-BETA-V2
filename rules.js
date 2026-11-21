@@ -730,8 +730,6 @@ const RECIPES=[
  {id:'orc',n:'Anel de Presa (Nv 17)',icon:'🦷',d:'Raro',ing:{presa:8,ferro:8},gold:900,out:(cls)=>genItem('ring',17,2,undefined,undefined,0,'orc')},
  {id:'gelo',n:'Botas Geladas (Nv 20)',icon:'🧊',d:'Raro',ing:{cristal:8,couro:6},gold:1400,out:(cls)=>genItem('boots',20,2,undefined,undefined,0,'yeti')},
  {id:'infernal',n:'Arma Infernal (Nv 23)',icon:'🔥',d:'Arma da sua classe • Épico',ing:{brasa:10,cristal:5,essencia:10},gold:4000,out:(cls)=>genItem('weapon',23,3,cls,cls,0,'demonio')},
- {id:'escudo',cls:'cavaleiro',n:'Escudo de Torre (Nv 12)',icon:'🛡️',d:'Só Cavaleiro • Raro',ing:{ferro:10,osso:6},gold:500,out:(cls)=>genItem('shield',12,2,undefined,undefined,0,'golem')},
- {id:'escudo2',cls:'cavaleiro',n:'Escudo Rúnico (Nv 18)',icon:'🛡️',d:'Só Cavaleiro • Épico',ing:{nucleo:2,ferro:15,essencia:8},gold:2500,out:(cls)=>genItem('shield',18,3,undefined,undefined,0,'golem')},
  {id:'draco',n:'Arma Dracônica (Nv 28)',icon:'🐉',d:'Arma da sua classe • Épico',ing:{escama:3,brasa:8,essencia:15},gold:8000,out:(cls)=>genItem('weapon',28,3,cls,cls,0,'dragao')},
  // ===== Ferreira de Solara =====
  {id:'s_pot',at:'ferreira',n:'Poção de Vida Superior ×3',icon:'🍷',d:'Cura de 70%.',ing:{veneno:2,erva:8},gold:300,out:(cls)=>({k:'pot',id:'hp2',n:3})},
@@ -740,7 +738,6 @@ const RECIPES=[
  {id:'s_elmo',at:'ferreira',n:'Elmo da Naja (Nv 59)',icon:'🪖',d:'Épico',ing:{veneno:12,cristalsol:6,essencia:12},gold:14000,out:(cls)=>genItem('helmet',59,3,undefined,undefined,0,'cobra')},
  {id:'s_botas',at:'ferreira',n:'Botas das Dunas (Nv 61)',icon:'👢',d:'Épico',ing:{cristalsol:10,linho:8,essencia:12},gold:16000,out:(cls)=>genItem('boots',61,3,undefined,undefined,0,'elemental')},
  {id:'s_anel',at:'ferreira',n:'Anel do Chacal (Nv 66)',icon:'💍',d:'Épico',ing:{garra:10,ankh:4,essencia:15},gold:24000,out:(cls)=>genItem('ring',66,3,undefined,undefined,0,'chacal')},
- {id:'s_escudo',at:'ferreira',cls:'cavaleiro',n:'Escudo de Obsidiana (Nv 63)',icon:'🛡️',d:'Só Cavaleiro • Épico',ing:{obsidiana:2,ferrao:15,essencia:15},gold:20000,out:(cls)=>genItem('shield',63,3,undefined,undefined,0,'colosso')},
  {id:'s_solar',at:'ferreira',n:'Arma Solar (Nv 67)',icon:'☀️',d:'Arma da sua classe • Épico',ing:{ankh:6,cristalsol:12,essencia:20},gold:32000,out:(cls)=>genItem('weapon',67,3,cls,cls,0,'elemental')},
  {id:'g_arma1',at:'ferreiro_gelo',n:'Arma Polar (Nv 78)',icon:'⚒️',d:'Arma da sua classe • Épico',ing:{pelepolar:10,runabar:6,essencia:30},gold:120000,out:(cls)=>genItem('weapon',78,3,cls,cls,0,'lobo_polar')},
  {id:'g_arm',at:'ferreiro_gelo',n:'Armadura Bárbara de Gelo (Nv 82)',icon:'🥋',d:'Épico',ing:{runabar:12,pelepolar:8,essencia:30},gold:150000,out:(cls)=>genItem('armor',82,3,undefined,undefined,0,'barbaro')},
@@ -1160,7 +1157,7 @@ const MAXPLUS = 10;
 const hkeyOf = it => it.k === 'eq' ? ['eq', it.slot, it.name, it.rar, it.ilvl, it.plus || 0, it.sl || 0].join('|') : it.k + ':' + it.id;
 const upRate = p => [1, 1, 1, .85, .7, .55, .4, .3, .2, .12][p] || 0;
 const upCost = it => { const p = it.plus || 0; return { ferro: p + 1, essencia: p >= 4 ? Math.floor(p / 2) : 0, gold: Math.round(40 * Math.pow(p + 1, 1.7)) }; };
-const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon', 'shield', 'shield'] : ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon'];
+const slotPool = cls => cls === 'cavaleiro' ? ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon'] : ['weapon', 'armor', 'helmet', 'boots', 'ring', 'bracelet', 'earring', 'weapon'];
 /** Origem sorteada para itens sem monstro (caixas, missões): um monstro com nível próximo do item. */
 const originFor = ilvl => { const c = Object.keys(MT).filter(k => OG[k] && !k.startsWith('dg_') && !MT[k].wb && MT[k].lv[0] <= ilvl + 4 && MT[k].lv[1] >= ilvl - 8); return c.length ? pick(c) : undefined; };
 
@@ -1182,13 +1179,17 @@ function genCape(ilvl, cls, name) {
 }
 function rarRoll(b) { b = b || 0; const r = Math.random(), k = 1 + b; if (r < .02 * k) return 3; if (r < .12 * k) return 2; if (r < .4 + .05 * b) return 1; return 0; }
 /** Gera um equipamento. `cls` fixa a classe da arma; sem ela, 70% de chance de ser da classe do dono (`owner`). */
+/* v2.3.3: o Cavaleiro não tem mais o espaço de escudo — a arma dele é "espada e escudo" num item só:
+   ataque de arma + metade da defesa/vida que um escudo do mesmo nível daria. Escudos antigos somem (cleanItem). */
+const KS_SH = .5;
 function genItem(slot, ilvl, rar, cls, owner, sl, mo) {
   if (mo === true) mo = originFor(ilvl);
   let ax = null;   // v1.93: Astral — até 3 atributos aleatórios fora do engaste; quanto melhores, mais rara a peça
   if (mo && OG[mo] && OG[mo].vset === 2 && slot !== 'cape') { ax = rollAstralAttr(slot, slot === 'weapon' ? (cls || owner) : owner); rar = Math.max(rar, ax.rar); }
   const tier = ilvl >= 120 ? 11 : ilvl >= 90 ? 10 : ilvl >= 68 ? 9 : ilvl >= 56 ? 8 : ilvl >= 44 ? 7 : Math.min(6, Math.floor(ilvl / 4)), mult = RAR[rar].m, j = () => rnd(.92, 1.08);
   const it = { k: 'eq', slot, ilvl, rar, req: Math.max(1, ilvl - 1), plus: 0, bon: {}, hp: 0, atk: 0, def: 0 };
-  if (slot === 'weapon') { cls = cls || (Math.random() < .7 && owner ? owner : pick(Object.keys(CLASSES))); it.cls = cls; it.name = tier > 6 ? XN.weapon[cls][tier - 7] : WN[cls][tier]; it.atk = Math.round((3 + ilvl * 1.7) * mult * j()); it.icon = CLASSES[cls].wi; }
+  if (slot === 'weapon') { cls = cls || (Math.random() < .7 && owner ? owner : pick(Object.keys(CLASSES))); it.cls = cls; it.name = tier > 6 ? XN.weapon[cls][tier - 7] : WN[cls][tier]; it.atk = Math.round((3 + ilvl * 1.7) * mult * j()); it.icon = CLASSES[cls].wi;
+    if (cls === 'cavaleiro') { it.def = Math.round((3 + ilvl * 1.3) * mult * j() * KS_SH); it.hp = Math.round(ilvl * 3 * mult * KS_SH); it.icon = '🗡️🛡️'; } }
   else if (slot === 'shield') { it.cls = 'cavaleiro'; it.name = tier > 6 ? XN.shield[tier - 7] : SHN[tier]; it.def = Math.round((3 + ilvl * 1.3) * mult * j()); it.hp = Math.round(ilvl * 3 * mult); it.icon = '🛡️'; }
   else if (slot === 'armor') { it.name = tier > 6 ? XN.armor[tier - 7] : AN[tier]; it.def = Math.round((2 + ilvl) * mult * j()); it.icon = '🥋'; }
   else if (slot === 'helmet') { it.name = tier > 6 ? XN.helmet[tier - 7] : HN[tier]; it.def = Math.round((1 + ilvl * .6) * mult * j()); it.icon = '🪖'; }
@@ -1566,9 +1567,9 @@ const TSTEPS = [1, 10, 50, 100], TCOL = { 1: '#9fe7b0', 10: '#7fd6ff', 50: '#c79
 const BRIGHT_SLOTS = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'ring2', 'bracelet', 'bracelet2', 'earring', 'earring2'];
 /** Progresso do título "O mais brilhante": todas as peças equipadas (exceto capa) em +10. */
 function brightProg(c) {
-  const need = BRIGHT_SLOTS.concat(c.cls === 'cavaleiro' ? ['shield'] : []); let n = 0;
+  const need = BRIGHT_SLOTS; let n = 0;
   for (const s of need) if (c.eq && c.eq[s] && (c.eq[s].plus || 0) >= MAXPLUS) n++;
-  return { n, total: need.length, ok: n === need.length && (!c.eq.shield || (c.eq.shield.plus || 0) >= MAXPLUS) };
+  return { n, total: need.length, ok: n === need.length };
 }
 /** Todos os títulos do jogo (com o estado para o personagem c). */
 function titleList(c) {
@@ -1945,13 +1946,13 @@ function newChar(cls, name, fem, lk) {
   const c = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name, cls, v: R.VERSION, level: 1, xp: 0, pts: 0, sp: 1, sk: [1, 0, 0, 0, 0, 0, 0, 0], alloc: { str: 0, agi: 0, int: 0, vit: 0 }, gold: 50, inv: Array(INV_SIZE).fill(null), eq: { weapon: null, helmet: null, armor: null, boots: null, ring: null }, quests: {}, kills: 0 };
   c.pets = [null, null]; c.pcf = PCF0();   // v1.80: mascotes equipados + o que eles pegam do chão
   c.bar = defBar(); if (cls === 'pierrot') { c.prv = 1; c.bar[7] = -1; }
-  if (cls === 'tanque') { c.tkv = 1; c.bar = c.bar.map(v => v >= CLASSES.tanque.skills.length ? -1 : v); }   // v1.95: o Tanque tem 7 habilidades (o atalho da 8ª travava a tela) c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);
+  if (cls === 'tanque') { c.tkv = 1; c.bar = c.bar.map(v => v >= CLASSES.tanque.skills.length ? -1 : v); }   // v1.95: o Tanque tem 7 habilidades (o atalho da 8ª travava a tela)
+  c.eq.weapon = genItem('weapon', 1, 0, cls); c.eq.armor = genItem('armor', 1, 0);   // v2.3.3: estava dentro do comentário acima (personagem novo nascia sem arma e armadura)
   c.inv[0] = { k: 'pot', id: 'hp', n: 5 }; c.inv[1] = { k: 'pot', id: 'mp', n: 3 };
   c.tut = 0;   // v1.75: tutorial guiado (etapa atual; 99 = concluído/pulado)
   if (fem) c.fem = 1;   // v1.77: personagem feminino (só aparência; escolhido na criação, não muda depois)
   if (lkOk(lk)) { c.lk = lkFix(lk, fem); c.lkv = LOOK_VER; }   // v2.1.9: versão do visual (trava a edição)
   // v1.95: visual escolhido na criação (v1.96: feminino sem barba/bigode)
-  if (cls === 'cavaleiro') c.eq.shield = genItem('shield', 1, 0);
   return c;
 }
 
@@ -1964,7 +1965,6 @@ function gmChar(cls, old) {
   c.gold = GM_GOLD;
   const mk = (slot, w) => { const it = genItem(slot, MAX_LEVEL, 3, cls, cls, 0, true); if (slot === 'weapon') it.cls = cls; it.plus = MAXPLUS; return it; };
   c.eq = { weapon: mk('weapon'), helmet: mk('helmet'), armor: mk('armor'), boots: mk('boots'), ring: mk('ring'), ring2: mk('ring'), bracelet: mk('bracelet'), bracelet2: mk('bracelet'), earring: mk('earring'), earring2: mk('earring'), cape: genCape(80, cls) };
-  if (cls === 'cavaleiro') c.eq.shield = mk('shield');
   for (const k in c.eq) c.eq[k] = cleanItem(c.eq[k]);
   c.tb = 1; c.title = 'bright';
   c.inv = Array(INV_SIZE).fill(null); c.inv[0] = { k: 'pot', id: 'hp', n: 99 }; c.inv[1] = { k: 'pot', id: 'mp', n: 99 };
@@ -1974,9 +1974,9 @@ function gmChar(cls, old) {
   return c;
 }
 /** Limites máximos possíveis de um equipamento (para detectar itens editados). */
-function itemMax(slot, ilvl, rar) {
+function itemMax(slot, ilvl, rar, cls) {
   const m = RAR[rar].m * 1.09, o = { atk: 0, def: 0, hp: 0 };
-  if (slot === 'weapon') o.atk = (3 + ilvl * 1.7) * m;
+  if (slot === 'weapon') { o.atk = (3 + ilvl * 1.7) * m; if (cls === 'cavaleiro') { o.def = (3 + ilvl * 1.3) * m * KS_SH; o.hp = ilvl * 3 * RAR[rar].m * KS_SH; } }
   else if (slot === 'shield') { o.def = (3 + ilvl * 1.3) * m; o.hp = ilvl * 3 * RAR[rar].m; }
   else if (slot === 'armor') o.def = (2 + ilvl) * m;
   else if (slot === 'helmet') o.def = (1 + ilvl * .6) * m;
@@ -1997,11 +1997,16 @@ function cleanItem(it) {
   if (it.k === 'fz') return FZS[it.id] ? newFz(it.id) : null;
   if (it.k === 'mt') return MTS[it.id] ? newMt(it.id) : null;
   if (it.k === 'tix') return DUNGEONS.some(d => d.id === it.id) && Number.isFinite(it.n) ? { k: 'tix', id: it.id, n: Math.max(1, Math.min(99, Math.floor(it.n))) } : null;
+  if (it.k === 'eq' && it.slot === 'shield') return null;   // v2.3.3: escudos não existem mais (o Cavaleiro usa espada e escudo num item só)
   if (it.k !== 'eq' || !SLOTS[it.slot] || !Number.isFinite(it.ilvl) || !(it.rar >= 0 && it.rar <= 3)) return null;
   it.ilvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(it.ilvl))); it.rar = Math.floor(it.rar);
   it.plus = Math.max(0, Math.min(MAXPLUS, Math.floor(it.plus || 0))); it.req = Math.max(1, Math.min(it.ilvl, Math.floor(it.req || it.ilvl - 1)));
   if (it.wb && it.rar === 3 && it.slot !== 'cape') it.wb = 1; else delete it.wb;       // relíquia de chefe de mundo: limites maiores
-  const mx = itemMax(it.slot, it.ilvl, it.rar), wk = (it.wb ? 1.45 : 1) * (it.mo && OG[it.mo] && OG[it.mo].vset === 2 ? ASTRAL_MULT : 1);   // v1.93: Astral +12%
+  if (it.slot === 'weapon' && it.cls === 'cavaleiro') {   // v2.3.3: espadas antigas do Cavaleiro ganham a parte do escudo
+    const ak = it.mo && OG[it.mo] && OG[it.mo].vset === 2 ? ASTRAL_MULT : 1, rm = RAR[Math.max(0, Math.min(3, it.rar | 0))].m;
+    if (!(it.def > 0)) it.def = Math.round((3 + it.ilvl * 1.3) * rm * KS_SH * ak); if (!(it.hp > 0)) it.hp = Math.round(it.ilvl * 3 * rm * KS_SH * ak); it.icon = '🗡️🛡️';
+  }
+  const mx = itemMax(it.slot, it.ilvl, it.rar, it.cls), wk = (it.wb ? 1.45 : 1) * (it.mo && OG[it.mo] && OG[it.mo].vset === 2 ? ASTRAL_MULT : 1);   // v1.93: Astral +12%
   for (const k of ['atk', 'def', 'hp']) { const v = Number(it[k]) || 0; it[k] = Math.max(0, Math.min(Math.round(mx[k] * wk + 1), Math.round(v))); }
   const bmax = Math.max(1, Math.round(it.ilvl / 3)) * Math.max(0, it.rar - 1) * (it.wb ? 3 : 1), nb = {};
   for (const s of ['str', 'agi', 'int', 'vit']) if (it.bon && it.bon[s] > 0) nb[s] = Math.min(bmax, Math.floor(it.bon[s]));
@@ -2066,6 +2071,10 @@ function migrate(c) {
     for (const id in c.quests) if (!QUESTS.some(q => q.id === id)) delete c.quests[id];
     c.v = R.VERSION; c._respec = true;
   }
+  // v2.3.3: sem escudos — o equipado e os da mochila somem; espadas do Cavaleiro passam a ser "espada e escudo"
+  if (c.eq && 'shield' in c.eq) delete c.eq.shield;
+  if (Array.isArray(c.inv)) c.inv = c.inv.map(x => (x && x.k === 'eq' && x.slot === 'shield') ? null : (x && x.k === 'eq' && x.slot === 'weapon' && x.cls === 'cavaleiro' && !(x.def > 0)) ? cleanItem(x) : x);
+  if (c.eq && c.eq.weapon && c.eq.weapon.cls === 'cavaleiro' && !(c.eq.weapon.def > 0)) c.eq.weapon = cleanItem(c.eq.weapon);
   if (!c.evt || typeof c.evt !== 'object' || typeof c.evt.got !== 'object') c.evt = { got: {} };
   // v1.86: capítulos da história muito abaixo do seu nível (e não iniciados) ficam marcados como vividos, sem recompensa
   if (c.quests && typeof c.quests === 'object') for (const q of MAINQ) { if (c.quests[q.id]) continue; if (q.need <= c.level - 4) c.quests[q.id] = { n: q.qty, done: true, sk: 1 }; else break; }
@@ -2086,7 +2095,7 @@ const EVT = { end: Date.UTC(2026, 11, 26, 2, 59, 59), lvs: [10, 20, 30, 40, 50, 
 const evtOn = () => Date.now() <= EVT.end;
 function evtPack(cls, L) {
   const C = CLASSES[cls], r = Math.max(1, Math.round(L / 3)), amp = schoolOf(cls) === 'M' ? 'a_ampm' : 'a_ampe';
-  const slots = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'ring', 'bracelet', 'bracelet', 'earring', 'earring'].concat(cls === 'cavaleiro' ? ['shield'] : []);
+  const slots = ['weapon', 'armor', 'helmet', 'boots', 'ring', 'ring', 'bracelet', 'bracelet', 'earring', 'earring'];
   return slots.map(sl => {
     const it = genItem(sl, L, 3, cls, cls, 2, undefined);
     it.plus = 8; it.bon = C.main === 'vit' ? { vit: r, str: r } : { [C.main]: r, vit: r };

@@ -120,7 +120,7 @@ export async function gmAstralGift() {
     for (const c of chars) {
       const cls = String(c.class), ilvl = Math.max(1, Math.min(R.MAX_LEVEL || 200, Number(c.level) || 1));
       const amp = R.schoolOf(cls) === "M" ? "a_ampm" : "a_ampe";
-      const slots = ["weapon", "armor", "helmet", "boots", "ring", "ring", "bracelet", "bracelet", "earring", "earring"].concat(cls === "cavaleiro" ? ["shield"] : []);
+      const slots = ["weapon", "armor", "helmet", "boots", "ring", "ring", "bracelet", "bracelet", "earring", "earring"];   // v2.3.3: sem escudo
       const items = slots.map((sl) => {
         const it = R.astralBest(sl, cls, ilvl);
         const g = sl === "weapon" || sl === "ring" ? "w_cdmg" : sl === "bracelet" ? "a_lhpl" : sl === "earring" ? "a_lhpu" : amp;
