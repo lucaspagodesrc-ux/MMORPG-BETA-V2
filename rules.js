@@ -1324,6 +1324,8 @@ const newMt = id => ({ k: 'mt', id, n: 1 });
 const mtPrice = id => MT_PRICE[(MTS[id] || { rar: 0 }).rar];
 const mtSpd = id => MT_SPD[(MTS[id] || { rar: 0 }).rar] || .2;
 const DIA_MAX = 1e9;
+const DIA_GOLD = 1e6;   // v2.3.4: troca na Loja de Diamantes — 💰 1.000.000 = 💎 1  (💰 100 milhões = 💎 100); só de ouro para diamante
+const DIA_XMAX = 100000;   // no máximo 💎 100 mil por troca
 const newFz = id => ({ k: 'fz', id, n: 1 });
 const fzPrice = id => FZ_PRICE[(FZS[id] || { rar: 0 }).rar];
 /** drop raro de mascote: raridade sorteada 40/30/20/10 */
@@ -2287,6 +2289,13 @@ function act(sess, m, ctx) {
     it.n -= n; c.inv[j] = { ...it, n }; T('✂️ Pilha separada: ' + n + ' / ' + it.n); return done();
   }
   if (t === 'petcfg') { c.pcf = cleanPcf(m.cfg); return done(); }
+  if (t === 'gold2dia') {                                                 // v2.3.4: troca de ouro por diamantes (o servidor confere tudo)
+    const n = m.n; if (!Number.isInteger(n) || n < 1 || n > DIA_XMAX) return fail('Quantidade inválida.');
+    const cost = n * DIA_GOLD; if (!((c.gold || 0) >= cost)) return fail('💰 Ouro insuficiente: ' + n + ' 💎 custam ' + cost.toLocaleString('pt-BR') + ' de ouro.');
+    if ((c.dia || 0) + n > DIA_MAX) return fail('💎 Limite de diamantes atingido.');
+    c.gold -= cost; c.dia = (c.dia || 0) + n; F('coin'); T('💎 +' + n + ' diamante' + (n > 1 ? 's' : ''));
+    L(`<span style="color:#7fd8ff">💱 Você trocou 💰 <b>${cost.toLocaleString('pt-BR')}</b> de ouro por 💎 <b>${n}</b> diamante${n > 1 ? 's' : ''}.</span>`); return done();
+  }
   if (t === 'buyfz') {                                                    // v1.82: loja de fantasias (diamantes; GM grátis)
     const Z = FZS[m.id]; if (!Z) return fail(); const cost = c.gm ? 0 : fzPrice(m.id);
     if ((c.dia || 0) < cost) return fail('💎 Diamantes insuficientes.');
@@ -2564,7 +2573,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return Math.round(((s && ANIM[s.anim]) || 260) * skSlow(cls)); };
 Object.assign(R, { SK_SLOW, skSlow, LOOK, LK_DEF, LOOK_VER, lkCanEdit, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, DIA_GOLD, DIA_XMAX, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

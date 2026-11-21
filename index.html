@@ -277,6 +277,7 @@
   #win-friends{left:360px;top:200px;width:320px}
   #splitBox{position:fixed;z-index:70;display:none;padding:10px 12px;min-width:220px;font-size:13px}#splitBox input{background:#0f1822;color:#e6edf5;border:1px solid var(--line);border-radius:6px;padding:4px 6px}#splitBox button{padding:4px 10px}
   #win-fz{left:380px;top:96px;width:430px;max-height:calc(100vh - 140px);overflow:auto}
+  #win-fz .dxq{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;align-items:center}#win-fz .dxq input{width:110px}#win-fz .dxbig{font-size:16px;margin:8px 0}
   #win-fz .fzrow{display:flex;gap:9px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:7px;margin-bottom:6px;background:#121c28}
   #win-fz .fzi{font-size:28px;width:46px;height:46px;flex:none;display:grid;place-items:center;border:2px solid #3b4b5c;border-radius:10px;background:#0e1620}
   #win-fz .fzt{flex:1;min-width:0}#win-fz .fzt small{display:block;color:var(--muted);font-size:11.5px}
@@ -8031,9 +8032,15 @@ $('petsBody').addEventListener('click',e=>{const u=e.target.closest('[data-petun
 $('petsBody').addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.pcf;if(!k||!S)return;const cf=JSON.parse(JSON.stringify(S.pcf||RULES.PCF0()));const [a,b]=k.split(':');if(b!==undefined)cf[a][+b]=e.target.checked?1:0;else cf[a]=e.target.checked?1:0;S.pcf=cf;ACT({t:'petcfg',cfg:cf});});
 /* v1.82: Loja de Diamantes (fantasias por raridade) e aba para vestir — só 1 fantasia por vez */
 let FZTAB='loja';
+/* v2.3.4: troca de ouro por diamantes (💰 1.000.000 = 💎 1) — confirmação em dois cliques, sem caixa do navegador */
+let DXN=1,DXC=0;
+function dxMax(){return Math.max(0,Math.min(RULES.DIA_XMAX,Math.floor((S.gold||0)/RULES.DIA_GOLD)));}
+function dxUpd(){const n=DXN,c=n*RULES.DIA_GOLD,ok=n>=1&&n<=dxMax(),e=$('dxCost'),b=$('dxGo');if(e)e.innerHTML=`💎 <b>${fmt(n)}</b> = 💰 <b>${fmt(c)}</b> de ouro`;
+ if(b){b.disabled=!ok;b.textContent=!ok?(n>dxMax()?'Ouro insuficiente':'Escolha a quantidade'):DXC?`✔ Confirmar: trocar 💰 ${fmt(c)}`:'💱 Trocar';b.className=DXC&&ok?'gold':'';}}
 function renderFz(){
+ if(FZTAB==='troca'&&document.activeElement&&document.activeElement.id==='dxN'){$('fzDia').textContent=S.gm?'💎 GM: grátis':'💎 '+fmt(S.dia||0);dxUpd();return;}   /* não apaga o que a pessoa está digitando */
  const fem=!!S.fem,dia=S.dia||0;$('fzDia').textContent=S.gm?'💎 GM: grátis':'💎 '+fmt(dia);
- $('fzTabs').innerHTML=[['loja','💎 Loja'],['vestir','🎭 Vestir'],['montar','🐎 Montaria']].map(([k,n])=>`<button data-fzt="${k}" class="${FZTAB===k?'on':''}">${n}</button>`).join('');
+ $('fzTabs').innerHTML=[['loja','💎 Loja'],['vestir','🎭 Vestir'],['montar','🐎 Montaria'],['troca','💱 Ouro → 💎']].map(([k,n])=>`<button data-fzt="${k}" class="${FZTAB===k?'on':''}">${n}</button>`).join('');
  let h='';
  if(FZTAB==='loja'){
   h+=`<p class="muted" style="margin-top:0">Fantasias mudam a aparência do personagem inteiro (a arma da classe continua na mão) e escondem a capa/manto. Você recebe a versão <b>${fem?'♀ feminina':'♂ masculina'}</b>. Sem atributos — só estilo.</p>`;
@@ -8048,6 +8055,13 @@ function renderFz(){
    h+=`<div class="fzh" style="color:${R.c}">${R.n.toUpperCase()} • +${Math.round(RULES.MT_SPD[r]*100)}% velocidade • 💎 ${fmt(cost)}</div>`;
    h+=ks.map(k=>{const Z=RULES.MTS[k],ok=S.gm||dia>=cost,own=(S.mtq&&S.mtq.id===k)||S.inv.some(x=>x&&x.k==='mt'&&x.id===k);
     return `<div class="fzrow"><div class="fzi" style="border-color:${R.c}">${Z.i}</div><div class="fzt"><b style="color:${R.c}">${Z.n}</b><small>${Z.d}${own?' • <span style="color:#6fdc7f">você já tem</span>':''}</small></div><div class="fzp"><div class="${ok&&!own?'ok':'no'}">${S.gm?'Grátis (GM)':'💎 '+fmt(cost)}</div><button data-mtbuy="${k}" ${ok&&!own?'':'disabled'}>${own?'Já tem':'Comprar'}</button></div></div>`;}).join('');}
+}else if(FZTAB==='troca'){
+  const mx=dxMax();
+  h+=`<div class="dsec">💱 Trocar ouro por diamantes</div><p class="muted" style="margin-top:0">Taxa fixa: <b>💰 100.000.000 de ouro = 💎 100 diamantes</b> (cada 💎 custa 💰 1.000.000). A troca é só de ouro para diamantes e <b>não pode ser desfeita</b>.</p>`;
+  h+=`<div class="fzrow"><div class="fzi">💎</div><div class="fzt"><b>Quantos diamantes?</b><small>Você tem 💰 ${fmt(S.gold||0)} • dá para trocar até 💎 ${fmt(mx)}</small>
+   <div class="dxq"><input id="dxN" type="number" inputmode="numeric" min="1" max="${Math.max(1,mx)}" step="1" value="${DXN}">${[1,10,100].map(v=>`<button data-dxs="${v}">${v}</button>`).join('')}<button data-dxs="max">Máx</button></div></div></div>`;
+  h+=`<div class="dxbig" id="dxCost"></div><button id="dxGo" data-dxgo="1"></button>`;
+  h+='<p class="muted">Os diamantes servem para comprar fantasias e montarias nesta loja.</p>';
  }else if(FZTAB==='montar'){
   const z=S.mtq,Z=z&&RULES.MTS[z.id];
   h+='<div class="dsec">Montaria equipada</div>';
@@ -8064,8 +8078,11 @@ function renderFz(){
   const inv=S.inv.map((it,i)=>it&&it.k==='fz'?{it,i}:null).filter(Boolean);
   h+=`<div class="dsec">Na mochila (${inv.length})</div>`+(inv.length?inv.map(o=>{const Q=FZS[o.it.id]||{};return `<div class="fzrow"><div class="fzi" data-inv="${o.i}" style="border-color:${col(o.it)}">${Q.i}</div><div class="fzt"><b style="color:${col(o.it)}">${Q.n}</b><small>${fem?'♀ '+Q.f:'♂ '+Q.m} • ${PRAR[Q.rar||0].n}</small></div><div class="fzp"><button data-fzeq="${o.i}">Vestir</button></div></div>`;}).join(''):'<p class="muted">Nenhuma fantasia na mochila. Compre na aba 💎 Loja ou com outros jogadores.</p>');
  }
- $('fzBody').innerHTML=h;}
-$('win-fz').addEventListener('click',e=>{const t=e.target.closest('[data-fzt]');if(t){FZTAB=t.dataset.fzt;AUD.sfx('ui');renderFz();return;}
+ $('fzBody').innerHTML=h;if(FZTAB==='troca')dxUpd();}
+$('win-fz').addEventListener('input',e=>{if(e.target.id!=='dxN')return;const v=Math.floor(+e.target.value);DXN=Number.isFinite(v)&&v>0?Math.min(v,RULES.DIA_XMAX):0;DXC=0;dxUpd();});
+$('win-fz').addEventListener('click',e=>{const t=e.target.closest('[data-fzt]');if(t){FZTAB=t.dataset.fzt;DXC=0;AUD.sfx('ui');renderFz();return;}
+ {const q=e.target.closest('[data-dxs]');if(q){const v=q.dataset.dxs==='max'?dxMax():+q.dataset.dxs;DXN=Math.max(1,v);DXC=0;const i=$('dxN');if(i)i.value=DXN;dxUpd();return;}
+  if(e.target.closest('[data-dxgo]')){if(!(DXN>=1&&DXN<=dxMax()))return;if(!DXC){DXC=1;dxUpd();return;}DXC=0;ACT({t:'gold2dia',n:DXN});return;}}
  const b=e.target.closest('[data-fzbuy]');if(b){ACT({t:'buyfz',id:b.dataset.fzbuy});return;}
  {const x=e.target.closest('[data-mtbuy]');if(x){ACT({t:'buymt',id:x.dataset.mtbuy});return;}const q2=e.target.closest('[data-mteq]');if(q2){ACT({t:'mteq',i:+q2.dataset.mteq});return;}if(e.target.closest('[data-mtun]')){ACT({t:'mtun'});return;}}
  const q=e.target.closest('[data-fzeq]');if(q){ACT({t:'fzeq',i:+q.dataset.fzeq});return;}
