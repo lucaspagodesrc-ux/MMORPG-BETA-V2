@@ -2086,6 +2086,15 @@ var CR={defs:{
  gargula:{f:'mo_gargula',sz:2.3,by:'h',noPx:1,two:1,lin:1,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
  orc_n:{f:'mo_orc',sz:2.3,by:'h',noPx:1,two:1,lin:1,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
  golem_r:{f:'mo_golem',sz:2.4,by:'h',noPx:1,two:1,lin:1,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ /* v2.3.5: lobo, golem de lava, colosso de obsidiana, elemental de areia, sacerdote-múmia, guerreiro chacal e múmia (Tripo + esqueleto/animações próprios) */
+ lobo_n:{f:'mo_lobo',sz:2.3,by:'w',noPx:1,two:1,lin:1,tintAll:1,mk:.45,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ lava:{f:'mo_lava',sz:2.6,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.3,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ lava_s:{f:'mo_lava',sz:3.6,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.3,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},   /* comum (escala .62 no rules.js) */
+ obsid:{f:'mo_obsid',sz:2.6,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.3,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ areia:{f:'mo_areia',sz:2.3,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.35,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ sacerd:{f:'mo_sacerd',sz:2.3,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.3,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ anubis:{f:'mo_anubis',sz:2.3,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.35,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
+ mumia_n:{f:'mo_mumia',sz:2.2,by:'h',noPx:1,two:1,lin:1,tintAll:1,mk:.35,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
  musgo:{f:'mo_musgo',sz:3.1,by:'h',noPx:1,two:1,lin:1,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},
  skel:{f:'c_skel',sz:2.0,by:'h',main:['Skeleton'],mk:.45,clips:{idle:'Idle',walk:'Run',atk:'Attack',die:'Death',spawn:'Spawn'}},
  r_mike:{f:'r_mike',sz:2.5,by:'h',noPx:1,main:['Main'],clips:{idle:'Idle',walk:'Walk',run:'Run',atk:'Punch',atk2:'SwordSlash',shoot:'Shoot',hit:'Hit',die:'Death',jump:'Jump',dance:'Dance'}},
@@ -2104,7 +2113,10 @@ var CR={defs:{
  /* modelo do jogo -> criatura nova (vale para todas as variações recoloridas) */
  TYPE:{aranha:'spider',cobra:'snake',esqueleto:'skel',automaton:'r_mike',reaper:'r_leela',gearGolem:'r_stan',mtitan:'r_george',chest:'chest'},
  /* monstros que trocaram de bicho (nome novo no rules.js) */
- KEY:{golem:'musgo',au_tita:'golem_r',au_gra:'golem_r',vc_ifrit:'demonio_v',vc_dem:'demonio_v',demonio:'demonio_v',dg_km1:'demonio_v',dg_fm2:'demonio_v',dg_kd:'demonio_v',dg_kclone:'demonio_v',
+ KEY:{lobo:'lobo_n',lobo_polar:'lobo_n',dg_nc:'lobo_n',   /* v2.3.5 */
+  vc_colosso:'lava',dg_fboss:'lava',dg_km2:'lava',vc_gol:'lava_s',colosso:'obsid',dg_s1:'obsid',elemental:'areia',
+  farao:'sacerd',dg_boss:'sacerd',dg_sboss:'sacerd',dg_sm2:'sacerd',chacal:'anubis',dg_c:'anubis',dg_sa:'anubis',mumia:'mumia_n',dg_a:'mumia_n',
+  golem:'musgo',au_tita:'golem_r',au_gra:'golem_r',vc_ifrit:'demonio_v',vc_dem:'demonio_v',demonio:'demonio_v',dg_km1:'demonio_v',dg_fm2:'demonio_v',dg_kd:'demonio_v',dg_kclone:'demonio_v',
   dg_nm1:'ogro',barbaro:'ogro',dg_ne:'ogro',dg_nboss:'gargula',dg_nd:'gargula',orc:'orc_n',dg_na:'orc_n',yeti_rei:'ogro',yeti_anciao:'ogro',golem_gelo:'gargula',dg_fd:'golem_r',   /* v2.3.3 */
   vc_sal:'snake2',dg_fc:'snake2',dg_kb:'snake2',au_lobo:'rat',au_orc:'frog',au_esp:'wasp',espectro:'bat',dg_va:'bat'},
  /* cores por monstro (material -> cor). Sem paleta: a cor "tint" do monstro pinta os materiais principais. */
@@ -2132,7 +2144,8 @@ CR.mat=function(n,key,src,tint){const D=CR.defs[n],nm=(src&&src.name||'m').repla
  let c=src&&src.albedoColor?src.albedoColor.toGammaSpace():new C3(.7,.7,.7);
  if(src&&src.albedoTexture){m.diffuseTexture=src.albedoTexture;c=new C3(1,1,1);}
  if(pal&&pal[nm])c=C3.FromHexString(pal[nm]);
- else if(tint&&D.main&&D.main.includes(nm))c=C3.Lerp(c,C3.FromHexString(tint),D.mk||.62);
+ else if(tint&&(D.tintAll||D.main&&D.main.includes(nm)))c=C3.Lerp(c,C3.FromHexString(tint),D.mk||.62);
+ if(tint&&D.tintAll&&!pal){const t=C3.FromHexString(tint);if(t.r+t.g+t.b>2.4)m.emissiveColor=t.scale(.28);}   /* v2.3.5: cor clara (lobo polar) clareia a textura */
  m.diffuseColor=c;if(/Eye/i.test(nm)&&!pal)m.emissiveColor=c.scale(.5);
  return CR.mats[id]=m;};
 /* monta a criatura dentro de host */
