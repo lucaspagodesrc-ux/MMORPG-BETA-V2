@@ -2473,8 +2473,10 @@ function act(sess, m, ctx) {
    como 30 a 60 s em qualquer faixa de nível. Valores em um só lugar, fáceis de ajustar. */
 const PVP = {
   def: .3,                                                   // só 30% da defesa do alvo entra na conta contra jogadores
+  defMult: 0,                                                // v2.3.3: golpes que somam a DEFESA do atacante (Cavaleiro) — contra jogadores essa parte não entra
+  defDmg: 0,                                                 // v2.3.3: idem para o Bastião (defesa vira força) contra jogadores
   kL: [[1, .09], [10, .098], [20, .12], [30, .135], [40, .17], [50, .19], [60, .22], [70, .255], [80, .32], [90, .375], [100, .39]],   // fator por nível do atacante
-  cm: { guerreiro: 1, arqueiro: .26, mago: .32, assassino: .47, cavaleiro: .93, tanque: 2.15, pierrot: .21 },                       // fator por classe (equilibra o dano total)
+  cm: { guerreiro: 1.12, arqueiro: .32, mago: .32, assassino: .47, cavaleiro: .8, tanque: 2.15, pierrot: .21 },   // v2.3.3: Cavaleiro .93→.8, Arqueiro .26→.32, Guerreiro 1→1.12 (simulação 6x6 + duelos)                       // fator por classe (equilibra o dano total)
   potCd: 15000, potK: .5,                                    // poções em duelo/arena: recarga de 15 s e metade do efeito
   cc: { stun: 1000, root: 1500, slow: 2500, imm: 3000 },     // atordoar/prender/lentidão em jogadores (máx. em ms) e imunidade depois de um controle
   slack: 1.3                                                 // folga do verificador de vida do servidor (nunca pune um jogador honesto)
@@ -2519,7 +2521,7 @@ const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, spin3: 
 /* tempo de exibição de cada habilidade (ms): enquanto ele não acaba, outra habilidade não pode ser lançada.
    x = { dist: distância até o alvo, n: nº de alvos (saltos), hits } — o servidor chama sem x (usa o mínimo), o cliente passa os valores reais */
 /* v2.3.2: classes mais lentas nas habilidades (animação e lançamento) — guerreiro +40% */
-const SK_SLOW = { guerreiro: 3.0 };
+const SK_SLOW = { guerreiro: 1.4 };
 const skSlow = cls => SK_SLOW[cls] || 1;
 const castMs = (cls, i, x) => {
   const C = CLASSES[cls], s = C && C.skills[i]; if (!s) return 260; x = x || {};

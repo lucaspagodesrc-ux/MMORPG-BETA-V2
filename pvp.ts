@@ -119,9 +119,10 @@ export class Pvp {
     vm.at = t; s.pv.at = t;
     const SA = room.stats(s), av = R.defRoll(V, SA, room.buff(ts, "evade"));        // Evasão (vs Acerto) e Taxa de Defesa/bloqueio (vs Ignorar Bloqueio)
     if (av) { this.near(sidB, "pdmg", { t: sidB, by: sidA, d: 0, dg: av === "block" ? 2 : 1 }, sidA); return; }
-    const buffs = { dmg: room.buff(s, "dmg"), defdmg: room.buff(s, "defdmg"), crit: room.buff(s, "crit"), combo: room.buff(s, "combo"), flat: room.buff(s, "flat") };
+    const buffs = { dmg: room.buff(s, "dmg"), defdmg: room.buff(s, "defdmg") * (PV.defDmg ?? 1),   // v2.3.3: Bastião não converte defesa em dano contra jogadores
+                    crit: room.buff(s, "crit"), combo: room.buff(s, "combo"), flat: room.buff(s, "flat") };
     const defv = V.def * (1 - room.buff(ts, "defloss")) * PV.def * (1 - (o.pierce || 0));
-    const r = R.hitDamage(SA, { mult, basic: o.basic, defMult: o.defMult, exec: o.exec, forceCrit: o.forceCrit, marked: t < q.markUntil, buffs }, { def: defv, hp: vm.hp, maxHp: vm.max, v: V });
+    const r = R.hitDamage(SA, { mult, basic: o.basic, defMult: (o.defMult || 0) * (PV.defMult ?? 1), exec: o.exec, forceCrit: o.forceCrit, marked: t < q.markUntil, buffs }, { def: defv, hp: vm.hp, maxHp: vm.max, v: V });
     let d = r.dmg * R.pvpK(s.c.cls, s.c.level);
     d *= 1 - Math.min(0.85, room.buff(ts, "shield"));
     d = R.flatRed(V, SA, d);                                                              // Redução de Danos (menos o "Ignorar" do atacante)
