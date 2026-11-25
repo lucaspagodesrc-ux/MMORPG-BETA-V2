@@ -7213,8 +7213,9 @@ function renderChar(){
   const atkV=Math.round((d.dmg+bF)*(1+bD/100)),atkB=(bD||bF)?BT('+'+(bD?pc(bD)+'%':'')+(bD&&bF?' ':'')+(bF?'+'+Math.round(bF):'')):'';
   o.push(R1('Ataque',E==='E'?atkV+atkB:'—','','Dano base das classes físicas (já com buffs ativos)',E==='E'));
   o.push(R1('Ataque Mágico',E==='M'?atkV+atkB:'—','','Dano base das classes mágicas (já com buffs ativos)',E==='M'));
-  o.push(R1('Amp. Espada',E==='E'?pc(d.amp*100):'—',E==='E'?'%':'','Aumenta o dano das HABILIDADES físicas',E==='E'&&d.amp>0));
-  o.push(R1('Amp. Mágica',E==='M'?pc(d.amp*100):'—',E==='M'?'%':'','Aumenta o dano das HABILIDADES mágicas',E==='M'&&d.amp>0));
+  /* v2.3.7: a Técnica de Amp. agora soma Ataque (cada 8 = +100), já incluído no Ataque acima */
+  o.push(R1('Amp. Espada',E==='E'?pc(d.ampPts||0)+` <span style="color:#6fdc7f;font-size:11px">(+${Math.round(d.ampAtk||0)} ataque)</span>`:'—','','Cada 8 de Técnica de Amp. = +100 de Ataque (já somado no Ataque)',E==='E'&&d.ampPts>0));
+  o.push(R1('Amp. Mágica',E==='M'?pc(d.ampPts||0)+` <span style="color:#6fdc7f;font-size:11px">(+${Math.round(d.ampAtk||0)} ataque mágico)</span>`:'—','','Cada 8 de Técnica de Amp. = +100 de Ataque Mágico (já somado no Ataque Mágico)',E==='M'&&d.ampPts>0));
   o.push(R1('Taxa Crítica',pc(Math.min(d.crit+bC,cap))+'%'+(bC?BT('+'+pc(bC)+'%'):''),'','Chance de acerto crítico por golpe (já com buffs). Bruta: '+pc(d.crit+bC)+'% • limite: '+cap.toFixed(0)+'%'));
   o.push(R1('Dano Crítico','+'+pc((d.critMul-1)*100),'%','Quanto o dano a mais aumenta quando o golpe é crítico (×'+d.critMul.toFixed(2)+')'));
   o.push(R1('Taxa Crítica Máxima',cap.toFixed(0),'%','Limite da Taxa Crítica: 52% de base, sobe com o atributo Taxa Crítica Máxima (até 95%)'));
@@ -7227,7 +7228,7 @@ function renderChar(){
   df.push(R1('Redução de Danos',Math.round(d.rdmg),'','Valor fixo tirado de cada golpe recebido (mín. 1)',d.rdmg>0));
   df.push(R1('Resist. à Taxa Crítica',pc(d.rcrit),'%','Reduz a chance de críticos do adversário (PvP)',d.rcrit>0));
   df.push(R1('Resist. ao Dano Crítico',pc(d.rcdmg),'%','Reduz o dano extra dos críticos recebidos (PvP)',d.rcdmg>0));
-  df.push(R1('Resist. à Técnica Amp.',pc(d.ramp),'%','Reduz a Amp. das habilidades do adversário (PvP)',d.ramp>0));
+  df.push(R1('Resist. à Técnica Amp.',pc(d.ramp),'%','Corta essa % do Ataque que o adversário ganhou com a Técnica de Amp. (PvP)',d.ramp>0));
   df.push(R1('Absorção de HP',pc(d.lhp*100-d.lhpUp),'%','Recupera vida igual a essa parte do dano causado',d.lhp*100-d.lhpUp>0));
   df.push(R1('Absorção de MP',pc(d.lmp*100-d.lmpUp),'%','Recupera mana igual a essa parte do dano causado',d.lmp*100-d.lmpUp>0));
   const lim=(raw,on)=>raw>0&&!on?raw+' (inativo)':raw;
@@ -8278,7 +8279,7 @@ function hoverTick(){
 function statsWith(slot,it){const old=S.eq[slot],c=dcache;S.eq[slot]=it;dcache=null;const d={...D()};S.eq[slot]=old;dcache=c;return d;}
 /* ---------- janela de comparação: painel ao lado da dica, com veredito e só as diferenças ---------- */
 const CMPR=[ // [rótulo, chave em D(), casas decimais, unidade, escala]  (linhas só com [título] abrem uma seção)
- ['⚔ ATAQUE'],['Dano base','dmg',0],['Crítico','crit',1,'%'],['Dano crítico','critMul',2,'×'],['Vel. de ataque','atkSpd',2,'×'],['Amp. de habilidades','amp',1,'%',100],['Perfuração','pen',1,'%',100],['Acerto','acc',1,'%'],['Dano adicional','add',0],['Teto de crítico','critCap',0,'%'],['Ign. Resist. Taxa Crít.','ignRcrit',1,'%'],['Ign. Resist. Dano Crít.','ignRcdmg',1,'%'],['Ign. Redução de Danos','ignRdmg',0],['Ign. Bloqueio','ignBlock',1,'%'],
+ ['⚔ ATAQUE'],['Dano base','dmg',0],['Crítico','crit',1,'%'],['Dano crítico','critMul',2,'×'],['Vel. de ataque','atkSpd',2,'×'],['Ataque da Amp.','ampAtk',0],['Perfuração','pen',1,'%',100],['Acerto','acc',1,'%'],['Dano adicional','add',0],['Teto de crítico','critCap',0,'%'],['Ign. Resist. Taxa Crít.','ignRcrit',1,'%'],['Ign. Resist. Dano Crít.','ignRcdmg',1,'%'],['Ign. Redução de Danos','ignRdmg',0],['Ign. Bloqueio','ignBlock',1,'%'],
  ['🛡 DEFESA'],['Defesa','def',0],['Vida máx.','maxHp',0],['Mana máx.','maxMp',0],['Esquiva','dodge',1,'%'],['Taxa de Defesa','drate',1,'%',100],['Redução de Danos','rdmg',0],['Resist. Taxa Crítica','rcrit',1,'%'],['Resist. Dano Crítico','rcdmg',1,'%'],['Resist. Técnica Amp.','ramp',1,'%'],['Ign. Perfuração','ignPen',1,'%'],['Ign. Acerto','ignAcc',1,'%'],
  ['✨ UTILIDADE'],['Absorção de HP','lhp',1,'%',100],['Absorção de MP','lmp',1,'%',100],['Limite Absorção HP','lhpLim',0],['Limite Absorção MP','lmpLim',0],['Regen. de HP','rhp',2,'%/s',100],['Sorte','luck',1],['Ouro obtido','gf',1,'%',100],
  ['📊 ATRIBUTOS'],['Força','str',0],['Agilidade','agi',0],['Inteligência','int',0],['Vitalidade','vit',0]];
