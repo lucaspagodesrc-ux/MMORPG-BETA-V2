@@ -129,6 +129,7 @@ authRouter.post("/chars", authed, async (req, res) => {
   const { cls, name, fem, lk } = req.body || {};
   const nm = cleanName(name);
   if (!CLASSES.includes(cls)) return res.status(400).json({ error: "Classe inválida." });
+  if (R.CLS_OFF && R.CLS_OFF[cls]) return res.status(400).json({ error: "Essa classe está indisponível no momento." });   // v2.3.9: Tanque fora por enquanto
   if (nameErr(nm)) return res.status(400).json({ error: nameErr(nm) });
   if (!R.lkOk(lk)) return res.status(400).json({ error: "Escolha o visual do personagem (olhos, cabelo, rosto e pele)." });   // v1.95
   if (await nameTaken(nm)) return res.status(409).json({ error: NAME_USED });

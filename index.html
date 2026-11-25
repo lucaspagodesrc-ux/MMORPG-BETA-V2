@@ -52,6 +52,10 @@
   .lbl.plate{text-align:center;font-size:11px}
   .lbl .tt{font-size:11px;font-weight:800;letter-spacing:.3px;margin-bottom:1px}.lbl .tt.br{text-shadow:0 0 6px #ffcf3a,0 0 12px #ff9a1a,0 1px 3px #000}
   .tgrp{margin:10px 0 4px;font-weight:800;color:#ffe28a;display:flex;justify-content:space-between}
+/* v2.3.9: toda janela rola quando passa da altura da tela; títulos com rolagem própria e grupos que recolhem */
+.win{max-height:calc(100vh - 104px);overflow-y:auto;scrollbar-width:thin}
+#titlesBody{max-height:calc(100vh - 200px);overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+.tgrp.tg{cursor:pointer;user-select:none;padding:3px 6px;border-radius:8px;background:#ffffff0a}.tgrp.tg:hover{background:#ffffff16}.tgrp .tga{display:inline-block;width:14px}
   .trow .tn{font-weight:800}.trow.lock{opacity:.5}.trow .rb button.on{background:#2f6a3a}
   .lbl .pb{width:70px;height:6px;background:#3a2830;border:1px solid #000;border-radius:5px;margin:2px auto 0;overflow:hidden}
   .lbl .pb i{display:block;height:100%;background:#e45b65;width:100%}
@@ -77,6 +81,7 @@
   .kaboom{position:absolute;left:0;top:0;width:260px;height:190px;pointer-events:none;will-change:transform}
   .fl{position:absolute;left:0;top:0;font-weight:800;font-size:15px;text-shadow:0 1px 3px #000,0 0 5px #000;will-change:transform}
   .fl.big{font-size:22px}
+  .wpLbl{position:absolute;left:0;top:0;pointer-events:none;color:#ffe28a;font-weight:800;font-size:13px;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap}
   .fl.sm{font-size:11px;font-weight:700;filter:brightness(.85)}.fl.ico{font-size:13px;font-weight:700}
   .nolv .plv{display:none}
   .panel{position:absolute;background:rgba(13,20,31,.9);border:1px solid var(--line);backdrop-filter:blur(8px);border-radius:12px;box-shadow:0 8px 28px #0006}
@@ -7976,13 +7981,18 @@ function updateHud(){
 }
 function renderTitles(){
  const L=RULES.titleList(S),cur=S.title||'',eq=cur?RULES.titleInfo(cur):null;let h=`<div class="muted" style="margin-bottom:6px">Título em uso: ${eq?`<b style="color:${eq.col}">${eq.t}</b> <button data-title="">Remover</button>`:'<b>nenhum</b>'}<br>O título aparece acima do seu nome, para todos os jogadores.</div>`,last='';
+ const TCOL=tColGet(),GN={};for(const t of L){const g=GN[t.dg]||(GN[t.dg]={n:0,h:0});g.n++;if(t.have)g.h++;}
  for(const t of L){
-  if(t.dg!==last){last=t.dg;const n=t.id==='bright'||t.id.startsWith('sp:')?'':` — concluída <b>${(S.dgc&&S.dgc[t.id.split(':')[0]])||0}×</b>`;h+=`<div class="tgrp"><span>${t.icon} ${t.dg}</span><span style="font-weight:600;color:#cfd8e3">${n}</span></div>`;}
+  if(t.dg!==last){last=t.dg;const n=t.id==='bright'||t.id.startsWith('sp:')?'':` — concluída <b>${(S.dgc&&S.dgc[t.id.split(':')[0]])||0}×</b>`,cl=!!TCOL[t.dg];
+   h+=`<div class="tgrp tg" data-tg="${t.dg.replace(/"/g,'&quot;')}" title="${cl?'Mostrar':'Esconder'} os títulos deste grupo"><span><span class="tga">${cl?'▸':'▾'}</span>${t.icon} ${t.dg} <span style="font-weight:600;color:#9fb0c4">(${GN[t.dg].h}/${GN[t.dg].n})</span></span><span style="font-weight:600;color:#cfd8e3">${n}</span></div>`;}
+  if(TCOL[t.dg])continue;   /* v2.3.9: grupo minimizado */
   const pct=Math.round(t.cur/t.need*100);
   h+=`<div class="row2 trow ${t.have?'':'lock'}"><div class="ri">${t.have?'🏅':'🔒'}</div><div class="rt"><b class="tn" style="color:${t.col}">${t.t}</b><small>${t.desc} • ${t.cur}/${t.need}${t.have?' ✓':''}</small></div><div class="rb">${t.have?(cur===t.id?'<button class="on" data-title="">Em uso</button>':`<button data-title="${t.id}">Usar</button>`):`<span class="muted">${pct}%</span>`}</div></div>`;}
  $('titlesBody').innerHTML=h;
 }
-$('titlesBody').addEventListener('click',e=>{const b=e.target.closest('[data-title]');if(b)ACT({t:'title',id:b.dataset.title});});
+function tColGet(){try{return JSON.parse(localStorage.getItem('mmo_tcol')||'{}')||{};}catch(e){return {};}}
+$('titlesBody').addEventListener('click',e=>{const g=e.target.closest('[data-tg]');if(g){const C=tColGet(),k=g.dataset.tg;if(C[k])delete C[k];else C[k]=1;try{localStorage.setItem('mmo_tcol',JSON.stringify(C));}catch(_){}const sc=$('titlesBody').scrollTop;renderTitles();$('titlesBody').scrollTop=sc;return;}
+ const b=e.target.closest('[data-title]');if(b)ACT({t:'title',id:b.dataset.title});});
 /* =================== MASCOTES (v1.80) ===================
    Modelos em mascotes.glb (mesma pintura fosca dos personagens). Até 2 por personagem; os outros jogadores veem pelo campo "pt".
    Os seus mascotes pegam o ouro do chão sozinhos e, conforme a configuração (S.pcf), os itens — vão até o item e voltam. */
@@ -8134,16 +8144,43 @@ mmC.addEventListener('pointerdown',e=>e.stopPropagation());
 /* ---- MAPA EXPANDIDO (clique no minimapa): pontos de interesse com informação ao passar o mouse ---- */
 const MB={open:false,BW:600,f:{q:1,d:1,m:1,s:1,g:1},pois:[],zones:[]};
 function mbEnsure(){if($('mmBig'))return;const el=document.createElement('div');el.id='mmBig';
- el.innerHTML=`<div class="mbx"><div class="mbh"><b id="mbTitle">🗺️ Mapa</b><span class="muted" style="font-size:11px">Passe o mouse nos pontos para ver detalhes • M, Esc ou clique fora para fechar</span><button id="mbX">✕</button></div>
+ el.innerHTML=`<div class="mbx"><div class="mbh"><b id="mbTitle">🗺️ Mapa</b><span class="muted" style="font-size:11px">Clique no mapa para marcar um destino • passe o mouse nos pontos para ver detalhes • M, Esc ou clique fora para fechar</span><button id="mbX">✕</button></div>
  <div class="mbf"><label><input type="checkbox" data-mf="q" checked> ❗ Missões</label><label><input type="checkbox" data-mf="d" checked> 🏰 Calabouços e portais</label><label><input type="checkbox" data-mf="m" checked> 👹 Monstros</label><label><input type="checkbox" data-mf="s" checked> 🧑 NPCs e serviços</label><label><input type="checkbox" data-mf="g" checked> 👥 Grupo</label></div>
  <canvas id="mbC" width="${MB.BW}" height="${MB.BW}"></canvas></div>`;
  document.body.appendChild(el);const tip=document.createElement('div');tip.id='mmTip';document.body.appendChild(tip);
  el.addEventListener('click',e=>{if(e.target===el||e.target.id==='mbX')mbClose();});
  el.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.mf;if(k){MB.f[k]=e.target.checked?1:0;}});
- const cv=$('mbC');cv.addEventListener('mousemove',e=>mbHover(e));cv.addEventListener('mouseleave',()=>{tip.style.display='none';});
+ const cv=$('mbC');cv.addEventListener('mousemove',e=>mbHover(e));cv.addEventListener('click',e=>wpFromMap(e));   /* v2.3.9: clique marca um destino */cv.addEventListener('mouseleave',()=>{tip.style.display='none';});
 }
 function mbOpen(){if(!S||NET.inst&&DG.cur&&DG.cur.rooms)return;mbEnsure();MB.open=true;$('mmBig').style.display='flex';mbDraw();}
 function mbClose(){MB.open=false;const e=$('mmBig');if(e)e.style.display='none';const t=$('mmTip');if(t)t.style.display='none';}
+/* v2.3.9: MARCADOR DE DESTINO — clique no mapa aberto (M) coloca um 📍; com o mapa fechado aparecem um feixe de luz no lugar,
+   uma seta no chão em volta do personagem apontando para ele e a distância. Clicar de novo no 📍 (ou chegar lá) tira o marcador. */
+let WP=null;const WPM={};
+function wpFromMap(e){if(!S)return;const cv=$('mbC'),r=cv.getBoundingClientRect(),W=MB.BW,k=W/(2*MAP),rg=regionOf(P.pos),cx=REGX[rg];
+ const a=(e.clientX-r.left)*(W/r.width),b=(e.clientY-r.top)*(W/r.height);
+ if(WP&&WP.rg===rg){const pa=W/2+WP.z*k,pb=W/2+(WP.x-cx)*k;if(Math.hypot(a-pa,b-pb)<14){wpClear();toast('📍 Marcador removido');mbDraw();return;}}
+ const x=(b-W/2)/k+cx,z=(a-W/2)/k;WP={x,z,rg};toast('📍 Destino marcado — feche o mapa e siga a seta');mbDraw();}
+function wpClear(){WP=null;for(const k of ['beam','ring','arrow'])if(WPM[k]){try{WPM[k].dispose();}catch(e){}WPM[k]=null;}if(WPM.lbl){WPM.lbl.remove();WPM.lbl=null;}}
+function wpPin(c,a,b,sz){const r=sz*.32;c.save();c.shadowColor='#000';c.shadowBlur=4;c.fillStyle='#ff4a3a';c.strokeStyle='#fff';c.lineWidth=Math.max(1.5,sz*.08);c.beginPath();c.moveTo(a,b);c.lineTo(a-r*.9,b-r*1.5);c.arc(a,b-r*1.9,r,Math.PI*.85,Math.PI*.15);c.closePath();c.fill();c.stroke();c.shadowBlur=0;c.fillStyle='#fff';c.beginPath();c.arc(a,b-r*1.9,r*.42,0,6.283);c.fill();c.restore();}   /* alfinete desenhado (não depende de emoji) */
+function wpDrawBig(c,pr,rg){if(!WP||WP.rg!==rg)return;const[a,b]=pr(WP.x,WP.z),[pa,pb]=pr(P.pos.x,P.pos.z);c.save();c.strokeStyle='#ffd24acc';c.lineWidth=2;c.setLineDash([6,5]);c.beginPath();c.moveTo(pa,pb);c.lineTo(a,b);c.stroke();c.restore();wpPin(c,a,b,26);}
+function wpDrawMini(rg){if(!WP||WP.rg!==rg)return;const W=mmC.width;let[a,b]=mmP(WP.x,WP.z);const[px,py]=mmP(P.pos.x,P.pos.z);
+ if(a<6||b<6||a>W-6||b>W-6){const dx=a-px,dy=b-py,t=Math.min(Math.abs((W/2-8)/(dx||1e-6)),Math.abs((W/2-8)/(dy||1e-6)));a=px+dx*Math.min(1,t);b=py+dy*Math.min(1,t);
+  mmx.save();mmx.translate(a,b);mmx.rotate(Math.atan2(dy,dx));mmx.fillStyle='#ffd24a';mmx.beginPath();mmx.moveTo(7,0);mmx.lineTo(-5,-5);mmx.lineTo(-5,5);mmx.closePath();mmx.fill();mmx.restore();return;}
+ wpPin(mmx,a,b,15);}
+function wpMesh(){const B=BABYLON.MeshBuilder,mat=(c,al)=>{const m=new BABYLON.StandardMaterial('wpm',scene);m.disableLighting=true;m.emissiveColor=BABYLON.Color3.FromHexString(c);m.alpha=al;m.backFaceCulling=false;return m;};
+ WPM.beam=B.CreateCylinder('wpBeam',{height:26,diameterTop:.35,diameterBottom:.9,tessellation:12},scene);WPM.beam.material=mat('#ffd24a',.28);WPM.beam.isPickable=false;
+ WPM.ring=B.CreateTorus('wpRing',{diameter:2.4,thickness:.12,tessellation:32},scene);WPM.ring.material=mat('#ffd24a',.9);WPM.ring.isPickable=false;
+ const v=new BABYLON.VertexData();v.positions=[0,0,1.05, .62,0,-.45, 0,0,-.1, -.62,0,-.45];v.indices=[0,1,2,0,2,3];v.normals=[0,1,0,0,1,0,0,1,0,0,1,0];
+ WPM.arrow=new BABYLON.Mesh('wpArrow',scene);v.applyToMesh(WPM.arrow);WPM.arrow.material=mat('#ffd24a',.92);WPM.arrow.isPickable=false;WPM.arrow.scaling.setAll(1.35);WPM.arrow.material.zOffset=-4;
+ WPM.lbl=document.createElement('div');WPM.lbl.className='wpLbl';labels.appendChild(WPM.lbl);}
+scene.onBeforeRenderObservable.add(()=>{if(!WP||!S)return;
+ const here=WP.rg===regionOf(P.pos)&&!NET.inst;if(!WPM.beam)wpMesh();
+ const d=Math.hypot(WP.x-P.pos.x,WP.z-P.pos.z);if(here&&d<2.5){wpClear();toast('📍 Você chegou ao destino');return;}
+ for(const k of ['beam','ring','arrow'])WPM[k].setEnabled(here&&!MB.open);if(!here||MB.open){WPM.lbl.style.display='none';WPM.lbl.__d='none';return;}
+ const t=performance.now();WPM.beam.position.set(WP.x,13,WP.z);WPM.ring.position.set(WP.x,.08,WP.z);WPM.ring.scaling.setAll(1+.15*Math.sin(t/260));
+ const ax=(WP.x-P.pos.x)/d,az=(WP.z-P.pos.z)/d,R=3.1+.15*Math.sin(t/180);WPM.arrow.position.set(P.pos.x+ax*R,.3,P.pos.z+az*R);WPM.arrow.rotation.y=Math.atan2(ax,az);WPM.arrow.setEnabled(d>4);
+ WPM.lbl.textContent='📍 '+Math.round(d)+' m';place(WPM.lbl,{x:WP.x,y:0,z:WP.z},3.2);});
 document.addEventListener('keydown',e=>{if(MB.open&&e.key==='Escape'){e.stopPropagation();mbClose();}},true);
 mmC.addEventListener('click',()=>{if(MB.open)mbClose();else mbOpen();});
 mmC.title='Clique para expandir o mapa';
@@ -8182,6 +8219,7 @@ function mbDraw(){
  if(F.m){c.fillStyle='#ff5a5a';for(const m of monsters){if(!m.alive||m.hid||regionOf(m.pos)!==rg)continue;const [a,b]=pr(m.pos.x,m.pos.z);c.beginPath();c.arc(a,b,m.T.boss?4:2,0,6.283);c.fill();}}
  // grupo + você
  if(F.g)for(const o of partyPeers()){const p=o.p;if((p.inst||0)||regionOf(p)!==rg)continue;const [a,b]=pr(p.x,p.z);ic(a,b,((CLASSES[o.cls]||{}).i)||'👤',15,'#38c8ff');pois.push({a,b,r:12,html:`<b>👥 ${esc(o.n)}</b><br>Nv ${p.level} • ${placeOf(p)}<br>a ${Math.round(Math.hypot(p.x-P.pos.x,p.z-P.pos.z))} m de você`});}
+ wpDrawBig(c,pr,rg);
  {const [a,b]=pr(P.pos.x,P.pos.z);c.fillStyle='#fff';c.strokeStyle='#000';c.lineWidth=2;c.beginPath();c.arc(a,b,6,0,6.283);c.fill();c.stroke();c.font='11px sans-serif';c.fillStyle='#000';c.fillText('★',a,b+.5);pois.push({a,b,r:11,html:`<b>📍 Você</b><br>${placeOf(P.pos)}`});}
  MB.pois=pois;MB.zones=zs;
 }
@@ -8256,7 +8294,7 @@ function drawMini(){
  for(const n of NPCS){const[a,b]=mmP(n.pos.x,n.pos.z);mmx.fillStyle=n.portal?'#b58cff':'#ffe28a';mmx.fillRect(a-2,b-2,4,4);}
  for(const d of drops){const[a,b]=mmP(d.x,d.z);mmx.fillStyle='#ffd24a';mmx.fillRect(a-1,b-1,2,2);}
  for(const m of monsters){if(!m.alive)continue;const[a,b]=mmP(m.pos.x,m.pos.z);mmx.fillStyle=m.T.boss?'#ff3bff':'#ff5a5a';mmx.beginPath();mmx.arc(a,b,m.T.boss?3.5:1.8,0,6.283);mmx.fill();}
- pkMini();partyMini(mmP);const[px,py]=mmP(P.pos.x,P.pos.z);mmx.fillStyle='#fff';mmx.beginPath();mmx.arc(px,py,3.2,0,6.283);mmx.fill();mmx.strokeStyle='#000';mmx.lineWidth=1;mmx.stroke();
+ wpDrawMini(rg);pkMini();partyMini(mmP);const[px,py]=mmP(P.pos.x,P.pos.z);mmx.fillStyle='#fff';mmx.beginPath();mmx.arc(px,py,3.2,0,6.283);mmx.fill();mmx.strokeStyle='#000';mmx.lineWidth=1;mmx.stroke();
 }
 function updateNpcMarkers(){
  for(const n of NPCS){let mark='';const l=npcQuests(n.id);
@@ -8525,7 +8563,8 @@ function renderSelect(){
   lkShow(lkHtml(c.fem));const need=lkNeed(c);
   cap.innerHTML=`<b>${c.name?esc(c.name):'(sem nome)'}</b><small>${need?'✨ Personalize o visual para entrar (obrigatório). Depois de salvo, ele não muda mais.':'Edição liberada nesta atualização (cabelos novos). Depois de salvar, o visual trava de novo.'}</small>`;
   act.innerHTML=`${c.name?'':'<input id="newName" maxlength="16" placeholder="Nome do personagem (obrigatório)" autocomplete="off">'}<button class="go" id="selGo">✔ Salvar visual e entrar no jogo</button><div class="selRow">${back}${helmBtn}${fzBtn(c)}</div><div id="nameMsg" class="muted" style="color:#ff8a7a;min-height:1.2em"></div>`;act.style.display='flex';return;}
- $('clsList').innerHTML=Object.keys(CLASSES).map(k=>{const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
+ $('clsList').innerHTML=Object.keys(CLASSES).filter(k=>!(RULES.CLS_OFF||{})[k]).map(k=>{   /* v2.3.9: classes desligadas (Tanque, por enquanto) não aparecem */
+ const c=CLASSES[k];return `<div class="opt card${SEL.t==='cls'&&SEL.id===k?' sel':''}" data-cls="${k}"><span class="oi">${c.i}</span><b>${c.n}</b></div>`;}).join('');
  if(SEL.t!=='cls'){info.innerHTML='<p class="muted">Escolha uma classe para ver a descrição.</p>';lkShow('');cap.innerHTML='<b>Criar personagem</b><small>Escolha uma classe à esquerda</small>';act.innerHTML=back?`<div class="selRow">${back}</div>`:'';act.style.display=back?'flex':'none';return;}
  const c=CLASSES[SEL.id],nm0=$('newName')?$('newName').value:'';
  info.innerHTML=`<p>${c.d}</p><p>Atributo principal: <b>${STN[c.main]}</b><br>FOR ${c.base.str} · AGI ${c.base.agi} · INT ${c.base.int} · VIT ${c.base.vit}</p><div class="sg">${c.skills.map(s=>`<span title="${esc(s.d)}">${s.i} ${s.n}</span>`).join('')}</div><p class="muted">👁 A prévia mostra o equipamento mais forte do jogo. É só visual: o personagem novo começa sem esses itens.</p>`;

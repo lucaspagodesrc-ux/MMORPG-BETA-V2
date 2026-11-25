@@ -59,7 +59,8 @@ function astralMo(mo, kind, tier) {
   const mc = Object.keys(OG).filter(k => /^mc_/.test(k) && OG[k].vset === 2); return mc.length ? mc[Math.floor(Math.random() * mc.length)] : mo;
 }
 const SUF=['do Dragão','da Tempestade','da Sombra','do Titã','da Aurora','do Lobo'];
-const MATS={pelepolar:{n:'Pelagem Polar',i:'🤍',v:280},runabar:{n:'Runa Bárbara',i:'🔰',v:330},ossogelo:{n:'Osso Congelado',i:'❄️',v:380},fiocristal:{n:'Fio de Cristal',i:'🕸️',v:430},coracaogelo:{n:'Coração de Gelo',i:'💙',v:560},essenciagelo:{n:'Essência Glacial',i:'🔷',v:640},nucleogelo:{n:'Núcleo Glacial',i:'💠',v:2200},cristalpuro:{n:'Cristal Eterno',i:'💎',v:2800},escamagelo:{n:'Escama Glacial',i:'🐲',v:4500},gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
+const MATS={/* v2.3.9: materiais de Vulcânia (forja do Brakk) */ escamamagma:{n:'Escama de Magma',i:'🦎',v:700},ferraobs:{n:'Ferrão de Obsidiana',i:'🗡️',v:760},nucleolava:{n:'Núcleo de Lava',i:'🌋',v:820},chamaeterna:{n:'Chama Eterna',i:'🔥',v:880},chifreinf:{n:'Chifre Infernal',i:'😈',v:960},cinzarunica:{n:'Cinza Rúnica',i:'⚱️',v:1040},coracaoifrit:{n:'Coração do Ifrit',i:'❤️‍🔥',v:5200},escamavulc:{n:'Escama do Dragão Ancestral',i:'🐉',v:7800},
+ pelepolar:{n:'Pelagem Polar',i:'🤍',v:280},runabar:{n:'Runa Bárbara',i:'🔰',v:330},ossogelo:{n:'Osso Congelado',i:'❄️',v:380},fiocristal:{n:'Fio de Cristal',i:'🕸️',v:430},coracaogelo:{n:'Coração de Gelo',i:'💙',v:560},essenciagelo:{n:'Essência Glacial',i:'🔷',v:640},nucleogelo:{n:'Núcleo Glacial',i:'💠',v:2200},cristalpuro:{n:'Cristal Eterno',i:'💎',v:2800},escamagelo:{n:'Escama Glacial',i:'🐲',v:4500},gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
  seda:{n:'Seda de Aranha',i:'🕸️',v:12},presa:{n:'Presa de Orc',i:'🦷',v:18},cristal:{n:'Cristal de Gelo',i:'🧊',v:25},brasa:{n:'Brasa Infernal',i:'🔥',v:35},escama:{n:'Escama de Dragão',i:'🐉',v:300},
  ferrao:{n:'Ferrão de Escorpião',i:'🦂',v:60},linho:{n:'Linho Amaldiçoado',i:'🧻',v:90},veneno:{n:'Glândula de Naja',i:'🐍',v:120},cristalsol:{n:'Cristal do Deserto',i:'🔶',v:160},garra:{n:'Garra de Chacal',i:'🐾',v:200},ankh:{n:'Ankh Sagrado',i:'☥',v:260},obsidiana:{n:'Obsidiana Negra',i:'⬛',v:700},selo:{n:'Selo do Faraó',i:'🔱',v:1200}};
 const POTS={hp:{n:'Poção de Vida',i:'🧪',v:12,pct:.4,d:'Recupera 40% da vida'},mp:{n:'Poção de Mana',i:'🔷',v:12,pct:.4,d:'Recupera 40% da mana'},
@@ -485,15 +486,15 @@ DUNGEONS.push({
 const vcMob=(base,o)=>{const L=(o.lv[0]+o.lv[1])/2,k=L-100,B0=MT[base];return Object.assign({},B0,{model:B0.model||base,eva:B0.eva||0,boss:false,hp:Math.round(16000+k*750),atk:Math.round(950+k*21),def:Math.round(240+k*5.2),xp:Math.round(xpNeed(L)/55),gold:[Math.round(1500+k*60),Math.round(2400+k*90)],aggro:9,resp:15,leash:20,eq:.17,pot:.07,mats:{}},o);};
 const vcBoss=(base,o)=>{const L=o.lv[0],k=L-100,B0=MT[base];return Object.assign({},B0,{model:B0.model||base,boss:true,hp:Math.round(320000+k*16000),atk:Math.round(1500+k*24),def:Math.round(300+k*5),xp:Math.round(xpNeed(L)*.45),gold:[30000+k*1200,45000+k*1800],resp:400,leash:26,eq:1,pot:1,rb:3,matMax:3,mats:{}},o);};
 Object.assign(MT,{
- vc_sal:vcMob('cobra',{n:'Serpente de Magma',lv:[100,104],tint:'#ff7a2a',sc:1.15}),
- vc_esc:vcMob('escorpiao',{n:'Escorpião de Obsidiana',lv:[105,109],tint:'#5a2a3a',sc:1.15}),
- vc_gol:vcMob('golem',{n:'Golem de Lava',lv:[110,114],tint:'#ff5a1a',sc:.62,rng:2.6,atkInt:1700,spd:2.4,h:3.6}),
- vc_ele:vcMob('elemental',{n:'Elemental de Fogo',lv:[115,119],tint:'#ff3a1a',rng:5.5,atkInt:1700}),
- vc_dem:vcMob('demonio',{n:'Demônio Infernal',lv:[120,124],tint:'#b01a1a',sc:1.15}),
- vc_cav:vcMob('esqueleto',{n:'Cavaleiro das Cinzas',lv:[125,129],tint:'#ff9a4a',sc:1.25}),
- vc_colosso:vcBoss('colosso',{n:'Colosso de Magma',lv:[112,112],tint:'#ff6a2a',sc:1.25}),
- vc_ifrit:vcBoss('demonio',{n:'Ifrit, Senhor das Chamas',lv:[122,122],tint:'#ffb02a',sc:1.9,rng:4,atkInt:1600,h:6}),
- vc_dragao:vcBoss('dragao',{n:'Dragão Vulcânico Ancestral',lv:[130,130],tint:'#ff4a10',sc:1.15})
+ vc_sal:vcMob('cobra',{n:'Serpente de Magma',lv:[100,104],tint:'#ff7a2a',sc:1.15,mats:{escamamagma:.45,essencia:.3}}),
+ vc_esc:vcMob('escorpiao',{n:'Escorpião de Obsidiana',lv:[105,109],tint:'#5a2a3a',sc:1.15,mats:{ferraobs:.45,essencia:.3}}),
+ vc_gol:vcMob('golem',{n:'Golem de Lava',lv:[110,114],tint:'#ff5a1a',sc:.62,rng:2.6,atkInt:1700,spd:2.4,h:3.6,mats:{nucleolava:.45,essencia:.3}}),
+ vc_ele:vcMob('elemental',{n:'Elemental de Fogo',lv:[115,119],tint:'#ff3a1a',rng:5.5,atkInt:1700,mats:{chamaeterna:.45,essencia:.3}}),
+ vc_dem:vcMob('demonio',{n:'Demônio Infernal',lv:[120,124],tint:'#b01a1a',sc:1.15,mats:{chifreinf:.45,essencia:.3}}),
+ vc_cav:vcMob('esqueleto',{n:'Cavaleiro das Cinzas',lv:[125,129],tint:'#ff9a4a',sc:1.25,mats:{cinzarunica:.45,essencia:.3}}),
+ vc_colosso:vcBoss('colosso',{n:'Colosso de Magma',lv:[112,112],tint:'#ff6a2a',sc:1.25,mats:{nucleolava:1,ferraobs:1,essencia:1}}),
+ vc_ifrit:vcBoss('demonio',{n:'Ifrit, Senhor das Chamas',lv:[122,122],tint:'#ffb02a',sc:1.9,rng:4,atkInt:1600,h:6,mats:{coracaoifrit:1,chifreinf:1,essencia:1}}),
+ vc_dragao:vcBoss('dragao',{n:'Dragão Vulcânico Ancestral',lv:[130,130],tint:'#ff4a10',sc:1.15,mats:{escamavulc:1,coracaoifrit:1,essencia:1}})
 });
 Object.assign(OG,{
  vc_sal:{sf:'da Salamandra',col:'#ff8a3a',col2:'#a03a10',el:'fire',ft:'hood',vset:1},
@@ -746,6 +747,15 @@ const RECIPES=[
  {id:'g_anel',at:'ferreiro_gelo',n:'Anel do Yeti Ancião (Nv 94)',icon:'💍',d:'Épico',ing:{coracaogelo:8,fiocristal:6,essencia:40},gold:260000,out:(cls)=>genItem('ring',94,3,undefined,undefined,0,'yeti_anciao')},
  {id:'g_gelo',at:'ferreiro_gelo',n:'Arma Glacial (Nv 98)',icon:'❄️',d:'Arma da sua classe • Épico',ing:{essenciagelo:10,coracaogelo:8,nucleogelo:2,essencia:50},gold:340000,out:(cls)=>genItem('weapon',98,3,cls,cls,0,'espectro')},
  {id:'g_dragao',at:'ferreiro_gelo',n:'Arma do Dragão Glacial (Nv 102)',icon:'🐲',d:'Arma da sua classe • Épico',ing:{escamagelo:3,nucleogelo:4,cristalpuro:4,essencia:60},gold:600000,out:(cls)=>genItem('weapon',102,3,cls,cls,0,'dragao_gelo')},
+ /* v2.3.9: forja de Vulcânia (Brakk, o Ferreiro da Lava) — antes ela abria vazia */
+ {id:'l_arma1',at:'ferreiro_lava',n:'Arma de Magma (Nv 104)',icon:'⚒️',d:'Arma da sua classe • Épico',ing:{escamamagma:10,ferraobs:6,essencia:60},gold:700000,out:(cls)=>genItem('weapon',104,3,cls,cls,0,'vc_sal')},
+ {id:'l_arm',at:'ferreiro_lava',n:'Armadura de Obsidiana (Nv 108)',icon:'🥋',d:'Épico',ing:{ferraobs:12,escamamagma:8,essencia:60},gold:850000,out:(cls)=>genItem('armor',108,3,undefined,undefined,0,'vc_esc')},
+ {id:'l_elmo',at:'ferreiro_lava',n:'Elmo do Golem de Lava (Nv 112)',icon:'🪖',d:'Épico',ing:{nucleolava:12,ferraobs:6,essencia:70},gold:1000000,out:(cls)=>genItem('helmet',112,3,undefined,undefined,0,'vc_gol')},
+ {id:'l_botas',at:'ferreiro_lava',n:'Botas da Chama Viva (Nv 116)',icon:'👢',d:'Épico',ing:{chamaeterna:12,nucleolava:8,essencia:70},gold:1200000,out:(cls)=>genItem('boots',116,3,undefined,undefined,0,'vc_ele')},
+ {id:'l_anel',at:'ferreiro_lava',n:'Anel do Inferno (Nv 120)',icon:'💍',d:'Épico',ing:{chifreinf:10,chamaeterna:6,essencia:80},gold:1500000,out:(cls)=>genItem('ring',120,3,undefined,undefined,0,'vc_dem')},
+ {id:'l_brinco',at:'ferreiro_lava',n:'Brinco das Cinzas (Nv 124)',icon:'🧿',d:'Épico',ing:{cinzarunica:10,chifreinf:6,essencia:80},gold:1800000,out:(cls)=>genItem('earring',124,3,undefined,undefined,0,'vc_cav')},
+ {id:'l_ifrit',at:'ferreiro_lava',n:'Arma de Ifrit (Nv 124)',icon:'🔥',d:'Arma da sua classe • Épico',ing:{coracaoifrit:3,chifreinf:8,nucleolava:6,essencia:90},gold:2200000,out:(cls)=>genItem('weapon',124,3,cls,cls,0,'vc_ifrit')},
+ {id:'l_dragao',at:'ferreiro_lava',n:'Arma do Dragão Ancestral (Nv 130)',icon:'🐉',d:'Arma da sua classe • Épico',ing:{escamavulc:3,coracaoifrit:2,cinzarunica:8,essencia:120},gold:3000000,out:(cls)=>genItem('weapon',130,3,cls,cls,0,'vc_dragao')},
  {id:'s_farao',at:'ferreira',n:'Arma Faraônica (Nv 74)',icon:'👑',d:'Arma da sua classe • Épico',ing:{selo:3,obsidiana:4,ankh:10,essencia:30},gold:80000,out:(cls)=>genItem('weapon',74,3,cls,cls,0,'farao')}];
 const SHOPT=['missoes','comprar','vender'];
 const NPCS=[
@@ -2136,7 +2146,7 @@ function brkRecipe(it) {   // receita que produz esse tipo de item (slot + níve
   if (!_brk) { _brk = {}; for (const r of RECIPES) { try { const o = r.out('guerreiro'); if (o && o.k === 'eq') _brk[o.slot + '|' + o.ilvl + '|' + o.rar] = r; } catch (e) {} } }
   return _brk[it.slot + '|' + it.ilvl + '|' + it.rar] || null;
 }
-const BRK_BR = [{ to: 30, m: ['ferro', 'couro', 'osso'], r: 'essencia' }, { to: 68, m: ['ferrao', 'linho', 'veneno'], r: 'cristalsol' }, { to: 9999, m: ['pelepolar', 'runabar', 'ossogelo'], r: 'fiocristal' }];
+const BRK_BR = [{ to: 30, m: ['ferro', 'couro', 'osso'], r: 'essencia' }, { to: 68, m: ['ferrao', 'linho', 'veneno'], r: 'cristalsol' }, { to: 99, m: ['pelepolar', 'runabar', 'ossogelo'], r: 'fiocristal' }, { to: 9999, m: ['escamamagma', 'ferraobs', 'nucleolava'], r: 'chamaeterna' }];   // v2.3.9: itens de Vulcânia viram materiais de Vulcânia
 /** O que sai ao quebrar: lista [{k:'mat',id,n}] já somada. src: 'receita' | 'estimado' */
 function breakReturn(it) {
   const acc = {}, add = (id, n) => { if (n > 0 && MATS[id]) acc[id] = (acc[id] || 0) + n; };
@@ -2542,6 +2552,8 @@ const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, spin3: 
    x = { dist: distância até o alvo, n: nº de alvos (saltos), hits } — o servidor chama sem x (usa o mínimo), o cliente passa os valores reais */
 /* v2.3.2: classes mais lentas nas habilidades (animação e lançamento) — guerreiro +40% */
 // v2.3.6: Guerreiro com +60% de dano nas habilidades (Golpe 1.2, Giro 2.4, Investida 2.88, Terremoto 3.52, Trovão 9.6, Fúria +32%) e Chuva de Adagas do Assassino +50% (1.05)
+// v2.3.9: classes fora da criação de personagem por enquanto (os personagens que já existem continuam funcionando)
+const CLS_OFF = { tanque: 1 };
 const SK_SLOW = { guerreiro: 1.4 };
 const skSlow = cls => SK_SLOW[cls] || 1;
 const castMs = (cls, i, x) => {
@@ -2576,7 +2588,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return Math.round(((s && ANIM[s.anim]) || 260) * skSlow(cls)); };
 Object.assign(R, { SK_SLOW, skSlow, LOOK, LK_DEF, LOOK_VER, lkCanEdit, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, DIA_GOLD, DIA_XMAX, AMP_ATK, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, DIA_GOLD, DIA_XMAX, AMP_ATK, CLS_OFF, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);
