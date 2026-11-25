@@ -71,14 +71,14 @@ const CLASSES={
  guerreiro:{n:'Guerreiro',i:'⚔️',wi:'⚔️',main:'str',base:{str:10,agi:5,int:2,vit:9},range:2.8,ranged:false,
   d:'Combate corpo a corpo com montante (espada grande, sem escudo). Muita vida e dano em área.',
   skills:[
-   {n:'Golpe Poderoso',i:'💥',lv:1,cd:5,cdMin:5,mp:8,type:'stab3',mult:1.45,range:3.6,anim:'stab',color:'#ffcf6b',d:'Três estocadas rápidas para a frente (o dano total continua o mesmo, dividido nas 3 estocadas).'},
-   {n:'Giro de Lâmina',i:'🌀',lv:3,cd:10,cdMin:10,mp:14,type:'aoeSelf',mult:2.5,radius:3.6,anim:'spin',color:'#ffd27a',d:'O personagem gira com a lâmina golpeando todos ao redor.'},
-   {n:'Investida',i:'⚡',lv:5,cd:8,mp:12,type:'dash',mult:2.8,range:10,color:'#8fd3ff',d:'Avança até o alvo e ataca.'},
+   {n:'Golpe Poderoso',i:'💥',lv:1,cd:5,cdMin:5,mp:8,type:'stab3',mult:1.2,range:3.6,anim:'stab',color:'#ffcf6b',d:'Três estocadas rápidas para a frente (o dano total continua o mesmo, dividido nas 3 estocadas).'},
+   {n:'Giro de Lâmina',i:'🌀',lv:3,cd:10,cdMin:10,mp:14,type:'aoeSelf',mult:2.4,radius:3.6,anim:'spin',color:'#ffd27a',d:'O personagem gira com a lâmina golpeando todos ao redor.'},
+   {n:'Investida',i:'⚡',lv:5,cd:8,mp:12,type:'dash',mult:2.88,range:10,color:'#8fd3ff',d:'Avança até o alvo e ataca.'},
    {n:'Grito de Guerra',i:'📣',lv:8,cd:60,cdMin:60,mp:20,type:'buff',buffs:{dmg:.35,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido. Recarga: 60s.'},
-   {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:3.2,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
+   {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:3.52,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
    {n:'Sangue de Guerra',i:'🩸',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.35,buffs:{dmg:.1},fixBuff:1,dur:20,fixDur:1,color:'#ff6b6b',d:'Auto buff: recupera 35% da vida máxima e dá +10% de dano base por 20s.'},
-   {n:'Fúria do Bárbaro',i:'😡',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.5,crit:.1,flat:10,dmg:2.2},flatMin:10,flatMax:100,fixBuff:1,dur:10,fixDur:1,color:'#d83a2a',d:'Forma bárbara por 10s: o personagem fica maior, exala fumaça vermelha e a espada pega fogo. +10 de dano base no nível 1 (até +100 no nível 20), +20% de dano, +10% de crítico, +50% de velocidade de ataque e +20% de velocidade de movimento. Só o ataque básico funciona nessa forma.'},
-   {n:'Trovão',i:'🌩️',lv:25,cd:45,cdMin:45,mp:40,type:'thunder',mult:7,range:8,radius:4.5,dot:240,dotDur:8,anim:'sky',color:'#bfe3ff',d:'Aponta a espada para o céu e faz cair um raio no alvo: dano em área e depois dano contínuo de 240 por segundo durante 8s nos atingidos.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
+   {n:'Fúria do Bárbaro',i:'😡',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.5,crit:.1,flat:10,dmg:.32},flatMin:10,flatMax:100,fixBuff:1,dur:10,fixDur:1,color:'#d83a2a',d:'Forma bárbara por 10s: o personagem fica maior, exala fumaça vermelha e a espada pega fogo. +10 de dano base no nível 1 (até +100 no nível 20), +32% de dano, +10% de crítico, +50% de velocidade de ataque e +20% de velocidade de movimento. Só o ataque básico funciona nessa forma.'},
+   {n:'Trovão',i:'🌩️',lv:25,cd:45,cdMin:45,mp:40,type:'thunder',mult:9.6,range:8,radius:4.5,dot:240,dotDur:8,anim:'sky',color:'#bfe3ff',d:'Aponta a espada para o céu e faz cair um raio no alvo: dano em área e depois dano contínuo de 240 por segundo durante 8s nos atingidos.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
   d:'Ataque à distância. Crítico alto e mobilidade.',
   skills:[
    {n:'Tiro Preciso',i:'🎯',lv:1,cd:3,mp:8,type:'single',mult:2.3,range:11,proj:'arrow',color:'#fff2a8',d:'Disparo certeiro em um alvo.'},
@@ -105,7 +105,7 @@ const CLASSES={
   skills:[
    {n:'Corte Rápido',i:'🔪',lv:1,cd:2.5,mp:6,type:'xslash',mult:2.0,range:3.4,color:'#c79bff',anim:'both',after:[1,3],cbonus:.4,d:'Cruza os braços e solta um corte em "X" com as duas lâminas: o corte avança 1 m à frente e fere todos os monstros no caminho. COMBO após Passo Sombrio ou Dança das Lâminas.'},
    {n:'Passo Sombrio',i:'💨',lv:3,cd:7,mp:12,type:'dash',mult:1.2,range:6,knee:1,aoeR:1.6,maxT:3,anim:'stomp',color:'#8f7aff',d:'Avança até o alvo (alcance curto) com uma joelhada: ao acertar solta fumaça e fere até 3 monstros bem próximos uns dos outros. Abertura de combo.'},
-   {n:'Chuva de Adagas',i:'🗡️',lv:5,cd:8,mp:16,type:'daggerFan',mult:1.7,range:8,dagMin:1,dagMax:5,color:'#e0c4ff',after:[1,0],cbonus:.5,d:'Lança adagas em leque (1 no nível 1, até 5 no nível máximo), com dano em área. Elas ficam presas no chão por 2s e voltam ao personagem causando dano de novo. Use a habilidade de novo enquanto estiverem presas para chamá-las de volta na hora. COMBO após Passo Sombrio ou Corte Rápido.'},
+   {n:'Chuva de Adagas',i:'🗡️',lv:5,cd:8,mp:16,type:'daggerFan',mult:1.05,range:8,dagMin:1,dagMax:5,color:'#e0c4ff',after:[1,0],cbonus:.5,d:'Lança adagas em leque (1 no nível 1, até 5 no nível máximo), com dano em área. Elas ficam presas no chão por 2s e voltam ao personagem causando dano de novo. Use a habilidade de novo enquanto estiverem presas para chamá-las de volta na hora. COMBO após Passo Sombrio ou Corte Rápido.'},
    {n:'Dança das Lâminas',i:'🌪️',lv:8,cd:9,mp:18,type:'aoeSelf',mult:1.6,radius:3.8,color:'#ff7ad9',anim:'spin',after:[0,1,2],cbonus:.6,reset:[1],blades:1,d:'O personagem gira com as lâminas, lançando lâminas que acompanham o giro e ferem todos em volta. COMBO reinicia o Passo Sombrio.'},
    {n:'Marca da Morte',i:'🎯',lv:12,cd:14,mp:20,type:'mark',mult:.6,range:9,mark:6,recall:20,color:'#ff4a6a',after:[3],cbonus:.3,d:'Lança uma faca no alvo: causa um pouco de dano e o marca por 6s (alvo marcado recebe +35% de dano). Use de novo enquanto a marca durar para voar até o alvo (até 20 m).'},
    {n:'Véu Sombrio',i:'🌑',lv:15,cd:40,cdMin:40,mp:25,type:'buff',buffs:{evade:.35,crit:.3,haste:.3},dur:20,fixDur:1,color:'#7a6aff',d:'+35% esquiva, +30% crítico e +30% velocidade por 20s.'},
@@ -2539,6 +2539,7 @@ const ANIM = { shield: 300, jump: 800, beam: 750, throw: 450, spin: 700, spin3: 
 /* tempo de exibição de cada habilidade (ms): enquanto ele não acaba, outra habilidade não pode ser lançada.
    x = { dist: distância até o alvo, n: nº de alvos (saltos), hits } — o servidor chama sem x (usa o mínimo), o cliente passa os valores reais */
 /* v2.3.2: classes mais lentas nas habilidades (animação e lançamento) — guerreiro +40% */
+// v2.3.6: Guerreiro com +60% de dano nas habilidades (Golpe 1.2, Giro 2.4, Investida 2.88, Terremoto 3.52, Trovão 9.6, Fúria +32%) e Chuva de Adagas do Assassino +50% (1.05)
 const SK_SLOW = { guerreiro: 1.4 };
 const skSlow = cls => SK_SLOW[cls] || 1;
 const castMs = (cls, i, x) => {
