@@ -72,13 +72,13 @@ const CLASSES={
   d:'Combate corpo a corpo com montante (espada grande, sem escudo). Muita vida e dano em área.',
   skills:[
    {n:'Golpe Poderoso',i:'💥',lv:1,cd:5,cdMin:5,mp:8,type:'stab3',mult:1.45,range:3.6,anim:'stab',color:'#ffcf6b',d:'Três estocadas rápidas para a frente (o dano total continua o mesmo, dividido nas 3 estocadas).'},
-   {n:'Giro de Lâmina',i:'🌀',lv:3,cd:10,cdMin:10,mp:14,type:'aoeSelf',mult:3.5,radius:3.6,anim:'spin',color:'#ffd27a',d:'O personagem gira com a lâmina golpeando todos ao redor.'},
-   {n:'Investida',i:'⚡',lv:5,cd:8,mp:12,type:'dash',mult:3.8,range:10,color:'#8fd3ff',d:'Avança até o alvo e ataca.'},
-   {n:'Grito de Guerra',i:'📣',lv:8,cd:60,cdMin:60,mp:20,type:'buff',buffs:{dmg:.55,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido. Recarga: 60s.'},
-   {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:4.2,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
+   {n:'Giro de Lâmina',i:'🌀',lv:3,cd:10,cdMin:10,mp:14,type:'aoeSelf',mult:2.5,radius:3.6,anim:'spin',color:'#ffd27a',d:'O personagem gira com a lâmina golpeando todos ao redor.'},
+   {n:'Investida',i:'⚡',lv:5,cd:8,mp:12,type:'dash',mult:2.8,range:10,color:'#8fd3ff',d:'Avança até o alvo e ataca.'},
+   {n:'Grito de Guerra',i:'📣',lv:8,cd:60,cdMin:60,mp:20,type:'buff',buffs:{dmg:.35,shield:.15},dur:12,color:'#ff9f5a',d:'+35% dano e -15% dano recebido. Recarga: 60s.'},
+   {n:'Terremoto',i:'🌋',lv:12,cd:10,cdMin:10,mp:28,type:'aoeSelf',mult:3.2,radius:5,slow:3000,color:'#c9a56b',d:'Finca a espada no chão: dano em área e lentidão.'},
    {n:'Sangue de Guerra',i:'🩸',lv:15,cd:60,cdMin:60,mp:25,type:'heal',pct:.35,buffs:{dmg:.1},fixBuff:1,dur:20,fixDur:1,color:'#ff6b6b',d:'Auto buff: recupera 35% da vida máxima e dá +10% de dano base por 20s.'},
    {n:'Fúria do Bárbaro',i:'😡',lv:20,cd:60,cdMin:60,mp:35,type:'transform',buffs:{haste:.2,aspd:.5,crit:.1,flat:10,dmg:2.2},flatMin:10,flatMax:100,fixBuff:1,dur:10,fixDur:1,color:'#d83a2a',d:'Forma bárbara por 10s: o personagem fica maior, exala fumaça vermelha e a espada pega fogo. +10 de dano base no nível 1 (até +100 no nível 20), +20% de dano, +10% de crítico, +50% de velocidade de ataque e +20% de velocidade de movimento. Só o ataque básico funciona nessa forma.'},
-   {n:'Trovão',i:'🌩️',lv:25,cd:45,cdMin:45,mp:40,type:'thunder',mult:10,range:8,radius:4.5,dot:240,dotDur:8,anim:'sky',color:'#bfe3ff',d:'Aponta a espada para o céu e faz cair um raio no alvo: dano em área e depois dano contínuo de 240 por segundo durante 8s nos atingidos.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
+   {n:'Trovão',i:'🌩️',lv:25,cd:45,cdMin:45,mp:40,type:'thunder',mult:7,range:8,radius:4.5,dot:240,dotDur:8,anim:'sky',color:'#bfe3ff',d:'Aponta a espada para o céu e faz cair um raio no alvo: dano em área e depois dano contínuo de 240 por segundo durante 8s nos atingidos.'}]}, arqueiro:{n:'Arqueiro',i:'🏹',wi:'🏹',main:'agi',base:{str:4,agi:11,int:3,vit:6},range:9.5,ranged:true,proj:'arrow',pcol:'#e8e0b0',
   d:'Ataque à distância. Crítico alto e mobilidade.',
   skills:[
    {n:'Tiro Preciso',i:'🎯',lv:1,cd:3,mp:8,type:'single',mult:2.3,range:11,proj:'arrow',color:'#fff2a8',d:'Disparo certeiro em um alvo.'},
