@@ -4499,6 +4499,14 @@ const GLB=(()=>{
    if(!/^(Shield|A?Sword|A?Weapon|A?Quiver|Body0|BodySkin0|FzBody|Head0|Face0|Skin0|Hair[0-6]|Beard|Must)/.test(m.name))try{GINK_(m,.012);}catch(e){}  /* rosto e armas sem contorno (escurecia o rosto) */}
   /* v1.68: as animações são calculadas aqui (quadro e mistura por peso), sem o tocador do Babylon — com velocidade 0 ele prendia tudo no 1º quadro (personagem deslizava) */
   const AG={},CH=new Map();for(const g of I.animationGroups){g.stop();AG[g.name]={from:g.from,to:g.to};for(const ta of g.targetedAnimations){const k=ta.target.uniqueId+'|'+ta.animation.targetProperty;let e=CH.get(k);if(!e){e={t:ta.target,p:ta.animation.targetProperty,a:{}};CH.set(k,e);}e.a[g.name]=ta.animation;}}
+  /* v2.4.0: a fantasia pega emprestadas da classe as animações que não tem (dança, sim/não, beber, pegar...) — só os giros dos ossos, pelo nome */
+  if(fz){const bk=C[cls]&&C[cls].st===1?cls:(C[cls+'_f']&&C[cls+'_f'].st===1?cls+'_f':null),bc=bk&&C[bk].ct;
+   if(bc){const byN=new Map();for(const n of root.getDescendants(false))if(!byN.has(n.name))byN.set(n.name,n);
+    for(const g of bc.animationGroups){if(AG[g.name])continue;let used=0;
+     for(const ta of g.targetedAnimations){if(ta.animation.targetProperty!=='rotationQuaternion'||!ta.target)continue;const t=byN.get(ta.target.name);if(!t)continue;
+      const k=t.uniqueId+'|rotationQuaternion';let e=CH.get(k);if(!e){e={t,p:'rotationQuaternion',a:{}};CH.set(k,e);}e.a[g.name]=ta.animation;used++;}
+     if(used)AG[g.name]={from:g.from,to:g.to};}}
+   else if(typeof P!=='undefined'&&o===P)load(o.fem?cls+'_f':cls);}
   const L={glb:1,t:0,x:0,z:0,spd:0,ph:0,ph0:Math.random()*6,AG,CH:[...CH.values()],ank:[by('foot.L')||top,by('foot.R')||top],lr:.15,top,cls};
   o.glb=1;o.org=0;o.limbs=L;o.glbM=mats;o.glbTop=top;o.orgG=top;
   o.hand=(cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||by('hand.R')||top;o.handL=by('hand.L')||top;
@@ -4675,6 +4683,9 @@ const GLB=(()=>{
   const all=o.glbTop.getDescendants(false);
   for(const e of keep){e.n.parent=all.find(x=>x.name===e.par)||o.glbTop;e.n.setEnabled(true);}
   if(keep.length){const by=n=>keep.find(e=>e.n.name===n);o.hand=((o.cls==='arqueiro'?by('WeaponL'):null)||by('Sword')||by('Weapon')||{}).n||o.hand;const sh=keep.find(e=>e.n===o.shieldN||/^Shield/.test(e.n.name));o.shieldN=sh?sh.n:null;}
+  /* v2.4.0: a arma da classe que passou para a fantasia volta a ser reconhecida (antes a lista ficava vazia e a arma sumia) */
+  {const all2=o.glbTop.getDescendants(false);o.glbAW=all2.filter(n=>/^A(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));o.glbOW=all2.filter(n=>/^(Sword|Weapon|WeaponL|Quiver)(?:$|_)/.test(n.name));}
+  if(o._wpn){for(const x of o._wpn.ms)try{x.dispose();}catch(_){}o._wpn=null;}o.gsig=null;
   o._wn=null;
   if(o.rig===r)r.getChildMeshes().forEach(m=>{if(!m.metadata)m.metadata={t:'p',ref:o};});}
  /* v1.83: compila os shaders do modelo novo em segundo plano (uma vez por arquivo) antes de aparecer na tela */
@@ -7997,14 +8008,22 @@ $('titlesBody').addEventListener('click',e=>{const g=e.target.closest('[data-tg]
    Modelos em mascotes.glb (mesma pintura fosca dos personagens). Até 2 por personagem; os outros jogadores veem pelo campo "pt".
    Os seus mascotes pegam o ouro do chão sozinhos e, conforme a configuração (S.pcf), os itens — vão até o item e voltam. */
 const PETV='181',PETM={ct:null,st:0,list:new Map(),pickT:0};
+/* v2.4.0: mascotes leves — o material de cada mascote é preparado e compilado UMA vez (em segundo plano), cada cópia leva só as malhas
+   daquele mascote (antes copiava o arquivo inteiro, com os 40 materiais, a cada mascote que aparecia) e é montada com a cena "quieta" */
 function petLoad(){if(PETM.st)return;PETM.st=1;
- GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','mascotes.glb?v='+PETV,scene,null,'.glb')).then(ct=>{ct.animationGroups.forEach(a=>a.stop());PETM.ct=ct;PETM.st=2;}).catch(e=>{PETM.st=-1;console.warn('mascotes',e);});}
-function petMk(id){
- const I=PETM.ct.instantiateModelsToScene(n=>n,true,{doNotInstantiate:true}),root=I.rootNodes[0],re=new RegExp('^Pet_'+id+'($|_)');
+ GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(window.GLB_BASE||'modelos/','mascotes.glb?v='+PETV,scene,null,'.glb')).then(ct=>{ct.animationGroups.forEach(a=>a.stop());PETM.ct=ct;
+  quiet(()=>{for(const pm of ct.materials){pm._petOk=1;pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=GLB.MATTE();pm.albedoColor=new C3(.93,.93,.93);}});
+  return Promise.race([Promise.all(ct.meshes.filter(m=>m.material&&m.getTotalVertices()>0).map(m=>m.material.forceCompilationAsync(m).catch(()=>{}))),new Promise(r=>setTimeout(r,2500))]);
+ }).then(()=>{if(PETM.ct)PETM.st=2;}).catch(e=>{PETM.st=-1;console.warn('mascotes',e);});}
+function petMk(id){return quiet(()=>petMk0(id));}
+function petMk0(id){
+ const re=new RegExp('^Pet_'+id+'($|_)'),keep=new Set();
+ for(const n of [...PETM.ct.transformNodes,...PETM.ct.meshes]){if(!re.test(n.name)&&!(n.parent&&re.test(n.parent.name)))continue;let p=n;while(p){keep.add(p);p=p.parent;}for(const d of n.getDescendants(false))keep.add(d);}
+ const I=PETM.ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true,predicate:e=>!(e instanceof BABYLON.Node)||keep.has(e)}),root=I.rootNodes[0];
  const top=new BABYLON.TransformNode('pet',scene);top.scaling.setAll((PETS[id]||{}).sc||.4);root.parent=top;
  for(const n of root.getDescendants(false)){if(/^Pet_/.test(n.name)&&!re.test(n.name)&&!(n.parent&&re.test(n.parent.name))){n.setEnabled(false);}}
  for(const m of root.getChildMeshes(false)){m.isPickable=false;m.alwaysSelectAsActiveMesh=true;const pm=m.material;
-  if(pm&&!pm._petOk){pm._petOk=1;pm.unlit=true;pm.metallic=0;pm.roughness=1;pm.environmentIntensity=0;pm.specularIntensity=0;pm.imageProcessingConfiguration=GLB.MATTE();pm.albedoColor=new C3(.93,.93,.93);}
+
   if(m.isEnabled()&&re.test(m.name)||m.parent&&re.test(m.parent.name))try{GINK_(m,.012);}catch(e){}}
  top._legs=root.getDescendants(false).filter(n=>/_leg[LR]$/.test(n.name)&&re.test(n.name));for(const l of top._legs){l.rotationQuaternion=null;l.rotation.set(0,0,0);}   /* pernas do Mini Golem */
  top.onDisposeObservable.add(()=>{for(const a of I.animationGroups)try{a.dispose();}catch(e){}});
@@ -8021,7 +8040,7 @@ function petsTick(dt,now){
   if(!ids.length)continue;let L=PETM.list.get(ow);const sig=ids.join(',');
   if(L&&L.sig!==sig){petDisposeL(L);L=null;PETM.list.delete(ow);}
   const op=ow.root.position;
-  if(!L){L={sig,nodes:ids.map((id,k)=>({id,k,top:petMk(id),x:op.x,z:op.z,yaw:0,ph:Math.random()*6,goal:null}))};PETM.list.set(ow,L);}
+  if(!L){if(ow!==P&&now<(PETM.nextMk||0)){continue;}PETM.nextMk=now+120;L={sig,nodes:ids.map((id,k)=>({id,k,top:petMk(id),x:op.x,z:op.z,yaw:0,ph:Math.random()*6,goal:null}))};PETM.list.set(ow,L);}   /* v2.4.0: outros jogadores entram na fila (não monta vários no mesmo quadro) */
   seen.add(ow);
   const yaw=ow.root.rotation.y,bx=-Math.sin(yaw),bz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw),moving=ow===P?!!P.moving:hyp(op,{x:L.lx||op.x,z:L.lz||op.z})>.01;L.lx=op.x;L.lz=op.z;
   for(const n of L.nodes){const D=PETS[n.id],side=L.nodes.length>1?(n.k?-1:1):.6;
@@ -9270,9 +9289,9 @@ MNT.load=function(id){if(!MTDEF[id])return Promise.reject('?');if(MNT.ld[id])ret
   const m=new BABYLON.StandardMaterial('mt_'+id,scene);m.specularColor=new C3(.04,.04,.04);m.diffuseColor=new C3(1,1,1);m.emissiveColor=new C3(.06,.06,.06);m.noTint=true;MNT.mats[id]=m;
   MNT.ct=MNT.ct||{};MNT.ct[id]=ct;
   {const t0=ct.materials.find(x=>x.albedoTexture||x.diffuseTexture);const tx=t0&&(t0.albedoTexture||t0.diffuseTexture);if(tx){m.diffuseTexture=tx;m.emissiveColor=new C3(.1,.1,.1);}}   /* modelos com textura */
-  const o=MNT.make(id);MNT.free(o);   /* um pronto na reserva */
-  try{for(const ms of o.meshes)m.forceCompilation(ms);}catch(e){}
-  return ct;});};
+  /* v2.4.0: compila em segundo plano e só depois deixa a montaria aparecer; a cópia de reserva é montada com a cena "quieta" */
+  const o=quiet(()=>MNT.make(id));MNT.free(o);
+  return Promise.race([Promise.all(o.meshes.filter(ms=>ms.getTotalVertices()>0).map(ms=>m.forceCompilationAsync(ms).catch(()=>{}))),new Promise(r=>setTimeout(r,3000))]).then(()=>{MNT.rdy=MNT.rdy||{};MNT.rdy[id]=1;return ct;});});};
 MNT.make=function(id){const D=MTDEF[id],ct=MNT.ct[id];
  const I=ct.instantiateModelsToScene(n=>n,false,{doNotInstantiate:true}),root=new BABYLON.TransformNode('mt_'+id,scene),top=new BABYLON.TransformNode('mtt',scene);
  top.parent=root;top.scaling.setAll(D.sc);top.position.y=(D.by||0)*D.sc;for(const r of I.rootNodes)r.parent=top;
@@ -9280,7 +9299,7 @@ MNT.make=function(id){const D=MTDEF[id],ct=MNT.ct[id];
  const AG={};for(const g of I.animationGroups){g.stop();g.enableBlending=true;g.blendingSpeed=.12;AG[g.name]=g;}
  const sh=shadowDisc(root,1);sh.scaling.set(.75*D.sc*.55,1.05*D.sc*.55,1);   /* sombra só da montaria (oval) */
  return {id,D,root,top,meshes,AG,cur:null,still:0,nextIdle:0,nextVoz:0,stepT:0,dead:0,owner:null};};
-MNT.get=function(id){const p=MNT.pool[id];const o=p&&p.length?p.pop():MNT.make(id);o.root.setEnabled(true);o.top.scaling.setAll(o.D.sc);o.dead=0;o.cur=null;o.still=MNT.now;o.nextVoz=MNT.now+8000+Math.random()*10000;MNT.live.add(o);MNT.play(o,'Idle');return o;};
+MNT.get=function(id){const p=MNT.pool[id];const o=p&&p.length?p.pop():quiet(()=>MNT.make(id));o.root.setEnabled(true);o.top.scaling.setAll(o.D.sc);o.dead=0;o.cur=null;o.still=MNT.now;o.nextVoz=MNT.now+8000+Math.random()*10000;MNT.live.add(o);MNT.play(o,'Idle');return o;};
 MNT.free=function(o){for(const n in o.AG)o.AG[n].stop();o.cur=null;o.root.setEnabled(false);o.owner=null;MNT.live.delete(o);(MNT.pool[o.id]||(MNT.pool[o.id]=[])).push(o);};
 MNT.play=function(o,n,sp,once){if(o.cur===n&&!once)return;const g=o.AG[n]||o.AG.Idle;if(!g)return;for(const k in o.AG)if(o.AG[k]!==g&&o.AG[k].isPlaying)o.AG[k].stop();g.start(!once,sp||1,g.from,g.to);o.cur=n;if(once){g.onAnimationGroupEndObservable.addOnce(()=>{if(o.cur===n){o.cur=null;MNT.play(o,'Idle');}});}};
 /* coloca a montaria embaixo de quem monta (pos = posição do cavaleiro; a sela fica nela) e escolhe a animação pelo movimento */
@@ -9363,7 +9382,8 @@ function mtTick(dt,now){MNT.now=now;riderShadow(P,!P._ride);
 function mtRemote(o,p,pos,dt,now){MNT.now=now;const id=p&&!p.dead&&o.rig?p.mt||'':'';
  if(o._mo&&o._mo.id!==id){if(!o._mo.dead){o._mo.dead=now;o._mo.owner=null;}o._mo=null;o._ride=false;o._rl=null;riderShadow(o,true);}
  if(!id||!MTDEF[id])return;
- if(!o._mo){if(!MNT.ct||!MNT.ct[id]){MNT.load(id).catch(()=>{});return;}o._mo=MNT.get(id);o._mo.owner=o;o._ride=true;}
+ if(!o._mo){if(!MNT.rdy||!MNT.rdy[id]||!MNT.ct||!MNT.ct[id]){if(!MNT.ld[id]&&now>=(MNT.nextLd||0)&&(o.d==null||o.d<40)){MNT.nextLd=now+1500;MNT.load(id).catch(()=>{});}return;}   /* v2.4.0: outro jogador montado: baixa uma montaria por vez e só mostra depois de pronta */
+  if(now<(MNT.nextGet||0))return;MNT.nextGet=now+150;o._mo=MNT.get(id);o._mo.owner=o;o._ride=true;}
  const mo=o._mo,lx=o._mlx==null?pos.x:o._mlx,lz=o._mlz==null?pos.z:o._mlz,sp=dt>0?Math.hypot(pos.x-lx,pos.z-lz)/dt:0;o._mlx=pos.x;o._mlz=pos.z;
  o._msp=(o._msp||0)+(Math.min(12,sp)-(o._msp||0))*Math.min(1,dt*8);
  riderShadow(o,false);MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
