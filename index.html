@@ -661,6 +661,7 @@
   <span class="muted">WASD / Setas</span> — andar direto<br>
   <span class="muted">1 a 8</span> — habilidades da barra 1 • <span class="muted">Shift + 1 a 8</span> — barra 2 (monte suas barras em <span class="muted">K</span>) · <span class="muted">9 / 0</span> — poção de vida / mana<br>
   <span class="muted">Espaço</span> — atacar o inimigo mais próximo<br>
+  <span class="muted">Z</span> — trocar de alvo (próximo inimigo perto)<br>
   <span class="muted">U</span> — janela da Guilda • <span class="muted">/g texto</span> — chat da guilda<br>
   <span class="muted">E</span> — pegar item / falar com NPC próximo · <span class="muted">Clique no NPC</span> — conversar<br>
   <span class="muted">M</span> — abre/fecha o mapa · <span class="muted">⚙️</span> (menu) — Opções: volume da música e dos efeitos, idioma e esconder o seu nome<br>
@@ -6624,6 +6625,7 @@ function castSkill0(i){
  if(P.barbUntil&&performance.now()<P.barbUntil){toast('😡 Metamorfose: só o ataque básico funciona');return;}
  if(TOKEN&&!NET.room){toast('Sem conexão com o servidor.');return;}
  const s=skStat(i),now=performance.now();
+ tgtFocus(Math.max(s.range||0,s.jrange||0,C.range)+6);   /* v2.3.8: sem alvo, a habilidade foca o inimigo mais perto */
  if(s.type==='daggerFan'&&P.dag&&P.dag.st==='stuck'){P.dag.recall();if(NET.room)NET.room.send('cast',{i});return;}
  if(s.type==='foilStep'&&P.foil&&!P.foil.used&&now<P.foil.until&&!PAUSED){if(foilSwapMe()&&NET.room)NET.room.send('cast',{i});return;}   /* Passo de Bailarino de novo: troca de lugar com o florete */
  if(s.type==='mark'&&P.markT&&now<P.markT.until&&!PAUSED){const q=P.markT.m;P.markT=null;   /* v1.89 Marca da Morte de novo: voa até o alvo marcado */
@@ -6985,6 +6987,18 @@ function regen(dt,now){
 const mouse={x:0,y:0,on:false};let held=false,lastMoveSet=0;
 function pickAt(x,y){const p=scene.pick(x,y,mesh=>mesh===ground||mesh===ground2||mesh===ground3||mesh===ground4||mesh===ground5||mesh===DG.ground||(ARN&&mesh===ARN.floor)||!!mesh.metadata);if(!p||!p.hit)return null;const md=p.pickedMesh.metadata;return {md:md&&md.t?md:null,point:p.pickedPoint};}
 function selectMonster(m){P.sel=m&&m.alive?m:null;updateTarget();}
+/* v2.3.8: alvo — Z (ou ⇆ no celular) troca para o próximo inimigo perto; a seleção some quando o alvo fica longe;
+   apertar uma habilidade sem alvo foca o inimigo mais perto. Vale para monstros e para jogadores inimigos (mapas PK, Arena, Guerra e o que vier) */
+const TGT_FAR=30;let TGC={seen:new Set(),at:0};
+function tgtCands(R){const L=[];if(PKS.mode!=='duel')for(const m of monsters)if(m.alive&&!(m.T&&m.T.dummy&&PKS.mode)&&hyp(P.pos,m.pos)<=R)L.push(m);if(PKS.mode)for(const f of pkFoes())if(f.alive!==false&&hyp(P.pos,f.pos)<=R)L.push(f);return L.sort((a,b)=>hyp(P.pos,a.pos)-hyp(P.pos,b.pos));}
+function cycleTarget(){
+ if(!S||P.dead)return;const L=tgtCands(Math.max(CLASSES[S.cls].range+10,18));
+ if(!L.length){toast('Nenhum inimigo por perto');return;}
+ const now=performance.now();if(now-TGC.at>3000)TGC.seen.clear();TGC.at=now;if(P.sel)TGC.seen.add(P.sel);
+ let n=L.find(m=>!TGC.seen.has(m));if(!n){TGC.seen.clear();if(P.sel)TGC.seen.add(P.sel);n=L.find(m=>m!==P.sel)||L[0];}
+ const wasAtk=P.atkTarget&&P.atkTarget===P.sel;selectMonster(n);TGC.seen.add(n);if(wasAtk)P.atkTarget=n;}
+function tgtFocus(range){if(curTgt())return;const n=nearestMonster(range);if(n)selectMonster(n);}
+setInterval(()=>{if(!S||!P.sel)return;const m=P.sel;const vw=Math.abs((camera.orthoRight||0)-(camera.orthoLeft||0))/2||0;if(!m.alive||hyp(P.pos,m.pos)>Math.max(TGT_FAR,vw+4)){if(P.atkTarget===m)P.atkTarget=null;selectMonster(null);}},250);
 function updateTarget(){const t=$('target'),m=P.sel;if(m&&m.alive){t.style.display='block';$('targetName').innerHTML=m.T.dummy?`${m.T.n} <span style="color:#ffd27a">🎯 Treino</span>`:`${m.T.n} <span style="color:#ffd27a">Nv ${m.lvl}</span>`;$('targetFill').style.width=(m.hp/m.maxHp*100)+'%';m.pf.style.width=(m.hp/m.maxHp*100)+'%';}else t.style.display='none';}
 function clickMark(pt){ring(pt.x,pt.z,.7,'#ffffff',350,.12);}
 canvas.addEventListener('pointerdown',e=>{
@@ -7008,6 +7022,7 @@ window.addEventListener('keydown',e=>{
  if(!S||e.target.tagName==='INPUT')return;if(e.key==='Enter'){if(NET.room){e.preventDefault();chatOpen();}return;}const k=e.key.toLowerCase();keys[k]=true;
  if(e.code==='Space'){e.preventDefault();if(!P.dead){const n=nearestMonster(CLASSES[S.cls].range+3);if(n){selectMonster(n);P.atkTarget=n;}else toast('Nenhum inimigo por perto');}return;}
  {const dm=/^Digit([1-8])$/.exec(e.code);if(dm){e.preventDefault();const bar=S.bar||RULES.defBar(),si=bar[(+dm[1]-1)+(e.shiftKey?8:0)];if(si>=0)castSkill(si);return;}}
+ if(k==='z'){e.preventDefault();cycleTarget();return;}   /* v2.3.8: trocar de alvo */
  if(k==='9'){usePot('hp');return;}if(k==='0'){usePot('mp');return;}
  if(k==='e'){const d=drops.some(o=>hyp(P.pos,{x:o.x,z:o.z})<3.6);if(d){collectNear(3.6);return;}const n=allNpcs().find(n=>hyp(P.pos,n.pos)<4.5);if(n)openDialog(n);else toast('Nada por perto.');return;}
  if(k==='m'){if(MB.open)mbClose();else mbOpen();return;}   /* v1.78: M abre o mapa; a música fica nas ⚙️ Opções */
@@ -7042,12 +7057,7 @@ const MOBUI=(()=>{
   const n=npcNear();if(n){openDialog(n);return;}
   toast('Nenhum inimigo por perto');});
  /* 🎯 = próximo inimigo (do mais perto para o mais longe) */
- tap($('mTgt'),()=>{
-  if(!S||P.dead)return;const R=CLASSES[S.cls].range+10,L=[];
-  if(PKS.mode!=='duel')for(const m of monsters)if(m.alive&&hyp(P.pos,m.pos)<=R)L.push(m);
-  if(PKS.mode)for(const f of pkFoes())if(hyp(P.pos,f.pos)<=R)L.push(f);
-  if(!L.length){toast('Nenhum inimigo por perto');return;}
-  L.sort((a,b)=>hyp(P.pos,a.pos)-hyp(P.pos,b.pos));selectMonster(L[(L.indexOf(P.sel)+1)%L.length]);});
+ tap($('mTgt'),()=>cycleTarget());   /* v2.3.8: mesma troca de alvo da tecla Z */
  /* atalhos do topo: chat, missões, mochila e ☰ (abre o resto do menu) */
  const top=mk('div','mTop','<button class="mBtn" id="mChat" title="Chat">💬</button><button class="mBtn" data-win="quest" title="Missões">📜</button><button class="mBtn" data-win="inv" title="Mochila">🎒</button><button class="mBtn" id="mMenu" title="Menu">☰</button>');B.appendChild(top);
  const menuSet=on=>{B.classList.toggle('mobMenu',on);$('mMenu').textContent=on?'✕':'☰';$('mMenu').classList.toggle('on',on);};
