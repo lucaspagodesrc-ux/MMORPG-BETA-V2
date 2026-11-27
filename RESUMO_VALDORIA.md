@@ -200,3 +200,6 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Afetava: Núcleo da Forja-Mãe (etapas 6, 8, 9 e mecânicas dos chefes), Fábrica de Ferrugem (7 ondas, 9 escolta), Abismo do Vazio e Caldeira do Dragão (6 defender). Cripta, Santuário, Cidadela e Fornalha não chegavam ao limite.
 - Correção (`dungeon.ts`): `spawnLazy` reaproveita o slot do monstro morto há mais tempo (≥3 s), nunca o de baú; `monsters.ts` ganhou `removeOne`; o servidor força o cliente a receber o monstro novo completo (`mv.delete`).
 - Teste: simulação das etapas de todos os calabouços (3 jogadores, etapas longas) — antes 0 monstros nessas etapas, agora todas criam monstros.
+
+## 26. Painel do GM: Bots no topo (v2.5.5)
+- A seção 🤖 Bots ficava no fim do Painel do GM (✨ / tecla Y), escondida pela rolagem. Agora é a primeira seção do painel.
