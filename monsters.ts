@@ -71,6 +71,8 @@ export class MonsterSim {
   }
   /** Chamado quando o baú aparece (chefe morreu). */
   reveal(s: Sim) { s.m.hp = s.m.maxHp; s.m.alive = true; s.contrib.clear(); s.xpp?.clear(); }
+  /** v2.5.4: tira um monstro (morto) da lista para a dungeon reaproveitar o slot */
+  removeOne(s: Sim) { const i = this.list.indexOf(s); if (i >= 0) this.list.splice(i, 1); if (this.byId.get(s.m.id) === s) this.byId.delete(s.m.id); if (this.mons.get(String(s.m.id)) === s.m) this.mons.delete(String(s.m.id)); }
   removeInst(inst: number) {
     this.list = this.list.filter((s) => { if (s.inst !== inst) return true; this.byId.delete(s.m.id); this.mons.delete(String(s.m.id)); return false; });
   }

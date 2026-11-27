@@ -67,15 +67,30 @@ export class Dungeons {
 
   /** Cria um monstro durante a luta (ondas, aliados do chefe, guardas das runas…). Devolve null se faltar espaço. */
   private spawnLazy(inst: Inst, type: string, x: number, z: number, aggro = true): Sim | null {
-    if (inst.slot >= LAZY_MAX) return null;
     const def = inst.def;
     if (def.rooms && !R.dgWalk(def, inst.stage, x, z, 0.6)) return null;
-    const s = this.h.sim.addDynamic(type, x, z, inst.id, inst.slot++);
+    while (inst.slot < LAZY_MAX && inst.chests.has(inst.slot)) inst.slot++;
+    const slot = inst.slot < LAZY_MAX ? inst.slot++ : this.recycle(inst);   // v2.5.4: acabaram os slots → reaproveita o de um monstro morto
+    if (slot < 0) return null;
+    const s = this.h.sim.addDynamic(type, x, z, inst.id, slot);
     s.lazy = true; s.home = this.homeOf(def, x, z); inst.lazy.push(s);
     if (aggro) { const who = this.alive(inst); if (who.length) s.aggro = pick(who)[0]; }
     return s;
   }
-  private clearLazy(inst: Inst) { for (const s of inst.lazy) if (s.m.alive) { s.m.alive = false; s.m.hp = 0; s.aggro = null; } inst.lazy = inst.lazy.filter((s) => s.m.alive); }
+  /** v2.5.4: slot de um monstro morto há mais de 3 s (o mais antigo). Antes os slots nunca voltavam e as etapas finais ficavam sem monstros. */
+  private recycle(inst: Inst): number {
+    const now = Date.now(), base = inst.id * 200, chest = new Set(inst.chests.values()); let best: Sim | null = null;
+    for (const s of this.h.sim.list as Sim[]) {
+      if (s.inst !== inst.id || s.m.alive || chest.has(s)) continue;
+      const k = s.m.id - base; if (k < 0 || k >= LAZY_MAX || inst.chests.has(k) || now - (s.deadAt || 0) < 3000) continue;
+      if (!best || (s.deadAt || 0) < (best.deadAt || 0)) best = s;
+    }
+    if (!best) return -1;
+    this.h.sim.removeOne(best); inst.lazy = inst.lazy.filter((x) => x !== best);
+    for (const ss of this.h.sess.values()) ss.mv?.delete(best.m.id);             // força o cliente a receber o novo monstro completo (tipo pode mudar)
+    return best.m.id - base;
+  }
+  private clearLazy(inst: Inst) { const now = Date.now(); for (const s of inst.lazy) if (s.m.alive) { s.m.alive = false; s.m.hp = 0; s.aggro = null; s.deadAt = now; } inst.lazy = inst.lazy.filter((s) => s.m.alive); }
 
   maxZ(inst: Inst) { return inst.def.gates ? inst.def.gates[Math.min(inst.stage, inst.def.gates.length - 1)] : 1e9; }
 

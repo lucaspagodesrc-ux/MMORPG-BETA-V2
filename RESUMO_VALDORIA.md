@@ -194,3 +194,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - `gainXp` agora para no 200: não sobe além, a XP fica zerada e não acumula mais. `flushXp` (servidor) nem envia XP para quem está no 200.
 - HUD: no 200 a barra de XP fica cheia com "NÍVEL MÁXIMO" / "MAX LEVEL".
 - A XP técnica continua valendo no 200 (pontos de habilidade).
+
+## 25. Calabouços sem monstros nas etapas finais (v2.5.4)
+- Causa: cada instância tem 189 slots de monstro (id = inst*200+slot) e os slots nunca voltavam. Etapas que criam monstros sem parar (escolta, lasers, geradores, âncoras) esgotavam os slots e as etapas seguintes (ondas, defender, aliados/escudo de chefe) não criavam mais nada.
+- Afetava: Núcleo da Forja-Mãe (etapas 6, 8, 9 e mecânicas dos chefes), Fábrica de Ferrugem (7 ondas, 9 escolta), Abismo do Vazio e Caldeira do Dragão (6 defender). Cripta, Santuário, Cidadela e Fornalha não chegavam ao limite.
+- Correção (`dungeon.ts`): `spawnLazy` reaproveita o slot do monstro morto há mais tempo (≥3 s), nunca o de baú; `monsters.ts` ganhou `removeOne`; o servidor força o cliente a receber o monstro novo completo (`mv.delete`).
+- Teste: simulação das etapas de todos os calabouços (3 jogadores, etapas longas) — antes 0 monstros nessas etapas, agora todas criam monstros.
