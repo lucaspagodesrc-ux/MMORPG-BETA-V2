@@ -8119,7 +8119,7 @@ function updateHud(){
  $('levelText').textContent='Nv '+S.level;$('zoneText').textContent=zoneName();
  $('hpFill').style.width=Math.max(0,P.hp/d.maxHp*100)+'%';$('hpText').textContent=Math.ceil(P.hp)+' / '+d.maxHp;
  $('mpFill').style.width=Math.max(0,P.mp/d.maxMp*100)+'%';$('mpText').textContent=Math.floor(P.mp)+' / '+d.maxMp;
- $('xpFill').style.width=(S.xp/need*100)+'%';$('xpText').textContent=S.xp+' / '+need+' XP';txHud();
+ if(S.level>=RULES.MAX_LEVEL){$('xpFill').style.width='100%';$('xpText').textContent=(window.I18N&&I18N.lang==='en')?'MAX LEVEL':'NÍVEL MÁXIMO';}else{$('xpFill').style.width=(S.xp/need*100)+'%';$('xpText').textContent=S.xp+' / '+need+' XP';}txHud();
  $('goldText').textContent='💰 '+(S.gm?'∞':fmt(S.gold));$('killsText').textContent='☠ '+S.kills;
  $('ptsBtn').style.display=(S.pts>0||RULES.canSkillUp(S))?'block':'none';$('ptsBtn').textContent=S.pts>0?'⭐ Atributos disponíveis!':'⭐ Pontos de habilidade!';
 }

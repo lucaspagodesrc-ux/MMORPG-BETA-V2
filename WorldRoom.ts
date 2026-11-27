@@ -429,6 +429,7 @@ export class WorldRoom extends Room<WorldState> {
   private flushXp(s: Sess) {
     const a = s as any, n = Math.floor(a.xpAcc || 0); a.xpAt = Date.now(); if (n < 1) return;
     a.xpAcc -= n;
+    if (s.c.level >= R.MAX_LEVEL) return;                       // nível 200: não ganha mais XP
     const c = s.c, up = R.gainXp(c, n); this.touch(s);
     if (up) { const p = this.state.players.get(s.client.sessionId); if (p) p.level = c.level; this.sync(s); this.res(s, [{ lvl: c.level }]); }
     else s.client.send("xp", { xp: c.xp, n });

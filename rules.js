@@ -15,7 +15,7 @@ const fmtN = n => Number(n).toLocaleString('pt-BR');
 const PTS_PER_LEVEL = 3;                    // pontos de atributo por nível (antes: 5)
 const GOLD_CAP_PER_LEVEL = 3000;            // (legado) não limita mais o ouro
 const GOLD_MAX = 1e12;                      // teto técnico de ouro por personagem
-const MAX_LEVEL = 170;
+const MAX_LEVEL = 200;
 const xpNeed = l => Math.floor(24 * Math.pow(l, 2.3));   // XP para sair do nível l (antes: 50·l^1.45)
 R.PTS_PER_LEVEL = PTS_PER_LEVEL; R.MAX_LEVEL = MAX_LEVEL; R.xpNeed = xpNeed; R.VERSION = 4;
 
@@ -1753,7 +1753,7 @@ function dgChestLoot(dg, tier, cls, luck) {
   if (Math.random() < [.01, .02, .05][tier - 1] * (1 + luck / 100)) out.push(rollScroll(cls, dg.ilvl[1]));   // pergaminho de opção (raro)
   return out;
 }
-function gainXp(c, n) { c.xp += n; let up = 0; while (c.xp >= xpNeed(c.level)) { c.xp -= xpNeed(c.level); c.level++; c.pts += PTS_PER_LEVEL; c.sp++; up++; } return up; }
+function gainXp(c, n) { if (c.level >= MAX_LEVEL) { c.level = MAX_LEVEL; c.xp = 0; return 0; } c.xp += n; let up = 0; while (c.level < MAX_LEVEL && c.xp >= xpNeed(c.level)) { c.xp -= xpNeed(c.level); c.level++; c.pts += PTS_PER_LEVEL; c.sp++; up++; } if (c.level >= MAX_LEVEL) c.xp = 0; return up; }
 const npcById = id => NPCS.find(n => n.id === id);
 function questKill(c, type) {
   const out = [];

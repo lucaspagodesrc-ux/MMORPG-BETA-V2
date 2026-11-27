@@ -188,3 +188,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Servidor: `WorldRoom.techXp` (chamado em `hit()`), guarda em `c.txp`; envia `txp` ao cliente (throttle 400 ms) e, ao fechar 100%, dá `c.sp`+1 com toast/log/som.
 - Cliente: barra roxa fina abaixo da barra de XP (`#txFill`/`#txText`, `txHud()`), texto explicativo na janela de habilidades (K).
 - Testado: 6 básicos = 0; 12 habilidades no fantoche = +6%; 98,5% → 100% virou +1 ponto e sobrou o resto; valor fica salvo.
+
+## 24. Nível máximo 200 (v2.5.3)
+- `MAX_LEVEL` 170 → **200** (`rules.js`). Os GMs são reconstruídos no nível 200 no próximo login (`ensureGm` em `auth.ts`).
+- `gainXp` agora para no 200: não sobe além, a XP fica zerada e não acumula mais. `flushXp` (servidor) nem envia XP para quem está no 200.
+- HUD: no 200 a barra de XP fica cheia com "NÍVEL MÁXIMO" / "MAX LEVEL".
+- A XP técnica continua valendo no 200 (pontos de habilidade).
