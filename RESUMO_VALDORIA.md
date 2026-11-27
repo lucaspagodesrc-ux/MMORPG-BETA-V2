@@ -203,3 +203,6 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 
 ## 26. Painel do GM: Bots no topo (v2.5.5)
 - A seção 🤖 Bots ficava no fim do Painel do GM (✨ / tecla Y), escondida pela rolagem. Agora é a primeira seção do painel.
+
+## 27. Cidadãos removidos (v2.5.6)
+- Os cidadãos que andavam pelas cidades (Aurora, Solara, Nevasca, Vulcânia) foram removidos do cliente. Guardas de patrulha e animais continuam; os guardas vão virar imagens paradas (impostores) quando as artes ficarem prontas.

@@ -3508,7 +3508,7 @@ const animal=c=>add=>{
 };
 const ringPath=(rev,off,cx,cz,rr)=>{const a=[];for(let i=0;i<18;i++){const t=off+(rev?-1:1)*i*Math.PI/9;a.push([(cx||0)+Math.cos(t)*(rr||16.4),(cz||0)+Math.sin(t)*(rr||16.4)]);}return a;};
 const CCOL=['#b5654a','#4a7ab5','#7aa05a','#a05a8a','#c9a45a','#5a8f8f','#8a6a4a'],HATS=[null,'#6b4a2a','#3a3a5a',null,'#8a2a2a'];
-for(let i=0;i<4;i++){const a=rnd(0,6.28),r=rnd(6,12);mkWalker({x:Math.cos(a)*r,z:Math.sin(a)*r,spd:1.4,home:{x:0,z:0},hr:13,cr:.45,build:person(CCOL[i],HATS[i%5],0,i)});}
+/* v2.5.6: cidadãos andando removidos */
 mkWalker({x:16.4,z:0,spd:2.2,cr:.45,path:ringPath(0,0),name:'Guarda da Vila',build:person('#3f5f8f',null,1)});
 mkWalker({x:-16.4,z:0,spd:2.2,cr:.45,path:ringPath(1,Math.PI),name:'Guarda da Vila',build:person('#3f5f8f',null,1)});
 {const zb=x=>riverZ(x);mkWalker({x:-8,z:zb(-8)-6,spd:2.2,cr:.45,path:[[-8,zb(-8)+6],[18,zb(18)+6],[18,zb(18)-6],[-8,zb(-8)-6]],name:'Guarda da Ponte',build:person('#3f5f8f',null,1)});}
@@ -3520,16 +3520,16 @@ ANI.sheep.kind='sheep';ANI.cow.kind='cow';ANI.sheep.cr='sheep';ANI.cow.cr='cow';
 Object.assign(ANI,{horse:{cr:'horse',spd:1.3,sr:.8},pig:{cr:'pig',spd:.8,sr:.5},llama:{cr:'llama',spd:1,sr:.6},zebra:{cr:'zebra',spd:1.3,sr:.8},pug:{cr:'pug',spd:1.6,sr:.35}});
 ANI.deer.kind='deer';ANI.rabbit.kind='rabbit';ANI.camel.kind='camel';ANI.reindeer={...ANI.deer,kind:'deer',rein:1,m:mat('rnm','#cfc6bc'),hm:mat('rnh','#8a8078'),spd:1.6};
 const herd=(t,n,hx,hz,hr)=>{for(let i=0;i<n;i++){const a=rnd(0,6.28),r=Math.sqrt(Math.random())*hr;mkWalker({...ANI[t],x:hx+Math.cos(a)*r,z:hz+Math.sin(a)*r,home:{x:hx,z:hz},hr,cr:ANI[t].cr||.5,crR:.5,build:ANI[t].kind?animal(ANI[t]):null});}};
-for(let i=0;i<3;i++){const a=rnd(0,6.28),r=rnd(6,13);mkWalker({x:SC.x+Math.cos(a)*r,z:SC.z+Math.sin(a)*r,spd:1.4,home:{x:SC.x,z:SC.z},hr:14,cr:.45,build:person(['#c9a45a','#a05a3a','#5a8f8f','#8a4a6a','#4a6aa8','#b58a3a'][i],['#d8c9a0',null,'#a63a2a'][i%3],0,i+10)});}
+/* v2.5.6: cidadãos andando removidos */
 mkWalker({x:SC.x+18.9,z:SC.z,spd:2.2,cr:.45,path:ringPath(0,0,SC.x,SC.z,18.9),name:'Guarda de Solara',build:person('#a8832a',null,1)});
 mkWalker({x:SC.x-18.9,z:SC.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,SC.x,SC.z,18.9),name:'Guarda de Solara',build:person('#a8832a',null,1)});
 herd('camel',4,SC.x+26,SC.z+8,4);
 herd('sheep',6,-34,-24,3.2);herd('cow',3,-34,-24,3.2);herd('deer',4,-24,-40,7);herd('rabbit',6,34,-6,5);
-for(let i=0;i<3;i++){const a=rnd(0,6.28),r=rnd(6,13);mkWalker({x:SN.x+Math.cos(a)*r,z:SN.z+Math.sin(a)*r,spd:1.4,home:{x:SN.x,z:SN.z},hr:14,cr:.45,build:person(['#4a78a8','#a85a4a','#5a9a8a','#7a5a9a','#c8a45a','#8a9ab0'][i],['#e8f2ff','#6a4a2a',null][i%3],0,i+20)});}
+/* v2.5.6: cidadãos andando removidos */
 mkWalker({x:SN.x+18.9,z:SN.z,spd:2.2,cr:.45,path:ringPath(0,0,SN.x,SN.z,18.9),name:'Guarda da Nevasca',build:person('#3a68a0',null,1,3)});
 mkWalker({x:SN.x-18.9,z:SN.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,SN.x,SN.z,18.9),name:'Guarda da Nevasca',build:person('#3a68a0',null,1,4)});
 herd('reindeer',4,SN.x+26,SN.z+8,4);herd('sheep',5,SN.x-26,SN.z-8,3.5);
-for(let i=0;i<3;i++){const a=rnd(0,6.28),r=rnd(5,10);mkWalker({x:VC.x+Math.cos(a)*r,z:VC.z+Math.sin(a)*r,spd:1.4,home:{x:VC.x,z:VC.z},hr:11,cr:.45,build:person(['#a8452a','#5a4a5a','#c06a3a'][i],['#2a2226',null,'#d8501c'][i%3],0,i+30)});}
+/* v2.5.6: cidadãos andando removidos */
 mkWalker({x:VC.x+16.4,z:VC.z,spd:2.2,cr:.45,path:ringPath(0,0,VC.x,VC.z,16.4),name:'Guarda de Vulcânia',build:person('#8a3a1a',null,1)});
 mkWalker({x:VC.x-16.4,z:VC.z,spd:2.2,cr:.45,path:ringPath(1,Math.PI,VC.x,VC.z,16.4),name:'Guarda de Vulcânia',build:person('#8a3a1a',null,1)});
 /* v2.2: fazenda da Vila Aurora (cavalos, porcos), cachorrinhos na praça, lhamas e zebras em Solara */
