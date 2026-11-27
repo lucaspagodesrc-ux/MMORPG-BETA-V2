@@ -2086,7 +2086,7 @@ var SFX2=(function(){
  function shader(){if(shOk)return;shOk=true;const S=BABYLON.Effect.ShadersStore;
   S.fxsprVertexShader='precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){gl_Position=worldViewProjection*vec4(position,1.0);vUV=uv;}';
   S.fxsprFragmentShader='precision highp float;varying vec2 vUV;uniform sampler2D tex;uniform vec4 fr;uniform vec3 tint;uniform float op;void main(){vec4 c=texture2D(tex,fr.xy+vUV*fr.zw);gl_FragColor=vec4(c.rgb*tint,c.a*op);}';}
- function tex(key){if(TX[key])return TX[key];const t=new BABYLON.Texture(base()+'fx_'+key+'.webp?v=242',scene,true,true,BABYLON.Texture.BILINEAR_SAMPLINGMODE);
+ function tex(key){if(TX[key])return TX[key];const t=new BABYLON.Texture(base()+'fx_'+key+'.webp?v=242',scene,true,true,BABYLON.Texture.BILINEAR_SAMPLINGMODE,null,()=>{t.bad=1;});   /* v2.4.2b: sem a imagem o efeito não aparece (nada de xadrez) e a habilidade volta aos efeitos antigos */
   t.hasAlpha=true;t.wrapU=t.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;return TX[key]=t;}
  function pre(cls){const p=PK[cls];if(!p||p._pre)return;p._pre=1;try{for(const k in p.sh)tex(k);}catch(e){}}
  const hx=h=>{try{return C3.FromHexString(h||'#ffffff');}catch(e){return new C3(1,1,1);}};
@@ -2106,9 +2106,9 @@ var SFX2=(function(){
   const h=new BABYLON.TransformNode('sxh',scene),b=new BABYLON.TransformNode('sxb',scene),r=new BABYLON.TransformNode('sxr',scene),v=new BABYLON.TransformNode('sxv',scene);
   const p=B.CreatePlane('sxp',{size:1,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene);h.parent=C.W;b.parent=h;r.parent=b;v.parent=r;p.parent=v;p.isPickable=false;p.renderingGroupId=1;p.alwaysSelectAsActiveMesh=true;
   const m=new BABYLON.ShaderMaterial('sxm',scene,'fxspr',{attributes:['position','uv'],uniforms:['worldViewProjection','fr','tint','op'],samplers:['tex'],needAlphaBlending:true});
-  m.setTexture('tex',tex(k.s));m.backFaceCulling=false;m.disableDepthWrite=true;m.needAlphaBlending=()=>true;m.alphaMode=k.ad?BABYLON.Engine.ALPHA_ADD:BABYLON.Engine.ALPHA_COMBINE;
+  const tx=tex(k.s);m.setTexture('tex',tx);m.backFaceCulling=false;m.disableDepthWrite=true;m.needAlphaBlending=()=>true;m.alphaMode=k.ad?BABYLON.Engine.ALPHA_ADD:BABYLON.Engine.ALPHA_COMBINE;
   m.setColor3('tint',hx(k.c));m.setFloat('op',k.op==null?1:k.op);p.material=m;h.setEnabled(false);
-  return {h,b,r,v,p,m,sh,fr:new BABYLON.Vector4(0,0,1/sh[0],1/sh[1]),ent};}
+  return {h,b,r,v,p,m,sh,tx,fr:new BABYLON.Vector4(0,0,1/sh[0],1/sh[1]),ent};}
  function kill(q){try{q.m.dispose(false,false);}catch(e){}try{q.h.dispose(false,false);}catch(e){}}
  /* começa uma faixa (no instante t0 dela): lê a âncora agora e cria uma cópia por alvo */
  function spawn(C,k){if(C.dead())return;if(C.tm&&C.tm.alive!==false){const e=C.tm,pp=e.root?e.root.position:e.pos;if(pp)C.tp=pp.clone();}const yaw=C.yaw,W0=C.W.position,L=[];
@@ -2130,6 +2130,7 @@ var SFX2=(function(){
   if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}}
  function upd(q,now){const k=q.k,C=q.C,sh=q.sh,el=now-q.t0;
   if(el>=k.d||(q.fol&&q.fol.e!==C.o&&q.fol.e.alive===false)||(q.fol&&q.fol.e===C.o&&C.dead())||C.W.isDisposed())return false;
+  if(q.tx.bad)return false;if(!q.tx.isReady()){q.h.setEnabled(false);return true;}   /* só aparece com a imagem pronta */
   q.h.setEnabled(true);
   const n=sh[2],fa=Math.max(0,Math.min(n-1,k.fa|0)),fb=Math.max(fa,Math.min(n-1,k.fb==null?n-1:+k.fb)),cnt=fb-fa+1;let f=Math.floor(el/1000*(k.fps||30));f=k.lp!==0?f%cnt:Math.min(cnt-1,f);f+=fa;
   const cx=f%sh[0],cy=Math.floor(f/sh[0]);q.fr.set(cx/sh[0],1-(cy+1)/sh[1],1/sh[0],1/sh[1]);q.m.setVector4('fr',q.fr);
@@ -2163,7 +2164,7 @@ var SFX2=(function(){
  /* a habilidade (classe, índice) tem efeito do pacote? mine = do jogador local */
  function get(cls,i,mine){const p=PK[cls];if(!p||!p.sk[i])return null;if(!mine&&((typeof PERF!=='undefined'&&PERF.low)||(typeof fxLvl==='function'&&fxLvl()==='m')))return null;return p.sk[i];}
  /* o: quem lançou (P ou o jogador remoto); tm: monstro/jogador alvo (ou null); yaw: direção do personagem; dirx/dirz: direção sem alvo */
- function play(o,cls,i,tm,mine,dirx,dirz){const s=get(cls,i,mine);if(!s||!o||!o.root||typeof scene==='undefined')return false;pre(cls);
+ function play(o,cls,i,tm,mine,dirx,dirz){const s=get(cls,i,mine);if(!s||!o||!o.root||typeof scene==='undefined')return false;pre(cls);if(s.tr.some(k=>TX[k.s]&&TX[k.s].bad))return false;
   const r=o.root.position,yaw=o.root.rotation.y;let tp=null;
   if(tm&&(tm.pos||tm.root))tp=(tm.pos||tm.root.position).clone();
   else{const a=(dirx||dirz)?Math.atan2(dirx,dirz):yaw;tp=new V3(r.x+Math.sin(a)*s.dist,0,r.z+Math.cos(a)*s.dist);}
