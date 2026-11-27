@@ -29,16 +29,17 @@ const TICK = 200;
 const SPEED = 6.4;                   // m/s a pé (o servidor aceita até 14)
 const ACTIVE = (): string[] => Object.keys(R.CLASSES).filter((k) => !(R.CLS_OFF && R.CLS_OFF[k]));
 
-/* nomes com cara de jogador (fantasia + nomes/apelidos brasileiros); f = feminino */
+/* nomes de personagens de filmes de fantasia e ficção (Senhor dos Anéis, Matrix, Star Wars, Duna, Blade Runner...); 1 = feminino */
 const NAMES: [string, number][] = [
-  ["Aldren", 0], ["Lyria", 1], ["Kaelor", 0], ["Selene", 1], ["Thoren", 0], ["Maelis", 1], ["Darian", 0], ["Ysolde", 1],
-  ["Varek", 0], ["Nerys", 1], ["Lucan", 0], ["Ariane", 1], ["Corvin", 0], ["Elowen", 1], ["Joren", 0], ["Liora", 1],
-  ["Malric", 0], ["Thalia", 1], ["Rurik", 0], ["Isadora", 1], ["Cassian", 0], ["Mirela", 1], ["Ronan", 0], ["Aveline", 1],
-  ["Haldor", 0], ["Zaria", 1], ["Evander", 0], ["Rowena", 1], ["Garrick", 0], ["Solenne", 1], ["Torvin", 0], ["Calia", 1],
-  ["Kauan", 0], ["Luana", 1], ["Davi Lobo", 0], ["Bia Ventura", 1], ["Caio Rocha", 0], ["Duda", 1], ["Rafa Prado", 0], ["Lívia Sol", 1],
-  ["Bruno Ferraz", 0], ["Nina Brasa", 1], ["Téo Montanha", 0], ["Yara Lua", 1], ["Iago Vento", 0], ["Malu Aurora", 1], ["Vini Kael", 0], ["Ana Lis", 1],
-  ["Dorian", 0], ["Brisa", 1], ["Silas", 0], ["Nadia", 1], ["Orin", 0], ["Odessa", 1], ["Davin", 0], ["Iridia", 1],
+  ["Aragorn", 0], ["Arwen", 1], ["Legolas", 0], ["Galadriel", 1], ["Gimli", 0], ["Eowyn", 1], ["Boromir", 0], ["Tauriel", 1],
+  ["Faramir", 0], ["Rosie", 1], ["Gandalf", 0], ["Goldberry", 1], ["Frodo", 0], ["Lobelia", 1], ["Samwise", 0], ["Idril", 1],
+  ["Elrond", 0], ["Luthien", 1], ["Theoden", 0], ["Morwen", 1], ["Eomer", 0], ["Nimrodel", 1], ["Haldir", 0], ["Celebrian", 1],
+  ["Neo", 0], ["Trinity", 1], ["Morpheus", 0], ["Niobe", 1], ["Tank", 0], ["Switch", 1], ["Apoc", 0], ["Persephone", 1],
+  ["Seraph", 0], ["Sati", 1], ["Luke", 0], ["Leia", 1], ["Han Solo", 0], ["Padme", 1], ["Obi-Wan", 0], ["Rey", 1],
+  ["Atreides", 0], ["Chani", 1], ["Stilgar", 0], ["Jessica", 1], ["Deckard", 0], ["Rachael", 1], ["Roy Batty", 0], ["Pris", 1],
+  ["Jake Sully", 0], ["Neytiri", 1], ["Kyle Reese", 0], ["Sarah Connor", 1], ["Ripley", 1], ["Furiosa", 1], ["Max Rockatansky", 0], ["Thranduil", 0],
 ];
+const BANNED = new Set(["caio rocha"]);   // nomes que não podem ser usados (bots que já tinham esse nome ganham outro)
 const STAT: Record<string, Record<string, number>> = {     // como cada classe distribui os pontos (proporção)
   guerreiro: { str: 3, vit: 1 }, cavaleiro: { str: 2, vit: 2 }, tanque: { vit: 2, str: 2 }, arqueiro: { agi: 3, vit: 1 },
   assassino: { agi: 2, str: 1, vit: 1 }, mago: { int: 3, vit: 1 }, pierrot: { int: 2, agi: 1, vit: 1 },
@@ -415,11 +416,26 @@ async function ensureBot(gmChar: string, cls: string, slot: number, sqIdx: numbe
   let r = await pool.query("select id,username from accounts where username=$1", [username]);
   if (!r.rows[0]) { await pool.query("insert into accounts(username,pass_hash) values($1,$2) on conflict do nothing", [username, bcrypt.hashSync(crypto.randomBytes(24).toString("hex"), 8)]); r = await pool.query("select id,username from accounts where username=$1", [username]); }
   const acc = r.rows[0];
-  const ch = await pool.query("select id from characters where account_id=$1 limit 1", [acc.id]);
-  if (ch.rows[0]) return { acc, charId: ch.rows[0].id };
+  const ch = await pool.query("select id,name,data from characters where account_id=$1 limit 1", [acc.id]);
+  const freeName = async (start: number): Promise<[string, number] | null> => {
+    for (let tries = 0; tries < NAMES.length + 10; tries++) {
+      const [base, fem] = NAMES[(start + tries) % NAMES.length], name = tries < NAMES.length ? base : base.split(" ")[0] + " " + ["II", "III", "do Norte", "do Sul", "Jr"][tries % 5];
+      if (BANNED.has(name.toLowerCase())) continue;
+      const taken = await pool.query("select 1 from characters where lower(name)=lower($1) limit 1", [name]); if (!taken.rowCount) return [name, fem];
+    }
+    return null;
+  };
+  if (ch.rows[0]) {
+    if (BANNED.has(String(ch.rows[0].name || "").toLowerCase()) || !NAMES.some(([n]) => String(ch.rows[0].name || "").toLowerCase().startsWith(n.toLowerCase()))) {   // renomeia (mantém nível, itens e tudo mais)
+      const c0 = R.migrate(ch.rows[0].data || {}), nf = await freeName(Math.floor(Math.random() * NAMES.length));
+      if (nf) { const [nm, f] = nf; c0.name = nm; if (!!c0.fem !== !!f) { c0.fem = f; c0.lk = R.lkFix(c0.lk, f) || c0.lk; } await saveChar(acc.id, c0); }
+    }
+    return { acc, charId: ch.rows[0].id };
+  }
   let k = (sqIdx * 6 + slot * 7 + Math.floor(Math.random() * 3)) % NAMES.length, c: any = null;
   for (let tries = 0; tries < NAMES.length + 10; tries++) {
-    const [base, fem] = NAMES[(k + tries) % NAMES.length], name = tries < NAMES.length ? base : base.split(" ")[0] + " " + ["Silva", "Lobo", "Sol", "Rocha", "Vale"][tries % 5];
+    const [base, fem] = NAMES[(k + tries) % NAMES.length], name = tries < NAMES.length ? base : base.split(" ")[0] + " " + ["II", "III", "do Norte", "do Sul", "Jr"][tries % 5];
+    if (BANNED.has(name.toLowerCase())) continue;
     const taken = await pool.query("select 1 from characters where lower(name)=lower($1) limit 1", [name]); if (taken.rowCount) continue;
     const lk = R.lkFix("n" + [9, 9, 6].map((m) => Math.floor(Math.random() * m)).join("") + String(Math.floor(Math.random() * 24)).padStart(2, "0") + [6, 4, 8].map((m) => Math.floor(Math.random() * m)).join(""), fem);
     c = R.newChar(cls, name, fem, lk); c.nmOk = 1; break;
