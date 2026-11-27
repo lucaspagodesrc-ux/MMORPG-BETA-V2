@@ -9,6 +9,7 @@ import { Dungeons } from "./dungeon";
 import { WorldBosses, wbNow } from "./worldboss";
 import { guildMsg, guildAnswer, guildJoin, guildLeave, guildChat, gpAdd, gpFromOut, guildDispose } from "./guild";
 import { Pvp } from "./pvp";
+import { BOTS } from "./bots";
 const R: any = require("./rules.js");
 
 const MAP = 80;          // mesmo limite do cliente
@@ -943,6 +944,14 @@ export class WorldRoom extends Room<WorldState> {
       const x = clampX(m.x, p.x), z = clamp(m.z);
       p.x = x; p.z = z; s.budget = BURST; s.t = Date.now();
       client.send("correct", { x, z });
+    });
+    // v2.5.0: bots — cada personagem GM lança/retira o seu esquadrão de 6 bots (somem sozinhos em 2 h)
+    this.onMessage("bot", (client, m) => {
+      const s = this.S(client); if (!s || !s.c.gm || !this.okRate(s, 2)) return;
+      const op = String(m?.op || "");
+      if (op === "on") { BOTS.launch(s.charId, s.c.name).then((t) => { this.sysTo(s, t); if (this.sess.get(client.sessionId) === s) client.send("botst", BOTS.status(s.charId)); }).catch(() => {}); client.send("botst", { ...BOTS.status(s.charId), busy: 1 }); return; }
+      if (op === "off") { BOTS.stop(s.charId, "GM"); this.sysTo(s, "🤖 Seus bots saíram do mundo."); }
+      client.send("botst", BOTS.status(s.charId));
     });
     this.onMessage("hp", (client, m) => {      // vida informada pelo cliente: usada só nas barras do grupo
       const p = this.state.players.get(client.sessionId);

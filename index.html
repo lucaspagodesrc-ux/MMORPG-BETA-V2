@@ -5925,7 +5925,7 @@ document.getElementById('ui').insertAdjacentHTML('beforeend',`<div id="dgHud" cl
 <div id="win-friends" class="panel win"><h3><span>🤝 Amigos</span><button class="x" data-close="friends">✕</button></h3><div id="friendsBody"></div></div>
 <div id="pmenu"></div>
 <div id="gmTimer"></div>
-<div id="win-gm" class="panel win"><h3><span>✨ Painel do GM</span><button class="x" data-close="gm">✕</button></h3><p class="muted">O <b>Buff do GM</b> dura 5 minutos em cada jogador: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa. Para buffar um jogador específico, clique nele no mapa.</p><div style="display:grid;gap:6px"><button data-gmb="self">✨ Buffar a mim</button><button data-gmb="near">🌟 Buffar todos por perto (raio 30)</button><button data-gmb="all">🎆 Buffar todos os jogadores online</button></div></div>
+<div id="win-gm" class="panel win"><h3><span>✨ Painel do GM</span><button class="x" data-close="gm">✕</button></h3><p class="muted">O <b>Buff do GM</b> dura 5 minutos em cada jogador: +100 FOR/AGI/INT/VIT, +1000 vida, +1000 mana, +200 dano base e +200 defesa. Para buffar um jogador específico, clique nele no mapa.</p><div style="display:grid;gap:6px"><button data-gmb="self">✨ Buffar a mim</button><button data-gmb="near">🌟 Buffar todos por perto (raio 30)</button><button data-gmb="all">🎆 Buffar todos os jogadores online</button></div><h4 style="margin:12px 0 4px">🤖 Bots</h4><p class="muted" style="margin:0 0 6px">Cada personagem GM lança 6 bots (um de cada classe, 3 em cada nação). Eles jogam sozinhos: caçam, fazem missões, trocam equipamento, vendem no leilão, aceitam duelos e entram na Arena e na guerra. Saem sozinhos depois de 2 horas.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button data-bot="on">▶️ Lançar bots</button><button data-bot="off">⏹️ Retirar bots</button></div><div id="botSt" class="muted" style="margin-top:6px;font-size:12px"></div></div>
 <div id="win-titles" class="panel win"><h3><span>🏅 Títulos</span><button class="x" data-close="titles">✕</button></h3><div id="titlesBody"></div></div>
 <div id="win-pets" class="panel win"><h3><span>🐾 Mascotes</span><button class="x" data-close="pets">✕</button></h3><div id="petsBody"></div></div>
 <div id="win-fz" class="panel win"><h3><span>💎 Loja de Diamantes</span><span><span class="muted" id="fzDia"></span> <button class="x" data-close="fz">✕</button></span></h3><div id="fzTabs" class="ptabs"></div><div id="fzBody"></div></div>`);
@@ -6415,7 +6415,11 @@ $('win-friends').addEventListener('click',e=>{
  const p=e.target.closest('[data-fpi]');if(p&&NET.room){NET.room.send('pinvite',{name:p.dataset.fpi});toast('Convite enviado para '+p.dataset.fpi);}
 });
 $('win-friends').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='fInp'){const v=e.target.value.trim();if(v)addFriend(v);e.target.value='';}});
-$('win-gm').addEventListener('click',e=>{const b=e.target.closest('[data-gmb]');if(b&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:b.dataset.gmb,r:30});});
+$('win-gm').addEventListener('click',e=>{const b=e.target.closest('[data-gmb]');if(b&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:b.dataset.gmb,r:30});const bt=e.target.closest('[data-bot]');if(bt&&NET.room&&S&&S.gm){NET.room.send('bot',{op:bt.dataset.bot});$('botSt').textContent=bt.dataset.bot==='on'?'Chamando os bots...':'Retirando...';}});
+/* v2.5.0: situação dos bots deste GM */
+const BOTS_ST={t:0,d:null};
+function botStRender(){const d=BOTS_ST.d,el=$('botSt');if(!el||!d)return;const left=Math.max(0,d.left-(Date.now()-BOTS_ST.t)),m=Math.floor(left/60000);el.innerHTML=d.busy?'Chamando os bots...':d.on?`<b style="color:#7fe07f">${d.n} bots no jogo</b> — saem em ${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}<br>${(d.names||[]).map(esc).join('<br>')}`:`Nenhum bot seu no jogo. (${d.total}/${d.max} bots no servidor)`;}
+setInterval(()=>{if(BOTS_ST.d&&BOTS_ST.d.on)botStRender();},30000);
 $('partybar').addEventListener('click',e=>{
  const r=e.target.closest('.pm');if(!r||!S)return;const n=r.dataset.n,m=$('pmenu'),me=n===S.name;
  let b='';
@@ -8842,6 +8846,7 @@ async function netJoin(){
   NETM.clear();room.onMessage('mo',netMo);
   room.onMessage('pinv',m=>showInvite(m.from));
   room.onMessage('matk',m=>remoteBasic(m));pkBind(room);
+  room.onMessage('botst',m=>{BOTS_ST.d=m;BOTS_ST.t=Date.now();botStRender();});if(S&&S.gm)setTimeout(()=>{if(NET.room===room)room.send('bot',{op:'st'});},2500);   // v2.5.0
   room.onLeave(code=>{NET.room=null;PARTY=null;pkReset();GU.st=null;GU.g=null;guClose();clearOthers();if(code===4001){toast('Sua conta entrou em outro lugar.');return;}if(!NET.stop){toast('Conexão perdida. Reconectando...');setTimeout(netJoin,3000);}});
   logMsg('<span style="color:#6fdc7f">🌐 Conectado ao mundo online. Monstros, XP e drops são calculados pelo servidor. Enter = chat.</span>');
  }catch(e){console.warn('Multiplayer indisponível:',e.message||e);logMsg('<span style="color:#ff9a6a">⚠️ Multiplayer indisponível: '+esc(String(e.message||e))+'</span>');if(!NET.stop)setTimeout(netJoin,8000);}}

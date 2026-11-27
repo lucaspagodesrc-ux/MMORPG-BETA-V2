@@ -8,6 +8,7 @@ import { WebSocketTransport } from "@colyseus/ws-transport";
 import { migrate, pool } from "./db";
 import { authRouter } from "./auth";
 import { WorldRoom } from "./WorldRoom";
+import { BOTS } from "./bots";
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error("Defina DATABASE_URL (veja .env.example).");
@@ -85,6 +86,7 @@ async function main() {
   game.define("world", WorldRoom);
   const port = Number(process.env.PORT) || 3000;
   await game.listen(port);
+  BOTS.port = port;                                  // v2.5.0: os bots entram por aqui (WebSocket local)
   console.log(`Servidor no ar: http://localhost:${port}`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

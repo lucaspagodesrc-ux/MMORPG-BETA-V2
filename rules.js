@@ -1165,7 +1165,7 @@ NPCS.push(
 const MON_TOWN_R = 15;
 R.TOWN_R = MON_TOWN_R;
 R.TOWNS = [{ x: 0, z: 0, r: 15 }, { x: 300, z: 0, r: 17.5 }, { x: -300, z: 0, r: 17.5 }, { x: -600, z: 0, r: 15 }];   // zonas seguras (Vila Aurora, Solara e Nevasca)   // zonas seguras (Vila Aurora e Solara)
-R.inTown = (x, z) => R.TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.r);
+R.inTown = (x, z) => { for (const t of R.TOWNS) { const dx = x - t.x, dz = z - t.z; if (dx < t.r && dx > -t.r && dz < t.r && dz > -t.r && dx * dx + dz * dz < t.r * t.r) return true; } return false; };   // v2.5.0: mesma regra, mais rápida (é chamada para cada monstro a cada passo)
 const eff = (it, k) => (it[k] || 0) * (1 + .12 * (it.plus || 0));
 const nm = it => it.k === 'mt' ? 'Montaria: ' + ((MTS[it.id] || {}).n || '?') : it.k === 'fz' ? 'Fantasia: ' + ((FZS[it.id] || {}).n || '?') : it.k === 'pet' ? ((PETS[it.id] || {}).n || 'Mascote') : it.k === 'tix' ? 'Ingresso: ' + ((DUNGEONS.find(d => d.id === it.id) || {}).name || 'Calabouço') : it.k === 'eq' ? it.name + (it.plus ? ' +' + it.plus : '') + (it.sl ? ' ' + Array.from({ length: it.sl }, (_, i) => it.gm && it.gm[i] ? '◆' : '◇').join('') : '') : it.k === 'mat' ? MATS[it.id].n : it.k === 'pot' ? POTS[it.id].n : (it.n + ' ouro');
 const sellPrice = it => it.bd || it.k === 'fz' || it.k === 'mt' ? 0 : it.k === 'pet' ? Math.round(((PETS[it.id] || {}).price || 0) * .1) : it.k === 'eq' && it.slot === 'cape' ? it.ilvl * 40 : it.k === 'eq' ? Math.round((it.ilvl * 5 + 5) * (1 + it.rar * 1.1) * (1 + it.plus * .6) * (1 + (it.sl || 0) * .5) * .5 * (it.wb ? 4 : 1)) : (it.k === 'mat' ? MATS[it.id].v : it.k === 'tix' ? Math.round(((DUNGEONS.find(d => d.id === it.id) || {}).price || 0) * .1) : POTS[it.id].v);
