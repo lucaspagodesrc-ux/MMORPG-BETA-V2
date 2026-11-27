@@ -2073,6 +2073,119 @@ var VFX=(function(){
    if(useSk&&sk)skill(q,sk.s,crit);else basic(q,S&&S.cls,crit);},
   hurt(o){if(!o||!o.pos)return;const p=o.pos;spawn('blood',{x:p.x,y:p.y+1,z:p.z},1.6,null,380,R());}};
 })();
+/* ---------- v2.4.2 efeitos em spritesheet feitos no Estúdio de Efeitos (pacote por classe) ----------
+   Cada habilidade do pacote tem faixas: spritesheet, início (ms), duração, âncora (mão, corpo, alvo, chão...), deslocamento
+   na referência do personagem (x = direita, y = cima, z = frente), tamanho, plano e como vira com a direção.
+   A posição fica parada onde a âncora estava no início da faixa (como no estúdio); auras longas (buffs) e efeitos longos em
+   monstros acompanham quem as recebeu. kc/kg = manter os efeitos antigos do jogo (lançamento / marcação no chão). */
+var SFX2=(function(){
+ const PK=/*FXPACKS*/{guerreiro:{"sh":{"pixel_art_slash_effect":[6,5,27,0.8661],"anime_heavy_punch_impact_teal":[5,5,24,1.0261],"dust_cloud":[8,8,57,1.3534],"orbiting_rock_shield":[10,9,90,1.5824],"slash_attack_hit_blue":[5,5,21,0.985],"whirlwind_orange":[5,5,24,1.5738],"anime_dash_effect":[5,5,24,2.075],"anime_sonic_boom_green":[5,5,24,1.0142],"regrowth_violet_1":[10,9,90,0.7473],"anime_wall_crash_crater":[6,6,36,1.0],"rock_spikes":[9,8,69,1.717],"slowed":[10,9,90,0.6724],"water_shield_buff_orange":[9,8,72,0.9955],"anime_golden_aura":[6,6,36,0.9209],"divine_smite_blue":[7,6,39,0.6774],"superhero_landing_teal":[7,6,39,1.7455]},"sk":{"0":{"kc":0,"kg":0,"dist":3.6,"self":0,"r":2.5,"tr":[{"s":"pixel_art_slash_effect","t0":0,"d":900,"fps":30,"fa":0,"lp":1,"a":"hand","o":[0.3,0,1.45],"sc":4.75,"dm":"screen","af":1,"st":[1,1],"pl":"cam","r":[0,0,-180],"sp":0,"c":"#ffffff","op":1,"ad":1,"fl":1},{"s":"anime_heavy_punch_impact_teal","t0":67,"d":800,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":2,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"ad":1},{"s":"anime_heavy_punch_impact_teal","t0":133,"d":800,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":5.6,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"ad":1}],"dot":0},"1":{"kc":0,"kg":0,"dist":3.6,"self":1,"r":3.6,"tr":[{"s":"dust_cloud","t0":0,"d":1300,"fps":16.5,"fa":0,"lp":1,"a":"body","o":[0.3,0,-0.75],"sc":3.5,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.16},{"s":"orbiting_rock_shield","t0":133,"d":833,"fps":30,"fa":0,"lp":1,"a":"hand","o":[0.55,0,-2.05],"sc":2,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.32},{"s":"slash_attack_hit_blue","t0":67,"d":700,"fps":30,"fa":0,"lp":1,"a":"hand","o":[0,0,0],"sc":2,"dm":"screen","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"ad":1},{"s":"slash_attack_hit_blue","t0":539,"d":700,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":6.05,"dm":"iso","st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"aoe":1},{"s":"whirlwind_orange","t0":33,"d":800,"fps":30,"fa":0,"lp":1,"a":"body","o":[0,0,0],"sc":9.2,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1}],"dot":0},"2":{"kc":0,"kg":0,"dist":10,"self":0,"r":2.5,"tr":[{"s":"anime_dash_effect","t0":0,"d":1067,"fps":22.5,"fa":0,"lp":1,"a":"hand","o":[-0.15,0,4.25],"sc":2.45,"dm":"none","af":1,"st":[1.75,1],"pl":"cam","r":[0,0,24],"sp":0,"c":"#ffffff","op":1},{"s":"anime_sonic_boom_green","t0":500,"d":519,"fps":27,"fa":0,"lp":1,"a":"hand","o":[0,0,0],"sc":3.05,"dm":"screen","af":1,"st":[1,1],"pl":"cam","r":[2,0,42],"sp":0,"c":"#ffffff","op":0.3}],"dot":0},"3":{"kc":0,"kg":0,"dist":2.8,"self":0,"r":2.5,"tr":[{"s":"regrowth_violet_1","t0":0,"d":12000,"fps":30,"fa":0,"lp":1,"a":"body","o":[0,0,0],"sc":4.55,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#4a4f08","op":0.46}],"dot":0},"4":{"kc":0,"kg":0,"dist":5,"self":1,"r":5,"tr":[{"s":"anime_wall_crash_crater","t0":300,"d":267,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":6.05,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.36,"aoe":1},{"s":"rock_spikes","t0":0,"d":733,"fps":33,"fa":0,"lp":1,"a":"body","o":[-0.25,0,-0.75],"sc":8.55,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1},{"s":"slowed","t0":300,"d":2700,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":4.75,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.2,"aoe":1}],"dot":0},"5":{"kc":0,"kg":0,"dist":2.8,"self":0,"r":2.5,"tr":[{"s":"water_shield_buff_orange","t0":0,"d":20000,"fps":30,"fa":0,"lp":1,"a":"body","o":[-0.25,0,0.25],"sc":4.1,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#8f0000","op":0.34}],"dot":0},"6":{"kc":0,"kg":0,"dist":2.8,"self":0,"r":2.5,"tr":[{"s":"anime_golden_aura","t0":0,"d":10000,"fps":30,"fa":0,"lp":1,"a":"body","o":[-0.8,0,0.9],"sc":7.7,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ff0000","op":0.12}],"dot":0},"7":{"kc":0,"kg":0,"dist":8,"self":0,"r":4.5,"tr":[{"s":"divine_smite_blue","t0":433,"d":1300,"fps":30,"fa":0,"lp":1,"a":"gTarget","o":[3.3,0,-3.4],"sc":6.65,"dm":"none","pv":"b","af":1,"st":[3,1.5],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.92},{"s":"superhero_landing_teal","t0":700,"d":1000,"fps":30,"fa":0,"lp":1,"a":"gTarget","o":[-0.4,0,0.3],"sc":3.05,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1},{"s":"superhero_landing_teal","t0":533,"d":1100,"fps":30,"fa":0,"lp":1,"a":"body","o":[0.45,0,-0.5],"sc":3.9,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#c8fbfe","op":0.48}],"dot":8000}}}
+};
+ const D2R=Math.PI/180,PIV={c:[0,0],b:[0,-.5],t:[0,.5],l:[-.5,0],r:[.5,0]},TX={},live=[],zones=[];let shOk=false,tickOn=false,cam0=null;
+ const base=()=>window.FX_BASE||(location.protocol.indexOf('http')===0?'fx/':'');
+ function shader(){if(shOk)return;shOk=true;const S=BABYLON.Effect.ShadersStore;
+  S.fxsprVertexShader='precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){gl_Position=worldViewProjection*vec4(position,1.0);vUV=uv;}';
+  S.fxsprFragmentShader='precision highp float;varying vec2 vUV;uniform sampler2D tex;uniform vec4 fr;uniform vec3 tint;uniform float op;void main(){vec4 c=texture2D(tex,fr.xy+vUV*fr.zw);gl_FragColor=vec4(c.rgb*tint,c.a*op);}';}
+ function tex(key){if(TX[key])return TX[key];const t=new BABYLON.Texture(base()+'fx_'+key+'.webp?v=242',scene,true,true,BABYLON.Texture.BILINEAR_SAMPLINGMODE);
+  t.hasAlpha=true;t.wrapU=t.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;return TX[key]=t;}
+ function pre(cls){const p=PK[cls];if(!p||p._pre)return;p._pre=1;try{for(const k in p.sh)tex(k);}catch(e){}}
+ const hx=h=>{try{return C3.FromHexString(h||'#ffffff');}catch(e){return new C3(1,1,1);}};
+ /* ângulo na tela da frente do personagem (câmera do jogo: alfa -45°, beta .95) */
+ function scrAng(yawDeg){const y=yawDeg*D2R,a=-Math.PI/4,fx=Math.sin(y),fz=Math.cos(y),sx=fx*(-Math.sin(a))+fz*Math.cos(a),sy=(fx*(-Math.cos(a))+fz*(-Math.sin(a)))*Math.cos(.95);return{sx,ang:Math.atan2(sy,sx)};}
+ function camQ(dA){if(!cam0){const a=-Math.PI/4,b=.95,eye=new V3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b)).scale(40),V=BABYLON.Matrix.LookAtLH(eye,V3.Zero(),V3.Up());cam0=V.clone().invert();cam0.setTranslationFromFloats(0,0,0);}
+  return BABYLON.Quaternion.FromRotationMatrix(cam0.multiply(BABYLON.Matrix.RotationY(dA)));}
+ /* quem lançou a habilidade e para onde (tudo na referência do personagem no instante do lançamento) */
+ const rotL=(v,yaw)=>{const c=Math.cos(-yaw),s=Math.sin(-yaw);return new V3(v.x*c+v.z*s,v.y,-v.x*s+v.z*c);};
+ function wposN(n){const ch=[];for(let p=n;p;p=p.parent)ch.push(p);for(let i=ch.length-1;i>=0;i--)ch[i].computeWorldMatrix(true);return n.getAbsolutePosition().clone();}
+ const GROUND=a=>a==='gSelf'||a==='gTarget';
+ function anchorW(C,a){const r=C.o.root.position;
+  switch(a){case 'hand':return C.o.hand?wposN(C.o.hand):new V3(r.x,r.y+1.2,r.z);case 'handL':return C.o.handL?wposN(C.o.handL):new V3(r.x,r.y+1.2,r.z);
+   case 'head':return new V3(r.x,r.y+2.1,r.z);case 'body':return new V3(r.x,r.y+1.1,r.z);case 'gSelf':return new V3(r.x,.06,r.z);
+   case 'gTarget':return new V3(C.tp.x,.06,C.tp.z);default:return new V3(C.tp.x,(C.tp.y||0)+1.3,C.tp.z);}}
+ function mk(C,k,ent){const sh=PK[C.cls].sh[k.s];if(!sh)return null;shader();
+  const h=new BABYLON.TransformNode('sxh',scene),b=new BABYLON.TransformNode('sxb',scene),r=new BABYLON.TransformNode('sxr',scene),v=new BABYLON.TransformNode('sxv',scene);
+  const p=B.CreatePlane('sxp',{size:1,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene);h.parent=C.W;b.parent=h;r.parent=b;v.parent=r;p.parent=v;p.isPickable=false;p.renderingGroupId=1;p.alwaysSelectAsActiveMesh=true;
+  const m=new BABYLON.ShaderMaterial('sxm',scene,'fxspr',{attributes:['position','uv'],uniforms:['worldViewProjection','fr','tint','op'],samplers:['tex'],needAlphaBlending:true});
+  m.setTexture('tex',tex(k.s));m.backFaceCulling=false;m.disableDepthWrite=true;m.needAlphaBlending=()=>true;m.alphaMode=k.ad?BABYLON.Engine.ALPHA_ADD:BABYLON.Engine.ALPHA_COMBINE;
+  m.setColor3('tint',hx(k.c));m.setFloat('op',k.op==null?1:k.op);p.material=m;h.setEnabled(false);
+  return {h,b,r,v,p,m,sh,fr:new BABYLON.Vector4(0,0,1/sh[0],1/sh[1]),ent};}
+ function kill(q){try{q.m.dispose(false,false);}catch(e){}try{q.h.dispose(false,false);}catch(e){}}
+ /* começa uma faixa (no instante t0 dela): lê a âncora agora e cria uma cópia por alvo */
+ function spawn(C,k){if(C.dead())return;if(C.tm&&C.tm.alive!==false){const e=C.tm,pp=e.root?e.root.position:e.pos;if(pp)C.tp=pp.clone();}const yaw=C.yaw,W0=C.W.position,L=[];
+  const loc=w=>rotL(w.subtract(W0),yaw),offL=()=>{const v=new V3((k.o||[])[0]||0,(k.o||[])[1]||0,(k.o||[])[2]||0);
+   const pl=k.pl||'cam',wo=pl==='cam'&&(k.dm||'none')==='none'&&!['hand','handL','proj','path','clone'].includes(k.a);return wo?rotL(v,yaw):v;};
+  const tgtA=k.a==='target'||k.a==='gTarget';
+  if(k.aoe&&tgtA){   /* dano em área: o mesmo encaixe em cada monstro dentro da área (como se mirasse cada um) */
+   const MF=new V3(0,GROUND(k.a)||k.pl==='xz'?.06:1.3,C.dist).addInPlace(offL()),g=GROUND(k.a)||k.pl==='xz';
+   for(const m of C.area()){const l=loc(m.pos),dA=Math.atan2(l.x,l.z),c=Math.cos(dA),s=Math.sin(dA),dx=MF.x,dz=MF.z-C.dist;
+    L.push({pos:new V3(l.x+dx*c+dz*s,MF.y+(g?0:(m.pos.y||0)),l.z-dx*s+dz*c),dA,ent:m,fit:1});}
+  }else if(k.a==='path'){const S=loc(C.o0);S.y=1;L.push({pos:S,dA:0,ent:null});}
+  else{const w=anchorW(C,k.a==='proj'?'hand':k.a);const pos=loc(w);if(k.a!=='proj')pos.addInPlace(offL());
+   const ent=tgtA?(C.tm||null):(k.a==='body'||k.a==='gSelf'||k.a==='head')?C.o:null;L.push({pos,dA:0,ent});}
+  const fol=k.d>1500&&!['hand','handL','proj','path'].includes(k.a),now=performance.now();
+  for(const d of L){const q=mk(C,k,d.ent);if(!q)continue;q.k=k;q.C=C;q.t0=now;q.pos=d.pos;q.dA=d.dA;q.fit=d.fit;
+   q.fol=fol&&d.ent&&d.ent.root?{e:d.ent,p0:(d.ent.root?d.ent.root.position:d.ent.pos).clone()}:null;
+   if(k.a==='path'||k.a==='proj'){const tg=loc(new V3(C.tp.x,1.3,C.tp.z));q.tg=tg;}
+   live.push(q);}
+  if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}}
+ function upd(q,now){const k=q.k,C=q.C,sh=q.sh,el=now-q.t0;
+  if(el>=k.d||(q.fol&&q.fol.e!==C.o&&q.fol.e.alive===false)||(q.fol&&q.fol.e===C.o&&C.dead())||C.W.isDisposed())return false;
+  q.h.setEnabled(true);
+  const n=sh[2],fa=Math.max(0,Math.min(n-1,k.fa|0)),fb=Math.max(fa,Math.min(n-1,k.fb==null?n-1:+k.fb)),cnt=fb-fa+1;let f=Math.floor(el/1000*(k.fps||30));f=k.lp!==0?f%cnt:Math.min(cnt-1,f);f+=fa;
+  const cx=f%sh[0],cy=Math.floor(f/sh[0]);q.fr.set(cx/sh[0],1-(cy+1)/sh[1],1/sh[0],1/sh[1]);q.m.setVector4('fr',q.fr);
+  let pos=q.pos.clone();
+  if(q.fol){const e=q.fol.e,cp=e.root?e.root.position:e.pos;pos.addInPlace(rotL(cp.subtract(q.fol.p0),C.yaw));}
+  const pl=k.pl||'cam',R=k.r||[0,0,0],path=k.a==='path';let plen=0,pdir=0,phi=null;
+  if(path){const S=q.pos,E=new V3(q.tg.x,S.y,q.tg.z),dx=E.x-S.x,dz=E.z-S.z;plen=Math.max(.2,Math.hypot(dx,dz)*((k.st||[1])[0]||1));pdir=Math.atan2(-dz,dx);pos=V3.Lerp(S,E,.5);}
+  if(k.a==='proj'){const fl=Math.max(1,V3.Distance(q.pos,q.tg)/(k.spd||20)*1000);pos=V3.Lerp(q.pos,q.tg,Math.min(1,Math.max(0,el/fl)));}
+  if(pl==='cam'&&(path||(k.a==='proj'&&k.face!==0))){try{const vp=camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()),Wm=C.W.computeWorldMatrix(true),VP=scene.getTransformMatrix(),
+   pa=V3.Project(q.pos,Wm,VP,vp),pb=V3.Project(q.tg,Wm,VP,vp);phi=-Math.atan2(pb.y-pa.y,pb.x-pa.x);}catch(e){phi=0;}}
+  const fit=q.fit,rx=R[0]*D2R,ry=R[1]*D2R+(fit&&pl!=='cam'?q.dA:0)+(path&&pl!=='cam'?pdir:0),rz=(R[2]+(k.sp||0)*el/1000)*D2R,dm=k.dm||'none',yd=C.yaw/D2R+(fit?q.dA/D2R:0);
+  let mir=false,mirY=false,scr=0,use3d=false;
+  if(pl==='cam'){if(phi!=null){if(k.af&&Math.cos(phi)<0){mir=true;scr=phi-Math.PI;}else scr=phi;}
+   else if(dm==='3d')use3d=true;
+   else if(dm==='iso'){const A0=scrAng(0).ang,c=scrAng(yd).ang,mx=Math.cos(c)<0,my=Math.sin(c)<0,res=Math.atan2(Math.abs(Math.sin(c)),Math.abs(Math.cos(c)))-A0;mir=mx;mirY=my;scr=(mx!==my)?-res:res;}
+   else if(dm!=='none'){const A0=scrAng(0).ang,cur=scrAng(yd);mir=cur.sx<0;if(dm==='screen')scr=mir?cur.ang-(Math.PI-A0):cur.ang-A0;}}
+  const st=k.st||[1,1],sc=k.sc||1;
+  q.p.scaling.set((path?plen:sc*sh[3]*(st[0]||1))*(k.fl?-1:1),sc*(st[1]||1),1);q.r.scaling.set(mir?-1:1,mirY?-1:1,1);q.r.rotation.set(0,0,scr);
+  q.h.position.copyFrom(pos);
+  const PV=PIV[k.pv||'c'];q.p.position.set(-PV[0]*q.p.scaling.x,-PV[1]*q.p.scaling.y,0);
+  if(pl==='cam'&&!use3d){q.b.billboardMode=BABYLON.TransformNode.BILLBOARDMODE_ALL;q.b.rotationQuaternion=null;q.v.rotation.set(rx,ry,rz);}
+  else if(use3d){q.b.billboardMode=0;q.b.rotationQuaternion=camQ(fit?q.dA:0);q.v.rotation.set(rx,ry,rz);}
+  else{q.b.billboardMode=0;q.b.rotationQuaternion=null;q.b.rotation.set(0,0,0);if(pl==='xz'){q.v.rotation.set(Math.PI/2+rx,ry,rz);q.h.position.y=Math.max(.04,q.h.position.y);}else if(pl==='zy')q.v.rotation.set(rx,Math.PI/2+ry,rz);else q.v.rotation.set(rx,ry,rz);}
+  return true;}
+ function tick(){const now=performance.now();
+  for(let i=live.length-1;i>=0;i--){const q=live[i];let ok=false;try{ok=upd(q,now);}catch(e){ok=false;}if(!ok){kill(q);live.splice(i,1);}}
+  for(let i=zones.length-1;i>=0;i--)if(now>zones[i].until)zones.splice(i,1);
+  for(const C of casts)if(!C.W.isDisposed()&&now>C.end&&!live.some(q=>q.C===C)){C.W.dispose();}
+  for(let i=casts.length-1;i>=0;i--)if(casts[i].W.isDisposed())casts.splice(i,1);}
+ const casts=[];
+ /* a habilidade (classe, índice) tem efeito do pacote? mine = do jogador local */
+ function get(cls,i,mine){const p=PK[cls];if(!p||!p.sk[i])return null;if(!mine&&((typeof PERF!=='undefined'&&PERF.low)||(typeof fxLvl==='function'&&fxLvl()==='m')))return null;return p.sk[i];}
+ /* o: quem lançou (P ou o jogador remoto); tm: monstro/jogador alvo (ou null); yaw: direção do personagem; dirx/dirz: direção sem alvo */
+ function play(o,cls,i,tm,mine,dirx,dirz){const s=get(cls,i,mine);if(!s||!o||!o.root||typeof scene==='undefined')return false;pre(cls);
+  const r=o.root.position,yaw=o.root.rotation.y;let tp=null;
+  if(tm&&(tm.pos||tm.root))tp=(tm.pos||tm.root.position).clone();
+  else{const a=(dirx||dirz)?Math.atan2(dirx,dirz):yaw;tp=new V3(r.x+Math.sin(a)*s.dist,0,r.z+Math.cos(a)*s.dist);}
+  const W=new BABYLON.TransformNode('sxw',scene);W.position.set(r.x,0,r.z);W.rotation.y=yaw;
+  const C={cls,o,tm:tm||null,tp,yaw,W,o0:r.clone(),dist:s.dist,dead:()=>!!(o.dead||(o.root&&o.root.isDisposed&&o.root.isDisposed())),
+   area:()=>{const c=s.self?o.root.position:(tm&&tm.alive!==false&&tm.pos?tm.pos:tp);try{return nearMonsters(c,s.r);}catch(e){return[];}},end:performance.now()+500};
+  for(const k of s.tr){C.end=Math.max(C.end,performance.now()+k.t0+k.d+200);
+   if(k.t0<=0)spawn(C,k);else{const t=setTimeout(()=>{try{spawn(C,k);}catch(e){}},k.t0);}}
+  casts.push(C);
+  if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}
+  /* efeitos antigos de marcação no chão: somem perto de quem lançou e do alvo enquanto a habilidade acontece */
+  if(!s.kg){const now=performance.now(),w=1700+(s.dot||0);zones.push({x:r.x,z:r.z,r:Math.max(3,s.r+1.5),until:now+w});zones.push({x:tp.x,z:tp.z,r:Math.max(3,s.r+1.5),until:now+w});}
+  return true;}
+ /* um aro/explosão/chão antigo nesta posição deve sumir? (em Guerra/Arena/duelo o aro colorido do lado continua) */
+ function sup(x,z){if(!zones.length)return false;if(typeof FXCTX!=='undefined'&&FXCTX&&(FXCTX.enemy||FXCTX.ally))return false;const now=performance.now();
+  for(const q of zones)if(now<=q.until&&Math.hypot(x-q.x,z-q.z)<=q.r)return true;return false;}
+ /* sem os efeitos antigos de lançamento (kc) e/ou de chão (kg) */
+ const noCast=(cls,i,mine)=>{const s=get(cls,i,mine);return !!(s&&!s.kc);},noGround=(cls,i,mine)=>{const s=get(cls,i,mine);return !!(s&&!s.kg);};
+ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&PK[S.cls])pre(S.cls);}catch(e){}},3000);   /* texturas da classe do jogador prontas antes do 1º uso */
+ return{play,pre,sup,noCast,noGround,has:(cls,i)=>!!(PK[cls]&&PK[cls].sk[i]),get live(){return live.length;},PK};
+})();
+if(/^\?dbg/.test(location.search))window.SFX2=SFX2;
 
 /* Cada modelo é um .glb leve (malha reduzida + esqueleto + animações com nome padrão), baixado só quando aparece a primeira criatura dele.
    Monstros: aranha, cobras, ratazana, sapo, vespa, morcego, esqueleto, robôs (região mecânica). Animais das vilas (fazenda). Baú animado.
@@ -5188,6 +5301,7 @@ function fxLvl(){if(!FXCTX||FXCTX.mine)return 'a';return FXO==='auto'?(PKS.mode?
 /* v2.3.3: um efeito com erro sai da lista — antes a exceção parava o laço de desenho (o jogo congelava em lutas grandes) */
 function updateFx(now){for(let i=fx.length-1;i>=0;i--){const f=fx[i];if(!f)continue;const t=Math.min(1,(now-f.t0)/f.dur);try{if(f.upd)f.upd(t);if(t>=1){fx.splice(i,1);if(f.done)f.done();}}catch(e){fx.splice(i,1);console.warn('fx',e);}}}
 function ring(x,z,r,c,dur,y){
+ if(SFX2.sup(x,z))return;   /* v2.4.2: habilidade com efeito do estúdio sem a marcação antiga */
  if(FXCTX&&!FXCTX.mine&&(FXCTX.enemy||FXCTX.ally))c=FXCTX.enemy?'#ff3b3b':'#3ba4ff';   /* v2.3.3: aro do outro jogador na cor do lado */
  const t=staticMesh(B.CreateTorus('rg',{diameter:2,thickness:.07,tessellation:40},scene)),d=staticMesh(B.CreateDisc('rd',{radius:1,tessellation:40},scene));d.rotation.x=Math.PI/2;
  for(const m of[t,d]){m.material=fxMat(c);m.position.set(x,y||.1,z);}
@@ -6147,7 +6261,7 @@ function barbFx(o,dur){
 function thunderFx(m,rad,dotDur,col){
  const x0=m.pos.x,z0=m.pos.z;
  later(700,()=>{
-  const x=m.alive?m.pos.x:x0,z=m.alive?m.pos.z:z0,pts=[];
+  const x=m.alive?m.pos.x:x0,z=m.alive?m.pos.z:z0,pts=[];if(SFX2.sup(x,z))return;   /* v2.4.2: o raio do estúdio substitui este */
   for(let k=0;k<=9;k++)pts.push(new V3(x+((k===0||k===9)?0:rnd(-.9,.9)),16*(1-k/9),z+((k===0||k===9)?0:rnd(-.9,.9))));
   const bolt=B.CreateLines('thb',{points:pts},scene);bolt.color=new C3(.85,.95,1);bolt.isPickable=false;bolt.renderingGroupId=1;
   const gm=new BABYLON.StandardMaterial('thg',scene);gm.disableLighting=true;gm.emissiveColor=C3.FromHexString(col||'#bfe3ff');gm.alpha=.6;
@@ -6387,6 +6501,7 @@ function skPs(emitter,E,rate,box,cap){
  return ps;
 }
 function groundFx(x,z,r,el,dur){
+ if(SFX2.sup(x,z))return;
  dur=dur||3000;const E=SKEL[el]||SKEL.steel;
  /* v2.3.3: efeitos de OUTROS jogadores — nível escolhido em ⚙️ Opções, aro vermelho (inimigo) / azul (aliado) em Guerra, Arena e duelo */
  const LV=fxLvl(),OTH=!!(FXCTX&&!FXCTX.mine),LITE=LV!=='a',SIDE=OTH?(FXCTX.enemy?'#ff3b3b':FXCTX.ally?'#3ba4ff':null):null,VK=LITE?.45:1;
@@ -6430,6 +6545,7 @@ function groundFx(x,z,r,el,dur){
  },done:()=>o.kill()});
 }
 function burst(x,z,el){
+ if(SFX2.sup(x,z))return;
  if(fxLvl()!=='a')return;   /* v2.3.3: efeito de outro jogador com efeitos reduzidos */
  const E=SKEL[el]||SKEL.steel,em=B.CreateBox('bm',{size:.02},scene);em.isVisible=false;em.position.set(x,.15,z);
  const ps=skPs(em,E,260,.4,80);ps.minLifeTime=.3;ps.maxLifeTime=.7;ps.direction1=new V3(-1.6,E.up*2,-1.6);ps.direction2=new V3(1.6,E.up*3,1.6);ps.start();
@@ -6689,7 +6805,8 @@ function castSkill0(i){
   if(cb){s.mult*=1+(s.cbonus||.5);P.mp=Math.min(D().maxMp,P.mp+s.mp*.4);if(s.reset)for(const j of s.reset)P.cd[j]=0;floatText('⚡ COMBO ×'+P.cst+'!',P.pos,'#ffd24a',true);AUD.sfx('combo',null,{n:P.cst});logMsg(`<span style="color:#ffd24a">⚡ COMBO ×${P.cst}: ${CLASSES[S.cls].skills[P.lastSkill].n} → ${s.n}</span>`);}
   if(s.mark&&tgt){tgt.markUntil=now+s.mark*1000;floatText('🎯 Marcado',tgt.pos,'#ff7ad9');}
  }
- P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});VFX.launch(s,P.pos);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon)))skillFx(s,P.pos,tgt?tgt.pos:null);
+ P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});let sxT=tgt||ft;if(!sxT){const q=curTgt()||nearestMonster(s.range||3);if(q&&hyp(P.pos,q.pos)<=(s.range||3)+2)sxT=q;}const sxOn=SFX2.play(P,S.cls,i,sxT,true,dirx,dirz);   /* v2.4.2 efeitos do Estúdio de Efeitos */
+ if(!(sxOn&&SFX2.noCast(S.cls,i,true)))VFX.launch(s,P.pos);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon))&&!(sxOn&&SFX2.noGround(S.cls,i,true)))skillFx(s,P.pos,tgt?tgt.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null),so={slow:s.slow,defMult:s.defMult,exec:s.exec,forceCrit:s.forceCrit};
  switch(s.type){
   case 'single':
@@ -8776,7 +8893,8 @@ function remoteSkill0(m){
  if(m.pid){const tg=NET.room&&m.pid===NET.room.sessionId?P:remoteOf(m.pid),tp=tg===P?P.pos:(tg&&tg.root.position);if(tp)ring(tp.x,tp.z,2.6,s.color,700);return;}
  const mo=m.tid?monsters.find(x=>x.id===m.tid):(m.ptid?ptOf(m.ptid):null),now=performance.now(),from=o.root.position;o.swingAt=now;if(!o.rig&&(RIGFX.has(s.type)||(s.type==='single'&&(s.proj||(C.ranged?C.proj:null))==='hook'))){AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));if(fxLvl()!=='m'&&hyp(P.pos,from)<34)VFX.launch(s,from,1);skillFx(s,from,mo?mo.pos:null);return;}o.swKind=s.anim||(s.type==='dash'?'dash':s.type==='buff'?'buff':null);o.swKA=now;if(m.dx||m.dz)o.root.rotation.y=Math.atan2(m.dx,m.dz);
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
- AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));if(fxLvl()!=='m'&&hyp(P.pos,from)<34)VFX.launch(s,from,1);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon)))skillFx(s,from,mo?mo.pos:null);
+ AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));const sxOn=SFX2.play(o,o.cls,m.i,mo,false,m.dx||0,m.dz||0);   /* v2.4.2 */
+ if(fxLvl()!=='m'&&hyp(P.pos,from)<34&&!(sxOn&&SFX2.noCast(o.cls,m.i,false)))VFX.launch(s,from,1);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon))&&!(sxOn&&SFX2.noGround(o.cls,m.i,false)))skillFx(s,from,mo?mo.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null);
  switch(s.type){
   case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(s.charge){chargeFx(o,mo,s.color,s.pre);later(s.pre,()=>{if(mo.alive)bigShot(from,mo,s.color,null,{through:3,rings:true,sc:2.1,streak:3.6});});}else if(pr)shoot(from,mo,s.color,pr,null,{sc:1.3,streak:2.4});else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;

@@ -1,0 +1,157 @@
+# Valdoria Online — resumo do projeto para continuar com outra IA
+_Atualizado em 21/11/2026 · versão do cliente v2.3.3 · rules.js VERSION 4_
+
+Cole este arquivo no início da conversa com a outra IA. Depois mande **só o trecho** do código que for mexer: o `index.html` tem 1,5 MB e ~9.400 linhas, então não cabe inteiro.
+
+---
+
+## 1. O que é
+MMORPG 3D isométrico no navegador (PC e celular), em português, com tradução para inglês.
+- 7 classes: Guerreiro, Arqueiro, Mago, Assassino, Cavaleiro Pesado, Tanque, Pierrot.
+- Nível máximo 170, 124 tipos de monstros, 61 zonas e 8 calabouços.
+- Também tem: World Boss, Guerra entre nações (Kharzun 🐉 vermelho × Azurath azul) na Cidade das Máquinas, Arena PK, duelo, guildas, leilão, correio, troca, mascotes, montarias, fantasias, gemas/engastes, refino +1…+10, conjuntos, diárias/semanais e uma história em atos.
+
+## 2. Tecnologia e hospedagem
+| Parte | O quê | Onde |
+|---|---|---|
+| Cliente | `index.html` (tudo num arquivo: HTML+CSS+JS), Babylon.js **7.54.3** fixo (CDN), loader glTF | Cloudflare Pages (build `pages-build.sh` copia `*.glb` para `dist/modelos/`) |
+| Regras compartilhadas | `rules.js` — usado **pelo cliente e pelo servidor** (itens, classes, dano, monstros, zonas, migração de save) | site **e** servidor |
+| Tradução | `lang_en.js` — dicionário `{"d":{"texto pt":"text en",...}}` | site |
+| Servidor | Node + TypeScript (`tsx`), Colyseus (WebSocket), PostgreSQL | VPS, atualiza sozinho a partir do GitHub (`atualizar.sh`) |
+| Repositório | `lucaspagodesrc-ux/MMORPG-BETA-V2`, **estrutura plana** (tudo na raiz, sem `src/`) | upload pelo site do GitHub (limite 25 MB por arquivo) |
+
+Arquivos do servidor (raiz): `index.ts` (sobe tudo), `WorldRoom.ts` (sala do mundo, a maior), `schema.ts` (estado sincronizado), `auth.ts`, `db.ts`, `monsters.ts`, `dungeon.ts`, `pvp.ts` (duelo/arena/guerra), `worldboss.ts`, `guild.ts`, `auction.ts`, `trade.ts`, `mail.ts`, `itemutil.ts`.
+Outros: `Dockerfile`, `docker-compose.yml`, `env.example`, `vps-instalar.sh`, `backup.sh`, `smoke.mjs`, `colyseus-browser.js`.
+
+**Regra de ouro:** se mudar `rules.js`, suba no site **e** no servidor (é o mesmo arquivo na raiz; o VPS puxa do GitHub). O servidor é quem calcula dano, drop e XP; o cliente só mostra.
+
+## 3. Mapa do `index.html` (procure pelos nomes)
+- `CR` — sistema de criaturas GLB: `CR.defs` (`{f:'arquivo',sz:altura,by:'h',noPx:1,two:1,lin:1,clips:{idle,walk,atk,atk2,hit,die}}`), `CR.KEY` (monstro → criatura), `CR.TYPE`, `CR.build`, `CR.mat`, `CR.play`, `CR.anim`. Os GLB são carregados com `?v=223` no nome para furar o cache.
+- `buildMonster(model,id,type)`; escala do monstro = (boss ? 1,6 : 1) × `MT[k].sc`.
+- `OCT` + `scene.getActiveMeshCandidates` — árvore de seleção própria (cenário parado longe da câmera não entra no quadro).
+- `PX` — "proxy" leve dos bonecos de longe; `lodAdd` — níveis de detalhe.
+- `VCULL` (v2.3.3) — pausa as animações fora da tela. `?cull=0` desliga.
+- `STATICQ` — congela a matriz do cenário estático.
+- iPhone/celular: `IOS`/`MOB`, cenário `THIN`, monstros preguiçosos `MLAZY`/`monVis`, montarias carregadas só ao chamar.
+- Efeitos: `skillFx`, `groundFx`, `ring`, `burst`, `VFX.launch`, `later(ms,fn)`, `fx[]` (lista de efeitos com `upd/done`), `GFX` (círculos no chão).
+- Legibilidade em PvP (v2.3.3): `FXCTX` (de quem é o efeito), `fxLvl()`, `FXO` (⚙️ Opções → "Efeitos de outros jogadores": Auto/Todos/Reduzidos/Mínimos, salvo em `localStorage mmo_fxo`), `fxCtxOf(o)` (inimigo vermelho `#ff3b3b` / aliado azul `#3ba4ff`).
+- Números flutuantes: `floatText`, `dmgFloat` (soma golpes no mesmo alvo em 0,3 s), `avoidFloat` (ícones 💨 🛡️ 🔰).
+- Nomes: `plateHtml`, `place(el,pos,dy)`, `declutterPl()` (nomes empilhados não se sobrepõem), `HOVP` (nível ao passar o mouse na Guerra).
+- PvP: `PKS` (`PKS.mode` = `'war'`/`'arena'`/`'duel'`/''), `foeOk(o)`, `foeOf`, `pkDmg`/`pkHit`.
+- Rede: `NET.room` (Colyseus), `NET.others` (Map de jogadores), `S` (dados do personagem), `P` (jogador local).
+- Habilidades: `castSkill0`/`remoteSkill0` envolvidos por `slowed()` (o Guerreiro é 40% mais lento: `SK_SLOW` no rules.js).
+- Equipamento: `eqGrid` (painel Personagem), `SLOT_ORD`, `eqIco` (ícone espada+escudo do Cavaleiro, classe CSS `.ksi`), `ico(it)`.
+- Modo de teste: `?dbg` expõe `window.__G` (P, S, PKS, NET, scene, buildMonster, RULES, fxT, groundFx...). Abrir o `index.html` direto do disco roda **offline** com `localStorage`.
+
+## 4. Mapa do `rules.js`
+`CLASSES`, `MT` (monstros: `n, lv, boss, sc, model, tint`), `ZONES`, `DUNGEONS`, `QUESTS`, `NPCS`, `SHOPS`, `RECIPES`, `genItem`, `slotPool`, `cleanItem`, `migrate` (conserta saves antigos ao logar), `newChar`, `stats`, `hitDamage`, `skStat`, `PVP` (`cm` = multiplicador por classe no PvP, `defMult:0`, `defDmg:0`), `pvpK`, `WAR`, `ARENA`, `DUEL`, `NATIONS`, `GEMS`, `SETB`, `PETS`, `MTS` (montarias), `FZS` (fantasias), `SK_SLOW`, `castMs`/`animMs`, `VERSION`.
+Exporta tudo via `module.exports` (servidor) e `window.RULES` (cliente).
+
+## 5. Mudanças recentes (já entregues)
+- **v2.3.1–2.3.2:** Guerreiro com habilidades 40% mais lentas (animação e lançamento, cliente e `WorldRoom.ts`). Correção para iPhone: Babylon fixo em 7.54.3, menos memória, montarias sob demanda, monstros perto carregados primeiro. Balanceamento PvP (`PVP.cm`, `defMult/defDmg` em `pvp.ts`).
+- **Cavaleiro:** espada e escudo viraram **um item só** (arma ganha metade da defesa/vida do escudo, `KS_SH=.5`). O slot de escudo sumiu; escudos antigos são apagados em `migrate`/`cleanItem`; receitas de escudo removidas; `mail.ts` sem escudo nos presentes astrais.
+- **v2.3.3:**
+  - 6 monstros novos com rig e animações feitas no Blender: `mo_ogro`, `mo_demonio`, `mo_gargula`, `mo_orc`, `mo_golem`, `mo_musgo`. Ligações principais em `CR.KEY`: golem→musgo; au_tita/au_gra/dg_fd→golem_r; vc_ifrit/vc_dem/demonio/dg_km1/dg_fm2/dg_kd/dg_kclone→demonio_v; dg_nm1/barbaro/dg_ne/yeti_rei/yeti_anciao→ogro; dg_nboss/dg_nd/golem_gelo→gargula; orc/dg_na→orc_n.
+  - Esses GLB usam `lin:1` porque a textura tem que ser lida sem sRGB, senão o modelo fica preto.
+  - Efeitos de outros jogadores reduzidos em PvP, aros por cor de lado, números de dano limpos, nomes sem sobreposição e animações pausadas fora da tela.
+  - Ícone espada+escudo maior.
+
+## 6. Pendências e ideias
+- Avisos visuais para habilidades perigosas (sugerido, não pedido).
+- O aro vermelho de perigo do Reator Ômega (monstro) pode ser confundido com o aro "inimigo" vermelho do PvP.
+- Testar a v2.3.3 em iPhone real.
+- O pacote de som "96 Extra SFX" **não** pode ser usado até o dono informar a fonte/licença.
+
+## 7. Regras para quem continuar (IMPORTANTE)
+1. Responder em **português do Brasil**, de forma curta e honesta.
+2. **Nunca** colocar senha, token ou string de conexão no GitHub nem no código. Credenciais de GM ficam só em `/etc/mmorpg.env` no VPS. Não repetir segredos que apareçam em prints (token DuckDNS, conexão Neon). O e-mail do dono é privado.
+3. Não usar assets piratas nem redistribuir pacotes de som brutos.
+4. Montarias: **não reduzir triângulos** dos modelos.
+5. Entregar **arquivos completos** prontos para subir pela interface web do GitHub (o dono não usa git na linha de comando). Arquivos com mais de 25 MB não sobem.
+6. Toda mudança marcada com comentário no código: `/* v2.3.4: o que mudou e por quê */`.
+7. Mudança de save/itens → tratar em `migrate`/`cleanItem` do `rules.js` (não há jogadores ativos ainda, mas o save tem que continuar abrindo).
+8. Depois de mudar `rules.js`, ele vai para o site e para o servidor. Se mudar um `.ts`, só o servidor (o VPS atualiza sozinho em alguns minutos).
+9. Ao trocar um `.glb` existente, aumentar o `?v=` da URL de carregamento para o navegador não usar a versão velha.
+10. Se o jogo "não mudou" depois de subir: esperar o deploy do Cloudflare Pages (1–2 min) e recarregar sem cache (Ctrl+F5; no celular, fechar a aba).
+
+## 8. Como pedir ajuda à outra IA (modelo)
+> "Estou desenvolvendo o Valdoria Online (resumo anexo). Quero [mudança]. Segue o trecho atual de `index.html` / `rules.js` / `WorldRoom.ts` (procurei por `nomeDaFunção`). Me devolva o trecho alterado completo e diga exatamente onde colar."
+
+Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F** com os nomes da seção 3 e copie a função inteira.
+
+## 9. Como colocar um modelo 3D novo (monstro)
+1. **Esqueleto + animações.** Modelos do Tripo/Meshy vêm sem esqueleto. Escolha um caminho:
+   - **A) Script do projeto** (`humanoid_rig.py`, para humanoides, com ou sem asas). Instale o Blender (grátis) e rode no terminal, na pasta do arquivo:
+     `blender -b -P humanoid_rig.py -- entrada.glb mo_nome.glb 0 1024`
+     (`0` = não reduz triângulos; `1024` = tamanho máximo da textura). Para modelo com asas, antes rode `set WINGS=1` (Windows) ou `export WINGS=1` (Mac/Linux). Para modelo pesado (golem, colosso), use `HEAVY=1`.
+     O script gera as animações com os nomes que o jogo usa: Idle, Walk, Attack, Attack2, Hit, Death.
+   - **B) Mixamo** (site grátis da Adobe, só humanoides): envie o modelo, baixe as animações e junte tudo num .glb no Blender. Depois renomeie as animações para os nomes acima, ou informe os nomes em `clips`.
+   - **C) Ferramenta de rig do próprio Tripo/Meshy**, se tiver: baixe em .glb com as animações.
+2. **Teste o .glb** em https://gltf-viewer.donmccurdy.com (arraste o arquivo): veja se anda e ataca, e se a textura aparece.
+3. **Suba** o `mo_nome.glb` na raiz do repositório (até 25 MB; o ideal é menos de 5 MB para não pesar no celular).
+4. **Registre no `index.html`** (procure por `musgo:{f:'mo_musgo'`) e acrescente uma linha igual:
+   `nome:{f:'mo_nome',sz:2.4,by:'h',noPx:1,two:1,lin:1,clips:{idle:'Idle',walk:'Walk',atk:'Attack',atk2:'Attack2',hit:'Hit',die:'Death'}},`
+   - `sz` = altura no jogo (2,3 para comum humanoide; o boss já fica 1,6× maior sozinho).
+   - `lin:1` = obrigatório para modelos Tripo/Meshy (sem ele o modelo fica preto).
+   - `two:1` = desenha os dois lados das faces (evita buracos).
+5. **Ligue ao monstro:** em `CR.KEY` (logo abaixo, procure por `KEY:{golem:'musgo'`), acrescente `chave_do_monstro:'nome',`. As chaves dos monstros estão em `MT` no `rules.js` (ex.: `yeti_rei`, `dg_nboss`).
+6. Os comuns que usam o mesmo modelo do boss já ficam menores pela escala `sc` de cada um em `MT` (no `rules.js`).
+7. Recarregue com Ctrl+F5 e vá até o monstro para conferir tamanho, cor, direção e animações.
+
+## 10. v2.3.4 — Troca de ouro por diamantes
+- Janela 💎 Loja de Diamantes → aba **💱 Ouro → 💎**. Taxa fixa 💰 1.000.000 = 💎 1 (100 milhões = 100 💎), só ouro→diamante, sem volta. Máximo 💎 100 mil por troca.
+- `rules.js`: `DIA_GOLD`, `DIA_XMAX`, ação `act` `t:'gold2dia', n:<quantidade>` (o servidor confere ouro, quantidade inteira e limite `DIA_MAX`).
+- `index.html`: `dxMax`, `dxUpd`, `DXN`/`DXC` (confirmação em 2 cliques), aba `troca` em `renderFz`.
+
+## 11. v2.3.5 — 7 monstros novos (lobo, lava, obsidiana, areia)
+| Arquivo | Criatura (`CR.defs`) | Monstros (`CR.KEY`) |
+|---|---|---|
+| `mo_lobo.glb` (4 patas, `quadruped_rig.py`) | `lobo_n` | lobo, lobo_polar, dg_nc (os brancos clareiam pela cor `tint`) |
+| `mo_lava.glb` | `lava` (boss) / `lava_s` (comum, maior porque o `sc` do rules é .62) | vc_colosso, dg_fboss, dg_km2 / vc_gol |
+| `mo_obsid.glb` | `obsid` | colosso, dg_s1 |
+| `mo_areia.glb` (sem pernas, `NOLEGS=1`) | `areia` | elemental |
+| `mo_sacerd.glb` | `sacerd` | farao, dg_boss, dg_sboss, dg_sm2 |
+| `mo_anubis.glb` | `anubis` | chacal, dg_c, dg_sa |
+| `mo_mumia.glb` | `mumia_n` | mumia, dg_a |
+- Nova opção nas criaturas: `tintAll:1` (a cor `tint` do monstro no rules.js pinta o modelo inteiro; cores bem claras clareiam).
+- Scripts de esqueleto: `humanoid_rig.py` (agora com `NOLEGS=1`) e `quadruped_rig.py` (lobos, cães, felinos...). Uso igual: `blender -b -P script.py -- entrada.glb saida.glb 0 1024`.
+
+## 12. v2.3.6 — Dano do Guerreiro e da Chuva de Adagas
+- Guerreiro +60% sobre os valores antigos: Golpe Poderoso 1.2, Giro de Lâmina 2.4, Investida 2.88, Terremoto 3.52, Trovão 9.6, Fúria do Bárbaro +32% de dano (`buffs.dmg:.32`). O dano contínuo do Trovão (240/s) não mudou.
+- Assassino: Chuva de Adagas 1.05 (+50%).
+- Atenção: em `buffs`, `dmg` é porcentagem de bônus (.32 = +32%), não multiplicador.
+
+## 13. v2.3.7 — Técnica de Amp. vira Ataque
+- Cada 8 de Técnica de Amp. (gemas `w_ampe/w_ampm/a_ampe/a_ampm`, atributo de item de chefe e bônus de conjunto `ampX`) = **+100 de Ataque** (Espada ou Mágico, pela escola da classe). Constante `AMP_ATK = 100` no `rules.js`.
+- Vale em tudo (habilidades e ataque básico). O antigo % só nas habilidades foi removido (`stats().amp` = 0; novos campos `ampPts` e `ampAtk`).
+- PvP: "Resistência à Técnica Amp." (`ramp`) corta essa % do Ataque que veio da Amp. do atacante (em `hitDamage`).
+- Painel do personagem: linhas "Amp. Espada/Mágica" mostram os pontos e "(+X ataque)"; o valor já entra no Ataque.
+
+## 14. v2.3.8 — Alvo (seleção de monstros e jogadores)
+- `cycleTarget()`: tecla **Z** (e o botão ⇆ no celular) troca para o próximo inimigo perto, sem repetir os já vistos nos últimos 3 s. Se estava atacando o alvo antigo, passa a atacar o novo.
+- `tgtFocus()` em `castSkill0`: apertar uma habilidade sem alvo seleciona o inimigo mais perto.
+- A seleção some sozinha quando o alvo morre ou fica a mais de `TGT_FAR` (30) ou além da borda da tela.
+- Monstros e jogadores inimigos (`pkFoes()`): mapas PK, Arena, Guerra e futuros modos com `PKS.mode`.
+
+## 15. v2.3.9 — Marcador no mapa, rolagem, forja de Vulcânia, Tanque fora
+- **Marcador de destino:** no mapa aberto (M), clicar coloca um alfinete (`WP`, `wpFromMap`); clicar nele de novo remove. Com o mapa fechado: feixe de luz no lugar, seta no chão em volta do personagem e distância (`WPM`). Some ao chegar (< 2,5 m). Também aparece no minimapa (seta na borda quando está fora dele).
+- **Rolagem:** toda `.win` rola quando passa da altura da tela; `#titlesBody` tem rolagem própria. Títulos: clicar no nome do grupo (calabouço) recolhe/mostra (salvo em `localStorage mmo_tcol`).
+- **Forja de Vulcânia (Brakk):** antes abria vazia (nenhuma receita com `at:'ferreiro_lava'`). Novos materiais: escamamagma, ferraobs, nucleolava, chamaeterna, chifreinf, cinzarunica (comuns de Vulcânia, 45%) e coracaoifrit, escamavulc (chefes). 8 receitas Nv 104–130 (`l_*`). Quebrar itens Nv 100+ dá materiais de Vulcânia (`BRK_BR`).
+- **Tanque:** `CLS_OFF = { tanque: 1 }` no rules.js — some da criação (cliente) e o servidor recusa (auth.ts). Personagens Tanque que já existem continuam funcionando. Para voltar: apagar `tanque: 1`.
+
+## 16. v2.4.0 — Mascotes, montarias e fantasias mais leves
+- **Mascotes:** `petLoad` prepara e compila os materiais uma vez (em segundo plano); `petMk` copia só as malhas do mascote (`predicate`), sem clonar os 40 materiais, com `quiet()`. Criar um mascote caiu de ~2 s para ~4 ms no teste. Mascotes de outros jogadores entram numa fila (1 a cada 120 ms).
+- **Montarias:** `MNT.load` compila em segundo plano (`forceCompilationAsync`) e marca `MNT.rdy[id]`; a montaria de outro jogador só aparece depois de pronta, baixa uma por vez (a cada 1,5 s) e só se o jogador estiver a menos de 40 m. `MNT.make` com `quiet()`.
+- **Fantasia:** a arma da classe voltou a aparecer (`reskin` refaz `glbOW/glbAW` e recria a arma); a fantasia pega emprestadas da classe as animações que não tem (Dança, Sim/Não etc.), só os giros dos ossos pelo nome.
+
+## 17. v2.4.1 — Drops e ataque básico na Cidade das Máquinas
+- **Ataque básico (monstros Nv 130+):** `R.BASIC_HI = {lv:130, mult:2, pierce:.5}`; aplicado em `WorldRoom.basic()` (×2 e ignora 50% da defesa). Antes eram 170–600 golpes por monstro; agora ~50–75 (como em Vulcânia).
+- **Ingressos:** dentro do calabouço os monstros não dão mais ingresso; ao concluir, cada jogador tem `R.TIX_DG = 0.1` (≈1 a cada 10 calabouços) — `dungeon.ts` `advance()`. No mapa, `TIX_MAP_F = 0.1` multiplica `tixMob/tixBoss` de todos os calabouços (comum 0,1%, chefe 0,4%; Solara 0,03/0,15%; Máquinas 0,02/0,1%).
+- **Materiais:** criação só ao quebrar equipamento (`rollLoot` já não usava `T.mats`; o chefe de mundo agora dá só ferro/essência em `worldboss.ts`). `UP_DROP`: comum ferro 8% / essência 2%; chefe 60% / 30%.
+
+## 19. v2.4.2 — Efeitos do Estúdio no jogo (Guerreiro)
+- `index.html`: módulo `SFX2` (logo depois do `VFX`) toca os pacotes do Estúdio de Efeitos. Dados do pacote ficam embutidos (`PK.guerreiro`); para outra classe, gerar com `tools/fxopt.py` (spritesheets → WebP, quadro ≤256 px, folha ≤2048 px) e `tools/fxpack.py` (JSON compacto) e colar em `PK`.
+- Mesma matemática do estúdio: âncoras (mão, corpo, cabeça, chão, alvo, caminho, projétil), posição congelada no início da faixa, deslocamento local (ou de mundo no modo "não mudar"), plano, pivô, esticar, giros, modos de virar (tela/iso/3D/espelho), dano em área copiado em cada monstro dentro do raio. Faixas com mais de 1,5 s em corpo/alvo acompanham quem recebeu (buffs, lentidão).
+- Lançamento local (`castSkill0`) e remoto (`remoteSkill0`). Sem "manter efeitos do jogo": some o brilho de lançamento (`VFX.launch`) e aros/explosões/chão antigos perto de quem lançou e do alvo (`SFX2.sup` em `ring`, `burst`, `groundFx`, raio do Trovão). Em Guerra/Arena/duelo o aro colorido do lado continua.
+- Servidor `index.ts`: rota `/fx/:f` (`fx_*.webp` na mesma pasta, cache 7 dias). As texturas da classe do jogador carregam sozinhas ao entrar.
+- 16 arquivos `fx_*.webp` do Guerreiro (~2,8 MB).

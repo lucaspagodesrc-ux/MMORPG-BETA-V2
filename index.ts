@@ -55,6 +55,14 @@ async function main() {
     if (!fs.existsSync(file)) { r.status(404).end(); return; }
     r.type("image/jpeg").sendFile(file, { maxAge: "7d" });
   });
+  // v2.4.2: spritesheets dos efeitos das habilidades (fx_*.webp na mesma pasta, feitos no Estúdio de Efeitos) — cache de 7 dias
+  app.get("/fx/:f", (q, r) => {
+    const f = String(q.params.f || "");
+    if (!/^fx_[a-z0-9_-]+\.webp$/i.test(f)) { r.status(404).end(); return; }
+    const file = path.join(__dirname, f);
+    if (!fs.existsSync(file)) { r.status(404).end(); return; }
+    r.type("image/webp").sendFile(file, { maxAge: "7d" });
+  });
   app.get(["/", "/index.html"], (_q, r) => r.set("Cache-Control", "no-cache").sendFile(path.join(__dirname, "index.html")));
   // Música do jogo: qualquer arquivo .mp3 na mesma pasta do index.html (de preferência "tema.mp3"; veja o README).
   // Sem arquivo, o jogo toca uma trilha ambiente provisória.
