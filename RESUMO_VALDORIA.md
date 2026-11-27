@@ -155,3 +155,14 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Lançamento local (`castSkill0`) e remoto (`remoteSkill0`). Sem "manter efeitos do jogo": some o brilho de lançamento (`VFX.launch`) e aros/explosões/chão antigos perto de quem lançou e do alvo (`SFX2.sup` em `ring`, `burst`, `groundFx`, raio do Trovão). Em Guerra/Arena/duelo o aro colorido do lado continua.
 - Servidor `index.ts`: rota `/fx/:f` (`fx_*.webp` na mesma pasta, cache 7 dias). As texturas da classe do jogador carregam sozinhas ao entrar.
 - 16 arquivos `fx_*.webp` do Guerreiro (~2,8 MB).
+- v2.4.2b: o site é publicado pelo Cloudflare Pages, então `pages-build.sh` copia `fx_*.webp` para `dist/fx/` (sem isso as imagens davam erro e apareciam quadriculados vermelho/preto). Se uma imagem não carregar, o efeito novo não aparece e a habilidade volta aos efeitos antigos.
+
+## 20. v2.4.3 — Efeitos em spritesheet em todas as classes, pets e montarias
+- Biblioteca: GIFs da pasta de spritesheets do usuário. `tools/recipes.py` (receitas por habilidade) + `tools/fxbuild.py` (GIF → `sx_*.webp`: recorta a área usada, até 24–30 quadros, quadro ≤160 px (círculos grandes ≤208), folha ≤2048 px; tira quadros "flash" pretos). 120 folhas, ~10 MB no total; cada jogador só baixa as da sua classe + estados (e as de outra classe quando ela aparece).
+- `index.html`: módulo `SFX2` (substitui o pacote do estúdio da v2.4.2). Dados embutidos em `const PK=/*SXPACK*/{...}`.
+  - Habilidade: faixas de lançamento (mão/corpo/chão), trajeto (caminho do personagem até o alvo ou projétil — sempre apontado na tela, espelhado para a esquerda; serve para qualquer direção), área no alvo, buffs (aura que acompanha o personagem pela duração).
+  - Impacto: `VFX.hit` chama `SFX2.hit` — sprite de impacto da habilidade (ou do golpe básico da classe) em cada monstro atingido + crítico + estados (lentidão, gelo, atordoado, prisão de gelo, dano contínuo por elemento, marca), um por tipo, acompanhando o monstro e renovando a duração.
+  - Marcações antigas desligadas nas habilidades com efeito: `castSkill0`/`remoteSkill0` marcam `FXCTX.sx` e `ring`, `burst`, `groundFx`, raio do Trovão, brasão do Hell Crasher e pedras do `quakeFx` não aparecem (em Guerra/Arena/duelo o aro do lado continua). Objetos das habilidades (flechas, adagas, escudo, bomba, estrela, clones, meteoros 3D) continuam.
+  - Montaria: círculo de invocação durante a chamada (4 s), fumaça + poeira ao montar (também outros jogadores), poeira ao descer e poeira da corrida. Mascotes: fumaça ao aparecer e corações de vez em quando parados.
+  - Peças reaproveitadas (pool por folha), limite de sprites ao mesmo tempo (60 no iPhone/modo leve, 130 no resto), outros jogadores respeitam ⚙️ efeitos mínimos.
+- `pages-build.sh`: copia `fx_*.webp` e `sx_*.webp` para `dist/fx/`. Os `fx_*.webp` da v2.4.2 não são mais usados (podem ser apagados do repositório).

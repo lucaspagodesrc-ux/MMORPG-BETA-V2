@@ -2070,121 +2070,125 @@ var VFX=(function(){
    if(mine===false){spawn('hit',q,1*q.sc,'#c8d4e0',220,R());return;}
    const now=performance.now();let useSk=basicF===0||(basicF===undefined&&sk&&now-sk.t<1800&&sk.t>=bt-50);
    if(basicF===1)useSk=false;
+   try{if(SFX2.hit(m,crit,!!(useSk&&sk),q))return;}catch(e){}   /* v2.4.3 impacto em spritesheet (habilidade ou golpe básico) + estados */
    if(useSk&&sk)skill(q,sk.s,crit);else basic(q,S&&S.cls,crit);},
   hurt(o){if(!o||!o.pos)return;const p=o.pos;spawn('blood',{x:p.x,y:p.y+1,z:p.z},1.6,null,380,R());}};
 })();
-/* ---------- v2.4.2 efeitos em spritesheet feitos no Estúdio de Efeitos (pacote por classe) ----------
-   Cada habilidade do pacote tem faixas: spritesheet, início (ms), duração, âncora (mão, corpo, alvo, chão...), deslocamento
-   na referência do personagem (x = direita, y = cima, z = frente), tamanho, plano e como vira com a direção.
-   A posição fica parada onde a âncora estava no início da faixa (como no estúdio); auras longas (buffs) e efeitos longos em
-   monstros acompanham quem as recebeu. kc/kg = manter os efeitos antigos do jogo (lançamento / marcação no chão). */
+/* ---------- v2.4.3 efeitos em spritesheet (biblioteca de sprites) — lançamento, trajeto, impacto, estados, buffs, montarias e mascotes ----------
+   Cada faixa: spritesheet, início (ms), duração, âncora (mão, corpo, chão, alvo, caminho, projétil), deslocamento na referência do
+   personagem, altura em metros, plano (de frente para a câmera ou deitado no chão) e mistura. Funciona em qualquer direção:
+   sprites "de frente" não giram; caminhos e projéteis apontam na tela de quem lança até o alvo (espelhados para a esquerda).
+   As imagens (sx_*.webp) só baixam quando a classe/efeito aparece; as peças são reaproveitadas (sem criar e apagar malhas). */
 var SFX2=(function(){
- const PK=/*FXPACKS*/{guerreiro:{"sh":{"pixel_art_slash_effect":[6,5,27,0.8661],"anime_heavy_punch_impact_teal":[5,5,24,1.0261],"dust_cloud":[8,8,57,1.3534],"orbiting_rock_shield":[10,9,90,1.5824],"slash_attack_hit_blue":[5,5,21,0.985],"whirlwind_orange":[5,5,24,1.5738],"anime_dash_effect":[5,5,24,2.075],"anime_sonic_boom_green":[5,5,24,1.0142],"regrowth_violet_1":[10,9,90,0.7473],"anime_wall_crash_crater":[6,6,36,1.0],"rock_spikes":[9,8,69,1.717],"slowed":[10,9,90,0.6724],"water_shield_buff_orange":[9,8,72,0.9955],"anime_golden_aura":[6,6,36,0.9209],"divine_smite_blue":[7,6,39,0.6774],"superhero_landing_teal":[7,6,39,1.7455]},"sk":{"0":{"kc":0,"kg":0,"dist":3.6,"self":0,"r":2.5,"tr":[{"s":"pixel_art_slash_effect","t0":0,"d":900,"fps":30,"fa":0,"lp":1,"a":"hand","o":[0.3,0,1.45],"sc":4.75,"dm":"screen","af":1,"st":[1,1],"pl":"cam","r":[0,0,-180],"sp":0,"c":"#ffffff","op":1,"ad":1,"fl":1},{"s":"anime_heavy_punch_impact_teal","t0":67,"d":800,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":2,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"ad":1},{"s":"anime_heavy_punch_impact_teal","t0":133,"d":800,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":5.6,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"ad":1}],"dot":0},"1":{"kc":0,"kg":0,"dist":3.6,"self":1,"r":3.6,"tr":[{"s":"dust_cloud","t0":0,"d":1300,"fps":16.5,"fa":0,"lp":1,"a":"body","o":[0.3,0,-0.75],"sc":3.5,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.16},{"s":"orbiting_rock_shield","t0":133,"d":833,"fps":30,"fa":0,"lp":1,"a":"hand","o":[0.55,0,-2.05],"sc":2,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.32},{"s":"slash_attack_hit_blue","t0":67,"d":700,"fps":30,"fa":0,"lp":1,"a":"hand","o":[0,0,0],"sc":2,"dm":"screen","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"ad":1},{"s":"slash_attack_hit_blue","t0":539,"d":700,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":6.05,"dm":"iso","st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1,"aoe":1},{"s":"whirlwind_orange","t0":33,"d":800,"fps":30,"fa":0,"lp":1,"a":"body","o":[0,0,0],"sc":9.2,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1}],"dot":0},"2":{"kc":0,"kg":0,"dist":10,"self":0,"r":2.5,"tr":[{"s":"anime_dash_effect","t0":0,"d":1067,"fps":22.5,"fa":0,"lp":1,"a":"hand","o":[-0.15,0,4.25],"sc":2.45,"dm":"none","af":1,"st":[1.75,1],"pl":"cam","r":[0,0,24],"sp":0,"c":"#ffffff","op":1},{"s":"anime_sonic_boom_green","t0":500,"d":519,"fps":27,"fa":0,"lp":1,"a":"hand","o":[0,0,0],"sc":3.05,"dm":"screen","af":1,"st":[1,1],"pl":"cam","r":[2,0,42],"sp":0,"c":"#ffffff","op":0.3}],"dot":0},"3":{"kc":0,"kg":0,"dist":2.8,"self":0,"r":2.5,"tr":[{"s":"regrowth_violet_1","t0":0,"d":12000,"fps":30,"fa":0,"lp":1,"a":"body","o":[0,0,0],"sc":4.55,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#4a4f08","op":0.46}],"dot":0},"4":{"kc":0,"kg":0,"dist":5,"self":1,"r":5,"tr":[{"s":"anime_wall_crash_crater","t0":300,"d":267,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":6.05,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.36,"aoe":1},{"s":"rock_spikes","t0":0,"d":733,"fps":33,"fa":0,"lp":1,"a":"body","o":[-0.25,0,-0.75],"sc":8.55,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1},{"s":"slowed","t0":300,"d":2700,"fps":30,"fa":0,"lp":1,"a":"target","o":[0,0,0],"sc":4.75,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.2,"aoe":1}],"dot":0},"5":{"kc":0,"kg":0,"dist":2.8,"self":0,"r":2.5,"tr":[{"s":"water_shield_buff_orange","t0":0,"d":20000,"fps":30,"fa":0,"lp":1,"a":"body","o":[-0.25,0,0.25],"sc":4.1,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#8f0000","op":0.34}],"dot":0},"6":{"kc":0,"kg":0,"dist":2.8,"self":0,"r":2.5,"tr":[{"s":"anime_golden_aura","t0":0,"d":10000,"fps":30,"fa":0,"lp":1,"a":"body","o":[-0.8,0,0.9],"sc":7.7,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ff0000","op":0.12}],"dot":0},"7":{"kc":0,"kg":0,"dist":8,"self":0,"r":4.5,"tr":[{"s":"divine_smite_blue","t0":433,"d":1300,"fps":30,"fa":0,"lp":1,"a":"gTarget","o":[3.3,0,-3.4],"sc":6.65,"dm":"none","pv":"b","af":1,"st":[3,1.5],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":0.92},{"s":"superhero_landing_teal","t0":700,"d":1000,"fps":30,"fa":0,"lp":1,"a":"gTarget","o":[-0.4,0,0.3],"sc":3.05,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#ffffff","op":1},{"s":"superhero_landing_teal","t0":533,"d":1100,"fps":30,"fa":0,"lp":1,"a":"body","o":[0.45,0,-0.5],"sc":3.9,"dm":"none","af":1,"st":[1,1],"pl":"cam","r":[0,0,0],"sp":0,"c":"#c8fbfe","op":0.48}],"dot":8000}}}
-};
- const D2R=Math.PI/180,PIV={c:[0,0],b:[0,-.5],t:[0,.5],l:[-.5,0],r:[.5,0]},TX={},live=[],zones=[];let shOk=false,tickOn=false,cam0=null;
+ const PK=/*SXPACK*/{"sh":{"aegis_shield":[5,6,30,1.0,2000],"anime_aura_flare_pink":[4,4,14,0.8187,900],"anime_black_flame_slash_violet":[5,5,21,0.8938,1366],"anime_charging_rush_blue":[3,6,18,1.5385,600],"anime_crescent_wave_slash_pink":[4,5,18,1.3223,1166],"anime_dash_effect":[3,8,22,2.6667,733],"anime_energy_wave_beam":[4,6,22,1.7391,2133],"anime_energy_wave_beam_red":[4,6,22,1.7391,2166],"anime_ground_shatter":[4,6,21,1.1765,1366],"anime_guard_block_spark":[4,6,21,1.25,700],"anime_guard_crush":[4,4,14,0.9875,900],"anime_heavy_punch_impact":[4,6,22,1.1348,733],"anime_heavy_punch_impact_violet":[4,6,21,1.1348,700],"anime_meteor_ultimate":[4,6,22,1.0959,2200],"anime_one_inch_punch":[5,5,24,1.1268,800],"anime_petal_blade_storm":[5,6,30,1.0256,2000],"anime_power_up_pillar":[6,5,30,0.9812,1966],"anime_red_rage_aura":[5,3,15,0.525,1000],"anime_rock_spike_eruption":[3,7,21,2.3529,1400],"anime_spiral_energy_sphere":[4,5,18,0.9812,1200],"anime_super_jump":[4,4,15,0.7875,1000],"anime_sword_rain":[6,5,30,0.9437,2000],"anime_teleport_vanish":[3,5,13,1.2698,866],"anime_wall_crash_crater":[4,5,18,0.9087,1166],"arcane_detonation":[4,5,18,0.9187,1800],"attack_up_buff":[5,5,24,0.8063,1600],"battle_fury":[5,5,24,1.0667,1600],"bleeding":[4,5,18,1.28,1200],"blizzard_spell":[5,6,30,1.1685,3000],"blood_rite":[4,6,24,1.5385,2400],"bomb_arrow":[3,6,18,1.9048,1733],"burning":[10,3,30,0.2938,2000],"butterfly_swarm":[5,6,30,1.3333,3000],"chain_lightning":[3,6,18,1.8391,1200],"charge_shot":[3,10,30,3.1373,2000],"charm_status":[7,5,30,0.6875,2000],"chilled_status":[6,4,24,0.7688,2400],"comic_kaboom":[4,6,21,1.1429,1400],"crimson_ritual":[4,6,24,1.4953,2400],"critical_chance_buff":[5,5,23,1.0,1500],"critical_hit":[4,4,14,1.0347,900],"curse_brand":[6,5,30,0.9062,2000],"cursed_mist":[3,10,30,3.2,4000],"dash_dust":[2,7,14,5.9259,900],"dash_strike":[3,5,15,1.7978,970],"dash_wind_burst":[3,8,24,2.1053,800],"defense_up_buff":[5,5,24,0.9125,1600],"double_jump_air_burst":[4,6,24,1.7973,800],"dust_cloud":[4,8,29,1.7204,1900],"electric_net_trap":[6,5,30,0.9327,2000],"electrified":[6,4,23,0.6943,1500],"energy_blade":[4,5,18,1.194,1200],"feather_blessing":[7,5,30,0.5563,3000],"fire_shield_buff":[4,8,30,1.5686,2000],"fireball":[3,5,14,1.7021,933],"frost_nova":[3,8,24,2.0779,1600],"frozen":[6,5,30,0.7688,3000],"frozen_ground_spread":[3,8,24,2.3188,3200],"golem_stomp":[5,5,24,1.0323,1600],"greatsword_sweep":[3,6,17,2.623,1100],"green_heal_burst":[4,5,18,0.9,1200],"ground_crack":[5,5,22,1.0777,2200],"guardian_ward":[5,6,30,1.0959,3000],"hailstorm":[5,6,30,1.3913,2000],"haste":[5,3,15,0.5325,1000],"healing_circle":[4,8,30,1.9512,3000],"healing_light_pillar":[6,4,22,0.6062,2200],"health_potion_heal":[5,4,18,0.7625,1800],"heavy_landing_dust":[3,7,21,2.4242,1400],"hex_orb":[2,8,16,2.7119,1033],"holy_cross_heal":[5,5,24,0.9,1600],"holy_nova":[4,6,24,1.2121,800],"hurricane_top_down":[5,6,30,1.0,4000],"ice_shard_burst":[4,4,14,0.8313,900],"lava_rock_burst":[3,8,24,2.5,2400],"light_landing_dust":[2,7,14,2.9111,900],"lightning_spear":[3,5,15,2.1918,970],"magic_sigil_web":[5,6,30,1.0,8000],"magnetic_maelstrom":[4,6,24,1.4953,2400],"mana_shield":[5,6,30,1.0811,3000],"marked_for_death":[5,6,30,1.039,4000],"midair_fireball_explosion":[4,6,21,1.0526,1400],"mud_splash":[2,9,18,2.9091,1200],"orbiting_rock_shield":[4,8,30,2.1622,3000],"perfect_parry":[5,5,23,1.129,770],"piercing_shot":[2,10,20,3.7209,1300],"poison_effect":[8,4,30,0.5,2000],"primal_roar":[4,6,24,1.4545,1600],"rising_uppercut":[4,4,15,1.1511,1000],"rock_spikes":[3,8,23,2.2535,2300],"rolling_dust_cloud":[3,10,30,2.5,3000],"sanctuary":[4,8,30,2.1918,4000],"shielded":[6,5,30,0.7875,2000],"shockwave_ring":[4,4,15,1.0,1000],"shooting_fireball":[2,8,15,2.7119,1000],"skid_stop_dust":[3,8,23,3.5556,1500],"slash_attack_hit":[4,5,20,1.1765,666],"slowed":[7,5,30,0.6062,3000],"soul_wisp_trails":[6,5,30,0.9062,4000],"starbound_sigil":[5,6,26,0.9808,2600],"stone_skin_buff":[5,5,24,1.1268,2400],"stun_stars":[2,8,15,2.4815,1000],"summoning_circle":[6,5,30,0.9808,4000],"summoning_smoke":[6,5,30,0.7937,3000],"superhero_landing":[3,7,20,2.3529,1300],"sword_clash_sparks":[3,5,15,1.7778,1000],"teleport_circle":[5,5,24,1.1765,2400],"thunder_god_strike":[6,5,28,0.8438,2800],"thunder_hammer":[4,6,21,1.5385,1400],"thunderhead":[5,6,30,1.0667,2000],"tornado":[5,5,24,0.8313,2400],"twin_fang_x":[4,4,13,0.7688,870],"umbral_flame":[9,4,30,0.3625,2000],"vacuum_pull":[5,5,24,0.9688,1600],"void_collapse":[5,6,30,1.0,2000],"whirlwind":[3,8,24,2.4242,800],"wind_blade_volley":[2,8,15,2.5,970],"wind_gust":[3,8,24,2.4615,1600],"wind_slash":[3,5,14,1.5094,900]},"cls":{"guerreiro":{"b":{"s":"slash_attack_hit","sc":1.5},"sk":[{"tr":[{"s":"anime_one_inch_punch","t0":120,"a":"path","sc":2.2,"v":1.6},{"s":"anime_one_inch_punch","t0":300,"a":"path","sc":2.2,"v":1.6},{"s":"anime_one_inch_punch","t0":480,"a":"path","sc":2.2,"v":1.6},{"s":"dash_dust","t0":80,"a":"gSelf","o":[0,0,-0.4],"sc":0.7}],"h":{"s":"anime_heavy_punch_impact","sc":2.4}},{"tr":[{"s":"whirlwind","t0":60,"a":"body","sc":3.0,"c":"#ffd9a0","v":1.2},{"s":"greatsword_sweep","t0":100,"a":"body","sc":2.6,"c":"#ffe2b0"},{"s":"greatsword_sweep","t0":420,"a":"body","sc":2.6,"c":"#ffe2b0"},{"s":"dust_cloud","t0":150,"a":"gSelf","sc":2.2,"op":0.55}],"h":{"s":"slash_attack_hit","sc":1.8}},{"tr":[{"s":"anime_dash_effect","t0":0,"a":"path","sc":2.2},{"s":"dash_wind_burst","t0":40,"a":"path","sc":1.2},{"s":"superhero_landing","t0":160,"a":"gSelf","sc":1.2}],"h":{"s":"anime_heavy_punch_impact","sc":2.2}},{"tr":[{"s":"anime_red_rage_aura","t0":0,"a":"gSelf","sc":3.0,"pv":"b"},{"s":"shockwave_ring","t0":0,"a":"gSelf","sc":6.5,"pl":"xz","c":"#ffb070"},{"s":"battle_fury","t0":600,"d":11400,"a":"gSelf","sc":2.0,"pv":"b","op":0.38,"lp":1}]},{"tr":[{"s":"anime_rock_spike_eruption","t0":120,"a":"gSelf","sc":2.6,"pv":"b"},{"s":"ground_crack","t0":150,"a":"gSelf","sc":9,"pl":"xz","op":0.85},{"s":"golem_stomp","t0":150,"a":"gSelf","sc":4.2,"op":0.8}],"h":{"s":"rock_spikes","a":"ft","sc":1.5}},{"tr":[{"s":"blood_rite","t0":0,"a":"gSelf","sc":3.0,"pv":"b"},{"s":"health_potion_heal","t0":200,"a":"gSelf","sc":2.0,"pv":"b"},{"s":"crimson_ritual","t0":900,"d":19100,"a":"gSelf","sc":1.3,"op":0.45,"lp":1}]},{"tr":[{"s":"anime_power_up_pillar","t0":0,"a":"gSelf","sc":3.6,"pv":"b","c":"#ff9a80"},{"s":"anime_red_rage_aura","t0":400,"d":9600,"a":"gSelf","sc":3.0,"pv":"b","op":0.5,"lp":1}]},{"tr":[{"s":"anime_power_up_pillar","t0":0,"a":"gSelf","sc":3.4,"pv":"b","c":"#cfe8ff"},{"s":"thunder_god_strike","t0":620,"a":"gTarget","sc":6,"pv":"b"},{"s":"anime_wall_crash_crater","t0":700,"a":"gTarget","sc":5.5,"pl":"xz","op":0.8}],"h":{"s":"electrified","sc":1.6,"ad":1}}]},"arqueiro":{"b":{"s":"sword_clash_sparks","sc":1.1,"ad":1,"c":"#fff2c0"},"sk":[{"tr":[{"s":"charge_shot","t0":0,"a":"hand","sc":0.9,"ad":1},{"s":"dash_strike","t0":60,"a":"path","sc":0.7,"ad":1,"c":"#fff2a8"}],"h":{"s":"piercing_shot","sc":1.3}},{"tr":[{"s":"anime_sword_rain","t0":150,"a":"gTarget","sc":4.2,"pv":"b","c":"#f4ecc8"},{"s":"mud_splash","t0":650,"a":"gTarget","sc":2.2,"pv":"b","op":0.8}],"h":{"s":"sword_clash_sparks","sc":1.1,"ad":1}},{"tr":[{"s":"bomb_arrow","t0":0,"a":"gSelf","sc":1.6,"pv":"b"},{"s":"midair_fireball_explosion","t0":120,"a":"gSelf","o":[0,1,0],"sc":3},{"s":"skid_stop_dust","t0":520,"a":"gSelf","sc":1.6,"pv":"b","op":0.8}],"h":{"s":"midair_fireball_explosion","sc":1.6}},{"tr":[{"s":"critical_chance_buff","t0":0,"a":"body","sc":2.4},{"s":"attack_up_buff","t0":700,"d":9300,"a":"gSelf","sc":2.2,"pv":"b","op":0.5,"lp":1}]},{"tr":[{"s":"wind_blade_volley","t0":40,"a":"path","sc":1.6,"c":"#c8ffd8"},{"s":"wind_gust","t0":0,"a":"hand","sc":1.4}],"h":{"s":"wind_slash","sc":1.6,"c":"#c8ffd8"}},{"tr":[{"s":"wind_gust","t0":0,"a":"path","sc":1.2},{"s":"hurricane_top_down","t0":200,"d":1600,"a":"gTarget","sc":8,"pl":"xz","op":0.75,"c":"#d8fff0"},{"s":"tornado","t0":250,"d":1500,"a":"gTarget","sc":4.5,"pv":"b","op":0.7}],"h":{"s":"vacuum_pull","sc":1.6}},{"tr":[{"s":"thunderhead","t0":0,"d":1300,"a":"gTarget","sc":4.5,"pv":"b","op":0.55},{"s":"anime_sword_rain","t0":150,"a":"gTarget","o":[0.8,0,0],"sc":4.8,"pv":"b","c":"#e8f0ff","wo":1},{"s":"anime_sword_rain","t0":400,"a":"gTarget","o":[0.8,0,0],"sc":4.8,"pv":"b","c":"#e8f0ff","wo":1},{"s":"lightning_spear","t0":620,"a":"gTarget","sc":3,"pv":"b","ad":1}],"h":{"s":"electrified","sc":1.4,"ad":1}},{"tr":[{"s":"anime_spiral_energy_sphere","t0":0,"d":450,"a":"hand","sc":1.3,"c":"#ffb0c8"},{"s":"anime_energy_wave_beam_red","t0":300,"a":"path","sc":1.4}],"h":{"s":"anime_heavy_punch_impact","sc":2.4}}]},"mago":{"b":{"s":"arcane_detonation","sc":1.2,"ad":1,"c":"#d8c8ff"},"sk":[{"tr":[{"s":"magic_sigil_web","t0":0,"d":700,"a":"gSelf","sc":2.4,"pl":"xz","op":0.7,"c":"#ffb080"},{"s":"fireball","t0":0,"d":260,"a":"hand","sc":1.0},{"s":"shooting_fireball","t0":80,"a":"proj","sc":0.9,"spd":16}],"h":{"s":"midair_fireball_explosion","sc":2.2}},{"tr":[{"s":"frost_nova","t0":60,"a":"gSelf","sc":3.4,"pv":"b"},{"s":"frozen_ground_spread","t0":120,"a":"gSelf","sc":3.0,"op":0.85}],"h":{"s":"ice_shard_burst","sc":1.5}},{"tr":[{"s":"magic_sigil_web","t0":0,"d":1200,"a":"gSelf","sc":3.4,"pl":"xz","op":0.8},{"s":"mana_shield","t0":200,"d":9800,"a":"body","sc":2.6,"op":0.42,"lp":1}]},{"tr":[{"s":"summoning_circle","t0":0,"d":800,"a":"gTarget","sc":6.4,"pl":"xz","op":0.65},{"s":"midair_fireball_explosion","t0":600,"a":"gTarget","o":[0,1.2,0],"sc":4.6,"wo":1},{"s":"lava_rock_burst","t0":620,"a":"gTarget","sc":3,"pv":"b"}],"h":{"s":"burning","d":900,"a":"ft","sc":1.3}},{"tr":[{"s":"chain_lightning","t0":40,"a":"path","sc":1.4,"ad":1,"c":"#d0c8ff"},{"s":"thunder_hammer","t0":330,"a":"gTarget","sc":3.4,"pv":"b"}],"h":{"s":"electrified","sc":1.5,"ad":1,"c":"#d8d0ff"}},{"tr":[{"s":"healing_light_pillar","t0":0,"a":"gSelf","sc":3.2,"pv":"b"},{"s":"green_heal_burst","t0":150,"a":"gSelf","sc":2.2,"pv":"b"},{"s":"healing_circle","t0":600,"d":5000,"a":"gSelf","sc":1.2,"op":0.55,"lp":1}]},{"tr":[{"s":"blizzard_spell","t0":0,"d":1600,"a":"gTarget","sc":5.2,"pv":"b"},{"s":"hailstorm","t0":150,"a":"gTarget","sc":4.4,"pv":"b","op":0.9}],"h":{"s":"ice_shard_burst","sc":1.5}},{"tr":[{"s":"summoning_circle","t0":0,"d":1700,"a":"gTarget","sc":10,"pl":"xz","op":0.6,"lp":1},{"s":"anime_meteor_ultimate","t0":600,"a":"gTarget","sc":3.4,"pv":"b"},{"s":"anime_meteor_ultimate","t0":1020,"a":"gTarget","o":[-1.66,0,1.32],"sc":3.4,"pv":"b","wo":1},{"s":"anime_meteor_ultimate","t0":1440,"a":"gTarget","o":[1.66,0,-1.32],"sc":3.4,"pv":"b","wo":1}],"h":{"s":"burning","d":900,"a":"ft","sc":1.3}}]},"assassino":{"b":{"s":"slash_attack_hit","sc":1.3,"c":"#e8d8ff"},"sk":[{"tr":[{"s":"twin_fang_x","t0":130,"a":"target","sc":2.4,"c":"#d8b8ff"},{"s":"anime_black_flame_slash_violet","t0":40,"a":"hand","sc":1.8}],"h":{"s":"slash_attack_hit","sc":1.6,"c":"#d8c0ff"}},{"tr":[{"s":"anime_teleport_vanish","t0":0,"a":"body","sc":2.2},{"s":"dash_strike","t0":0,"a":"path","sc":1.0,"ad":1,"c":"#b8a8ff"},{"s":"summoning_smoke","t0":110,"a":"target","sc":2.2,"op":0.9}],"h":{"s":"anime_heavy_punch_impact_violet","sc":2.0}},{"tr":[{"s":"wind_blade_volley","t0":30,"a":"path","sc":1.4,"c":"#e0c8ff"}],"h":{"s":"slash_attack_hit","sc":1.4,"c":"#e0c8ff"}},{"tr":[{"s":"anime_petal_blade_storm","t0":0,"d":1300,"a":"body","sc":3.6,"lp":1},{"s":"whirlwind","t0":100,"a":"body","sc":2.6,"c":"#ffb8e8"}],"h":{"s":"slash_attack_hit","sc":1.5,"c":"#ffb0e0"}},{"tr":[{"s":"hex_orb","t0":0,"a":"hand","sc":0.9}],"h":{"s":"curse_brand","sc":1.4}},{"tr":[{"s":"summoning_smoke","t0":0,"a":"body","sc":2.6,"op":0.9},{"s":"umbral_flame","t0":500,"d":19500,"a":"gSelf","sc":2.2,"pv":"b","op":0.45,"lp":1}]},{"tr":[{"s":"anime_teleport_vanish","t0":0,"a":"body","sc":2.4,"c":"#e8eef5"},{"s":"summoning_smoke","t0":80,"a":"body","sc":2.8,"op":0.9},{"s":"cursed_mist","t0":500,"d":9500,"a":"gSelf","sc":1.0,"op":0.35,"lp":1}]},{"tr":[{"s":"starbound_sigil","t0":0,"d":1500,"a":"gTarget","sc":9,"pl":"xz","op":0.6,"lp":1,"c":"#c8b0ff"},{"s":"void_collapse","t0":1380,"a":"gTarget","o":[0,1,0],"sc":4.4,"wo":1}],"h":{"s":"anime_heavy_punch_impact_violet","sc":1.8}}]},"cavaleiro":{"b":{"s":"sword_clash_sparks","sc":1.2,"ad":1,"c":"#d8e8ff"},"sk":[{"tr":[{"s":"anime_guard_block_spark","t0":150,"a":"hand","sc":1.3,"ad":1}],"h":{"s":"anime_guard_crush","sc":2.0}},{"tr":[{"s":"anime_charging_rush_blue","t0":0,"a":"path","sc":1.8},{"s":"superhero_landing","t0":160,"a":"gSelf","sc":1.3}],"h":{"s":"anime_guard_crush","sc":2.2}},{"tr":[{"s":"defense_up_buff","t0":0,"a":"body","sc":2.4},{"s":"shielded","t0":800,"d":59200,"a":"body","sc":2.6,"op":0.22,"lp":1}]},{"tr":[{"s":"anime_power_up_pillar","t0":0,"a":"gSelf","sc":3.4,"pv":"b","c":"#ffe6a0"},{"s":"sanctuary","t0":600,"d":59400,"a":"gSelf","sc":0.9,"op":0.5,"lp":1}]},{"tr":[{"s":"anime_super_jump","t0":0,"a":"gSelf","sc":2.6,"pv":"b"},{"s":"anime_ground_shatter","t0":640,"a":"gSelf","sc":3.2},{"s":"shockwave_ring","t0":650,"a":"gSelf","sc":9,"pl":"xz","c":"#ffd090"}],"h":{"s":"anime_guard_crush","sc":1.6}},{"tr":[{"s":"holy_cross_heal","t0":0,"a":"gSelf","sc":2.6,"pv":"b"},{"s":"holy_nova","t0":200,"a":"gSelf","sc":1.4}]},{"tr":[{"s":"dash_wind_burst","t0":300,"a":"path","sc":1.2,"c":"#cfe4ff"}],"h":{"s":"sword_clash_sparks","sc":1.5,"ad":1,"c":"#cfe4ff"}},{"tr":[{"s":"anime_guard_block_spark","t0":200,"a":"hand","sc":1.6,"ad":1},{"s":"anime_energy_wave_beam","t0":300,"d":1500,"a":"path","sc":1.5,"lp":1,"c":"#fff6d0","pf":15}],"h":{"s":"anime_guard_block_spark","sc":1.2,"ad":1}},{"tr":[{"s":"aegis_shield","t0":0,"a":"body","sc":2.8},{"s":"guardian_ward","t0":900,"d":29100,"a":"body","sc":2.3,"op":0.4,"lp":1}]}]},"tanque":{"b":{"s":"anime_heavy_punch_impact","sc":1.3},"sk":[{"tr":[{"s":"vacuum_pull","t0":300,"a":"target","sc":2.0}],"h":{"s":"sword_clash_sparks","sc":1.5,"ad":1}},{"tr":[{"s":"anime_rock_spike_eruption","t0":160,"a":"gSelf","sc":2.4,"pv":"b"},{"s":"ground_crack","t0":160,"a":"gSelf","sc":7.5,"pl":"xz","op":0.85},{"s":"heavy_landing_dust","t0":150,"a":"gSelf","sc":2.2,"pv":"b","op":0.8}],"h":{"s":"rock_spikes","a":"ft","sc":1.4}},{"tr":[{"s":"primal_roar","t0":0,"a":"body","sc":2.4},{"s":"anime_red_rage_aura","t0":0,"a":"gSelf","sc":2.8,"pv":"b","op":0.9},{"s":"fire_shield_buff","t0":500,"d":7500,"a":"body","sc":2.2,"op":0.45,"lp":1}]},{"tr":[{"s":"magnetic_maelstrom","t0":100,"d":900,"a":"target","sc":3,"ad":1},{"s":"electric_net_trap","t0":300,"d":1500,"a":"gTarget","sc":8,"pl":"xz","op":0.6}],"h":{"s":"sword_clash_sparks","sc":1.4,"ad":1}},{"tr":[{"s":"heavy_landing_dust","t0":0,"a":"gSelf","sc":2.0,"pv":"b","op":0.8},{"s":"heavy_landing_dust","t0":370,"a":"gSelf","sc":2.0,"pv":"b","op":0.8},{"s":"golem_stomp","t0":600,"a":"gSelf","sc":4.4,"op":0.85}],"h":{"s":"rising_uppercut","a":"ft","sc":2.2}},{"tr":[{"s":"stone_skin_buff","t0":0,"a":"body","sc":2.6},{"s":"orbiting_rock_shield","t0":700,"d":19300,"a":"body","sc":2.2,"op":0.6,"lp":1}]},{"tr":[{"s":"rolling_dust_cloud","t0":0,"d":4000,"a":"gSelf","sc":1.6,"pv":"b","op":0.7,"lp":1,"fol":1}],"h":{"s":"anime_heavy_punch_impact","sc":2.0}}]},"pierrot":{"b":{"s":"perfect_parry","sc":0.9,"ad":1,"c":"#ffd0e4"},"sk":[{"tr":[{"s":"anime_crescent_wave_slash_pink","t0":90,"a":"path","sc":1.5}],"h":{"s":"perfect_parry","sc":1.6,"ad":1,"c":"#ffb8d8"}},{"tr":[{"s":"wind_slash","t0":120,"a":"path","sc":1.5,"c":"#ffc0e0"}],"h":{"s":"sword_clash_sparks","sc":1.4,"ad":1,"c":"#ffc0e0"}},{"tr":[{"s":"double_jump_air_burst","t0":0,"a":"gSelf","sc":1.6,"pv":"b"},{"s":"anime_aura_flare_pink","t0":250,"a":"gSelf","sc":2.6,"pv":"b"},{"s":"haste","t0":300,"d":2700,"a":"gSelf","sc":2.0,"pv":"b","op":0.7,"lp":1}]},{"tr":[{"s":"feather_blessing","t0":0,"a":"gSelf","sc":2.8,"pv":"b"},{"s":"butterfly_swarm","t0":600,"d":14400,"a":"body","sc":1.2,"op":0.85,"lp":1}]},{"tr":[{"s":"energy_blade","t0":60,"a":"path","sc":1.4},{"s":"energy_blade","t0":250,"a":"path","sc":1.4},{"s":"energy_blade","t0":440,"a":"path","sc":1.4}],"h":{"s":"perfect_parry","sc":1.6,"ad":1,"c":"#ffb8d8"}},{"tr":[{"s":"summoning_smoke","t0":0,"a":"body","sc":3.0,"op":0.9},{"s":"anime_aura_flare_pink","t0":150,"a":"gSelf","sc":2.6,"pv":"b"},{"s":"soul_wisp_trails","t0":600,"d":9400,"a":"body","sc":2.0,"op":0.6,"lp":1,"c":"#e8c8ff"}]},{"tr":[{"s":"anime_petal_blade_storm","t0":0,"d":1600,"a":"body","sc":4.0,"lp":1},{"s":"whirlwind","t0":150,"a":"body","sc":3.0,"c":"#ffb0d0"},{"s":"whirlwind","t0":650,"a":"body","sc":3.0,"c":"#ffb0d0"},{"s":"whirlwind","t0":1150,"a":"body","sc":3.0,"c":"#ffb0d0"}],"h":{"s":"perfect_parry","sc":1.6,"ad":1,"c":"#ffb8d8"}},{"tr":[{"s":"comic_kaboom","t0":3420,"a":"gTarget","sc":3.4,"pv":"b"},{"s":"midair_fireball_explosion","t0":3400,"a":"gTarget","o":[0,1.2,0],"sc":4.6,"wo":1}],"h":{"s":"burning","d":800,"a":"ft","sc":1.2},"dist":6}]}},"gen":{"slow":[{"s":"slowed","t0":0,"a":"ft","sc":1.6,"pv":"b","op":0.7,"lp":1}],"slowIce":[{"s":"chilled_status","t0":0,"a":"ft","sc":1.6,"pv":"b","op":0.85,"lp":1}],"stun":[{"s":"stun_stars","t0":0,"a":"top","sc":1.0,"lp":1}],"mark":[{"s":"marked_for_death","t0":0,"a":"top","sc":1.2,"op":0.9,"lp":1}],"cage":[{"s":"frozen","t0":0,"a":"ft","sc":1.8,"pv":"b","op":0.85,"lp":1}],"dot_fire":[{"s":"burning","t0":0,"a":"ft","sc":1.3,"pv":"b","op":0.8,"lp":1}],"dot_elec":[{"s":"electrified","t0":0,"a":"c","sc":1.0,"op":0.45,"ad":1,"lp":1,"c":"#8fc8ff"}],"dot_arc":[{"s":"electrified","t0":0,"a":"c","sc":1.0,"op":0.6,"ad":1,"lp":1,"c":"#d8c8ff"}],"dot_ice":[{"s":"chilled_status","t0":0,"a":"ft","sc":1.5,"pv":"b","op":0.8,"lp":1}],"dot_blood":[{"s":"bleeding","t0":0,"a":"ft","sc":1.3,"pv":"b","op":0.85,"lp":1}],"dot_poison":[{"s":"poison_effect","t0":0,"a":"ft","sc":1.3,"pv":"b","op":0.85,"lp":1}],"crit":[{"s":"critical_hit","t0":0,"a":"c","sc":1.6,"ad":1}],"mcall":[{"s":"summoning_circle","t0":0,"d":4000,"a":"gSelf","sc":2.6,"pl":"xz","op":0.75,"lp":1,"c":"#ffe2b0","fol":1}],"mup":[{"s":"summoning_smoke","t0":0,"a":"body","sc":3.0,"op":0.9},{"s":"teleport_circle","t0":60,"a":"gSelf","sc":1.2},{"s":"heavy_landing_dust","t0":120,"a":"gSelf","sc":2.4,"pv":"b","op":0.75}],"mdown":[{"s":"light_landing_dust","t0":0,"a":"gSelf","sc":1.8,"pv":"b","op":0.8}],"ride":[{"s":"dash_dust","t0":0,"a":"gSelf","o":[0,0,-1.1],"sc":0.8,"pv":"b","op":0.65}],"pspawn":[{"s":"summoning_smoke","t0":0,"a":"body","o":[0,-0.5,0],"sc":1.4,"op":0.9},{"s":"light_landing_dust","t0":0,"a":"gSelf","sc":1.2,"pv":"b","op":0.7}],"pidle":[{"s":"charm_status","t0":0,"a":"body","o":[0,-0.1,0],"sc":0.9,"op":0.9}]}};
+ const D2R=Math.PI/180,PIV={c:[0,0],b:[0,-.5],t:[0,.5]},TX={},live=[],pool={},cls0={},wait=[];let shOk=false,tickOn=false,last=null;
+ const LOWD=()=>(typeof IOS!=='undefined'&&IOS)||(typeof PERF!=='undefined'&&PERF&&PERF.low);
  const base=()=>window.FX_BASE||(location.protocol.indexOf('http')===0?'fx/':'');
  function shader(){if(shOk)return;shOk=true;const S=BABYLON.Effect.ShadersStore;
-  S.fxsprVertexShader='precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){gl_Position=worldViewProjection*vec4(position,1.0);vUV=uv;}';
-  S.fxsprFragmentShader='precision highp float;varying vec2 vUV;uniform sampler2D tex;uniform vec4 fr;uniform vec3 tint;uniform float op;void main(){vec4 c=texture2D(tex,fr.xy+vUV*fr.zw);gl_FragColor=vec4(c.rgb*tint,c.a*op);}';}
- function tex(key){if(TX[key])return TX[key];const t=new BABYLON.Texture(base()+'fx_'+key+'.webp?v=242',scene,true,true,BABYLON.Texture.BILINEAR_SAMPLINGMODE,null,()=>{t.bad=1;});   /* v2.4.2b: sem a imagem o efeito não aparece (nada de xadrez) e a habilidade volta aos efeitos antigos */
-  t.hasAlpha=true;t.wrapU=t.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;return TX[key]=t;}
- function pre(cls){const p=PK[cls];if(!p||p._pre)return;p._pre=1;try{for(const k in p.sh)tex(k);}catch(e){}}
+  S.sxsprVertexShader='precision highp float;attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;varying vec2 vUV;void main(){gl_Position=worldViewProjection*vec4(position,1.0);vUV=uv;}';
+  S.sxsprFragmentShader='precision highp float;varying vec2 vUV;uniform sampler2D tex;uniform vec4 fr;uniform vec3 tint;uniform float op;void main(){vec4 c=texture2D(tex,fr.xy+vUV*fr.zw);gl_FragColor=vec4(c.rgb*tint,c.a*op);}';}
+ function tex(k){if(TX[k])return TX[k];const t=new BABYLON.Texture(base()+'sx_'+k+'.webp?v=243',scene,true,true,BABYLON.Texture.BILINEAR_SAMPLINGMODE,null,()=>{t.bad=1;});
+  t.hasAlpha=true;t.wrapU=t.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;return TX[k]=t;}
+ /* folhas de uma classe (habilidades, golpe básico) + estados — baixa uma vez */
+ function pre(cls){if(cls0[cls]||!PK.cls||!PK.cls[cls])return;cls0[cls]=1;const C=PK.cls[cls],ks=new Set([C.b.s]);
+  for(const s of C.sk){for(const t of s.tr)ks.add(t.s);if(s.h)ks.add(s.h.s);}
+  for(const g of ['slow','slowIce','stun','crit'])for(const t of PK.gen[g])ks.add(t.s);
+  try{for(const k of ks)tex(k);}catch(e){}}
  const hx=h=>{try{return C3.FromHexString(h||'#ffffff');}catch(e){return new C3(1,1,1);}};
- /* ângulo na tela da frente do personagem (câmera do jogo: alfa -45°, beta .95) */
- function scrAng(yawDeg){const y=yawDeg*D2R,a=-Math.PI/4,fx=Math.sin(y),fz=Math.cos(y),sx=fx*(-Math.sin(a))+fz*Math.cos(a),sy=(fx*(-Math.cos(a))+fz*(-Math.sin(a)))*Math.cos(.95);return{sx,ang:Math.atan2(sy,sx)};}
- function camQ(dA){if(!cam0){const a=-Math.PI/4,b=.95,eye=new V3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b)).scale(40),V=BABYLON.Matrix.LookAtLH(eye,V3.Zero(),V3.Up());cam0=V.clone().invert();cam0.setTranslationFromFloats(0,0,0);}
-  return BABYLON.Quaternion.FromRotationMatrix(cam0.multiply(BABYLON.Matrix.RotationY(dA)));}
- /* quem lançou a habilidade e para onde (tudo na referência do personagem no instante do lançamento) */
- const rotL=(v,yaw)=>{const c=Math.cos(-yaw),s=Math.sin(-yaw);return new V3(v.x*c+v.z*s,v.y,-v.x*s+v.z*c);};
- function wposN(n){const ch=[];for(let p=n;p;p=p.parent)ch.push(p);for(let i=ch.length-1;i>=0;i--)ch[i].computeWorldMatrix(true);return n.getAbsolutePosition().clone();}
- const GROUND=a=>a==='gSelf'||a==='gTarget';
- function anchorW(C,a){const r=C.o.root.position;
-  switch(a){case 'hand':return C.o.hand?wposN(C.o.hand):new V3(r.x,r.y+1.2,r.z);case 'handL':return C.o.handL?wposN(C.o.handL):new V3(r.x,r.y+1.2,r.z);
-   case 'head':return new V3(r.x,r.y+2.1,r.z);case 'body':return new V3(r.x,r.y+1.1,r.z);case 'gSelf':return new V3(r.x,.06,r.z);
-   case 'gTarget':return new V3(C.tp.x,.06,C.tp.z);default:return new V3(C.tp.x,(C.tp.y||0)+1.3,C.tp.z);}}
- function mk(C,k,ent){const sh=PK[C.cls].sh[k.s];if(!sh)return null;shader();
+ let cam0=null;
+ function camQ(a){if(!cam0){const al=-Math.PI/4,b=.95,eye=new V3(Math.cos(al)*Math.sin(b),Math.cos(b),Math.sin(al)*Math.sin(b)).scale(40),V=BABYLON.Matrix.LookAtLH(eye,V3.Zero(),V3.Up());cam0=V.clone().invert();cam0.setTranslationFromFloats(0,0,0);}
+  return BABYLON.Quaternion.FromRotationMatrix(cam0.multiply(BABYLON.Matrix.RotationY(a)));}
+ /* peças: h (posição/giro do personagem) > b (de frente p/ câmera) > r (giro/espelho na tela) > v (giro próprio) > p (plano) */
+ function piece(k){const L=pool[k];if(L&&L.length)return L.pop();shader();
   const h=new BABYLON.TransformNode('sxh',scene),b=new BABYLON.TransformNode('sxb',scene),r=new BABYLON.TransformNode('sxr',scene),v=new BABYLON.TransformNode('sxv',scene);
-  const p=B.CreatePlane('sxp',{size:1,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene);h.parent=C.W;b.parent=h;r.parent=b;v.parent=r;p.parent=v;p.isPickable=false;p.renderingGroupId=1;p.alwaysSelectAsActiveMesh=true;
-  const m=new BABYLON.ShaderMaterial('sxm',scene,'fxspr',{attributes:['position','uv'],uniforms:['worldViewProjection','fr','tint','op'],samplers:['tex'],needAlphaBlending:true});
-  const tx=tex(k.s);m.setTexture('tex',tx);m.backFaceCulling=false;m.disableDepthWrite=true;m.needAlphaBlending=()=>true;m.alphaMode=k.ad?BABYLON.Engine.ALPHA_ADD:BABYLON.Engine.ALPHA_COMBINE;
-  m.setColor3('tint',hx(k.c));m.setFloat('op',k.op==null?1:k.op);p.material=m;h.setEnabled(false);
-  return {h,b,r,v,p,m,sh,tx,fr:new BABYLON.Vector4(0,0,1/sh[0],1/sh[1]),ent};}
- function kill(q){try{q.m.dispose(false,false);}catch(e){}try{q.h.dispose(false,false);}catch(e){}}
- /* começa uma faixa (no instante t0 dela): lê a âncora agora e cria uma cópia por alvo */
- function spawn(C,k){if(C.dead())return;if(C.tm&&C.tm.alive!==false){const e=C.tm,pp=e.root?e.root.position:e.pos;if(pp)C.tp=pp.clone();}const yaw=C.yaw,W0=C.W.position,L=[];
-  const loc=w=>rotL(w.subtract(W0),yaw),offL=()=>{const v=new V3((k.o||[])[0]||0,(k.o||[])[1]||0,(k.o||[])[2]||0);
-   const pl=k.pl||'cam',wo=pl==='cam'&&(k.dm||'none')==='none'&&!['hand','handL','proj','path','clone'].includes(k.a);return wo?rotL(v,yaw):v;};
-  const tgtA=k.a==='target'||k.a==='gTarget';
-  if(k.aoe&&tgtA){   /* dano em área: o mesmo encaixe em cada monstro dentro da área (como se mirasse cada um) */
-   const MF=new V3(0,GROUND(k.a)||k.pl==='xz'?.06:1.3,C.dist).addInPlace(offL()),g=GROUND(k.a)||k.pl==='xz';
-   for(const m of C.area()){const l=loc(m.pos),dA=Math.atan2(l.x,l.z),c=Math.cos(dA),s=Math.sin(dA),dx=MF.x,dz=MF.z-C.dist;
-    L.push({pos:new V3(l.x+dx*c+dz*s,MF.y+(g?0:(m.pos.y||0)),l.z-dx*s+dz*c),dA,ent:m,fit:1});}
-  }else if(k.a==='path'){const S=loc(C.o0);S.y=1;L.push({pos:S,dA:0,ent:null});}
-  else{const w=anchorW(C,k.a==='proj'?'hand':k.a);const pos=loc(w);if(k.a!=='proj')pos.addInPlace(offL());
-   const ent=tgtA?(C.tm||null):(k.a==='body'||k.a==='gSelf'||k.a==='head')?C.o:null;L.push({pos,dA:0,ent});}
-  const fol=k.d>1500&&!['hand','handL','proj','path'].includes(k.a),now=performance.now();
-  for(const d of L){const q=mk(C,k,d.ent);if(!q)continue;q.k=k;q.C=C;q.t0=now;q.pos=d.pos;q.dA=d.dA;q.fit=d.fit;
-   q.fol=fol&&d.ent&&d.ent.root?{e:d.ent,p0:(d.ent.root?d.ent.root.position:d.ent.pos).clone()}:null;
-   if(k.a==='path'||k.a==='proj'){const tg=loc(new V3(C.tp.x,1.3,C.tp.z));q.tg=tg;}
-   live.push(q);}
-  if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}}
- function upd(q,now){const k=q.k,C=q.C,sh=q.sh,el=now-q.t0;
-  if(el>=k.d||(q.fol&&q.fol.e!==C.o&&q.fol.e.alive===false)||(q.fol&&q.fol.e===C.o&&C.dead())||C.W.isDisposed())return false;
-  if(q.tx.bad)return false;if(!q.tx.isReady()){q.h.setEnabled(false);return true;}   /* só aparece com a imagem pronta */
+  const p=B.CreatePlane('sxp',{size:1,sideOrientation:BABYLON.Mesh.DOUBLESIDE},scene);b.parent=h;r.parent=b;v.parent=r;p.parent=v;p.isPickable=false;p.renderingGroupId=1;p.alwaysSelectAsActiveMesh=true;p.doNotSyncBoundingInfo=true;
+  const m=new BABYLON.ShaderMaterial('sxm',scene,'sxspr',{attributes:['position','uv'],uniforms:['worldViewProjection','fr','tint','op'],samplers:['tex'],needAlphaBlending:true});
+  const tx=tex(k);m.setTexture('tex',tx);m.backFaceCulling=false;m.disableDepthWrite=true;m.needAlphaBlending=()=>true;p.material=m;h.setEnabled(false);
+  return {k,h,b,r,v,p,m,tx,fr:new BABYLON.Vector4(0,0,1,1)};}
+ function free(q){q.h.setEnabled(false);q.h.parent=null;const L=pool[q.k]||(pool[q.k]=[]);if(L.length<10)L.push(q);else{try{q.m.dispose(false,false);}catch(e){}try{q.h.dispose(false,false);}catch(e){}}}
+ const rotY=(o,yaw)=>{const c=Math.cos(yaw),s=Math.sin(yaw);return new V3(o[0]*c+o[2]*s,o[1],-o[0]*s+o[2]*c);};
+ const offW=(t,yaw)=>{const o=t.o;if(!o)return V3.Zero();return t.wo?new V3(o[0],o[1],o[2]):rotY(o,yaw);};
+ const epos=e=>e.root?e.root.position:e.pos;
+ /* cria uma cópia da faixa t em pos (mundo); e = quem ela acompanha (ou null); tg = fim do caminho/projétil */
+ function add(t,pos,yaw,e,tg,dead,prio){const sh=PK.sh[t.s];if(!sh||(TX[t.s]&&TX[t.s].bad))return null;
+  if(live.length>(LOWD()?60:130)&&prio<2)return null;if(live.length>220)return null;
+  const q=piece(t.s);q.t=t;q.sh=sh;q.t0=performance.now();q.pos=pos;q.yaw=yaw;q.tg=tg||null;q.dead=dead||null;
+  const ms=sh[4]/(t.v||1);q.d=t.d||ms;q.fps=sh[2]*1000/ms;
+  q.fol=e&&(t.fol||(q.d>1500&&!t.pf&&t.a!=='path'&&t.a!=='proj'&&t.a!=='hand'))?{e,p0:epos(e).clone()}:null;
+  q.m.setColor3('tint',hx(t.c));q.m.alphaMode=t.ad?BABYLON.Engine.ALPHA_ADD:BABYLON.Engine.ALPHA_COMBINE;
+  live.push(q);if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}return q;}
+ function upd(q,now){const t=q.t,sh=q.sh,el=now-q.t0;
+  if(el>=q.d||q.tx.bad||(q.dead&&q.dead()))return false;
+  if(!q.tx.isReady()){q.h.setEnabled(false);return true;}
   q.h.setEnabled(true);
-  const n=sh[2],fa=Math.max(0,Math.min(n-1,k.fa|0)),fb=Math.max(fa,Math.min(n-1,k.fb==null?n-1:+k.fb)),cnt=fb-fa+1;let f=Math.floor(el/1000*(k.fps||30));f=k.lp!==0?f%cnt:Math.min(cnt-1,f);f+=fa;
-  const cx=f%sh[0],cy=Math.floor(f/sh[0]);q.fr.set(cx/sh[0],1-(cy+1)/sh[1],1/sh[0],1/sh[1]);q.m.setVector4('fr',q.fr);
-  let pos=q.pos.clone();
-  if(q.fol){const e=q.fol.e,cp=e.root?e.root.position:e.pos;pos.addInPlace(rotL(cp.subtract(q.fol.p0),C.yaw));}
-  const pl=k.pl||'cam',R=k.r||[0,0,0],path=k.a==='path';let plen=0,pdir=0,phi=null;
-  if(path){const S=q.pos,E=new V3(q.tg.x,S.y,q.tg.z),dx=E.x-S.x,dz=E.z-S.z;plen=Math.max(.2,Math.hypot(dx,dz)*((k.st||[1])[0]||1));pdir=Math.atan2(-dz,dx);pos=V3.Lerp(S,E,.5);}
-  if(k.a==='proj'){const fl=Math.max(1,V3.Distance(q.pos,q.tg)/(k.spd||20)*1000);pos=V3.Lerp(q.pos,q.tg,Math.min(1,Math.max(0,el/fl)));}
-  if(pl==='cam'&&(path||(k.a==='proj'&&k.face!==0))){try{const vp=camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()),Wm=C.W.computeWorldMatrix(true),VP=scene.getTransformMatrix(),
-   pa=V3.Project(q.pos,Wm,VP,vp),pb=V3.Project(q.tg,Wm,VP,vp);phi=-Math.atan2(pb.y-pa.y,pb.x-pa.x);}catch(e){phi=0;}}
-  const fit=q.fit,rx=R[0]*D2R,ry=R[1]*D2R+(fit&&pl!=='cam'?q.dA:0)+(path&&pl!=='cam'?pdir:0),rz=(R[2]+(k.sp||0)*el/1000)*D2R,dm=k.dm||'none',yd=C.yaw/D2R+(fit?q.dA/D2R:0);
-  let mir=false,mirY=false,scr=0,use3d=false;
-  if(pl==='cam'){if(phi!=null){if(k.af&&Math.cos(phi)<0){mir=true;scr=phi-Math.PI;}else scr=phi;}
-   else if(dm==='3d')use3d=true;
-   else if(dm==='iso'){const A0=scrAng(0).ang,c=scrAng(yd).ang,mx=Math.cos(c)<0,my=Math.sin(c)<0,res=Math.atan2(Math.abs(Math.sin(c)),Math.abs(Math.cos(c)))-A0;mir=mx;mirY=my;scr=(mx!==my)?-res:res;}
-   else if(dm!=='none'){const A0=scrAng(0).ang,cur=scrAng(yd);mir=cur.sx<0;if(dm==='screen')scr=mir?cur.ang-(Math.PI-A0):cur.ang-A0;}}
-  const st=k.st||[1,1],sc=k.sc||1;
-  q.p.scaling.set((path?plen:sc*sh[3]*(st[0]||1))*(k.fl?-1:1),sc*(st[1]||1),1);q.r.scaling.set(mir?-1:1,mirY?-1:1,1);q.r.rotation.set(0,0,scr);
-  q.h.position.copyFrom(pos);
-  const PV=PIV[k.pv||'c'];q.p.position.set(-PV[0]*q.p.scaling.x,-PV[1]*q.p.scaling.y,0);
-  if(pl==='cam'&&!use3d){q.b.billboardMode=BABYLON.TransformNode.BILLBOARDMODE_ALL;q.b.rotationQuaternion=null;q.v.rotation.set(rx,ry,rz);}
-  else if(use3d){q.b.billboardMode=0;q.b.rotationQuaternion=camQ(fit?q.dA:0);q.v.rotation.set(rx,ry,rz);}
-  else{q.b.billboardMode=0;q.b.rotationQuaternion=null;q.b.rotation.set(0,0,0);if(pl==='xz'){q.v.rotation.set(Math.PI/2+rx,ry,rz);q.h.position.y=Math.max(.04,q.h.position.y);}else if(pl==='zy')q.v.rotation.set(rx,Math.PI/2+ry,rz);else q.v.rotation.set(rx,ry,rz);}
+  const n=sh[2];let f=Math.floor(el/1000*q.fps);f=t.lp?f%n:Math.min(n-1,f);
+  const cols=sh[0],rows=sh[1];q.fr.set((f%cols)/cols,1-(Math.floor(f/cols)+1)/rows,1/cols,1/rows);q.m.setVector4('fr',q.fr);
+  const op=(t.op==null?1:t.op)*Math.min(1,t.lp||q.d>1200?el/180:1,(q.d-el)/(t.lp||q.d>1200?320:110));q.m.setFloat('op',Math.max(0,op));
+  let pos=q.pos;
+  if(q.fol){const e=q.fol.e;if(e.alive===false||(e.root&&e.root.isDisposed&&e.root.isDisposed()))return false;const c=epos(e);pos=pos.add(c.subtract(q.fol.p0));}
+  const pl=t.pl||'cam',path=t.a==='path',proj=t.a==='proj',sc=(t.sc||1)*(pl==='xz'?1:1.2);   /* 1,2 = um pouco maior para ler bem na câmera do jogo */let w=sc*sh[3],phi=null;
+  if(path){const S=pos,E=q.tg;w=Math.max(.3,Math.hypot(E.x-S.x,E.z-S.z));pos=V3.Lerp(S,E,.5);}
+  if(proj){const fl=Math.max(80,V3.Distance(q.pos,q.tg)/(t.spd||18)*1000);if(el>fl+40)return false;pos=V3.Lerp(q.pos,q.tg,Math.min(1,el/fl));}
+  if(pl==='cam'&&(path||proj)){try{const vp=camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()),I=BABYLON.Matrix.IdentityReadOnly,VP=scene.getTransformMatrix(),
+   a=V3.Project(path?q.pos:q.pos,I,VP,vp),b=V3.Project(q.tg,I,VP,vp);phi=-Math.atan2(b.y-a.y,b.x-a.x);}catch(e){phi=0;}}
+  let mir=false,scr=0;if(phi!=null){if(Math.cos(phi)<0){mir=true;scr=phi-Math.PI;}else scr=phi;}
+  q.p.scaling.set(w*(t.fl?-1:1),sc,1);q.r.scaling.set(mir?-1:1,1,1);q.r.rotation.set(0,0,scr);
+  const PV=PIV[t.pv||'c'];q.p.position.set(-PV[0]*q.p.scaling.x,-PV[1]*sc,0);
+  q.h.position.copyFrom(pos);const rz=(t.r||0)*D2R;
+  if(pl==='cam'){q.h.rotation.set(0,0,0);q.b.billboardMode=BABYLON.TransformNode.BILLBOARDMODE_ALL;q.b.rotationQuaternion=null;q.v.rotation.set(0,0,rz);}
+  else{q.b.billboardMode=0;q.b.rotationQuaternion=null;q.b.rotation.set(0,0,0);q.h.rotation.set(0,q.yaw,0);q.v.rotation.set(Math.PI/2,0,rz);q.h.position.y=Math.max(.05,pos.y);}
   return true;}
- function tick(){const now=performance.now();
-  for(let i=live.length-1;i>=0;i--){const q=live[i];let ok=false;try{ok=upd(q,now);}catch(e){ok=false;}if(!ok){kill(q);live.splice(i,1);}}
-  for(let i=zones.length-1;i>=0;i--)if(now>zones[i].until)zones.splice(i,1);
-  for(const C of casts)if(!C.W.isDisposed()&&now>C.end&&!live.some(q=>q.C===C)){C.W.dispose();}
-  for(let i=casts.length-1;i>=0;i--)if(casts[i].W.isDisposed())casts.splice(i,1);}
- const casts=[];
- /* a habilidade (classe, índice) tem efeito do pacote? mine = do jogador local */
- function get(cls,i,mine){const p=PK[cls];if(!p||!p.sk[i])return null;if(!mine&&((typeof PERF!=='undefined'&&PERF.low)||(typeof fxLvl==='function'&&fxLvl()==='m')))return null;return p.sk[i];}
- /* o: quem lançou (P ou o jogador remoto); tm: monstro/jogador alvo (ou null); yaw: direção do personagem; dirx/dirz: direção sem alvo */
- function play(o,cls,i,tm,mine,dirx,dirz){const s=get(cls,i,mine);if(!s||!o||!o.root||typeof scene==='undefined')return false;pre(cls);if(s.tr.some(k=>TX[k.s]&&TX[k.s].bad))return false;
-  const r=o.root.position,yaw=o.root.rotation.y;let tp=null;
-  if(tm&&(tm.pos||tm.root))tp=(tm.pos||tm.root.position).clone();
-  else{const a=(dirx||dirz)?Math.atan2(dirx,dirz):yaw;tp=new V3(r.x+Math.sin(a)*s.dist,0,r.z+Math.cos(a)*s.dist);}
-  const W=new BABYLON.TransformNode('sxw',scene);W.position.set(r.x,0,r.z);W.rotation.y=yaw;
-  const C={cls,o,tm:tm||null,tp,yaw,W,o0:r.clone(),dist:s.dist,dead:()=>!!(o.dead||(o.root&&o.root.isDisposed&&o.root.isDisposed())),
-   area:()=>{const c=s.self?o.root.position:(tm&&tm.alive!==false&&tm.pos?tm.pos:tp);try{return nearMonsters(c,s.r);}catch(e){return[];}},end:performance.now()+500};
-  for(const k of s.tr){C.end=Math.max(C.end,performance.now()+k.t0+k.d+200);
-   if(k.t0<=0)spawn(C,k);else{const t=setTimeout(()=>{try{spawn(C,k);}catch(e){}},k.t0);}}
-  casts.push(C);
-  if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}
-  /* efeitos antigos de marcação no chão: somem perto de quem lançou e do alvo enquanto a habilidade acontece */
-  if(!s.kg){const now=performance.now(),w=1700+(s.dot||0);zones.push({x:r.x,z:r.z,r:Math.max(3,s.r+1.5),until:now+w});zones.push({x:tp.x,z:tp.z,r:Math.max(3,s.r+1.5),until:now+w});}
+ /* agenda pelo relógio do jogo (o mesmo das habilidades), não pelo setTimeout */
+ function at(ms,fn){wait.push({t:performance.now()+ms,fn});if(!tickOn){tickOn=true;scene.onBeforeRenderObservable.add(tick);}}
+ function tick(){const now=performance.now();for(let i=wait.length-1;i>=0;i--)if(now>=wait[i].t){const w=wait.splice(i,1)[0];try{w.fn();}catch(e){}}for(let i=live.length-1;i>=0;i--){const q=live[i];let ok=false;try{ok=upd(q,now);}catch(e){}if(!ok){free(q);live.splice(i,1);}}}
+ /* ponto da âncora no mundo */
+ function anc(a,o,tp){const r=o.root.position;
+  switch(a){case 'hand':if(o.hand){try{const ch=[];for(let p=o.hand;p;p=p.parent)ch.push(p);for(let i=ch.length-1;i>=0;i--)ch[i].computeWorldMatrix(true);return o.hand.getAbsolutePosition().clone();}catch(e){}}return new V3(r.x,r.y+1.2,r.z);
+   case 'body':return new V3(r.x,r.y+1.05,r.z);case 'head':return new V3(r.x,r.y+2.1,r.z);case 'gSelf':return new V3(r.x,(r.y||0)+.05,r.z);
+   case 'gTarget':return new V3(tp.x,.05,tp.z);default:return new V3(tp.x,(tp.y||0)+1.1,tp.z);}}
+ function track(C,t){const o=C.o;if(!o.root||(o.root.isDisposed&&o.root.isDisposed()))return;
+  if(C.tm&&C.tm.alive!==false){const p=epos(C.tm);if(p)C.tp=p.clone();}
+  const yaw=C.yaw,tgA=t.a==='target'||t.a==='gTarget',dead=()=>!!(o.dead&&o!==null&&o.dead===true);
+  if(t.a==='path'){const S=anc('body',o,C.tp);S.y=1;const E=t.pf?S.add(new V3(Math.sin(yaw)*t.pf,0,Math.cos(yaw)*t.pf)):new V3(C.tp.x,1,C.tp.z);
+   if(!t.pf&&Math.hypot(E.x-S.x,E.z-S.z)<.6){E.x=S.x+Math.sin(yaw)*2;E.z=S.z+Math.cos(yaw)*2;}add(t,S,yaw,null,E,null,2);return;}
+  if(t.a==='proj'){const S=anc('hand',o,C.tp);add(t,S,yaw,null,new V3(C.tp.x,(C.tp.y||0)+1.1,C.tp.z),null,2);return;}
+  const P=anc(t.a,o,C.tp).addInPlace(offW(t,yaw));add(t,P,yaw,tgA?(C.tm&&C.tm.root?C.tm:null):o,null,null,2);}
+ /* o: quem lançou; tm: alvo (monstro/jogador) ou null; s: atributos da habilidade (para impacto e estados) */
+ function play(o,cls,i,tm,mine,dirx,dirz,s){const p=PK.cls&&PK.cls[cls],R=p&&p.sk[i];if(!R||!o||!o.root||typeof scene==='undefined')return false;
+  if(!mine&&(LOWD()||(typeof fxLvl==='function'&&fxLvl()==='m')))return false;pre(cls);
+  if(R.tr.some(t=>TX[t.s]&&TX[t.s].bad))return false;
+  const r=o.root.position,yaw=o.root.rotation.y,a=(dirx||dirz)?Math.atan2(dirx,dirz):yaw,dist=R.dist||(s&&s.range)||3;
+  let tp=tm&&epos(tm)?epos(tm).clone():new V3(r.x+Math.sin(a)*Math.min(dist,10),0,r.z+Math.cos(a)*Math.min(dist,10));
+  const C={o,tm:tm||null,tp,yaw};
+  for(const t of R.tr){if(!t.t0)track(C,t);else at(t.t0,()=>track(C,t));}
+  if(mine&&s)last={cls,i,s,until:performance.now()+Math.max(2600,(s.type==='roll'?(s.dur||4)*1000+600:0),(s.hits||1)*600)};
   return true;}
- /* um aro/explosão/chão antigo nesta posição deve sumir? (em Guerra/Arena/duelo o aro colorido do lado continua) */
- function sup(x,z){if(!zones.length)return false;if(typeof FXCTX!=='undefined'&&FXCTX&&(FXCTX.enemy||FXCTX.ally))return false;const now=performance.now();
-  for(const q of zones)if(now<=q.until&&Math.hypot(x-q.x,z-q.z)<=q.r)return true;return false;}
- /* sem os efeitos antigos de lançamento (kc) e/ou de chão (kg) */
- const noCast=(cls,i,mine)=>{const s=get(cls,i,mine);return !!(s&&!s.kc);},noGround=(cls,i,mine)=>{const s=get(cls,i,mine);return !!(s&&!s.kg);};
- setInterval(()=>{try{if(typeof S!=='undefined'&&S&&PK[S.cls])pre(S.cls);}catch(e){}},3000);   /* texturas da classe do jogador prontas antes do 1º uso */
- return{play,pre,sup,noCast,noGround,has:(cls,i)=>!!(PK[cls]&&PK[cls].sk[i]),get live(){return live.length;},PK};
+ /* efeito geral (montaria, mascote...) em quem tem root; devolve as peças (para parar antes) */
+ function gen(key,o){const L=PK.gen&&PK.gen[key];if(!L||!o||!o.root||typeof scene==='undefined')return null;const out=[],yaw=o.root.rotation?o.root.rotation.y:0;
+  for(const t of L){const go=()=>{const P=anc(t.a,o,o.root.position).addInPlace(offW(t,yaw));const q=add(t,P,yaw,t.fol?o:null,null,null,1);if(q)out.push(q);};if(!t.t0)go();else at(t.t0,go);}
+  return out;}
+ function stop(L){if(!L)return;for(const q of L){const i=live.indexOf(q);if(i>=0){live.splice(i,1);free(q);}}L.length=0;}
+ /* estado num monstro (lentidão, atordoado, queimando...): um por tipo, a duração renova */
+ function status(m,key,ms,q0){const L=PK.gen[key];if(!L||!(ms>0))return;m._sx=m._sx||{};const ex=m._sx[key];const now=performance.now();
+  if(ex&&live.includes(ex)&&ex.fol&&ex.fol.e===m){ex.d=Math.max(ex.d,now-ex.t0+ms);return;}
+  const t=L[0],P=sp(m,t.a,q0);const q=add(Object.assign({},t,{d:ms}),P,0,m,null,null,1);if(q){q.d=ms;q.fol={e:m,p0:epos(m).clone()};m._sx[key]=q;}}
+ function sp(m,a,q0){const p=epos(m);if(a==='ft')return new V3(p.x,(p.y||0)+.04,p.z);if(a==='top')return new V3(p.x,(p.y||0)+2*(m._fxY||.8)+.25,p.z);return new V3(q0.x,q0.y,q0.z);}
+ const DOT={fire:'dot_fire',lightning:'dot_elec',steel:'dot_elec',arcane:'dot_arc',ice:'dot_ice',water:'dot_ice',shadow:'dot_blood',blood:'dot_blood',nature:'dot_poison',earth:'dot_poison'};
+ /* acerto do jogador local num monstro: impacto da habilidade (ou do golpe básico) + estados. q0 = ponto do impacto (VFX.at) */
+ function hit(m,crit,isSk,q0){if(!m||!q0||typeof S==='undefined'||!S)return false;const p=PK.cls&&PK.cls[S.cls];if(!p)return false;pre(S.cls);
+  const now=performance.now(),L=isSk&&last&&last.cls===S.cls&&now<last.until?last:null,R=L?p.sk[L.i]:null,h=(R&&R.h)||p.b,k=q0.sc||1;
+  if(TX[h.s]&&TX[h.s].bad)return false;
+  const t=Object.assign({},h,{sc:(h.sc||1)*(h.a==='ft'?Math.min(1.4,k):k)});const P=sp(m,h.a,q0);if(h.a==='ft'&&!t.pv)t.pv='b';
+  add(t,P,0,h.a==='ft'?m:null,null,null,isSk?1:0);
+  if(crit)add(PK.gen.crit[0],new V3(q0.x,q0.y+.2,q0.z),0,null,null,null,0);
+  if(L){const s=L.s;if(s.slow)status(m,s.fx==='ice'||s.ice?'slowIce':'slow',s.slow,q0);if(s.stun)status(m,s.ice?'cage':'stun',s.stun,q0);
+   if(s.dotDur&&(s.dot||s.type==='thunder'||s.type==='arcRay'))status(m,DOT[s.fx]||'dot_elec',s.dotDur*1000,q0);if(s.mark)status(m,'mark',s.mark*1000,q0);}
+  return true;}
+ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&PK.cls&&PK.cls[S.cls])pre(S.cls);}catch(e){}},3000);   /* imagens da classe do jogador prontas antes do 1º uso */
+ /* as marcações antigas (aros, brilho de lançamento, chão) ficam de fora nas habilidades com efeito novo; em Guerra/Arena/duelo o aro do lado continua */
+ const sup=()=>typeof FXCTX!=='undefined'&&!!FXCTX&&!!FXCTX.sx&&!(FXCTX.enemy||FXCTX.ally);
+ const has=(cls,i)=>!!(PK.cls&&PK.cls[cls]&&PK.cls[cls].sk[i]);
+ return{play,pre,gen,stop,hit,sup,has,get live(){return live.length;},PK};
 })();
 if(/^\?dbg/.test(location.search))window.SFX2=SFX2;
 
@@ -5302,7 +5306,7 @@ function fxLvl(){if(!FXCTX||FXCTX.mine)return 'a';return FXO==='auto'?(PKS.mode?
 /* v2.3.3: um efeito com erro sai da lista — antes a exceção parava o laço de desenho (o jogo congelava em lutas grandes) */
 function updateFx(now){for(let i=fx.length-1;i>=0;i--){const f=fx[i];if(!f)continue;const t=Math.min(1,(now-f.t0)/f.dur);try{if(f.upd)f.upd(t);if(t>=1){fx.splice(i,1);if(f.done)f.done();}}catch(e){fx.splice(i,1);console.warn('fx',e);}}}
 function ring(x,z,r,c,dur,y){
- if(SFX2.sup(x,z))return;   /* v2.4.2: habilidade com efeito do estúdio sem a marcação antiga */
+ if(SFX2.sup())return;   /* v2.4.3: habilidade com efeito em spritesheet não mostra o aro antigo */
  if(FXCTX&&!FXCTX.mine&&(FXCTX.enemy||FXCTX.ally))c=FXCTX.enemy?'#ff3b3b':'#3ba4ff';   /* v2.3.3: aro do outro jogador na cor do lado */
  const t=staticMesh(B.CreateTorus('rg',{diameter:2,thickness:.07,tessellation:40},scene)),d=staticMesh(B.CreateDisc('rd',{radius:1,tessellation:40},scene));d.rotation.x=Math.PI/2;
  for(const m of[t,d]){m.material=fxMat(c);m.position.set(x,y||.1,z);}
@@ -5311,6 +5315,7 @@ function ring(x,z,r,c,dur,y){
 /* Hell Crasher: brasão de escudo gigante marcado no chão (surge com impacto, pulsa em brasa e some) */
 let CRESTT=null,CRESTM=null;
 function shieldCrestFx(x,z,r,col,yaw){
+ if(SFX2.sup())return;
  if(!CRESTT){const S=512;CRESTT=new BABYLON.DynamicTexture('crest',{width:S,height:S},scene,true);CRESTT.hasAlpha=true;const c=CRESTT.getContext();c.clearRect(0,0,S,S);
   const path=k=>{const X=u=>S*(.5+u*k),Y=v=>S*(.5+v*k);c.beginPath();c.moveTo(X(0),Y(-.45));c.bezierCurveTo(X(.16),Y(-.37),X(.3),Y(-.36),X(.4),Y(-.38));c.bezierCurveTo(X(.43),Y(.02),X(.3),Y(.3),X(0),Y(.47));c.bezierCurveTo(X(-.3),Y(.3),X(-.43),Y(.02),X(-.4),Y(-.38));c.bezierCurveTo(X(-.3),Y(-.36),X(-.16),Y(-.37),X(0),Y(-.45));c.closePath();};
   c.shadowColor='rgba(255,120,30,.9)';c.shadowBlur=26;path(1);c.fillStyle='rgba(255,214,110,1)';c.fill();c.shadowBlur=0;
@@ -6191,6 +6196,7 @@ function aoeAnimFx(s,pos){
  else if(s.anim==='sumo')[0,370,740].forEach(t=>later(t,()=>{ring(x,z,2.4,s.color,350);burst(x,z,'steel');}));
 }
 function quakeFx(x,z,r,dur){
+ if(SFX2.sup())return;
  const rock=mat('qrk','#7a6a58'),rock2=mat('qrk2','#5f5448'),cm=new BABYLON.StandardMaterial('qcm',scene);
  cm.disableLighting=true;cm.emissiveColor=new C3(.05,.03,.02);cm.alpha=.95;
  const pieces=[],stones=[];
@@ -6262,7 +6268,7 @@ function barbFx(o,dur){
 function thunderFx(m,rad,dotDur,col){
  const x0=m.pos.x,z0=m.pos.z;
  later(700,()=>{
-  const x=m.alive?m.pos.x:x0,z=m.alive?m.pos.z:z0,pts=[];if(SFX2.sup(x,z))return;   /* v2.4.2: o raio do estúdio substitui este */
+  const x=m.alive?m.pos.x:x0,z=m.alive?m.pos.z:z0,pts=[];if(SFX2.sup())return;   /* v2.4.3: o raio em spritesheet substitui este */
   for(let k=0;k<=9;k++)pts.push(new V3(x+((k===0||k===9)?0:rnd(-.9,.9)),16*(1-k/9),z+((k===0||k===9)?0:rnd(-.9,.9))));
   const bolt=B.CreateLines('thb',{points:pts},scene);bolt.color=new C3(.85,.95,1);bolt.isPickable=false;bolt.renderingGroupId=1;
   const gm=new BABYLON.StandardMaterial('thg',scene);gm.disableLighting=true;gm.emissiveColor=C3.FromHexString(col||'#bfe3ff');gm.alpha=.6;
@@ -6502,7 +6508,7 @@ function skPs(emitter,E,rate,box,cap){
  return ps;
 }
 function groundFx(x,z,r,el,dur){
- if(SFX2.sup(x,z))return;
+ if(SFX2.sup())return;
  dur=dur||3000;const E=SKEL[el]||SKEL.steel;
  /* v2.3.3: efeitos de OUTROS jogadores — nível escolhido em ⚙️ Opções, aro vermelho (inimigo) / azul (aliado) em Guerra, Arena e duelo */
  const LV=fxLvl(),OTH=!!(FXCTX&&!FXCTX.mine),LITE=LV!=='a',SIDE=OTH?(FXCTX.enemy?'#ff3b3b':FXCTX.ally?'#3ba4ff':null):null,VK=LITE?.45:1;
@@ -6546,7 +6552,7 @@ function groundFx(x,z,r,el,dur){
  },done:()=>o.kill()});
 }
 function burst(x,z,el){
- if(SFX2.sup(x,z))return;
+ if(SFX2.sup())return;
  if(fxLvl()!=='a')return;   /* v2.3.3: efeito de outro jogador com efeitos reduzidos */
  const E=SKEL[el]||SKEL.steel,em=B.CreateBox('bm',{size:.02},scene);em.isVisible=false;em.position.set(x,.15,z);
  const ps=skPs(em,E,260,.4,80);ps.minLifeTime=.3;ps.maxLifeTime=.7;ps.direction1=new V3(-1.6,E.up*2,-1.6);ps.direction2=new V3(1.6,E.up*3,1.6);ps.start();
@@ -6749,7 +6755,7 @@ const rk=i=>(S.sk&&S.sk[i])||0;
 function skStat(i){return RULES.skStat(S.cls,i,rk(i));}
 /* v2.3.2: atrasos das habilidades (impactos) esticados pela lentidão da classe */
 function slowed(cls,fn){const K=RULES.skSlow?RULES.skSlow(cls):1;if(K===1)return fn();const L0=later;later=(ms,f)=>L0(ms*K,f);try{return fn();}finally{later=L0;}}
-function castSkill(i){return slowed(S&&S.cls,()=>castSkill0(i));}
+function castSkill(i){const c0=FXCTX;try{return slowed(S&&S.cls,()=>castSkill0(i));}finally{FXCTX=c0;}}
 function castSkill0(i){
  TUT.cast=performance.now();
  if(!S||P.dead)return;const C=CLASSES[S.cls];if(!C.skills[i])return;
@@ -6806,8 +6812,9 @@ function castSkill0(i){
   if(cb){s.mult*=1+(s.cbonus||.5);P.mp=Math.min(D().maxMp,P.mp+s.mp*.4);if(s.reset)for(const j of s.reset)P.cd[j]=0;floatText('⚡ COMBO ×'+P.cst+'!',P.pos,'#ffd24a',true);AUD.sfx('combo',null,{n:P.cst});logMsg(`<span style="color:#ffd24a">⚡ COMBO ×${P.cst}: ${CLASSES[S.cls].skills[P.lastSkill].n} → ${s.n}</span>`);}
   if(s.mark&&tgt){tgt.markUntil=now+s.mark*1000;floatText('🎯 Marcado',tgt.pos,'#ff7ad9');}
  }
- P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});let sxT=tgt||ft;if(!sxT){const q=curTgt()||nearestMonster(s.range||3);if(q&&hyp(P.pos,q.pos)<=(s.range||3)+2)sxT=q;}const sxOn=SFX2.play(P,S.cls,i,sxT,true,dirx,dirz);   /* v2.4.2 efeitos do Estúdio de Efeitos */
- if(!(sxOn&&SFX2.noCast(S.cls,i,true)))VFX.launch(s,P.pos);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon))&&!(sxOn&&SFX2.noGround(S.cls,i,true)))skillFx(s,P.pos,tgt?tgt.pos:null);
+ P.lastSkill=i;P.lastSkillAt=now;AUD.skill(S.cls,i,{hits:s.hits});const sxDir=['shieldThrow','shieldBeam','daggerFan','roll','stab3','foilThrow','xslash','foilStep'].includes(s.type);   /* habilidades que saem na direção (não num alvo) */
+ let sxT=hc?{pos:new V3(hc.x,0,hc.z)}:tgt||ft;if(!sxT&&!sxDir){const q=curTgt()||nearestMonster(s.range||3);if(q&&hyp(P.pos,q.pos)<=(s.range||3)+2)sxT=q;}const sxOn=SFX2.play(P,S.cls,i,sxT,true,dirx,dirz,s);if(sxOn)FXCTX={mine:true,sx:1};   /* v2.4.3 efeitos em spritesheet; sem as marcações antigas */
+ if(!sxOn)VFX.launch(s,P.pos);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon))&&!sxOn)skillFx(s,P.pos,tgt?tgt.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null),so={slow:s.slow,defMult:s.defMult,exec:s.exec,forceCrit:s.forceCrit};
  switch(s.type){
   case 'single':
@@ -8173,6 +8180,7 @@ function petsTick(dt,now){
    else if(D.mv==='hop')y=Math.abs(Math.sin(t*(mv?9:4)))*(mv?.38:.12);else{rz2=mv?Math.sin(t*9)*.05:0;}
    const T=n.top;if(T._legs&&T._legs.length){n.wp=(n.wp||0)+(mv?dt*9:0);const a=mv?Math.sin(n.wp)*.6:0;T._legs.forEach((l,j)=>{l.rotation.x+=((j?a:-a)-l.rotation.x)*Math.min(1,dt*12);});}   /* passos: uma perna para frente, a outra para trás */
    T.position.set(n.x,y+(op.y||0),n.z);T.rotation.y=n.yaw;T.rotation.z=rz2;
+   if(!n.sx){n.sx=1;n.fxT=now+6000+Math.random()*8000;SFX2.gen('pspawn',{root:T});}else if(!mv&&now>n.fxT){n.fxT=now+11000+Math.random()*10000;if(hyp(P.pos,{x:n.x,z:n.z})<28)SFX2.gen('pidle',{root:T});}   /* v2.4.3 aparece com fumaça; parado, às vezes solta corações */
    if(D.mv==='hop'){const sq=1-Math.abs(Math.cos(t*(mv?9:4)))*.12;T.scaling.set(D.sc/Math.sqrt(sq),D.sc*sq,D.sc/Math.sqrt(sq));}}
   if(ow===P&&now>PETM.pickT){PETM.pickT=now+280;petAutoPick(L,now);}}
  for(const [ow,L] of PETM.list)if(!seen.has(ow)){petDisposeL(L);PETM.list.delete(ow);}
@@ -8894,8 +8902,8 @@ function remoteSkill0(m){
  if(m.pid){const tg=NET.room&&m.pid===NET.room.sessionId?P:remoteOf(m.pid),tp=tg===P?P.pos:(tg&&tg.root.position);if(tp)ring(tp.x,tp.z,2.6,s.color,700);return;}
  const mo=m.tid?monsters.find(x=>x.id===m.tid):(m.ptid?ptOf(m.ptid):null),now=performance.now(),from=o.root.position;o.swingAt=now;if(!o.rig&&(RIGFX.has(s.type)||(s.type==='single'&&(s.proj||(C.ranged?C.proj:null))==='hook'))){AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));if(fxLvl()!=='m'&&hyp(P.pos,from)<34)VFX.launch(s,from,1);skillFx(s,from,mo?mo.pos:null);return;}o.swKind=s.anim||(s.type==='dash'?'dash':s.type==='buff'?'buff':null);o.swKA=now;if(m.dx||m.dz)o.root.rotation.y=Math.atan2(m.dx,m.dz);
  if(mo)o.root.rotation.y=Math.atan2(mo.pos.x-from.x,mo.pos.z-from.z);
- AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));const sxOn=SFX2.play(o,o.cls,m.i,mo,false,m.dx||0,m.dz||0);   /* v2.4.2 */
- if(fxLvl()!=='m'&&hyp(P.pos,from)<34&&!(sxOn&&SFX2.noCast(o.cls,m.i,false)))VFX.launch(s,from,1);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon))&&!(sxOn&&SFX2.noGround(o.cls,m.i,false)))skillFx(s,from,mo?mo.pos:null);
+ AUD.skill(o.cls,m.i,{hits:s.hits},spat(from,28));const sxOn=SFX2.play(o,o.cls,m.i,Number.isFinite(m.cx)?{pos:new V3(m.cx,0,m.cz)}:mo,false,m.dx||0,m.dz||0,s);if(sxOn&&FXCTX)FXCTX.sx=1;   /* v2.4.3 */
+ if(fxLvl()!=='m'&&hyp(P.pos,from)<34&&!sxOn)VFX.launch(s,from,1);if(!(s.type==='aoeSelf'&&(s.delay||s.fxMon))&&!sxOn)skillFx(s,from,mo?mo.pos:null);
  const pr=s.proj||(C.ranged?C.proj:null);
  switch(s.type){
   case 'single':if(mo){if(pr==='hook')hookFx(o,mo,s.color);else if(s.charge){chargeFx(o,mo,s.color,s.pre);later(s.pre,()=>{if(mo.alive)bigShot(from,mo,s.color,null,{through:3,rings:true,sc:2.1,streak:3.6});});}else if(pr)shoot(from,mo,s.color,pr,null,{sc:1.3,streak:2.4});else ring(mo.pos.x,mo.pos.z,1.5,s.color,300);}break;
@@ -9456,20 +9464,20 @@ function mountBtn(){
  const why=mtCan();if(why){if(why!=='x')toast(why);return;}
  if(P.recall)cancelRecall();
  const id=S.mtq.id;MNT.load(id).catch(()=>{});
- MNT.cast={t0:MNT.now,x:P.pos.x,z:P.pos.z,id,pulse:0};$('mtBar').style.display='block';$('mtFill').style.width='0%';AUD.sfx('ui');
+ MNT.cast={t0:MNT.now,x:P.pos.x,z:P.pos.z,id,pulse:0,fx:SFX2.gen('mcall',P)};$('mtBar').style.display='block';$('mtFill').style.width='0%';AUD.sfx('ui');
 }
-function mtCancel(msg){if(!MNT.cast)return;MNT.cast=null;$('mtBar').style.display='none';if(msg)toast(msg);}
+function mtCancel(msg){if(!MNT.cast)return;SFX2.stop(MNT.cast.fx);MNT.cast=null;$('mtBar').style.display='none';if(msg)toast(msg);}
 function mtCastTick(now){const c=MNT.cast;if(!c)return;
  if(P.dead||NET.inst){mtCancel();return;}
  if(hyp(P.pos,c)>.8){mtCancel('Chamada cancelada: você se moveu.');return;}
  const k=Math.min(1,(now-c.t0)/MT_CAST);$('mtFill').style.width=(k*100)+'%';
- if(now>c.pulse){c.pulse=now+900;ring(P.pos.x,P.pos.z,1.4+k,'#ffd28a',700);}
+ if(now>c.pulse&&!c.fx){c.pulse=now+900;ring(P.pos.x,P.pos.z,1.4+k,'#ffd28a',700);}   /* v2.4.3: círculo em spritesheet; o aro só se a imagem faltar */
  if(k>=1){const e=MNT.ct&&MNT.ct[c.id];if(!e){if(now-c.t0>MT_CAST+12000)mtCancel('Não foi possível carregar a montaria.');return;}   /* ainda baixando: espera um pouco mais */
   mtCancel();mountUp(c.id);}}
 function mountUp(id){
  const o=MNT.get(id);o.owner=P;P.mnt={id,o,spd:RULES.mtSpd(id)};P._ride=true;P.moveTo=null;P.atkTarget=null;
  MNT.drive(o,P.pos,P.root.rotation.y,0,0,MNT.now,false);
- try{VFX.spawn('vortex',{x:P.pos.x,y:1,z:P.pos.z},3.2,'#ffe2b0',480,0);}catch(e){}ring(P.pos.x,P.pos.z,2.6,'#ffd28a',600);
+ if(!(SFX2.gen('mup',P)||[]).length){try{VFX.spawn('vortex',{x:P.pos.x,y:1,z:P.pos.z},3.2,'#ffe2b0',480,0);}catch(e){}ring(P.pos.x,P.pos.z,2.6,'#ffd28a',600);}
  AUD.smp('tele',.5,1.1);AUD.smp(o.D.voz[0],.4,o.D.voz[1]);
  if(NET.room)NET.room.send('mnt',{on:1});mtBtnSync();
  toast('🐎 '+((RULES.MTS[id]||{}).n||'Montaria')+' • +'+Math.round(P.mnt.spd*100)+'% de velocidade');}
@@ -9482,7 +9490,7 @@ function dismount(jump){const m=P.mnt;if(!m)return;P.mnt=null;P._ride=!!jump;   
 function flipTick(now){const f=P.flip;if(!f)return false;const t=Math.min(1,(now-f.t0)/(MNT.flipMs||550)),side=1.5*t;
  P.root.rotation.x=0;P.pos.x=f.x0+f.dx*side;P.pos.z=f.z0+f.dz*side;P.pos.y=Math.max(0,f.y0*(1-t)+1.1*Math.sin(Math.PI*t));
  if(t>.85)P._ride=false;
- if(t>=1){P.pos.y=0;P.flip=null;AUD.smp('land',.5,1);ring(P.pos.x,P.pos.z,1.1,'#fff2a8',300);}
+ if(t>=1){P.pos.y=0;P.flip=null;AUD.smp('land',.5,1);SFX2.gen('mdown',P);}
  return true;}
 function mtBtnSync(){const b=$('mtBtn');if(!b)return;b.classList.toggle('on',!!P.mnt);const id=P.mnt?P.mnt.id:S&&S.mtq&&S.mtq.id;b.querySelector('i').textContent=(id&&RULES.MTS[id]&&RULES.MTS[id].i)||'🐎';
  b.title=P.mnt?'Descer da montaria (V)':S&&S.mtq?'Chamar a montaria (V) • 4 s':'Montaria (V) — compre na loja 💎 e equipe na aba 🐎';b.style.opacity=S&&(S.mtq||P.mnt)?1:.55;}
@@ -9493,7 +9501,7 @@ function mtTick(dt,now){MNT.now=now;riderShadow(P,!P._ride);
  mtCastTick(now);
  if(P.mnt){const o=P.mnt.o;if(P.dead||NET.inst){dismount(false);}else{
   const sp=P.moving?6*(1+P.mnt.spd):0;MNT.drive(o,P.pos,P.root.rotation.y,sp,dt,now,true);
-  P.pos.y=MNT.seatY(o,P)+(sp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}}
+  P.pos.y=MNT.seatY(o,P)+(sp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);if(sp>0&&now>(P._rdT||0)){P._rdT=now+260;SFX2.gen('ride',P);}}}   /* v2.4.3 poeira da corrida */
  for(const o of [...MNT.live]){if(o.dead){if(now-o.dead>4000)MNT.free(o);   /* 4 s depois de descer: some */
 }}
 }
@@ -9502,10 +9510,10 @@ function mtRemote(o,p,pos,dt,now){MNT.now=now;const id=p&&!p.dead&&o.rig?p.mt||'
  if(o._mo&&o._mo.id!==id){if(!o._mo.dead){o._mo.dead=now;o._mo.owner=null;}o._mo=null;o._ride=false;o._rl=null;riderShadow(o,true);}
  if(!id||!MTDEF[id])return;
  if(!o._mo){if(!MNT.rdy||!MNT.rdy[id]||!MNT.ct||!MNT.ct[id]){if(!MNT.ld[id]&&now>=(MNT.nextLd||0)&&(o.d==null||o.d<40)){MNT.nextLd=now+1500;MNT.load(id).catch(()=>{});}return;}   /* v2.4.0: outro jogador montado: baixa uma montaria por vez e só mostra depois de pronta */
-  if(now<(MNT.nextGet||0))return;MNT.nextGet=now+150;o._mo=MNT.get(id);o._mo.owner=o;o._ride=true;}
+  if(now<(MNT.nextGet||0))return;MNT.nextGet=now+150;o._mo=MNT.get(id);o._mo.owner=o;o._ride=true;if(o.d==null||o.d<30)SFX2.gen('mup',o);}
  const mo=o._mo,lx=o._mlx==null?pos.x:o._mlx,lz=o._mlz==null?pos.z:o._mlz,sp=dt>0?Math.hypot(pos.x-lx,pos.z-lz)/dt:0;o._mlx=pos.x;o._mlz=pos.z;
  o._msp=(o._msp||0)+(Math.min(12,sp)-(o._msp||0))*Math.min(1,dt*8);
- riderShadow(o,false);MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
+ riderShadow(o,false);MNT.drive(mo,pos,o.root.rotation.y,o._msp,dt,now,o.d<26);if(o._msp>2&&o.d<26&&now>(o._rdT||0)){o._rdT=now+320;SFX2.gen('ride',o);}pos.y=MNT.seatY(mo,o)+(o._msp>4.2?Math.abs(Math.sin(now*.0108))*.07:0);}
 function mtRemoteKill(o){if(o&&o._mo){MNT.free(o._mo);o._mo=null;}}
 /* quando equipa (ou ao entrar no jogo): já deixa o modelo baixado e compilado */
 let MT_EQ='';setInterval(()=>{try{const id=S&&S.mtq&&S.mtq.id||'';if(id!==MT_EQ){MT_EQ=id;if(id&&!IOS&&!(RULES.MTS[id]||{}).off)MNT.load(id).catch(()=>{});   /* iPhone: só carrega ao chamar a montaria (memória) */if(P.mnt&&P.mnt.id!==id)dismount(false);mtBtnSync();}}catch(e){}},1500);
