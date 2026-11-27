@@ -338,6 +338,7 @@ export class WorldRoom extends Room<WorldState> {
     const died = this.sim.damage(sid, sim, r.dmg, o.slow || 0);
     this.broadcast("dmg", { id: sim.m.id, d: r.dmg, c: r.crit ? 1 : 0, by: sid });
     this.hitXp(s, sim, Math.min(r.dmg, hp0), o);                // XP a cada golpe (não só ao matar)
+    if (!o.basic && !o.clone && !sim.T.chest) this.techXp(s);   // v2.5.2: XP técnica (só golpes de habilidade; vale no fantoche)
     if (died) { this.onKill(sim); return; }
     if (o.stun || o.root || o.lift || o.pull) this.sim.cc(sim, o, p.x, p.z);
   }
@@ -414,6 +415,16 @@ export class WorldRoom extends Room<WorldState> {
     const x = R.xpFor(T, sim.m.lvl, s.c.level) * 0.8 * frac * k * (sim.lazy ? 0.35 : 1);   // v1.78: XP por golpe -20% (1.0 na v1.73; agora há mais missões e monstros em Aurora)
     (s as any).xpAcc = ((s as any).xpAcc || 0) + x;
     const now = Date.now(); if (now - ((s as any).xpAt || 0) >= 700) this.flushXp(s);
+  }
+  /** v2.5.2: XP técnica — cada golpe de habilidade em monstro ou fantoche soma R.TXP_HIT %; a cada 100% ganha 1 ponto de habilidade */
+  private techXp(s: Sess) {
+    const c = s.c; c.txp = Math.round(((c.txp || 0) + R.TXP_HIT) * 100) / 100; s.dirty = true;
+    if (c.txp >= 100) {
+      const n = Math.floor(c.txp / 100); c.txp = Math.round((c.txp - n * 100) * 100) / 100; c.sp = (c.sp || 0) + n;
+      this.sync(s); this.res(s, [{ toast: "🎓 XP técnica completa: +" + n + " ponto de habilidade!" }, { log: '<span style="color:#c9a8ff">🎓 <b>XP técnica</b> completa — você ganhou <b>+' + n + ' ponto de habilidade</b> (tecla K).</span>' }, { sfx: "levelUp" }]);
+      return;
+    }
+    const a = s as any, now = Date.now(); if (now - (a.txAt || 0) >= 400) { a.txAt = now; s.client.send("txp", { v: c.txp }); }
   }
   private flushXp(s: Sess) {
     const a = s as any, n = Math.floor(a.xpAcc || 0); a.xpAt = Date.now(); if (n < 1) return;

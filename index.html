@@ -618,6 +618,7 @@
     <div class="bar"><div class="fill" id="hpFill"></div><span id="hpText"></span></div>
     <div class="bar"><div class="fill" id="mpFill"></div><span id="mpText"></span></div>
     <div class="bar" style="height:9px"><div class="fill" id="xpFill"></div><span id="xpText" style="line-height:9px;font-size:8px"></span></div>
+    <div class="bar" style="height:7px" title="XP técnica: cada golpe de HABILIDADE em monstros ou no fantoche soma 0,5%. Em 100% você ganha 1 ponto de habilidade. O ataque básico não conta."><div class="fill" id="txFill" style="background:linear-gradient(90deg,#5a3a9a,#b48cff)"></div><span id="txText" style="line-height:7px;font-size:7px"></span></div>
     <div class="row"><span id="goldText">💰 0</span><span id="killsText">☠ 0</span></div>
     <button id="ptsBtn">⭐ Pontos disponíveis!</button>
   </div>
@@ -6416,6 +6417,8 @@ $('win-friends').addEventListener('click',e=>{
 });
 $('win-friends').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='fInp'){const v=e.target.value.trim();if(v)addFriend(v);e.target.value='';}});
 $('win-gm').addEventListener('click',e=>{const b=e.target.closest('[data-gmb]');if(b&&NET.room&&S&&S.gm)NET.room.send('gmbuff',{mode:b.dataset.gmb,r:30});const bt=e.target.closest('[data-bot]');if(bt&&NET.room&&S&&S.gm){NET.room.send('bot',{op:bt.dataset.bot});$('botSt').textContent=bt.dataset.bot==='on'?'Chamando os bots...':'Retirando...';}});
+/* v2.5.2: barra da XP técnica (abaixo da XP) */
+function txHud(){const f=$('txFill'),t=$('txText');if(!f||!S)return;const v=Math.max(0,Math.min(100,S.txp||0));f.style.width=v+'%';t.textContent=((window.I18N&&I18N.lang==='en')?'Technique XP ':'XP técnica ')+v.toLocaleString((window.I18N&&I18N.lang==='en')?'en-US':'pt-BR',{maximumFractionDigits:1})+'%';}
 /* v2.5.0: situação dos bots deste GM */
 const BOTS_ST={t:0,d:null};
 function botStRender(){const d=BOTS_ST.d,el=$('botSt');if(!el||!d)return;const left=Math.max(0,d.left-(Date.now()-BOTS_ST.t)),m=Math.floor(left/60000);el.innerHTML=d.busy?'Chamando os bots...':d.on?`<b style="color:#7fe07f">${d.n} bots no jogo</b> — saem em ${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}<br>${(d.names||[]).map(esc).join('<br>')}`:`Nenhum bot seu no jogo. (${d.total}/${d.max} bots no servidor)`;}
@@ -6903,7 +6906,7 @@ function renderSkills(){
  const C=CLASSES[S.cls];
  const allMax=C.skills.every((s,i)=>rk(i)>=MAXRANK),bar=S.bar||RULES.defBar();
  const barH=(base,label)=>`<div class="muted" style="font-size:11px">${label}</div><div class="edrow">${Array.from({length:8},(_,j)=>{const n=base+j,si=bar[n],s=si>=0?C.skills[si]:null;return `<div class="edslot${s?' has':''}" data-eslot="${n}"${s?` draggable="true" data-dragsk="${si}" title="${s.n} (botão direito remove)"`:''}><span class="key">${base?'⇧'+(j+1):j+1}</span>${s?s.i:''}</div>`;}).join('')}</div>`;
- let h=`<div class="muted" style="margin-bottom:4px">🎛️ <b>Suas barras</b>: arraste uma habilidade para um número (ou clique na habilidade e depois no número). Botão direito no número remove.</div>`+barH(0,'Barra 1 — teclas 1 a 8')+barH(8,'Barra 2 — Shift + 1 a 8')+(allMax?`<p class="ok" style="margin:0 0 6px">✔ Todas as habilidades estão no rank máximo (${MAXRANK})!</p>`:`<div class="stat"><span>Pontos de habilidade</span><b class="${RULES.canSkillUp(S)?'ok':''}">${S.sp}</b></div><p class="muted">Ganhe 1 ponto por nível. Melhorar custa 1 ponto (ranks 1–3), 2 (4–10) e 3 (11–20). Rank máximo ${MAXRANK}: os 5 primeiros ranks rendem mais (+20% de efeito, -4% de recarga, +6% de mana); depois o ganho é menor.</p>`);
+ let h=`<div class="muted" style="margin-bottom:4px">🎛️ <b>Suas barras</b>: arraste uma habilidade para um número (ou clique na habilidade e depois no número). Botão direito no número remove.</div>`+barH(0,'Barra 1 — teclas 1 a 8')+barH(8,'Barra 2 — Shift + 1 a 8')+(allMax?`<p class="ok" style="margin:0 0 6px">✔ Todas as habilidades estão no rank máximo (${MAXRANK})!</p>`:`<div class="stat"><span>Pontos de habilidade</span><b class="${RULES.canSkillUp(S)?'ok':''}">${S.sp}</b></div><p class="muted">Ganhe 1 ponto por nível e 1 a cada 100% de <b>XP técnica</b> (${(S.txp||0).toLocaleString('pt-BR')}% agora): cada golpe de habilidade em monstros ou no fantoche soma 0,5% — o ataque básico não conta. Melhorar custa 1 ponto (ranks 1–3), 2 (4–10) e 3 (11–20). Rank máximo ${MAXRANK}: os 5 primeiros ranks rendem mais (+20% de efeito, -4% de recarga, +6% de mana); depois o ganho é menor.</p>`);
  C.skills.forEach((s,i)=>{
   const r=rk(i),locked=S.level<s.lv,cost=RULES.skCost(r),st=skStat(i);
   const bp=bar.indexOf(i),keyTxt=bp<0?'sem atalho':(bp>=8?'Shift+'+(bp-7):'tecla '+(bp+1));
@@ -8116,7 +8119,7 @@ function updateHud(){
  $('levelText').textContent='Nv '+S.level;$('zoneText').textContent=zoneName();
  $('hpFill').style.width=Math.max(0,P.hp/d.maxHp*100)+'%';$('hpText').textContent=Math.ceil(P.hp)+' / '+d.maxHp;
  $('mpFill').style.width=Math.max(0,P.mp/d.maxMp*100)+'%';$('mpText').textContent=Math.floor(P.mp)+' / '+d.maxMp;
- $('xpFill').style.width=(S.xp/need*100)+'%';$('xpText').textContent=S.xp+' / '+need+' XP';
+ $('xpFill').style.width=(S.xp/need*100)+'%';$('xpText').textContent=S.xp+' / '+need+' XP';txHud();
  $('goldText').textContent='💰 '+(S.gm?'∞':fmt(S.gold));$('killsText').textContent='☠ '+S.kills;
  $('ptsBtn').style.display=(S.pts>0||RULES.canSkillUp(S))?'block':'none';$('ptsBtn').textContent=S.pts>0?'⭐ Atributos disponíveis!':'⭐ Pontos de habilidade!';
 }
@@ -8817,7 +8820,8 @@ async function netJoin(){
    if(S._respec&&!NET.ack){NET.ack=true;logMsg(`<span style="color:#ffe28a">⚖️ Seu personagem foi ajustado às novas regras de equilíbrio: seu nível foi mantido e os <b>${S.pts} pontos de atributo</b> foram devolvidos para você redistribuir (tecla C).</span>`);toast('⚖️ Personagem ajustado: redistribua seus atributos (C)');room.send('a',{t:'ack'});}
    if(S) refreshUI();});
   room.onMessage('res',m=>applyRes(m));
-  room.onMessage('xp',m=>{if(S&&m&&typeof m.xp==='number'){S.xp=m.xp;}});   // XP por golpe (leve, sem reenviar o personagem)
+  room.onMessage('xp',m=>{if(S&&m&&typeof m.xp==='number'){S.xp=m.xp;}});
+  room.onMessage('txp',m=>{if(S&&m&&typeof m.v==='number'){S.txp=m.v;txHud();}});   // v2.5.2: XP técnica   // XP por golpe (leve, sem reenviar o personagem)
   room.onMessage('ahr',m=>ahReply(m));
   room.onMessage('wbs',m=>wbStatus(m));room.onMessage('wbmsg',m=>wbMsg(m));room.onMessage('wbr',m=>wbRank(m));room.onMessage('wbend',m=>wbEnd(m));room.onMessage('wbmy',m=>wbMy(m));
   room.onMessage('mailr',m=>mailReply(m));room.onMessage('mailn',m=>{MAIL.n=m.n|0;mailBadge();if(MAIL.open)NET.room.send('mail',{op:'list'});});

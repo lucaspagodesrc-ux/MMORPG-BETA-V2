@@ -181,3 +181,10 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - `rules.js`: `R.inTown` mais rápido (mesma regra) — é chamado para cada monstro a cada passo.
 - Painel do GM (`index.html`): seção 🤖 Bots com Lançar / Retirar e a lista dos bots (nome, classe, nível, nação) e o tempo que falta.
 - Custo medido com 36 bots: ~30% de um núcleo do processador (simulação dos monstros + sincronização).
+
+## 23. XP técnica (v2.5.2)
+- Pontos de habilidade agora vêm de duas fontes: +1 por nível (como antes) e +1 a cada 100% de **XP técnica**.
+- Cada golpe de **habilidade** que acerta um monstro ou o fantoche (espantalho) soma `R.TXP_HIT` = 0,5%. Ataque básico, clones e baús não contam.
+- Servidor: `WorldRoom.techXp` (chamado em `hit()`), guarda em `c.txp`; envia `txp` ao cliente (throttle 400 ms) e, ao fechar 100%, dá `c.sp`+1 com toast/log/som.
+- Cliente: barra roxa fina abaixo da barra de XP (`#txFill`/`#txText`, `txHud()`), texto explicativo na janela de habilidades (K).
+- Testado: 6 básicos = 0; 12 habilidades no fantoche = +6%; 98,5% → 100% virou +1 ponto e sobrou o resto; valor fica salvo.
