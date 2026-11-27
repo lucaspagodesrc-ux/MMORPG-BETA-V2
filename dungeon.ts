@@ -172,6 +172,7 @@ export class Dungeons {
         out.push(...R.dwEv(s.c, "dg", { id: def.id }));                                    // missões diárias/semanais
         gpAdd(s, R.GP.dg);                                                                 // Pontos de Guilda
         out.push({ log: `<span style="color:#9fe7b0">📜 Conclusões de ${def.name}: <b>${s.c.dgc[def.id]}</b></span>` });
+        if (Math.random() < R.TIX_DG) { R.tixGive(s.c, def.id); out.push({ toast: "🎟️ Ingresso encontrado!" }, { log: `<span style="color:#ffd27a">🎟️ Sorte! Você encontrou um ingresso de <b>${def.name}</b> (foi para a mochila).</span>` }); }   // v2.4.1: 10% ao concluir = ~1 a cada 10 calabouços
         for (const t of nw) out.push({ toast: "🏅 Novo título: " + t.t }, { log: `<span style="color:${t.col}">🏅 Título conquistado: <b>${t.t}</b> — abra a janela de títulos com <b>T</b>.</span>` });
         this.h.touch(s); this.h.sync(s); this.h.res(s, out);
       }

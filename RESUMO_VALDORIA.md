@@ -166,3 +166,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
   - Montaria: círculo de invocação durante a chamada (4 s), fumaça + poeira ao montar (também outros jogadores), poeira ao descer e poeira da corrida. Mascotes: fumaça ao aparecer e corações de vez em quando parados.
   - Peças reaproveitadas (pool por folha), limite de sprites ao mesmo tempo (60 no iPhone/modo leve, 130 no resto), outros jogadores respeitam ⚙️ efeitos mínimos.
 - `pages-build.sh`: copia `fx_*.webp` e `sx_*.webp` para `dist/fx/`. Os `fx_*.webp` da v2.4.2 não são mais usados (podem ser apagados do repositório).
+
+## 21. v2.4.4 — Arqueiro: Chuva de Flechas e Flecha Trovejante
+- "Tempestade de Flechas" (habilidade 6) virou **Flecha Trovejante** ⚡ (`rules.js`: `bolt:1` no lugar de `arr:2`, cor #9fd8ff; mesmo dano, raio 5,2, recarga 18 s). Uma flecha carregada de raios voa até o alvo e explode em área após 0,42 s (`castSkill0`/`remoteSkill0`: ramo `s.bolt`). Nada cai do céu.
+- Sprites do Arqueiro refeitos: Chuva de Flechas usa a saraivada `arrow-volley` (arco do arqueiro até a área) + poeira; Flecha Trovejante usa carga na mão, rastro, bola elétrica voando (`ft` = tempo de voo fixo do projétil), coluna de raio, explosão elétrica e onda no chão. Nenhuma das duas usa mais `anime-sword-rain` (espadas).
+- `lang_en.js`: "Thunder Arrow".
+- Este pacote leva junto os arquivos da v2.4.1 que ainda não tinham subido (`WorldRoom.ts`, `dungeon.ts`, `worldboss.ts`; o `rules.js` já é o da v2.4.1).

@@ -451,9 +451,7 @@ export class WorldRoom extends Room<WorldState> {
         const dg = cand.length ? cand[Math.floor(Math.random() * cand.length)] : null;   // v1.91: chance própria de cada calabouço (Solara menor; Cidade das Máquinas mínima)
         const pT = dg ? (T.boss ? (dg.tixBoss ?? 0.04) * (1 + R.luckOf(c, this.buff(s, "luck") + fin)) : (dg.tixMob ?? 0.01)) : 0;
         if (dg && Math.random() < pT) this.addDrop(s, { k: "tix", id: dg.id, n: 1 }, mx, mz, 0);
-      } else if (!T.boss && c.run && c.run.id && R.DUNGEONS.some((d: any) => d.id === c.run.id) && Math.random() < 0.02) {
-        this.addDrop(s, { k: "tix", id: c.run.id, n: 1 }, mx, mz, 0);   // v1.78: dentro do calabouço, 2% por monstro: ingresso do mesmo calabouço
-      }
+      }   // v2.4.1: dentro do calabouço os monstros não deixam mais ingresso — a chance (10%) é ao concluir (dungeon.ts)
       if (mlvl >= R.PET_DROP_LV && !T.chest && !T.node && Math.random() < R.PET_DROP) {   // v1.80: mascote (0,01%) em monstros de nível 100+ (mapa e calabouço)
         const pet = R.rollPet(); this.addDrop(s, pet, mx, mz, 0);
         this.broadcast("chat", { kind: "sys", text: `🐾 ${s.c.name} encontrou um mascote: ${R.nm(pet)} (${R.PRAR[R.PETS[pet.id].rar].n})!` });
@@ -727,7 +725,8 @@ export class WorldRoom extends Room<WorldState> {
     const isP = !!(tgt as any).pv;
     this.broadcast("matk", { by: s.client.sessionId, tid: isP ? 0 : tgt.m.id, ptid: isP ? (tgt as any).sid : undefined }, { except: s.client });
     const flight = Math.max(0.2, Math.hypot(tgt.m.x - p.x, tgt.m.z - p.z)) / 24 * 1000;
-    this.later(C.ranged ? flight : 130, () => this.hit(s, tgt, s.c.cls === "tanque" ? 1.15 : 1, { basic: true }));   // Tanque: ataque básico +15% (o Amp. de gemas só vale para habilidades)
+    const hi = !isP && (tgt.m.lvl || 0) >= R.BASIC_HI.lv;   // v2.4.1: monstros 130+ (Cidade das Máquinas): básico ×2 e ignora 50% da defesa
+    this.later(C.ranged ? flight : 130, () => this.hit(s, tgt, (s.c.cls === "tanque" ? 1.15 : 1) * (hi ? R.BASIC_HI.mult : 1), { basic: true, pierce: hi ? R.BASIC_HI.pierce : 0 }));   // Tanque: ataque básico +15% (o Amp. de gemas só vale para habilidades)
   }
 
   /* ---------- mensagens ---------- */

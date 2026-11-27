@@ -88,7 +88,7 @@ const CLASSES={
    {n:'Foco Mortal',i:'👁️',lv:8,cd:22,mp:18,type:'buff',spirit:1,buffs:{crit:.35,dmg:.2},dur:10,color:'#ff7a7a',d:'+35% crítico e +20% dano.'},
    {n:'Vontade do Vento',i:'🍃',lv:12,cd:9,mp:24,type:'multi',fan:1,hits:3,mult:1.2,range:11,proj:'arrow',color:'#bff5c8',d:'Um leque de flechas de vento atinge o alvo de uma vez (mais flechas a cada poucos ranks).',fx:'wind'},
    {n:'Rajada Reunidora',i:'🌪️',lv:15,cd:10,mp:22,type:'chainPull',gust:1,mult:1.4,range:11,radius:5,cnt:5,stun:1500,pvpStun:700,color:'#9fe7d0',d:'Uma flecha de vento abre um redemoinho que junta até 5 monstros no centro e os atordoa por 1,5s.',fx:'wind'},
-   {n:'Tempestade de Flechas',i:'⛈️',lv:20,cd:18,mp:40,type:'aoeTarget',arr:2,mult:2.3,radius:5.2,range:11,color:'#e8e0b0',d:'Uma tempestade de flechas em grande área.'},
+   {n:'Flecha Trovejante',i:'⚡',lv:20,cd:18,mp:40,type:'aoeTarget',bolt:1,mult:2.3,radius:5.2,range:11,color:'#9fd8ff',d:'Dispara uma flecha carregada de raios que explode em grande área.'},
    {n:'Flecha Dilacerante',i:'🗡️',lv:25,cd:22,mp:45,type:'single',charge:1,pre:300,anim:'charge',mult:6.5,range:13,proj:'arrow',color:'#ff7a7a',d:'Concentra energia no arco e solta uma flecha perfurante de altíssimo dano.',fx:'shadow'}]},
  mago:{n:'Mago',i:'🪄',wi:'🪄',main:'int',base:{str:2,agi:4,int:11,vit:5},range:9,ranged:true,proj:'orb',pcol:'#9fc4ff',
   d:'Magia devastadora. Frágil, mas com enorme dano.',
@@ -1118,6 +1118,13 @@ DUNGEONS.push({
   ]
 });
 for (const id of ['cripta', 'solar']) { const d = DUNGEONS.find(x => x.id === id); if (d) { d.tixMob = .003; d.tixBoss = .015; } }   // v1.91: ingressos de Solara caem menos no mapa de Solara
+/* v2.4.1: ingressos de calabouço bem mais raros.
+   • Dentro do calabouço: não caem mais dos monstros. Ao CONCLUIR o calabouço, cada jogador tem TIX_DG (10%) de chance = em média 1 ingresso a cada 10 calabouços.
+   • No mapa: TIX_MAP_F (10%) da chance antiga = comum 0,1% (1 a cada ~1.000 monstros), chefe 0,4%; Solara 0,03% / 0,15%; Cidade das Máquinas 0,02% / 0,1%. */
+const TIX_DG = .1, TIX_MAP_F = .1;
+for (const d of DUNGEONS) { d.tixMob = (d.tixMob ?? .01) * TIX_MAP_F; d.tixBoss = (d.tixBoss ?? .04) * TIX_MAP_F; }
+/* v2.4.1: ataque básico contra monstros de nível 130+ (Cidade das Máquinas e seus calabouços): ignora 50% da defesa e dá ×2 de dano (antes eram 170 a 600 golpes por monstro) */
+const BASIC_HI = { lv: 130, mult: 2, pierce: .5 };
 
 /* ---- NPCs: portal em Vulcânia, bases das nações (portal de volta + poções), entradas dos calabouços e quem dá as missões ---- */
 NPCS.push(
@@ -1709,15 +1716,15 @@ const lkStr = o => { const c = (v, mx) => Math.max(0, Math.min(mx, Math.floor(v)
 const lkFix = (s, fem) => { const o = lkParse(s); if (!o) return null; if (fem) { o.bd = 0; o.b = Math.min(o.b, LOOK.browsF - 1); } return lkStr(o); };   // feminino: sem barba; 8 sobrancelhas
 /** Dungeons: itens raros/épicos têm 40% de chance de vir com um atributo extra (For/Agi/Int/Vit). */
 function dgAttrBoost(it) { if (it.rar >= 2 && Math.random() < .4) { const st = ['str', 'agi', 'int', 'vit'], k = pick(st); it.bon[k] = (it.bon[k] || 0) + Math.max(1, Math.round(it.ilvl / 3)); } }
-const UP_DROP = { ferro: .15, essencia: .04 };   // chance por monstro comum (chefes: ferro garantido, essência 60%)
+const UP_DROP = { ferro: .08, essencia: .02, bFerro: .6, bEss: .3 };   // v2.4.1: chance menor — comum: ferro 8% / essência 2% • chefe: ferro 60% / essência 30%
 function rollLoot(T, mlvl, cls, luck) {
   luck = luck || 0;
   const out = [];
   out.push({ k: 'gold', n: Math.round(ri(T.gold[0], T.gold[1]) * (1 + (mlvl - T.lv[0]) * .2)) });
   /* v1.70: materiais de CRIAÇÃO não caem mais dos monstros — vêm de QUEBRAR equipamentos. Todo monstro pode deixar só os de APRIMORAMENTO (Minério de Ferro e Essência Arcana), com chance menor que antes. */
   if (!T.chest && !T.dummy) {
-    if (Math.random() < (T.boss ? 1 : UP_DROP.ferro)) out.push({ k: 'mat', id: 'ferro', n: T.boss ? ri(3, 6) : ri(1, 2) });
-    if (Math.random() < (T.boss ? .6 : UP_DROP.essencia)) out.push({ k: 'mat', id: 'essencia', n: T.boss ? ri(1, 3) : 1 });
+    if (Math.random() < (T.boss ? UP_DROP.bFerro : UP_DROP.ferro)) out.push({ k: 'mat', id: 'ferro', n: T.boss ? ri(2, 4) : 1 });
+    if (Math.random() < (T.boss ? UP_DROP.bEss : UP_DROP.essencia)) out.push({ k: 'mat', id: 'essencia', n: T.boss ? ri(1, 2) : 1 });
   }
   if (Math.random() < T.eq * (1 + luck / 100) * (T.dg ? 1.3 : 1)) { const slot = pick(slotPool(cls)); let rar = rarRoll((T.rb || 0) + (T.dg ? .35 : 0) + luck / 50); if (T.boss) rar = Math.max(2, rar); const lk = 1 + luck / 50, sl = T.dg ? (Math.random() < .022 * lk ? 2 : Math.random() < .11 * lk ? 1 : 0) : 0; { const it = genItem(slot, Math.max(1, mlvl + ri(T.dg ? 1 : 0, 2)), rar, undefined, cls, sl, astralMo(T.id, T.dg ? 'dg' : T.boss ? 'boss' : 'mob')); if (luck > 0 && rar === 3) it.plus = ri(0, 4); if (T.dg) dgAttrBoost(it); if (T.boss) rollBossAttr(it, cls); out.push(it); } }
   if (mlvl >= 6 && Math.random() < (T.boss ? .05 : T.dg ? .004 : .0025) * (1 + luck / 100)) out.push(genCape(mlvl + ri(0, 2), cls));
@@ -2588,7 +2595,7 @@ const castMs = (cls, i, x) => {
 };
 const animMs = (cls, i) => { const s = CLASSES[cls] && CLASSES[cls].skills[i]; return Math.round(((s && ANIM[s.anim]) || 260) * skSlow(cls)); };
 Object.assign(R, { SK_SLOW, skSlow, LOOK, LK_DEF, LOOK_VER, lkCanEdit, lkOk, lkParse, lkStr, lkFix, AXN, ASTRAL, setOG, ASTRAL_P, ASTRAL_V, astralMo, rollAstralAttr, astralBest, astralBestAttr, axList, NATIONS, NAT_LV, NAT_RW, WAR, warIn, MAINQ, qChain, qOpen, storyNext, STORY_ACTS, EVT, evtOn, evtPack, purgeExp, PVP, pvpK, DUEL, ARENA, arenaIn, arenaPrize, weekEnd, guildPrize, SPEC_LV, SPEC_COST, SPEC_RESET, SPQ, SPECS, specOf, spEv, GUILD, GP, GTIERS, guildLv, guildCap, guildChest, guildNeed, guildNameOk, guildTagOk, dgGrid, dgCell, dgWalk, dgRoomAt, dgPorts, DGCS, WBOSS, wbSlots, wbCur, wbNext, wbById, genRelic, rarOf, DWT, DCH, WCH, REGN, dayKey, weekKey, dwSync, dwEv, dwChestLoot, dwSecs, dwGold, regOf, hkeyOf, GRADES, GEMS, GEMD, GCAP, GCAPL, EXT_PRICE, MAX_SLOTS, gemVal, gemTxt, gemCat, schoolOf, gemTotals, rollScroll, OGK, SETB, BLAB, setBonus, setCounts, setInfo, setTf, GOLD_MAX, animMs, castMs, tierOf, TIERC, TIERC2, ANIM, GM_GOLD, gmChar, titleList, titleInfo, titleHave, dgDone, brightProg, MAXPLUS, TCOL, genCape, isMag, capeKind, CAPEWHO, CPN, CMN, defBar, cleanBar, skCost, luckOf, canSkillUp, OG, keyBase, validKey, eqKey, apOf, originFor, BRN, ERN, DUNGEONS, dgChestLoot, xpNeed, PTS_PER_LEVEL, MAX_LEVEL, GOLD_CAP_PER_LEVEL, XN, RAR, SLOTS, STN, WN, AN, HN, BN, RN, SHN, SUF, MATS, POTS, MAXRANK, CLASSES, MT, ZONES, QUESTS, QNAME, RECIPES, NPCS,
-  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, DIA_GOLD, DIA_XMAX, AMP_ATK, CLS_OFF, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
+  SHOPS, eff, nm, sellPrice, tixHave, tixTake, tixGive, PETS, PRAR, PGEMS, FZS, FZ_PRICE, fzPrice, newFz, MTS, MT_PRICE, MT_SPD, mtPrice, mtSpd, newMt, DIA_MAX, DIA_GOLD, DIA_XMAX, AMP_ATK, CLS_OFF, PET_IL, PET_MAXSL, PET_EQ, PET_DROP, PET_DROP_LV, newPet, rollPet, petWants, cleanPcf, PCF0, breakReturn, rollBossAttr, XA, xaName, xaEff, defRoll, flatRed, leech, CRIT_CAP, upRate, upCost, slotPool, rarRoll, genItem, canAdd, addItem, have, take, stats, skStat, FINISH_LUCK, TIX_DG, BASIC_HI, INV_SIZE, STASH_SIZE, UP_DROP, hitDamage, xpFor, rollLoot, gainXp, questKill, newChar, cleanItem, migrate, migrateStash, act, npcById });
 root.RULES = R;
 if (typeof module !== 'undefined' && module.exports) module.exports = R;
 })(typeof window !== 'undefined' ? window : globalThis);

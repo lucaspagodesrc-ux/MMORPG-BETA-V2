@@ -200,7 +200,7 @@ export class WorldBosses {
     const items: { item: any; qty: number }[] = [];
     items.push({ item: { k: "pot", id: L >= 75 ? "hp2" : "hp" }, qty: top3 ? 30 : 15 });
     items.push({ item: { k: "pot", id: L >= 75 ? "mp2" : "mp" }, qty: 10 });
-    for (const mk of Object.keys(T.mats || {})) items.push({ item: { k: "mat", id: mk }, qty: (mk === "essencia" ? 3 : 2) + (top3 ? 2 : 0) });
+    for (const mk of ["ferro", "essencia"]) items.push({ item: { k: "mat", id: mk }, qty: (mk === "essencia" ? 3 : 2) + (top3 ? 2 : 0) });
     const pool = R.slotPool(cls);
     items.push({ item: R.rollBossAttr(R.genItem(pick(pool), L, top3 ? 3 : Math.max(2, R.rarRoll(2)), cls, cls, 0, d.id), cls), qty: 1 });
     if (top3) items.push({ item: R.rollBossAttr(R.genItem(pick(pool), L, 3, cls, cls, 0, d.id), cls), qty: 1 });
