@@ -944,7 +944,12 @@ export class WorldRoom extends Room<WorldState> {
     this.onMessage("gmtp", (client, m) => {
       const p = this.state.players.get(client.sessionId), s = this.S(client);
       if (!p || !s || !s.c.gm || p.inst || R.arenaIn(p.x) || !Number.isFinite(m?.x) || !Number.isFinite(m?.z)) return;
-      const x = clampX(m.x, p.x), z = clamp(m.z);
+      let x = clampX(m.x, p.x), z = clamp(m.z);
+      if (x < 450 && !W.walk(x, z)) {   // v3.0.2: caiu em água, muro ou árvore → o ponto andável mais perto
+        let best: any = null;
+        for (let r = 2; r <= 40 && !best; r += 2) for (let a = 0; a < 6.283; a += 0.25) { const qx = x + Math.cos(a) * r, qz = z + Math.sin(a) * r; if (W.walk(qx, qz)) { best = { x: qx, z: qz }; break; } }
+        if (!best) return; x = best.x; z = best.z;
+      }
       p.x = x; p.z = z; s.budget = BURST; s.t = Date.now();
       client.send("correct", { x, z });
     });

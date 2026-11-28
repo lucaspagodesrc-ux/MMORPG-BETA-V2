@@ -257,3 +257,12 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 
 ## 34. Bots só entram na Arena PK com jogador de verdade lá dentro (v3.0.1)
 - `bots.ts`: `humanInArena()` (alguém com x > 1650, fora de instância, que não seja bot — `BOTS.isBotSid`). O bot só vai à arena se houver jogador; se o último jogador sair, os bots saem depois de 30 s (`noHumanAt`). O limite de 3–7 min por visita continua.
+
+## 35. Ajustes do mundo (v3.0.2)
+- **Casas cortadas**: a imagem de pé (virada para a câmera) passava por baixo do chão na parte da frente. Agora a borda de baixo de cada imagem é empurrada na direção da câmera (`CD`, em `wProps`) — na tela nada muda, mas não some mais no chão.
+- **Pontes** refeitas no `gen5.py`: para cada grupo de células de ponte, testa ângulos ±50° em volta do caminho e escolhe a travessia mais curta de margem a margem (11 pontes, 6–15 m). Só a faixa da ponte (3 m) é andável sobre a água. `WORLD.BR` atualizado; cliente desenha com +1 m.
+- **Campos de treino**: Solara, Nevasca e Vulcânia estavam empilhados com o de Aurora; agora ficam fora do muro da própria cidade (zonas 19, 29, 42). Objetos não nascem dentro deles. Ferreiro da Maré afastado do portal.
+- **Aurora**: castelo retirado; NPCs espalhados (1,75× a distância da praça), portais em fila no norte (z 46), 38 casas pela cidade toda.
+- **Retorno (B)** e renascer: `sp` das cidades = centro (Aurora: ao sul do chafariz, 6,−15).
+- **GM**: clique no mapa-múndi/região = teletransporte (servidor joga para o ponto andável mais perto se cair em água/muro).
+- Conferência automática: nenhum NPC fora do chão nem colado; nenhuma zona sobreposta ou encostada em cidade; zonas com nível coerente com a região; A* acha caminho para todas as cidades e zonas.
