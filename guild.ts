@@ -28,7 +28,7 @@ const nm = (it: any) => R.nm(it) + (it.k !== "eq" && it.n > 1 ? " ×" + it.n : "
 const clone = (o: any) => JSON.parse(JSON.stringify(o));
 const nearTab = (room: any, s: any, tabs: string[]) => {
   const p = room.state.players.get(s.client.sessionId); if (!p) return false;
-  const cxx = (x: number) => (x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);
+  const cxx = (x: number) => (x > 1650 ? 1800 : x > 450 ? 600 : 0);   // v3.0.0: mundo único
   return R.NPCS.some((n: any) => n.tabs && n.tabs.some((t: string) => tabs.includes(t)) && cxx(n.x) === cxx(p.x) && Math.hypot(n.x - p.x, n.z - p.z) <= 8);
 };
 const toMail = (items: any[]) => items.map((it) => (it.k === "eq" ? { item: it, qty: 1 } : { item: { k: it.k, id: it.id }, qty: it.n }));

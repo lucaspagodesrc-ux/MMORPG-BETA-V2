@@ -4,12 +4,12 @@ import { Monster, WorldState } from "./schema";
 const R: any = require("./rules.js");
 const MT: Record<string, any> = R.MT, ZONES: any[] = R.ZONES;
 
-const MAP = 80;
+const W = R.WORLD;   // v3.0.0: mundo único
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const ri = (a: number, b: number) => Math.floor(rnd(a, b + 1));
-const cxOf = (x: number) => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 450 ? 600 : x > 150 ? 300 : 0);          // centro da região (Vila Aurora, Solara ou dungeon)
-const clampX = (x: number, ref: number) => { const c = cxOf(ref), w = c === 600 ? 12 : MAP; return Math.max(c - w, Math.min(c + w, x)); };
-const clampZ = (v: number) => Math.max(-MAP, Math.min(MAP, v));
+const cxOf = (x: number) => (x > 1650 ? 1800 : x > 450 ? 600 : 0);          // v3.0.0: mundo (0), calabouços (600) ou Arena (1800)
+const clampX = (x: number, ref: number) => { if (ref > 450) return Math.max(ref - 12, Math.min(ref + 12, x)); return Math.max(W.X0 + 3, Math.min(W.X1 - 3, x)); };
+const clampZ = (v: number) => Math.max(W.Z0 + 3, Math.min(W.Z1 - 3, v));
 const safe = (x: number, z: number) => R.inTown(x, z);
 
 export type Sim = {
@@ -87,8 +87,10 @@ export class MonsterSim {
     } else if (zone.grid) {                                    // campo de treino: espantalhos em grade 3x3, virados para a cidade
       const i = s.slot || 0; m.x = zone.x + ((i % 3) - 1) * zone.grid; m.z = zone.z + (Math.floor(i / 3) - 1) * zone.grid; m.rot = Math.PI; m.lvl = 1;
     } else {
-      const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * zone.r;
-      m.x = clampX(zone.x + Math.cos(a) * r, zone.x); m.z = clampZ(zone.z + Math.sin(a) * r);
+      for (let k = 0; k < 12; k++) {                         // v3.0.0: nasce em chão andável
+        const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * zone.r;
+        m.x = clampX(zone.x + Math.cos(a) * r, zone.x); m.z = clampZ(zone.z + Math.sin(a) * r);
+        if (zone.x > 450 || R.walkAt(m.x, m.z)) break; if (k === 11) { m.x = zone.x; m.z = zone.z; } }
     }
     s.sx = m.x; s.sz = m.z; s.aggro = null; s.returning = false; s.atkAt = 0; s.slowUntil = 0; s.stunUntil = s.rootUntil = s.liftUntil = s.tauntUntil = 0; m.st = 0; s.markUntil = 0; s.slamAt = now + 6000; s.wanderAt = 0;
     s.contrib.clear(); s.xpp?.clear();
@@ -258,14 +260,15 @@ export class MonsterSim {
         const dx = tx - m.x, dz = tz - m.z, d = Math.hypot(dx, dz);
         if (d > stop) {
           const st = Math.min(sp * dt, d - stop);
-          if (gst >= 0 && this.hooks.walk) this.stepGrid(s, dx / d, dz / d, st); else { m.x += (dx / d) * st; m.z += (dz / d) * st; }
+          if (gst >= 0 && this.hooks.walk) this.stepGrid(s, dx / d, dz / d, st); else if (!s.inst && m.x <= 450) { const nx = m.x + (dx / d) * st, nz = m.z + (dz / d) * st;   // v3.0.0: não entra em rio, mar, montanha ou muro
+            if (R.walkAt(nx, nz)) { m.x = nx; m.z = nz; } else if (R.walkAt(nx, m.z)) m.x = nx; else if (R.walkAt(m.x, nz)) m.z = nz; } else { m.x += (dx / d) * st; m.z += (dz / d) * st; }
           m.rot = Math.atan2(dx, dz);
         }
       }
       if (gst >= 0) continue;                     // dungeon em grade: as paredes já limitam (sem zonas seguras nem limite do mapa)
-      for (const tw of R.TOWNS) {                 // monstros não entram nas zonas seguras
-        const ex = m.x - tw.x, ez = m.z - tw.z, dc = Math.hypot(ex, ez);
-        if (dc < tw.r + 0.6 && dc > 1e-3) { m.x = tw.x + (ex / dc) * (tw.r + 0.6); m.z = tw.z + (ez / dc) * (tw.r + 0.6); }
+      for (const tw of R.TOWNS) {                 // monstros não entram nas cidades (quadrado dos muros)
+        const ex = m.x - tw.x, ez = m.z - tw.z, L = tw.h + 0.6;
+        if (Math.abs(ex) < L && Math.abs(ez) < L) { if (L - Math.abs(ex) < L - Math.abs(ez)) m.x = tw.x + Math.sign(ex || 1) * L; else m.z = tw.z + Math.sign(ez || 1) * L; }
       }
       m.x = clampX(m.x, s.sx); m.z = clampZ(m.z);
     }

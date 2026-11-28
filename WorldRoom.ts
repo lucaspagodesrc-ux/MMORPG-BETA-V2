@@ -12,33 +12,23 @@ import { Pvp } from "./pvp";
 import { BOTS } from "./bots";
 const R: any = require("./rules.js");
 
-const MAP = 80;          // mesmo limite do cliente
+const W = R.WORLD;       // v3.0.0: mundo único (x -500..440, z -370..350)
 const RATE = 14;         // unidades/s sustentadas (jogador anda ~6-8)
 const BURST = 20;        // folga para habilidades de avanço (ex.: Investida)
-const clamp = (v: number) => Math.max(-MAP, Math.min(MAP, v));
+const clamp = (v: number) => Math.max(W.Z0 + 3, Math.min(W.Z1 - 3, v));
 // Dentro de uma dungeon em grade o mapa passa de z=80 (o Abismo vai até z≈210); as paredes são validadas por dg.clampMove.
-const clampZ = (v: number, inst: number) => (inst ? Math.max(-120, Math.min(240, v)) : clamp(v));
+const clampZ = (v: number, inst: number) => (inst ? Math.max(-120, Math.min(660, v)) : clamp(v));   // v3.0.0: calabouços da praia ficam em z 320..630
 // O mundo tem duas regiões de 160x160: a Vila Aurora (centro x=0) e Solara (centro x=300).
-const cx = (x: number) => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);   // 1800 = Arena PK • -600 = Vulcânia (v1.70)
+const cx = (x: number) => (x > 1650 ? 1800 : x > 450 ? 600 : 0);   // v3.0.0: "mesma área" = mundo (0), calabouços (600, separados pelo inst) ou Arena PK (1800)
 const DGCX: number[] = R.DUNGEONS.map((d: any) => d.cx);
 const clampX = (x: number, ref: number) => {
   if (ref > 1650) return Math.max(1760, Math.min(1840, x));                 // Arena PK (o limite redondo é aplicado no "move")
   if (ref > 450) { const c = DGCX.reduce((a, b) => (Math.abs(b - ref) < Math.abs(a - ref) ? b : a)), w = c === 600 ? 12 : 90; return Math.max(c - w, Math.min(c + w, x)); }   // dungeons: a Cripta é um corredor; as outras têm paredes próprias (grade)
-  const c = cx(ref); return Math.max(c - MAP, Math.min(c + MAP, x));
+  return Math.max(W.X0 + 3, Math.min(W.X1 - 3, x));
 };
-const SOLARA_MIN_LEVEL = 50, SNOW_MIN_LEVEL = 75, VOLC_MIN_LEVEL = 100;
-const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number }; minLevel: number; toN?: Record<number, { x: number; z: number }>; nat?: boolean }> = {
-  portal_a: { x: 14, z: 56, to: { x: 300, z: -7 }, minLevel: SOLARA_MIN_LEVEL },
-  portal_b: { x: 300, z: -11, to: { x: 14, z: 52 }, minLevel: 0 },
-  portal_c: { x: -32, z: -45, to: { x: -300, z: -7 }, minLevel: SNOW_MIN_LEVEL },
-  portal_d: { x: -300, z: -11, to: { x: -32, z: -41 }, minLevel: 0 },
-  portal_e: { x: -48, z: 60, to: { x: -600, z: -7 }, minLevel: VOLC_MIN_LEVEL },   // v1.70: Vulcânia (perto do Ninho do Dragão)
-  portal_f: { x: -600, z: -11, to: { x: -48, z: 56 }, minLevel: 0 },
-  portal_g: { x: -672, z: -6, to: { x: -900, z: -64 }, toN: { 1: { x: -900, z: -64 }, 2: { x: -900, z: 64 } }, minLevel: 130, nat: true },   // v1.91: Cidade das Máquinas (cada nação chega na sua base)
-  portal_h1: { x: -893, z: -75, to: { x: -667, z: -6 }, minLevel: 0 },
-  portal_h2: { x: -907, z: 75, to: { x: -667, z: -6 }, minLevel: 0 },
-};
-const TOWNS = [{ x: 0, z: 5 }, { x: 300, z: 5 }, { x: -300, z: 5 }, { x: -600, z: 5 }];   // pontos de renascimento / retorno (da Cidade das Máquinas o retorno leva a Vulcânia)
+const PORTALS: Record<string, { x: number; z: number; to: { x: number; z: number }; minLevel: number; toN?: Record<number, { x: number; z: number }>; nat?: boolean }> = {};
+for (const n of R.NPCS) if (n.portal) PORTALS[n.id] = { x: n.x, z: n.z, to: n.portal.to, toN: n.portal.toN, minLevel: n.portal.lvl || 0, nat: !!n.portal.nat };   // v3.0.0: vem dos NPCs (rules.js)
+const TOWNS: { x: number; z: number }[] = W.CITY.filter((c: any) => c.safe).map((c: any) => ({ x: c.sp[0], z: c.sp[1] }));   // v3.0.0: renascer/retorno na cidade segura mais perto (a 1ª é Aurora)
 const NPC_REACH = 8, PICK_REACH = 7, HIT_SLACK = 4;  // folgas por causa da latência
 /** v1.78: raio do corpo do monstro para acertos de área (chefes de mapa são enormes: o jogador agora fica do lado de fora) */
 const bodyR = (bs: number) => (bs > 2 ? 1.1 : 0.5) * bs;
@@ -460,7 +450,7 @@ export class WorldRoom extends Room<WorldState> {
       if (fin) this.res(s, [{ log: `<span style="color:#6fdc7f">🍀 Golpe final do Pierrot: +${Math.round(fin * 100)}% de sorte neste drop!</span>` }], false);
       if (!sim.lazy || Math.random() < 0.5) for (const it of R.rollLoot(T, mlvl, c.cls, R.luckOf(c, this.buff(s, "luck") + fin))) { if (it.k === "gold" && gf) it.n = Math.round(it.n * (1 + gf)); this.addDrop(s, it, mx, mz, 0); }
       if (!sim.inst) {                                                  // ingresso de dungeon — v1.78: monstro comum do mapa 1% (fixo, a sorte não aumenta) / chefe 4% (com sorte)
-        const reg = R.regOf(mx), cand = R.DUNGEONS.filter((d: any) => (d.reg || 300) === reg && mlvl >= d.minLevel - 8);
+        const reg = R.regAt(mx, mz), cand = R.DUNGEONS.filter((d: any) => (d.reg || 300) === reg && mlvl >= d.minLevel - 8);
         const dg = cand.length ? cand[Math.floor(Math.random() * cand.length)] : null;   // v1.91: chance própria de cada calabouço (Solara menor; Cidade das Máquinas mínima)
         const pT = dg ? (T.boss ? (dg.tixBoss ?? 0.04) * (1 + R.luckOf(c, this.buff(s, "luck") + fin)) : (dg.tixMob ?? 0.01)) : 0;
         if (dg && Math.random() < pT) this.addDrop(s, { k: "tix", id: dg.id, n: 1 }, mx, mz, 0);
@@ -794,6 +784,7 @@ export class WorldRoom extends Room<WorldState> {
         if (I && I.def.rooms) { const q = this.dg.clampMove(I, p.x, p.z, x, z); if (Math.hypot(q.x - x, q.z - z) > 1.2) client.send("correct", { x: q.x, z: q.z }); x = q.x; z = q.z; }   // paredes e portões das salas
         else if (I) z = Math.min(z, this.dg.maxZ(I) - 0.5);                                                                                                                    // portões da cripta
       }
+      if (!p.inst && p.x <= 450 && x <= 450 && !R.walkAt(x, z) && R.walkAt(p.x, p.z)) { x = p.x; z = p.z; client.send("correct", { x, z }); }   // v3.0.0: rio, mar, montanha, muro
       if (p.x > 1650) { const A = R.ARENA, ax = x - A.x, az = z - A.z, ad = Math.hypot(ax, az), lim = A.r - 0.8; if (ad > lim) { x = A.x + (ax / ad) * lim; z = A.z + (az / ad) * lim; client.send("correct", { x, z }); } }   // Arena PK: arena redonda
       const dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz);
       if (d > s.budget) {                          // rápido demais: limita e corrige o cliente
@@ -964,10 +955,10 @@ export class WorldRoom extends Room<WorldState> {
       if (op === "on") { BOTS.launch(s.charId, s.c.name).then((t) => { this.sysTo(s, t); if (this.sess.get(client.sessionId) === s) client.send("botst", BOTS.status(s.charId)); }).catch(() => {}); client.send("botst", { ...BOTS.status(s.charId), busy: 1 }); return; }
       if (op === "off") { BOTS.stop(s.charId, "GM"); this.sysTo(s, "🤖 Seus bots saíram do mundo."); }
       if (op === "who") {   // v2.6.3: lista de quem está online (só GM), marcando os bots
-        const RG: Record<number, string> = { 0: "Aurora", 300: "Solara", [-300]: "Nevasca", [-600]: "Vulcânia", [-900]: "Máquinas", 1800: "Arena PK", 600: "Guerra" };
+        const RG: Record<number, string> = { 0: "Aurora", 300: "Solara", [-300]: "Nevasca", [-600]: "Vulcânia", [-900]: "Máquinas", 1200: "Praia", 1800: "Arena PK", 600: "Calabouço" };
         const L: any[] = [];
         for (const [sid, o] of this.sess) { const p = this.state.players.get(sid), c = o.c; if (!c) continue; const bot = String(o.acc && o.acc.username || "").startsWith("#bot_");
-          const x = p ? p.x : 0, rg = p && p.inst ? "Calabouço" : RG[x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0] || "?";
+          const x = p ? p.x : 0, rg = p && p.inst ? "Calabouço" : RG[R.regAt(x, p ? p.z : 0)] || "?";
           L.push({ n: c.name, c: c.cls, l: c.level, r: rg, nt: c.nat || 0, gm: c.gm ? 1 : 0, b: bot ? 1 : 0, o: bot ? BOTS.ownerOf(o.charId) : "", d: p && p.dead ? 1 : 0 }); }
         L.sort((a, b) => a.b - b.b || b.l - a.l || a.n.localeCompare(b.n));
         client.send("gmwho", { L, t: Date.now() }); return;
@@ -1083,12 +1074,12 @@ export class WorldRoom extends Room<WorldState> {
     const c = a.c, p = new Player();
     p.name = c.name; p.cls = c.cls; p.level = c.level; p.fm = c.fem ? 1 : 0;
     const pos = c.pos && Number.isFinite(c.pos.x) && Number.isFinite(c.pos.z) ? c.pos : { x: Number.isFinite(options?.x) ? options.x : 0, z: Number.isFinite(options?.z) ? options.z : 5 };
-    if (pos.x > 1650) { pos.x = 0; pos.z = 5; }                 // caiu dentro da Arena PK (queda do servidor etc.): volta para Aurora
+    if (pos.x > 1650) { pos.x = TOWNS[0].x; pos.z = TOWNS[0].z; }   // caiu dentro da Arena PK (queda do servidor etc.): volta para Aurora
+    if (pos.x <= 450 && (c.wv || 0) < 3) {                       // v3.0.0: posição do mapa antigo → cidade da mesma região no mapa novo
+      const old = pos.x < -750 ? -900 : pos.x < -450 ? -600 : pos.x < -150 ? -300 : pos.x > 150 ? 300 : 0, C = W.cityOf(old); pos.x = C.sp[0]; pos.z = C.sp[1]; }
+    c.wv = 3;
     p.x = clampX(pos.x, pos.x); p.z = clampZ(pos.z, pos.x > 450 ? 1 : 0);
-    if (p.x > 150 && p.x < 450 && c.level < SOLARA_MIN_LEVEL) { p.x = 0; p.z = 5; }
-    if (p.x < -150 && c.level < SNOW_MIN_LEVEL) { p.x = 0; p.z = 5; }
-    if (p.x < -450 && c.level < VOLC_MIN_LEVEL) { p.x = 0; p.z = 5; }
-    if (p.x < -750 && (c.level < R.WAR.minLv || !c.nat)) { p.x = -600; p.z = 5; }
+    if (p.x <= 450 && !R.walkAt(p.x, p.z)) { const t = TOWNS.reduce((a, b) => (Math.hypot(b.x - p.x, b.z - p.z) < Math.hypot(a.x - p.x, a.z - p.z) ? b : a)); p.x = t.x; p.z = t.z; }
     this.state.players.set(client.sessionId, p);
     const now = Date.now();
     const s: Sess = { client, acc: a.acc, charId: c.id, c, stash: a.stash, t: now, budget: BURST, lastChat: 0, lastRecall: 0, lastPortal: 0, lastRevive: 0,

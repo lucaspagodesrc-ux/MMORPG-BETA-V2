@@ -144,6 +144,11 @@ export class Dungeons {
     else if (st.k === "lasers") { ss.k = 0; ss.rowAt = now + 3000; ss.spawnAt = now + 6000; }
     else if (st.k === "power") { ss.ch = {}; ss.full = {}; ss.waveAt = now + 6000; for (const id of st.objs) ss.ch[id] = 0; }
     else if (st.k === "levers") { ss.lev = {}; ss.first = 0; ss.fails = 0; }
+    else if (st.k === "tide") { ss.n = 0; ss.tideAt = now + st.every; ss.warn = 0; ss.spawnAt = now + 4000; }
+    else if (st.k === "bells") { ss.lit = st.objs.map(() => 1); for (let i = 0; i < 6 || ss.lit.every((v: number) => v); i++) this.bellPress(ss.lit, Math.floor(Math.random() * st.objs.length)); ss.addAt = now + st.adds.every; }
+    else if (st.k === "memory") { ss.round = 0; this.memNew(inst, st, now); }
+    else if (st.k === "mirrors") { ss.rot = {}; for (const id of st.objs) ss.rot[id] = Math.random() < .5 ? 1 : 0; let g = 0; while (this.beam(inst, st).hit && g++ < 20) for (const id of st.objs) ss.rot[id] = Math.random() < .5 ? 1 : 0; ss.addAt = now + st.adds.every; }
+    else if (st.k === "plates") { ss.lit = {}; ss.waveAt = now + 6000; }
     else if (st.k === "escort") { ss.cart = { x: def.cx + st.path[0][0], z: st.path[0][1] }; ss.prog = 0; ss.ck = 0; ss.hp = 100; ss.spawnAt = now + 5000; ss.moving = false; }
   }
 
@@ -163,6 +168,11 @@ export class Dungeons {
       else if (st.k === "crystals") { cur = ss.broken || 0; need = st.at.length; }
       else if (st.k === "power") { const ids: string[] = st.objs; cur = ids.filter((id) => ss.full && ss.full[id]).length; need = ids.length; const g: any = {}; for (const id of ids) g[id] = Math.round(((ss.ch && ss.ch[id]) || 0) / st.secs * 100); fx = { gen: g }; }
       else if (st.k === "levers") { const on = Object.keys(ss.lev || {}); cur = on.length; need = st.objs.length; const left = ss.first ? Math.max(0, Math.ceil((ss.first + st.win * 1000 - Date.now()) / 1000)) : 0; if (ss.first) text += ` — ⏱ ${left}s`; fx = { lev: on, left }; }
+      else if (st.k === "tide") { cur = ss.n || 0; need = st.count; text += ` — maré ${Math.min(st.count, (ss.n || 0) + 1)}/${st.count}`; fx = { tide: { at: ss.tideAt, warn: ss.warn ? 1 : 0, plats: st.plats, w: st.warn } }; }
+      else if (st.k === "bells") { cur = (ss.lit || []).filter((v: number) => v).length; need = st.objs.length; fx = { bells: ss.lit }; }
+      else if (st.k === "memory") { cur = ss.round || 0; need = st.rounds.length; text += ` — rodada ${Math.min(st.rounds.length, (ss.round || 0) + 1)}/${st.rounds.length}` + (ss.showUntil > Date.now() ? " (ouça!)" : ` • ${ss.prog || 0}/${(ss.seq || []).length}`); fx = { mem: { prog: ss.prog || 0, len: (ss.seq || []).length, sh: ss.showUntil > Date.now() ? 1 : 0 } }; }
+      else if (st.k === "mirrors") { const b = this.beam(inst, st); cur = b.hit ? 1 : 0; need = 1; fx = { mir: ss.rot, beam: b.pts }; }
+      else if (st.k === "plates") { const now2 = Date.now(), L: any = {}; for (const id of st.objs) L[id] = Math.max(0, (ss.lit[id] || 0) - now2); cur = st.objs.filter((id: string) => L[id] > 0).length; need = st.objs.length; fx = { pl: L, hold: st.hold }; }
       else if (st.k === "escort" && ss.cart) { cur = Math.round((ss.prog || 0) * 100); need = 100; text += ` — núcleo ${Math.max(0, Math.round(ss.hp))}%`; fx = { cart: { x: Math.round(ss.cart.x * 10) / 10, z: Math.round(ss.cart.z * 10) / 10, hp: Math.max(0, Math.round(ss.hp)), mv: ss.moving ? 1 : 0 } }; }
       else if (st.k === "boss" && ss.boss && ss.boss.immune) { if (ss.ovEnd) text += ` — ⚡ SOBRECARGA: ${Math.max(0, Math.ceil((ss.ovEnd - Date.now()) / 1000))}s`; else text += " — 🛡️ escudo ativo!"; fx = { sh: 1 }; }
     }
@@ -265,6 +275,24 @@ export class Dungeons {
       else msg(`🖥️ ${o.name}: <i>sem energia.</i>`);
     } else if (o.kind === "gen") {
       msg(st && st.k === "power" && st.objs.includes(o.id) ? `⚡ <b>${o.name}</b>: fique perto dele para carregar. Quanto mais gente perto, mais rápido — e longe dele a carga cai.` : `⚡ ${o.name}: zumbindo baixinho.`);
+    } else if (o.kind === "bell") {
+      if (!st || st.k !== "bells" || !st.objs.includes(o.id)) { msg(`🔔 ${o.name}: o sino está mudo.`); return; }
+      this.bellPress(ss.lit, st.objs.indexOf(o.id)); this.fx(inst, { k: "bell", id: o.id, name: `🔔 ${o.name}` });
+      if (ss.lit.every((v: number) => v)) { this.say(inst, `<span style="color:#ffd27a">🔔 Os cinco sinos tocam juntos! O casco se abriu.</span>`); this.advance(inst); return; }
+      this.sendState(inst);
+    } else if (o.kind === "shell") {
+      if (!st || st.k !== "memory" || !st.objs.includes(o.id)) { msg(`🐚 ${o.name}: só se ouve o mar.`); return; }
+      if (ss.showUntil > Date.now()) { msg("🐚 Espere as conchas terminarem de cantar."); return; }
+      this.memHit(inst, st, o);
+    } else if (o.kind === "mirror") {
+      if (!st || st.k !== "mirrors" || !st.objs.includes(o.id)) { msg(`🪞 ${o.name}: preso no coral.`); return; }
+      ss.rot[o.id] = ss.rot[o.id] ? 0 : 1; this.fx(inst, { k: "mirror", id: o.id, name: `🪞 ${o.name} girou` });
+      if (this.beam(inst, st).hit) { this.say(inst, `<span style="color:#ffd27a">👁️ O raio chegou ao Olho do Recife! A parede de coral se abriu.</span>`); this.advance(inst); return; }
+      this.sendState(inst);
+    } else if (o.kind === "plate") {
+      msg(st && st.k === "plates" ? `⬜ <b>${o.name}</b>: fique em cima dela para acender. Ela continua acesa por ${Math.round(st.hold / 1000)} s depois que você sai — acenda as ${st.objs.length} ao mesmo tempo.` : `⬜ ${o.name}: apagada.`);
+    } else if (o.kind === "beamsrc" || o.kind === "beamtgt") {
+      msg(st && st.k === "mirrors" ? `${o.sym} <b>${o.name}</b>: gire os espelhos (clique neles) para o raio de luz chegar ao Olho do Recife.` : `${o.sym} ${o.name}`);
     } else if (o.kind === "altar") {
       msg(st && st.k === "defend" ? `${o.sym} <b>${o.name}</b>: fiquem perto do altar enquanto a energia se acumula! Barra de progresso no alto da tela.` : `${o.sym} ${o.name}: a energia aqui está adormecida.`);
     }
@@ -315,6 +343,89 @@ export class Dungeons {
     else if (st.k === "power") this.powerTick(inst, st, now, dt, mem);
     else if (st.k === "levers") this.leversTick(inst, st, now);
     else if (st.k === "escort") this.escortTick(inst, st, now, dt, mem);
+    else if (st.k === "tide") this.tideStage(inst, st, now, mem);
+    else if (st.k === "bells" || st.k === "mirrors") this.addsTick(inst, st, now, mem);
+    else if (st.k === "memory") this.memTick(inst, st, now);
+    else if (st.k === "plates") this.platesTick(inst, st, now, mem);
+  }
+  /* ---------- v3.0.0: mecânicas da praia ---------- */
+  /** maré: avisa, e quem não estiver numa plataforma leva dano. Devolve true quando a onda bateu. */
+  private tide(inst: Inst, t: any, plats: number[][], now: number, mem: [string, any][], atk: number, room?: number[]): boolean {
+    const ss = inst.ss, def = inst.def;
+    if (!ss.warn && now >= ss.tideAt - t.warn) { ss.warn = 1; this.fx(inst, { k: "tide", t: t.warn, plats }); this.say(inst, `<span style="color:#7ad0ff">🌊 A maré está subindo! Suba numa plataforma!</span>`); }
+    if (ss.warn && now >= ss.tideAt) {
+      ss.warn = 0; ss.tideAt = now + t.every;
+      for (const [sid, p] of mem) {
+        if (room && !(p.x - def.cx >= room[0] - 2 && p.x - def.cx <= room[2] + 2 && p.z >= room[1] - 2 && p.z <= room[3] + 2)) continue;
+        if (plats.some(([x, z, r]) => Math.hypot(p.x - (def.cx + x), p.z - z) <= r)) continue;
+        this.h.sess.get(sid)?.client.send("mhit", { raw: atk * t.mult, id: 0 });
+      }
+      this.fx(inst, { k: "tidehit" }); return true;
+    }
+    return false;
+  }
+  private tideStage(inst: Inst, st: any, now: number, mem: [string, any][]) {
+    const ss = inst.ss, def = inst.def, r = st.room;
+    if (this.tide(inst, st, st.plats, now, mem, this.refAtk(inst, st), r)) { ss.n++; if (ss.n >= st.count) { this.say(inst, `<span style="color:#ffd27a">🌊 A maré baixou de vez! O caminho está livre.</span>`); this.advance(inst); return; } }
+    if (st.spawn && now >= ss.spawnAt) {
+      ss.spawnAt = now + st.spawn.every; const k = Math.min(st.spawn.cap - this.lazyAlive(inst), Math.round(rnd(st.spawn.n[0], st.spawn.n[1])) + Math.floor(mem.length / 3));
+      for (let i = 0; i < k; i++) this.spawnLazy(inst, pick(st.spawn.t), def.cx + rnd(r[0] + 2, r[2] - 2), rnd(r[1] + 3, r[3] - 3));
+    }
+    this.sendState(inst);
+  }
+  private addsTick(inst: Inst, st: any, now: number, mem: [string, any][]) {
+    const ss = inst.ss, def = inst.def, r = st.room; if (!st.adds || now < ss.addAt) return;
+    ss.addAt = now + st.adds.every; const k = Math.min(8 - this.lazyAlive(inst), Math.round(rnd(st.adds.n[0], st.adds.n[1])) + Math.floor(mem.length / 3));
+    for (let i = 0; i < k; i++) this.spawnLazy(inst, pick(st.adds.t), def.cx + rnd(r[0] + 2, r[2] - 2), rnd(r[1] + 2, r[3] - 2));
+    if (k > 0) this.fx(inst, { k: "wave", name: "Algo saiu da água!" });
+  }
+  /** sinos: cada um vira ele e os dois vizinhos (em anel) — "acende-apaga" */
+  private bellPress(lit: number[], i: number) { const n = lit.length; for (const j of [i - 1, i, i + 1]) { const k = (j + n) % n; lit[k] = lit[k] ? 0 : 1; } }
+  /** conchas: o servidor toca uma sequência; os jogadores repetem */
+  private memNew(inst: Inst, st: any, now: number) {
+    const ss = inst.ss, n = st.rounds[ss.round]; ss.seq = []; for (let i = 0; i < n; i++) { let id; do id = pick(st.objs); while (ss.seq.length && ss.seq[ss.seq.length - 1] === id); ss.seq.push(id); }
+    ss.prog = 0; ss.showUntil = now + 1500 + n * st.show;
+    setTimeout(() => this.fx(inst, { k: "mem", seq: ss.seq, show: st.show }), 1200);
+    this.sendState(inst);
+  }
+  private memHit(inst: Inst, st: any, o: any) {
+    const ss = inst.ss, def = inst.def;
+    if (ss.seq[ss.prog] === o.id) {
+      ss.prog++; this.fx(inst, { k: "shell", id: o.id, ok: 1 });
+      if (ss.prog >= ss.seq.length) {
+        ss.round++;
+        if (ss.round >= st.rounds.length) { this.say(inst, `<span style="color:#ffd27a">🐚 As conchas cantam em coro! A passagem se abriu.</span>`); this.advance(inst); return; }
+        this.say(inst, `<span style="color:#9fe7b0">🐚 Isso! Agora uma sequência maior...</span>`); this.memNew(inst, st, Date.now() + 600); return;
+      }
+      this.sendState(inst); return;
+    }
+    const f = st.fail; this.h.sim.areaHit(this.env(inst, this.refAtk(inst, st)), def.cx + o.at[0], o.at[1], f.r, f.mult, f.delay, f.c);
+    this.fx(inst, { k: "shell", id: o.id, ok: 0 }); this.say(inst, `<span style="color:#ff9a6a">🐚 Nota errada! As conchas vão cantar de novo.</span>`);
+    this.memNew(inst, st, Date.now());
+  }
+  private memTick(inst: Inst, st: any, now: number) { const ss = inst.ss; if (ss.showUntil && now >= ss.showUntil && !ss.told) { ss.told = 1; this.sendState(inst); } if (now < ss.showUntil) ss.told = 0; }
+  /** espelhos: o raio sai da fonte, reflete ("/" = 0, "\" = 1) e precisa chegar ao alvo */
+  beam(inst: Inst, st: any): { hit: boolean; pts: number[][] } {
+    const def = inst.def, ss = inst.ss, O = (id: string) => def.objs.find((q: any) => q.id === id);
+    const src = O(st.src), tgt = O(st.tgt), mir = st.objs.map((id: string) => O(id)), r = st.room;
+    let x = src.at[0], z = src.at[1], dx = st.dir[0], dz = st.dir[1]; const pts = [[x, z]]; let last: any = null;
+    for (let b = 0; b < 12; b++) {
+      let best: any = null, bt = 1e9;
+      for (const m of mir) { if (m === last) continue; const vx = m.at[0] - x, vz = m.at[1] - z, t = vx * dx + vz * dz, perp = Math.abs(vx * dz - vz * dx); if (t > 0.5 && perp < 1.2 && t < bt) { bt = t; best = m; } }
+      { const vx = tgt.at[0] - x, vz = tgt.at[1] - z, t = vx * dx + vz * dz, perp = Math.abs(vx * dz - vz * dx); if (t > 0.5 && perp < 1.6 && t < bt) { pts.push([tgt.at[0], tgt.at[1]]); return { hit: true, pts }; } }
+      if (!best) { const tx = dx > 0 ? (r[2] - x) / dx : dx < 0 ? (r[0] - x) / dx : 1e9, tz = dz > 0 ? (r[3] - z) / dz : dz < 0 ? (r[1] - z) / dz : 1e9, t = Math.min(tx, tz); pts.push([x + dx * t, z + dz * t]); return { hit: false, pts }; }
+      x = best.at[0]; z = best.at[1]; pts.push([x, z]); last = best;
+      if (ss.rot[best.id]) { const ndx = -dz, ndz = -dx; dx = ndx; dz = ndz; } else { const ndx = dz, ndz = dx; dx = ndx; dz = ndz; }
+    }
+    return { hit: false, pts };
+  }
+  private platesTick(inst: Inst, st: any, now: number, mem: [string, any][]) {
+    const ss = inst.ss, def = inst.def;
+    for (const id of st.objs) { const o = def.objs.find((q: any) => q.id === id); if (mem.some(([, p]) => Math.hypot(p.x - (def.cx + o.at[0]), p.z - o.at[1]) <= st.r)) { if (!(ss.lit[id] > now)) this.fx(inst, { k: "plate", id }); ss.lit[id] = now + st.hold; } }
+    if (st.objs.every((id: string) => ss.lit[id] > now)) { this.say(inst, `<span style="color:#ffd27a">⬜ As quatro placas brilham juntas! A porta de coral se abriu.</span>`); this.advance(inst); return; }
+    if (now >= ss.waveAt) { ss.waveAt = now + st.waves.every; const r = st.room, k = Math.min(10 - this.lazyAlive(inst), Math.round(rnd(st.waves.n[0], st.waves.n[1])) + Math.floor(mem.length / 3));
+      for (let i = 0; i < k; i++) this.spawnLazy(inst, pick(st.waves.t), def.cx + rnd(r[0] + 2, r[2] - 2), rnd(r[1] + 2, r[3] - 2)); }
+    this.sendState(inst);
   }
   /* ---------- v1.91: etapas da Cidade das Máquinas ---------- */
   private lazyAlive(inst: Inst) { return inst.lazy.filter((s) => s.m.alive && !s.T.node).length; }
@@ -480,6 +591,17 @@ export class Dungeons {
       b.novaAt = now + mech.nova.every; this.h.sim.areaHit(boss, m.x, m.z, mech.nova.r, mech.nova.mult, mech.nova.delay, mech.nova.c);
       this.fx(inst, { k: "big", name: mech.nova.name, t: mech.nova.delay });
     }
+    if (mech.whirl && now >= (b.whAt || (b.whAt = now + mech.whirl.every * 0.6))) {      // v3.0.0: redemoinho — puxa quem está perto para o chefe e machuca no centro
+      const w = mech.whirl; b.whAt = now + w.every;
+      this.h.broadcast("slam", { x: m.x, z: m.z, r: w.r, inst: inst.id, t: w.delay, c: w.c });
+      this.fx(inst, { k: "whirl", name: w.name, t: w.delay, x: m.x, z: m.z, r: w.r });
+      setTimeout(() => { if (!boss.m.alive) return;
+        for (const [sid, p] of this.alive(inst)) { const dx = m.x - p.x, dz = m.z - p.z, d = Math.hypot(dx, dz); if (d > w.r || d < 0.1) continue;
+          const mv = Math.min(w.pull, Math.max(0, d - 2.2)), nx = p.x + dx / d * mv, nz = p.z + dz / d * mv;
+          if (!def.rooms || R.dgWalk(def, inst.stage, nx, nz, 0.5)) { p.x = nx; p.z = nz; const s = this.h.sess.get(sid); if (s) { s.client.send("correct", { x: nx, z: nz }); s.tpAt = Date.now(); } } }
+        this.h.sim.areaHit(boss, m.x, m.z, 3.6, w.mult, 500, w.c); }, w.delay);
+    }
+    if (mech.tide) { if (!b.tideInit) { b.tideInit = 1; ss.tideAt = now + mech.tide.every; ss.warn = 0; } this.tide(inst, mech.tide, mech.tide.plats, now, mem, boss.atk, st.room); }
     if (mech.rain && now >= b.rainAt) {
       const rn = mech.rain; b.rainAt = now + rn.every;
       const n = Math.min(12, rn.n + Math.floor(near.length / rn.per));

@@ -10,6 +10,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { pool } from "./db";
+import { findPath } from "./nav";
 import { saveChar, signToken } from "./auth";
 const R: any = require("./rules.js");
 /* cliente do Colyseus para os bots, usando o "ws" SEM compressão (conexão local: comprimir só gastaria processador) */
@@ -46,13 +47,9 @@ const STAT: Record<string, Record<string, number>> = {     // como cada classe d
   assassino: { agi: 2, str: 1, vit: 1 }, mago: { int: 3, vit: 1 }, pierrot: { int: 2, agi: 1, vit: 1 },
 };
 /* portais (iguais aos do servidor) */
-const PORT: Record<string, { x: number; z: number; from: number; to: number }> = {
-  portal_a: { x: 14, z: 56, from: 0, to: 300 }, portal_b: { x: 300, z: -11, from: 300, to: 0 },
-  portal_c: { x: -32, z: -45, from: 0, to: -300 }, portal_d: { x: -300, z: -11, from: -300, to: 0 },
-  portal_e: { x: -48, z: 60, from: 0, to: -600 }, portal_f: { x: -600, z: -11, from: -600, to: 0 },
-  portal_g: { x: -672, z: -6, from: -600, to: -900 }, portal_h1: { x: -893, z: -75, from: -900, to: -600 }, portal_h2: { x: -907, z: 75, from: -900, to: -600 },
-};
-const regOf = (x: number) => (x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0);
+const PORT: Record<string, { x: number; z: number; from: number; to: number; nat?: boolean }> = {};   // v3.0.0: vem dos NPCs (Aurora ↔ cada cidade)
+for (const n of R.NPCS) if (n.portal) PORT[n.id] = { x: n.x, z: n.z, from: R.regAt(n.x, n.z), to: R.regAt(n.portal.to.x, n.portal.to.z), nat: !!n.portal.nat };
+const regOf = (x: number, z = 0) => R.regAt(x, z);   // v3.0.0: região pelo lugar no mapa único
 const hyp = (a: any, b: any) => Math.hypot(a.x - b.x, a.z - b.z);
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
@@ -62,7 +59,7 @@ const SELFBUFF = ["buff", "transform", "clone"];
 /* zonas de caça (sem chefes, sem chefes de mundo, sem bonecos de treino) */
 let HUNT0: any[] | null = null;
 const HUNT = (): any[] => HUNT0 || (HUNT0 = R.ZONES.filter((z: any) => !z.wb && z.t !== "espantalho" && z.n > 1 && R.MT[z.t])
-  .map((z: any) => ({ ...z, reg: regOf(z.x), lo: R.MT[z.t].lv[0], hi: R.MT[z.t].lv[1] })));
+  .map((z: any) => ({ ...z, reg: regOf(z.x, z.z), lo: R.MT[z.t].lv[0], hi: R.MT[z.t].lv[1] })));
 
 type Mon = { id: number; type: string; lvl: number; maxHp: number; inst: number; x: number; z: number; hp: number; alive: boolean };
 type Task = { x: number; z: number; r: number; reg: number; fn: () => void; why: string };
@@ -72,7 +69,7 @@ class Bot {
   pos = { x: 0, z: 5 }; hp = 1; mp = 1; dead = false; deadAt = 0; lastT = Date.now(); rg = 0; lastCombat = 0;
   mons = new Map<number, Mon>(); drops = new Map<number, any>();
   cd: number[] = Array(9).fill(0); actUntil = 0; skUntil = 0; nextAtk = 0; potAt = 0; buffUntil: number[] = Array(9).fill(0);
-  mode = "idle"; modeUntil = 0; tasks: Task[] = []; taskAt = 0; zone: any = null; zoneAt = 0; qAt = 0; prefT = ""; qTry: Record<string, number> = {}; qTryReset = 0; tgt: Mon | null = null; wander: any = null; stuckT = 0;
+  mode = "idle"; modeUntil = 0; tasks: Task[] = []; taskAt = 0; zone: any = null; path: { x: number; z: number }[] | null = null; pathTo = { x: 0, z: 0 }; pathAt = 0; zoneAt = 0; qAt = 0; prefT = ""; qTry: Record<string, number> = {}; qTryReset = 0; tgt: Mon | null = null; wander: any = null; stuckT = 0;
   until = Date.now() + LIFE_MS;
   pv = ""; foe = ""; pvAt = 0; pdownAt = 0; arenaUntil = 0; nextArena = Date.now() + (process.env.BOT_TEST ? rnd(20, 40) * 1000 : rnd(8, 25) * 60_000); nextWar = 0;
   lastAct = 0; hpSent = 0; recallAt = 0; nextTown = Date.now() + rnd(6, 12) * 60_000; lastPick = 0; deathLog = 0;
@@ -230,17 +227,23 @@ class Bot {
   }
   /* anda até (x,z) — devolve true quando chega */
   go(x: number, z: number, r = 1.2) {
+    if (Math.hypot(x - this.pos.x, z - this.pos.z) <= r) { this.path = null; return true; }
+    if (this.pos.x <= 450 && x <= 450) {                                // v3.0.0: no mapa, contorna rios, montanhas e muros (A*)
+      const now = Date.now();
+      if (!this.path || Math.hypot(this.pathTo.x - x, this.pathTo.z - z) > 3 || now - this.pathAt > 20_000) { this.path = findPath(this.pos.x, this.pos.z, x, z) || [{ x, z }]; this.pathTo = { x, z }; this.pathAt = now; }
+      let w = this.path[0]; while (this.path.length > 1 && Math.hypot(w.x - this.pos.x, w.z - this.pos.z) < 1.2) { this.path.shift(); w = this.path[0]; }
+      if (this.path.length > 1) { const dx = w.x - this.pos.x, dz = w.z - this.pos.z, d = Math.hypot(dx, dz) || 1, st = Math.min(d, SPEED * TICK / 1000); this.pos.x += (dx / d) * st; this.pos.z += (dz / d) * st; this.send("move", { x: this.pos.x, z: this.pos.z }); return false; }
+    }
     const dx = x - this.pos.x, dz = z - this.pos.z, d = Math.hypot(dx, dz); if (d <= r) return true;
     const st = Math.min(d - r * 0.6, SPEED * TICK / 1000); this.pos.x += (dx / d) * st; this.pos.z += (dz / d) * st;
     this.send("move", { x: this.pos.x, z: this.pos.z }); return false;
   }
   /* chegar em outra região: pelos portais (sempre passando por Aurora) */
   travel(to: number, now: number) {
-    const cur = regOf(this.pos.x); if (cur === to) return true;
-    let pid = "";
-    if (cur === -900) pid = this.pos.z < 0 ? "portal_h1" : "portal_h2";
-    else if (cur !== 0) pid = to === -900 && cur === -600 ? "portal_g" : Object.keys(PORT).find((k) => PORT[k].from === cur && PORT[k].to === 0) || "";
-    else pid = Object.keys(PORT).find((k) => PORT[k].from === 0 && PORT[k].to === (to === -900 ? -600 : to)) || "";
+    const cur = regOf(this.pos.x, this.pos.z); if (cur === to || cur === 600 || cur === 1800) return true;
+    // v3.0.0: Aurora tem um portal para cada cidade; das outras, o portal volta para Aurora (Máquinas: só com nação)
+    const ks = Object.keys(PORT).filter((k) => PORT[k].from === cur && (cur === 0 ? PORT[k].to === to && (!PORT[k].nat || this.c.nat) : PORT[k].to === 0));
+    const pid = ks.sort((a, b) => hyp(PORT[a], this.pos) - hyp(PORT[b], this.pos))[0] || "";
     const P = PORT[pid]; if (!P) return true;
     if (this.go(P.x, P.z, 3) && now - this.recallAt > 2500) { this.recallAt = now; this.send("portal", { id: pid }); }
     return false;
@@ -254,11 +257,11 @@ class Bot {
     const lv = this.c.level, zs = HUNT().filter((z) => z.reg === reg && z.lo <= lv + 2).sort((a, b) => b.lo - a.lo);
     return zs.length ? pick(zs.slice(0, Math.min(2, zs.length))) : null;
   }
-  npcs(tab: string, reg: number) { return R.NPCS.filter((n: any) => n.tabs && n.tabs.includes(tab) && regOf(n.x) === reg); }
-  nearestNpc(tab: string, reg = regOf(this.pos.x)) { const L = this.npcs(tab, reg); return L.length ? L.reduce((a: any, b: any) => (hyp(b, this.pos) < hyp(a, this.pos) ? b : a)) : null; }
+  npcs(tab: string, reg: number) { return R.NPCS.filter((n: any) => n.tabs && n.tabs.includes(tab) && regOf(n.x, n.z) === reg); }
+  nearestNpc(tab: string, reg = regOf(this.pos.x, this.pos.z)) { const L = this.npcs(tab, reg); return L.length ? L.reduce((a: any, b: any) => (hyp(b, this.pos) < hyp(a, this.pos) ? b : a)) : null; }
 
   decide(now: number) {
-    const c = this.c, d = this.D(), reg = regOf(this.pos.x);
+    const c = this.c, d = this.D(), reg = regOf(this.pos.x, this.pos.z);
     if (reg === 600 || reg === 1800) { if (now - this.recallAt > 11_000) { this.recallAt = now; this.send("recall"); } return; }
     // 1) cidade: mochila cheia, sem poções, missões para entregar ou de tempos em tempos
     if (now > this.nextTown || this.freeSlots() <= 3 || (this.potCount("hp") < 3 && c.gold >= 150)) { this.planTown(now); if (this.tasks.length) return; }
@@ -273,30 +276,30 @@ class Bot {
     if (this.questWork(now)) return;
     // 6) caçar: o alvo da missão ativa ou o spot que dá mais XP sem estar lotado (2+ jogadores → próximo spot)
     if (!this.zone || now > this.zoneAt) { const z = this.chooseZone(); if (z !== this.zone) { this.zone = z; this.wander = null; this.tgt = null; if (z) this.log("spot:", z.t, "reg", z.reg, this.prefT ? "(missão)" : "(XP)"); } this.zoneAt = now + 20_000; }
-    if (!this.zone) { const t = R.TOWNS[0]; this.go(t.x, t.z + 8, 3); return; }
+    if (!this.zone) { const t = R.WORLD.CITY[0].sp; this.go(t[0], t[1], 3); return; }
     if (!this.travel(this.zone.reg, now)) return;
     this.hunt(now);
   }
   /* ---------- v2.6.2: missões ---------- */
-  regOk(r: number) { const lv = this.c.level; return r === 0 || (r === 300 && lv >= 50) || (r === -300 && lv >= 75) || (r === -600 && lv >= 100) || (r === -900 && lv >= 130 && !!this.c.nat); }
+  regOk(r: number) { const lv = this.c.level; return r === 0 || (r === 300 && lv >= 50) || (r === -300 && lv >= 75) || (r === -600 && lv >= 100) || (r === -900 && lv >= 130 && !!this.c.nat) || (r === 1200 && lv >= 170); }   // o mapa é livre; o bot só vai onde aguenta
   qZones(q: any) { return HUNT().filter((z) => z.t === q.tg && this.regOk(z.reg)); }
   doable(q: any) { const T = R.MT[q.tg], lv = this.c.level; if (!T || T.boss || T.wb) return false; if (T.lv[0] > lv + 3 || T.lv[1] < lv - 22) return false; return this.qZones(q).length > 0; }
   crowd(z: any) { let n = 0; const P = this.room && this.room.state && this.room.state.players; if (!P) return 0; P.forEach((p: any, sid: string) => { if (sid !== this.sid && hyp(p, z) < z.r + 6) n++; }); return n; }
   questWork(now: number): boolean {
     if (now < this.qAt) return false; this.qAt = now + 4000;
-    const c = this.c, st = c.quests || {}, cur = regOf(this.pos.x);
+    const c = this.c, st = c.quests || {}, cur = regOf(this.pos.x, this.pos.z);
     // 1) entregar as concluídas
     for (const id of Object.keys(st)) { const s0 = st[id], q = R.QUESTS.find((x: any) => x.id === id); if (!q || s0.done || s0.n < q.qty) continue;
-      const n = R.NPCS.find((x: any) => x.id === q.npc); if (!n || !this.regOk(regOf(n.x))) continue;
+      const n = R.NPCS.find((x: any) => x.id === q.npc); if (!n || !this.regOk(regOf(n.x, n.z))) continue;
       if ((this.qTry[id] = (this.qTry[id] || 0) + 1) > 4) continue;   // não conseguiu entregar 4 vezes: deixa para depois
       this.task(n, () => this.send("a", { t: "qt", id }), "entregar missão " + q.t); this.zoneAt = 0; return true; }
     // 2) já tem missão em andamento que dá para fazer: vai caçar
     const act = Object.keys(st).filter((id) => { const q = R.QUESTS.find((x: any) => x.id === id); return q && !st[id].done && st[id].n < q.qty && this.doable(q); });
     if (act.length >= 2) return false;
     // 3) aceitar: primeiro no mapa atual, depois nos outros mapas liberados; as mais antigas (nível menor) primeiro
-    const av = R.QUESTS.filter((q: any) => { if (st[q.id] || (this.qTry[q.id] || 0) > 3 || !R.qOpen(c, q) || (q.need && q.need > c.level) || !this.doable(q)) return false; const n = R.NPCS.find((x: any) => x.id === q.npc); return n && this.regOk(regOf(n.x)); })
+    const av = R.QUESTS.filter((q: any) => { if (st[q.id] || (this.qTry[q.id] || 0) > 3 || !R.qOpen(c, q) || (q.need && q.need > c.level) || !this.doable(q)) return false; const n = R.NPCS.find((x: any) => x.id === q.npc); return n && this.regOk(regOf(n.x, n.z)); })
       .map((q: any) => ({ q, n: R.NPCS.find((x: any) => x.id === q.npc), lo: R.MT[q.tg].lv[0] }))
-      .sort((a: any, b: any) => (regOf(a.n.x) === cur ? 0 : 1) - (regOf(b.n.x) === cur ? 0 : 1) || a.lo - b.lo);
+      .sort((a: any, b: any) => (regOf(a.n.x, a.n.z) === cur ? 0 : 1) - (regOf(b.n.x, b.n.z) === cur ? 0 : 1) || a.lo - b.lo);
     if (!av.length) return false;
     const first = av[0], take = [first, ...av.slice(1).filter((x: any) => x.n.id === first.n.id)].slice(0, 3 - act.length);
     for (const x of take) { this.qTry[x.q.id] = (this.qTry[x.q.id] || 0) + 1; this.task(x.n, () => this.send("a", { t: "qa", id: x.q.id }), "aceitar missão " + x.q.t); }
@@ -315,7 +318,7 @@ class Bot {
     for (const z of zs) { const cr = this.crowd(z) - (this.zone === z ? 0 : 0); if (cr < 2) return z; }
     return zs[0] || null;
   }
-  task(n: any, fn: () => void, why: string) { this.tasks.push({ x: n.x + rnd(-1.5, 1.5), z: n.z + rnd(1, 2.5), r: 2.2, reg: regOf(n.x), fn, why }); }
+  task(n: any, fn: () => void, why: string) { this.tasks.push({ x: n.x + rnd(-1.5, 1.5), z: n.z + rnd(1, 2.5), r: 2.2, reg: regOf(n.x, n.z), fn, why }); }
   runTasks(now: number) {
     const t = this.tasks[0];
     if (!this.travel(t.reg, now)) return;
@@ -325,7 +328,7 @@ class Bot {
   }
   /** passeio na cidade: vender, comprar poções, missões, gemas, aprimorar, leilão */
   planTown(now: number) {
-    const c = this.c, reg = regOf(this.pos.x) === 1800 ? 0 : regOf(this.pos.x);
+    const c = this.c, reg = regOf(this.pos.x, this.pos.z) === 1800 ? 0 : regOf(this.pos.x, this.pos.z);
     this.nextTown = now + rnd(9, 16) * 60_000; this.tasks = []; this.taskAt = now;
     const shop = this.nearestNpc("vender", reg) || this.nearestNpc("vender", 0); if (!shop) return;
     this.task(shop, () => { const j = this.junk(); const idx = this.freeSlots() < 6 ? [...j.sell, ...j.auction.slice(2)] : j.sell; if (idx.length) this.send("a", { t: "sellmany", npc: shop.id, idx }); }, "vender");
@@ -334,7 +337,7 @@ class Bot {
       pots.sort((a, b) => (R.POTS[b.it.id].pct - R.POTS[a.it.id].pct) || ((b.it.n || 1) - (a.it.n || 1)));   // a melhor poção, de preferência em pacote
       const one = pots.length ? pots[0].x : null;
       if (!one) return; let have = this.potCount(kind); for (let k = 0; k < 8 && have < want; k++) { const n = (() => { try { return one.mk(c).n || 1; } catch { return 1; } })(); have += n;
-        this.tasks.push({ x: shop.x + rnd(-1, 1), z: shop.z + rnd(1, 2), r: 2.2, reg: regOf(shop.x), why: "comprar", fn: () => { const cost = (() => { try { return one.c(this.c); } catch { return 1e9; } })(); if (this.c.gold > cost * 2.5 && this.freeSlots() > 0) this.send("a", { t: "buy", npc: shop.id, id: one.id }); } }); } };
+        this.tasks.push({ x: shop.x + rnd(-1, 1), z: shop.z + rnd(1, 2), r: 2.2, reg: regOf(shop.x, shop.z), why: "comprar", fn: () => { const cost = (() => { try { return one.c(this.c); } catch { return 1e9; } })(); if (this.c.gold > cost * 2.5 && this.freeSlots() > 0) this.send("a", { t: "buy", npc: shop.id, id: one.id }); } }); } };
     buy("hp", 15 + Math.min(25, Math.floor(c.level / 4)));
     if (["mago", "pierrot", "cavaleiro"].includes(c.cls) || c.level > 30) buy("mp", 8 + Math.min(15, Math.floor(c.level / 6)));
     // gemas: compra e engasta quando sobra ouro e há engaste vazio
@@ -369,7 +372,7 @@ class Bot {
   }
   foeOk(m: Mon) { return m.alive && (m.inst || 0) === 0 && !(R.MT[m.type] && R.MT[m.type].boss) && m.lvl <= this.c.level + 4; }
   hunt(now: number) {
-    const z = this.zone; if (!z) { const t = R.TOWNS[0]; this.go(t.x, t.z + 8, 3); return; }
+    const z = this.zone; if (!z) { const t = R.WORLD.CITY[0].sp; this.go(t[0], t[1], 3); return; }
     if (this.tgt && (!this.tgt.alive || !this.mons.has(this.tgt.id) || hyp(this.tgt, z) > z.r + 18)) this.tgt = null;
     if (!this.tgt) {
       let b: Mon | null = null, bd = 1e9;
@@ -428,7 +431,7 @@ class Bot {
     const out: any[] = [];
     st.players.forEach((p: any, sid: string) => {
       if (sid === this.sid || p.dead || p.inst) return;
-      if (this.pv === "duel" ? sid !== this.foe : this.pv === "arena" ? p.x < 1650 : this.pv === "war" ? !(p.nt && p.nt !== this.c.nat && p.x < -750) : true) return;
+      if (this.pv === "duel" ? sid !== this.foe : this.pv === "arena" ? p.x < 1650 : this.pv === "war" ? !(p.nt && p.nt !== this.c.nat && R.regAt(p.x, p.z) === -900) : true) return;
       out.push({ x: p.x, z: p.z, id: 0, pid: sid });
     });
     return out;

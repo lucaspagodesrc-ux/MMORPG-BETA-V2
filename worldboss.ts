@@ -123,7 +123,7 @@ export class WorldBosses {
     if (!m.alive) { b.live = false; return; }
     if (now >= b.endsAt) return this.despawn(b);
     const near: [string, any][] = [];
-    this.room.state.players.forEach((p: any, id: string) => { if (!p.dead && !p.inst && cx(p.x) === d.reg && Math.hypot(p.x - m.x, p.z - m.z) < 70) near.push([id, p]); });
+    this.room.state.players.forEach((p: any, id: string) => { if (!p.dead && !p.inst && p.x <= 450 && Math.hypot(p.x - m.x, p.z - m.z) < 70) near.push([id, p]); });
     if (now >= b.aggroAt) {                                           // a cada 14 s o chefe troca de alvo: ninguém fica parado batendo no mesmo tanque
       b.aggroAt = now + 14_000;
       const c = near.filter(([, p]) => Math.hypot(p.x - m.x, p.z - m.z) < 16);
