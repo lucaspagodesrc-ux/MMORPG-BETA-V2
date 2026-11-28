@@ -223,7 +223,7 @@ export class WorldBosses {
       c.kills = (c.kills || 0) + 1;
       out.push({ log: `<span style="color:#ffd27a">☠️ ${d.name} derrotado! +${fmt(xp)} XP • #${rank} no ranking (${fmt(p.dmg)} de dano). Prêmios no Correio 📬</span>` });
       if (R.gainXp(c, xp)) { out.push({ lvl: c.level }); const pl = this.room.state.players.get(p.sid); if (pl) pl.level = c.level; }
-      out.push(...R.dwEv(c, "kill", { x: b.s.m.x, boss: true, lvl: b.s.m.lvl }), ...R.dwEv(c, "wb"));
+      out.push(...R.dwEv(c, "kill", { x: b.s.m.x, z: b.s.m.z, boss: true, lvl: b.s.m.lvl }), ...R.dwEv(c, "wb"));
       gpAdd(se, R.GP.wb);                                                 // Pontos de Guilda
       this.room.touch(se); this.room.sync(se); this.room.res(se, out);
       se.client.send("wbmy", { id: d.id, rank, dmg: Math.round(p.dmg), gold, relic: relic ? R.nm(relic) : "" });

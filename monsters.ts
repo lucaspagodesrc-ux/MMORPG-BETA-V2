@@ -1,6 +1,7 @@
 // Simulação dos monstros no servidor: movimento, perseguição, ataques, vida e renascimento.
 // Os dados (tipos, zonas, vida, ataque…) vêm de rules.js — os mesmos que o navegador usa para desenhar.
 import { Monster, WorldState } from "./schema";
+import { findPath } from "./nav";
 const R: any = require("./rules.js");
 const MT: Record<string, any> = R.MT, ZONES: any[] = R.ZONES;
 
@@ -87,10 +88,11 @@ export class MonsterSim {
     } else if (zone.grid) {                                    // campo de treino: espantalhos em grade 3x3, virados para a cidade
       const i = s.slot || 0; m.x = zone.x + ((i % 3) - 1) * zone.grid; m.z = zone.z + (Math.floor(i / 3) - 1) * zone.grid; m.rot = Math.PI; m.lvl = 1;
     } else {
-      for (let k = 0; k < 12; k++) {                         // v3.0.0: nasce em chão andável
+      for (let k = 0; k < 30; k++) {                         // v3.0.0: nasce em chão andável (v3.0.4: 30 tentativas + ponto livre mais perto)
         const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * zone.r;
         m.x = clampX(zone.x + Math.cos(a) * r, zone.x); m.z = clampZ(zone.z + Math.sin(a) * r);
-        if (zone.x > 450 || R.walkAt(m.x, m.z)) break; if (k === 11) { m.x = zone.x; m.z = zone.z; } }
+        if (zone.x > 450 || R.walkAt(m.x, m.z)) break;
+        if (k === 29) { m.x = zone.x; m.z = zone.z; for (let r = 2; r < 20 && !R.walkAt(m.x, m.z); r += 2) for (let b = 0; b < 6.283; b += 0.5) { const qx = zone.x + Math.cos(b) * r, qz = zone.z + Math.sin(b) * r; if (R.walkAt(qx, qz)) { m.x = qx; m.z = qz; break; } } } }
     }
     s.sx = m.x; s.sz = m.z; s.aggro = null; s.returning = false; s.atkAt = 0; s.slowUntil = 0; s.stunUntil = s.rootUntil = s.liftUntil = s.tauntUntil = 0; m.st = 0; s.markUntil = 0; s.slamAt = now + 6000; s.wanderAt = 0;
     s.contrib.clear(); s.xpp?.clear();
@@ -163,6 +165,29 @@ export class MonsterSim {
     for (const a of [0.8 * side, -0.8 * side, 1.5 * side, -1.5 * side]) {
       const c = Math.cos(a), sn = Math.sin(a); nx = m.x + (ux * c - uz * sn) * st; nz = m.z + (ux * sn + uz * c) * st;
       if (ok(nx, nz)) { m.x = nx; m.z = nz; return; }
+    }
+  }
+
+  /** v3.0.4: anda no mundo sem travar em árvore, pedra, casa ou rio: tenta a direção, depois desvia (45°/90°);
+   *  se continuar preso, calcula um caminho (A*) até o alvo e segue os pontos */
+  private stepW(s: any, tx: number, tz: number, ux: number, uz: number, st: number, now: number) {
+    const m = s.m;
+    if (s.path && s.path.length && (Math.hypot(s.path[s.path.length - 1].x - tx, s.path[s.path.length - 1].z - tz) > 3 || now > s.pathUntil)) s.path = null;
+    if (s.path && s.path.length) {            // seguindo o caminho calculado
+      const p = s.path[0], qx = p.x - m.x, qz = p.z - m.z, qd = Math.hypot(qx, qz);
+      if (qd < 0.6) { s.path.shift(); if (!s.path.length) s.path = null; return; }
+      ux = qx / qd; uz = qz / qd;
+    }
+    for (const a of [0, 0.785, -0.785, 1.571, -1.571]) {
+      const c = Math.cos(a), sn = Math.sin(a), vx = ux * c - uz * sn, vz = ux * sn + uz * c, nx = m.x + vx * st, nz = m.z + vz * st;
+      if (R.walkAt(nx, nz)) { m.x = nx; m.z = nz; if (a === 0) s.stuckT = 0; else s.stuckT = (s.stuckT || 0) + 0.3; break; }
+      if (a === -1.571) s.stuckT = (s.stuckT || 0) + 1;
+    }
+    if ((s.stuckT || 0) > 8 && !s.path && now > (s.pathAt || 0)) {   // preso: caminho de verdade (no máximo 1 cálculo a cada 2 s por monstro)
+      s.pathAt = now + 2000; s.stuckT = 0;
+      const pts = findPath(m.x, m.z, tx, tz, 6000);
+      if (pts && pts.length) { s.path = pts; s.pathUntil = now + 8000; }
+      else if (s.returning) { m.x = s.sx; m.z = s.sz; s.returning = false; }   // nem caminho de volta: reaparece no ponto de origem
     }
   }
 
@@ -253,7 +278,7 @@ export class MonsterSim {
         m.hp = Math.min(m.maxHp, m.hp + m.maxHp * 0.2 * dt);
         if (dS < 0.7) s.returning = false;
       } else {
-        if (now > s.wanderAt) { s.wx = s.sx + rnd(-3, 3); s.wz = s.sz + rnd(-3, 3); s.wanderAt = now + rnd(2500, 6500); }
+        if (now > s.wanderAt) { for (let k = 0; k < 6; k++) { s.wx = s.sx + rnd(-4, 4); s.wz = s.sz + rnd(-4, 4); if (s.inst || m.x > 450 || R.walkAt(s.wx, s.wz)) break; s.wx = s.sx; s.wz = s.sz; } s.wanderAt = now + rnd(2500, 6500); }   // v3.0.4: só passeia para chão andável
         tx = s.wx; tz = s.wz; sp = T.spd * 0.35; stop = 0.3;
       }
       if (tx !== null && tz !== null) {
@@ -261,7 +286,7 @@ export class MonsterSim {
         if (d > stop) {
           const st = Math.min(sp * dt, d - stop);
           if (gst >= 0 && this.hooks.walk) this.stepGrid(s, dx / d, dz / d, st); else if (!s.inst && m.x <= 450) { const nx = m.x + (dx / d) * st, nz = m.z + (dz / d) * st;   // v3.0.0: não entra em rio, mar, montanha ou muro
-            if (R.walkAt(nx, nz)) { m.x = nx; m.z = nz; } else if (R.walkAt(nx, m.z)) m.x = nx; else if (R.walkAt(m.x, nz)) m.z = nz; } else { m.x += (dx / d) * st; m.z += (dz / d) * st; }
+            this.stepW(s, tx, tz, dx / d, dz / d, st, now); } else { m.x += (dx / d) * st; m.z += (dz / d) * st; }
           m.rot = Math.atan2(dx, dz);
         }
       }

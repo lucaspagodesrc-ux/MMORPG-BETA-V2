@@ -442,7 +442,7 @@ export class WorldRoom extends Room<WorldState> {
       out.push({ log: `<span style="color:#ffd27a">${T.n} Nv ${mlvl} derrotado! +${xp} XP</span>` });
       if (R.gainXp(c, xp)) { out.push({ lvl: c.level }); const p = this.state.players.get(sid); if (p) p.level = c.level; }
       out.push(...R.questKill(c, sim.m.type));
-      out.push(...R.dwEv(c, "kill", { x: mx, boss: !!T.boss, lvl: mlvl }));          // missões diárias/semanais
+      out.push(...R.dwEv(c, "kill", { x: mx, z: mz, boss: !!T.boss, lvl: mlvl }));   // v3.0.4: com z (mundo único)          // missões diárias/semanais
       if (!sim.lazy) gpAdd(s, T.boss ? R.GP.boss : R.GP.kill);                          // Pontos de Guilda
       this.touch(s); this.sync(s); this.res(s, out);
       const gf = this.stats(s).gf || 0;                               // bônus de conjunto: mais ouro dos monstros

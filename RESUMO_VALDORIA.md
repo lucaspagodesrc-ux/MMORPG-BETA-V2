@@ -274,3 +274,7 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - **Lava**: textura própria pintada (`wLavaTex`, antes a nuvem branca somava e ficava branca). Grade ganhou a marca 16 = lava (`WORLD.lavaNear`). Encostar (a menos de 1,3 m) queima 250 de vida por segundo, com fogo (`SFX2.status('dot_fire')`), e continua por 3 s depois de se afastar (`LAVA` no cliente; dano direto, sem defesa).
 - **Casas** de volta a 95% do tamanho original (atlas). 18 casinhas simples perto de NPCs espalhados fora das cidades (atrás deles, sem fechar caminho).
 - **GM**: botão “Retirar TODOS os bots do servidor” no painel (op `all` → `BOTS.stopAll`).
+
+## 37. Missões de região e monstros presos (v3.0.4)
+- **Diárias/semanais "Patrulha" (matar N monstros em uma região) não contavam**: o abate mandava só o `x` do monstro (`dwEv(c,"kill",{x})`) e, no mundo único, a região depende também do `z`. Agora `WorldRoom.ts` e `worldboss.ts` mandam `{ x, z }` (vale também para a Provação dos Caminhos, que conta abates na Nevasca). Nível 170+ patrulha o Litoral da Maré (`bandReg`, `REGN[1200]`). A lista de ingressos do NPC de calabouço também passou a usar `x,z`.
+- **Monstros presos** (`monsters.ts` → `stepW`): tenta a direção, depois desvios de 45°/90°; se continuar preso (árvore, pedra, casa, barco, rio), calcula um caminho A* (`nav.ts`, até 6.000 nós, no máximo 1 a cada 2 s por monstro) e segue; voltando para casa sem caminho, reaparece no ponto de origem. Passeio só para chão andável. Nascimento: 30 tentativas + ponto livre mais perto do centro.

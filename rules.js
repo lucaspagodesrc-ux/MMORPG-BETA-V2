@@ -1961,9 +1961,9 @@ const dayKey = t => Math.floor((t - RESET_UTC_MS) / 86400e3);
 const weekKey = t => Math.floor((dayKey(t) + 3) / 7);                  // a semana começa na segunda-feira, 04:00
 const dayEnd = t => (dayKey(t) + 1) * 86400e3 + RESET_UTC_MS;
 const weekEnd = t => ((weekKey(t) + 1) * 7 - 3) * 86400e3 + RESET_UTC_MS;
-const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca', '-600': 'Vulcânia', '-900': 'a Cidade das Máquinas' };
+const REGN = { 0: 'as Planícies de Aurora', 300: 'Solara', '-300': 'Nevasca', '-600': 'Vulcânia', '-900': 'a Cidade das Máquinas', 1200: 'o Litoral da Maré' };
 const regOf = (x, z) => WORLD.regAt(x, z || 0);   // v3.0.0: região pelo lugar no mapa (x e z)
-const bandReg = L => (L < 50 ? 0 : L < 75 ? 300 : L < 100 ? -300 : -600);
+const bandReg = L => (L < 50 ? 0 : L < 75 ? 300 : L < 100 ? -300 : L < 170 ? -600 : 1200);   // v3.0.4: 170+ patrulha a praia
 const dwGold = L => Math.round((4000 + L * L * 45) / 100) * 100;      // ouro-base por nível (nível 100 ≈ 454 mil)
 const DWT = {   // q(L, semanal) = quantidade • rw = peso da recompensa • min = nível mínimo
   kill:  { i: '⚔️', t: 'Caçada', d: n => `Derrote ${n} monstros em qualquer lugar.`, ev: 'kill', q: (L, w) => w ? 220 + Math.round(L * 3) : 24 + Math.round(L * .36), rw: 1 },
