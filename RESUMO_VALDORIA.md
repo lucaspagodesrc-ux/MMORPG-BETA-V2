@@ -295,3 +295,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Correção: grade espacial de 1,4 m, comparando só com as 9 casas vizinhas. O tick caiu para **~2 ms com 1 jogador e ~3,7 ms com 7 clientes** (bots ligados), sem quedas em 2 minutos de teste.
 - A separação também não empurra mais monstros para dentro de rio, mar ou muro; espantalhos ficam parados.
 - Proteções: o tick inteiro do `WorldRoom` agora está em `try/catch` (com log a cada 10 s no máximo), e `index.ts` registra `uncaughtException` e `unhandledRejection` sem fechar o processo.
+
+## 41. Lago congelado da Nevasca (v3.0.8)
+- A área cinza e listrada perto de (187, 262) é o **lago congelado**, o único lago do mapa, com ~200 × 130 m.
+- Listras: as faixas de gelo (`strips`) tinham 0,4 m de sobra em cada borda. Com alfa 0,72, as sobreposições ficavam mais escuras. O gelo agora usa `pad=0`; a lava continua com 0,4 m, porque é opaca.
+- Cinza: as normais calculadas das faixas apontavam para baixo, então o gelo ficava sem luz. Agora as normais são fixas, para cima (0,1,0).
+- Textura nova `wIceTex()`: gelo azul-claro com manchas e rachaduras brancas, sem emenda (os desenhos se repetem nas bordas), em blocos de 15 m, com alfa 0,9.
