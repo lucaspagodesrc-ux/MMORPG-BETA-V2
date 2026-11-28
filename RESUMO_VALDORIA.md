@@ -282,3 +282,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 ## 38. Mochila esticando e personagem "puxado de volta" (v3.0.5)
 - **Mochila**: o ícone do Coração do Ifrit era um emoji composto (❤️‍🔥) que no Windows aparece como dois (❤️🔥) e esticava a grade (barra de rolagem, ícone "misturado"). Trocado por 💗; o título Capitão dos Sete Mares (🏴‍☠️) virou ☠️. As grades da mochila/equipamento usam `minmax(0,1fr)` e a `.slot` corta o que passar (`overflow:hidden`), para nenhum ícone esticar de novo.
 - **Puxado de volta em alguns pontos**: `world_1.json`, `world_1.png`, `props_1.webp`, `mapa_1.webp` e `castelo_kit.glb` usavam sempre `?v=300` com cache de 1 dia na pasta `modelos/`. Depois das versões 3.0.2/3.0.3 (casas mudaram de lugar), o navegador mostrava casas antigas enquanto o servidor usava a grade nova → o jogador andava onde o servidor tem casa e era corrigido. Agora `WBV` = commit do build (`pages-build.sh` troca `__BV__`); sem build (servidor local) usa a hora.
+
+## 39. Colisão do tamanho real e NPC nunca atrás de casa (v3.0.6)
+- **Colisão**: casas e objetos de cidade bloqueiam só as células dentro do chão real do modelo (largura × profundidade do Blender × escala, 80%) — `block_rect` no `gen5.py`; antes era um círculo pela largura da imagem. Árvore: só a célula do tronco. Pedrinha, arbusto, feno etc. (menos de 1,3 m) não bloqueiam. `props_1.json` ganhou os campos 11/12 (chão em metros).
+- **Conferência**: todas as células bloqueadas que eram chão livre no terreno têm um objeto visível em cima (casa, árvore, muro, torre, chafariz, barco) — sobraram só 7 células de um bolsão fechado à beira-mar.
+- **NPC nunca tampado**: `hides_npc` projeta a imagem do objeto na câmera do jogo; casa, árvore ou objeto mais perto da câmera que cubra pés, corpo ou cabeça de um NPC não é colocado (vale para casas da cidade, casinhas perto de NPCs e vegetação). Nenhum NPC encostado nos muros sul/leste.
+- **Aurora**: 60 casas (antes 38).
