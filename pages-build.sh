@@ -7,7 +7,7 @@ rm -rf dist && mkdir -p dist/colyseus-client dist/modelos dist/audio dist/telas 
 cp index.html rules.js lang_en.js dist/
 cp colyseus-browser.js dist/colyseus-client/colyseus.js
 for f in *.glb; do [ -f "$f" ] && cp "$f" dist/modelos/; done
-for f in rostos_*.png rosto2_*.png; do [ -f "$f" ] && cp "$f" dist/modelos/; done   # v1.95: camadas do rosto (olhos, sobrancelhas, boca) montadas no navegador
+for f in rostos_*.png rosto2_*.png npc_atlas_*.webp; do [ -f "$f" ] && cp "$f" dist/modelos/; done   # v1.95: camadas do rosto (olhos, sobrancelhas, boca) montadas no navegador
 for f in fx_*.webp sx_*.webp; do [ -f "$f" ] && cp "$f" dist/fx/; done   # v2.4.2/2.4.3: spritesheets dos efeitos (habilidades, impactos, estados, montarias, mascotes)
 for f in tela_*.jpg; do [ -f "$f" ] && cp "$f" dist/telas/; done   # v1.85: artes do login e da tela de carregamento
 M=$(ls tema.mp3 2>/dev/null || ls *.mp3 2>/dev/null | grep -v "^sfx" | head -1 || true); [ -n "$M" ] && cp "$M" dist/audio/tema.mp3

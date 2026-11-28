@@ -43,10 +43,10 @@ async function main() {
   // v1.65: modelos 3D (arquivos .glb na mesma pasta do index.html, ex.: cavaleiro.glb) — ficam em cache no navegador por 1 dia
   app.get("/modelos/:f", (q, r) => {
     const f = String(q.params.f || "");
-    if (!/^[a-z0-9_-]+\.glb$/i.test(f)) { r.status(404).end(); return; }
+    if (!/^[a-z0-9_-]+\.(glb|png|webp)$/i.test(f)) { r.status(404).end(); return; }   // v2.6.0: também o atlas dos NPCs (npc_atlas_*.webp) e as camadas do rosto
     const file = path.join(__dirname, f);
     if (!fs.existsSync(file)) { r.status(404).end(); return; }
-    r.type("model/gltf-binary").sendFile(file, { maxAge: "1d" });
+    r.type(f.endsWith(".glb") ? "model/gltf-binary" : f.endsWith(".png") ? "image/png" : "image/webp").sendFile(file, { maxAge: "1d" });
   });
   // v1.85: artes das telas de login e de carregamento (tela_*.jpg na mesma pasta) — cache de 7 dias
   app.get("/telas/:f", (q, r) => {

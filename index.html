@@ -3296,6 +3296,43 @@ const NKIT=(()=>{
  };
  return K;})();
 function npcLook(d){const s=NPCL[d.id];if(s)return s;const R=PAINT.rng(CH.hash(d.id));const sk=['#f0c8a0','#e8b894','#d8a47c','#c89868'],hs=['short','spiky','long','ponytail','bun','fringe'],hc=['#3a2418','#6a4022','#a0602a','#d8b060','#1a1210'];return ['plain',sk[(R()*4)|0],hs[(R()*6)|0],hc[(R()*5)|0]];}
+/* v2.6.0: NPCs em imagem (impostor 2D virado para a câmera fixa). Atlas npc_atlas_1.webp: id -> [x,y,w,h (px), largura, altura (mundo), pescoço (0-1)] */
+const NPCIMG={"w":2048,"h":1024,"n":{"gemas_a":[0,0,170,369,1.083,2.35,0.56],"mestre":[172,0,283,369,1.802,2.35,0.56],"orion":[457,0,176,369,1.121,2.35,0.56],"vulkan":[635,0,171,369,1.089,2.35,0.56],"guarda_cripta":[808,0,161,361,1.026,2.3,0.6],"capitao":[971,0,165,345,1.052,2.2,0.6],"arauto_a":[1138,0,164,345,1.046,2.2,0.6],"khalid":[1304,0,163,345,1.039,2.2,0.6],"torg":[1469,0,235,338,1.495,2.15,0.64],"anuket":[1706,0,120,333,0.764,2.12,0.64],"mercador":[1828,0,152,330,0.967,2.1,0.62],"ibrahim":[0,371,123,322,0.783,2.05,0.64],"mercador2":[125,371,130,322,0.828,2.05,0.64],"hamid":[257,371,148,322,0.942,2.05,0.62],"kira":[407,371,173,322,1.101,2.05,0.62],"gemas_s":[582,371,141,322,0.898,2.05,0.62],"guilda_s":[725,371,167,322,1.063,2.05,0.64],"anselmo":[894,371,162,314,1.032,2.0,0.64],"brum":[1058,371,194,314,1.236,2.0,0.64],"arena_a":[1254,371,209,314,1.331,2.0,0.64],"ferreiro":[1465,371,161,314,1.025,2.0,0.64],"lyra":[1628,371,239,314,1.522,2.0,0.64],"guilda_a":[1869,371,165,314,1.051,2.0,0.64],"nadir":[0,695,173,314,1.102,2.0,0.64],"neferu":[175,695,121,314,0.771,2.0,0.64],"ferreira":[298,695,167,314,1.064,2.0,0.64],"valen":[467,695,162,314,1.032,2.0,0.64],"leilao":[631,695,142,314,0.904,2.0,0.64],"yuki":[775,695,138,314,0.879,2.0,0.64],"zafira":[915,695,130,314,0.828,2.0,0.64],"mascotes":[1047,695,120,306,0.765,1.95,0.64],"evento":[1169,695,210,306,1.338,1.95,0.62],"elda":[1381,695,129,298,0.822,1.9,0.64]}};
+const NIMP={list:[],mesh:null,sh:null,base:null,mat:null,R:null,U:null};
+function nimpAxes(){const inv=camera.getViewMatrix(true).clone().invert();const R=BABYLON.Vector3.TransformNormal(BABYLON.Axis.X,inv).normalize(),U=BABYLON.Vector3.TransformNormal(BABYLON.Axis.Y,inv).normalize(),F=BABYLON.Vector3.TransformNormal(BABYLON.Axis.Z,inv).normalize();return {R,U,F};}
+function nimpBuild(){
+ if(!NIMP.list.length)return;const {R,U,F}=nimpAxes();NIMP.R=R;NIMP.U=U;
+ const AW=NPCIMG.w,AH=NPCIMG.h,CO=3,RO=10,pos=[],uv=[],ind=[],info=[],spos=[],suv=[],sind=[];
+ const L=new BABYLON.Vector3(-.5,0,.4).normalize();   // direção da sombra (luz do sol)
+ for(const e of NIMP.list){const [ax,ay,aw,ah,ww,hh,nk]=e.IM,x0=e.d.x,z0=e.d.z,b=pos.length/3;
+  for(let j=0;j<RO;j++)for(let i=0;i<CO;i++){const u=i/(CO-1),v=j/(RO-1),dx=(u-.5)*ww,dy=v*hh;
+   pos.push(x0+R.x*dx+U.x*dy,R.y*dx+U.y*dy,z0+R.z*dx+U.z*dy);uv.push((ax+u*aw)/AW,1-(ay+(1-v)*ah)/AH);info.push(v,nk);}
+  for(let j=0;j<RO-1;j++)for(let i=0;i<CO-1;i++){const a=b+j*CO+i;ind.push(a,a+CO,a+1,a+1,a+CO,a+CO+1);}
+  // sombra projetada: a silhueta deitada no chão, saindo dos pés na direção da luz
+  const sb=spos.length/3,w2=ww*.92,ln=hh*.62,Rh=new BABYLON.Vector3(R.x,0,R.z).normalize();
+  for(const [u,v] of [[0,0],[1,0],[0,1],[1,1]]){const dx=(u-.5)*w2;spos.push(x0+Rh.x*dx+L.x*ln*v,.09,z0+Rh.z*dx+L.z*ln*v);suv.push((ax+u*aw)/AW,1-(ay+(1-v)*ah)/AH);}
+  sind.push(sb,sb+2,sb+1,sb+1,sb+2,sb+3);
+  e.b=b;e.n=RO*CO;}
+ const tex=new BABYLON.Texture('modelos/npc_atlas_1.webp',scene,false,true,BABYLON.Texture.TRILINEAR_SAMPLINGMODE);tex.hasAlpha=true;tex.wrapU=tex.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;
+ const m=new BABYLON.StandardMaterial('nimgM',scene);m.diffuseTexture=tex;m.useAlphaFromDiffuseTexture=true;m.transparencyMode=BABYLON.Material.MATERIAL_ALPHATEST;m.alphaCutOff=.45;m.disableLighting=true;m.diffuseColor=C3.Black();m.emissiveColor=C3.White();m.specularColor=C3.Black();m.backFaceCulling=false;
+ const me=new BABYLON.Mesh('npcImg',scene),vd=new BABYLON.VertexData();vd.positions=pos;vd.indices=ind;vd.uvs=uv;vd.applyToMesh(me,true);me.material=m;me.isPickable=false;me.alwaysSelectAsActiveMesh=true;
+ const sm=new BABYLON.StandardMaterial('nimgS',scene);sm.diffuseColor=C3.Black();sm.emissiveColor=C3.Black();sm.specularColor=C3.Black();sm.disableLighting=true;sm.opacityTexture=tex;sm.alpha=.36;sm.backFaceCulling=false;sm.zOffset=-2;
+ const sh=new BABYLON.Mesh('npcImgSh',scene),sv=new BABYLON.VertexData();sv.positions=spos;sv.indices=sind;sv.uvs=suv;sv.applyToMesh(sh);sh.material=sm;sh.isPickable=false;sh.alwaysSelectAsActiveMesh=true;
+ NIMP.mesh=me;NIMP.sh=sh;NIMP.mat=m;NIMP.base=Float32Array.from(pos);NIMP.cur=Float32Array.from(pos);NIMP.info=info;NIMP.ph=NIMP.list.map(e=>(CH.hash(e.d.id)%1000)/159);
+}
+/* respiração (o tronco estica de leve) e cabeça balançando/olhando para os lados, só nos NPCs perto do jogador */
+function nimpAnim(now){
+ const N=NIMP;if(!N.mesh)return;const t=now/1000,B=N.base,C=N.cur,I=N.info,R=N.R,U=N.U;let ch=false;
+ for(let k=0;k<N.list.length;k++){const e=N.list[k];if(hyp(P.pos,e.d.pos)>40)continue;ch=true;const hh=e.IM[5],ph=N.ph[k];
+  const br=.007*Math.sin(t*1.7+ph),look=Math.sin(t*.37+ph*2.1),sw=.018*Math.sin(t*.9+ph)+.022*Math.max(-1,Math.min(1,look*2.2))*(Math.abs(look)>.55?1:Math.abs(look)/.55),nod=.006*Math.sin(t*1.3+ph*.7);
+  for(let q=0;q<e.n;q++){const vi=e.b+q,v=I[vi*2],nk=I[vi*2+1];
+   const lift=v<.12?0:v<nk?(v-.12)/(nk-.12):1,hd=v>nk?(v-nk)/(1-nk):0;
+   const dy=(br*lift+nod*hd)*hh,dx=sw*hd*hh;const o=vi*3;
+   C[o]=B[o]+R.x*dx+U.x*dy;C[o+1]=B[o+1]+R.y*dx+U.y*dy;C[o+2]=B[o+2]+R.z*dx+U.z*dy;}}
+ if(ch)N.mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind,C,false,false);
+ const k_=Math.min(1.15,(hemi.intensity*(hemi.diffuse.r+hemi.diffuse.g+hemi.diffuse.b)/3+sun.intensity*(sun.diffuse.r+sun.diffuse.g+sun.diffuse.b)/3)/1.75);
+ N.mat.emissiveColor.set(k_*(.5+.5*hemi.diffuse.r),k_*(.5+.5*hemi.diffuse.g),k_*(.5+.5*hemi.diffuse.b));
+}
 function buildNpc(d){
  if(d.portal||d.dungeon){buildPortal(d);return;}
  const FS=Math.PI/2,TAU=Math.PI*2;
@@ -3305,7 +3342,10 @@ function buildNpc(d){
  const add=(m,x,y,z,mt,rx)=>{m.parent=r;m.position.set(x,y,z);m.material=mt;meta(m);if(rx)m.rotation.x=rx;return m;};
  const D=(name,parts,w,par)=>CH.det(par||r,name,parts,w,meta);
  const {GOLD,STEEL,LEA,LEA2,WOOD,CM}=CH;
- if(!d.chest&&d.id!=='bau'){
+ const IM=!d.chest&&d.id!=='bau'&&NPCIMG.n[d.id];
+ if(IM){const {R,U}=nimpAxes(),pl=B.CreatePlane('nimgPk',{width:IM[4],height:IM[5]},scene);   // área de clique = a figura inteira (invisível)
+  pl.position.set(d.x+U.x*IM[5]/2,U.y*IM[5]/2,d.z+U.z*IM[5]/2);pl.rotationQuaternion=BABYLON.Quaternion.FromLookDirectionLH(BABYLON.Vector3.Cross(R,U).normalize(),U);pl.visibility=0;pl.isPickable=true;meta(pl);NIMP.list.push({d,IM,pl});}
+ if(!d.chest&&d.id!=='bau'&&!IM){
   const sp=npcLook(d),kit=NKIT[sp[0]]||NKIT.plain,orc=sp[0]==='orc',sc=orc?1.12:1;
   const nm=mat('nc'+d.id,d.col,null,null,'cloth'),c2=CM(CH.rgbHex?'#000000':'#5a4a3a','cloth');
   const col2=shade(d.col,.7);const cm2=CM(col2,'cloth');
@@ -3328,7 +3368,7 @@ function buildNpc(d){
   D('chest',P_,.03);
   if(GLBMODE_()){CR.load('chest');CR.wait.push({n:'chest',fn:()=>{d._chestC=CR.swap(r,'chest',null,null,{t:'n',ref:d});}});}   /* v2.2: baú animado (abre ao usar) */
  }
- if(d.id==='mestre'){D('mst',[box(.5,.08,.38,.8,1.5,.3,CM('#8a2a3a','cloth')),box(.5,.02,.34,.8,1.55,.3,CM('#f0e4c0','cloth')),sph(.3,-.7,1.6,.2,fxMat('#9fc4ff'),null,8),tor(.5,.04,-.7,1.6,.2,GOLD(),{t:16,rx:.5})],.015);}
+ if(d.id==='mestre'&&!IM){D('mst',[box(.5,.08,.38,.8,1.5,.3,CM('#8a2a3a','cloth')),box(.5,.02,.34,.8,1.55,.3,CM('#f0e4c0','cloth')),sph(.3,-.7,1.6,.2,fxMat('#9fc4ff'),null,8),tor(.5,.04,-.7,1.6,.2,GOLD(),{t:16,rx:.5})],.015);}
  if(d.camp){
   const tx=d.x+Math.cos(1.2)*2.6,tz=d.z+Math.sin(1.2)*2.6,tc=CM(d.hat||'#8d6b43','cloth'),tc2=CM('#e8d8b0','cloth');
   const T_=[cyl(2.2,0,2.8,6,tx,1.1,tz,tc),cyl(.5,.02,.5,6,tx,2.38,tz,WOOD()),cyl(1.2,.5,.9,3,tx,.9,tz+1.18,tc2,{rx:-.2}),cyl(2.7,.06,.06,5,tx-.9,1.3,tz+.9,WOOD(),{rz:.35}),cyl(2.7,.06,.06,5,tx+.9,1.3,tz+.9,WOOD(),{rz:-.35}),sph(.3,tx+1.5,.15,tz-.4,CM('#c8b898','cloth'),{s:[1,.6,1]},5),tor(2.9,.08,tx,.05,tz,LEA2(),{t:18})];
@@ -3361,7 +3401,7 @@ function buildNpc(d){
  }
  const sh=shadowDisc(r,.7);
  obstacles.push({x:d.x,z:d.z,r:.7});
- d.root=r;d.pos=r.position;d.label=mkLabel('','npc');lodAdd(d,r,{meta:{t:'n',ref:d},pick:true});
+ d.root=r;d.pos=r.position;d.label=mkLabel('','npc');if(!IM)lodAdd(d,r,{meta:{t:'n',ref:d},pick:true});
 }
 const IRONm=()=>CH.CM('#3a4450','metal');
 function shade(hex,k){const c=CH.hx(hex);return '#'+c.map(v=>Math.max(0,Math.min(255,Math.round(v*k))).toString(16).padStart(2,'0')).join('');}
@@ -3438,7 +3478,7 @@ function portalTex(col){
  for(const off of[0,Math.PI]){h.beginPath();for(let i=0;i<=3;i++){const a=off-Math.PI/2+i*TAU/3,rad=C-52;i?h.lineTo(Math.cos(a)*rad,Math.sin(a)*rad):h.moveTo(Math.cos(a)*rad,Math.sin(a)*rad);}h.lineWidth=3.2;h.strokeStyle=rgb(1.2,.85);h.stroke();}
  return PTEX[col]={v:mkT(cv,'pvx'),f:mkT(c2,'prn')};
 }
-NPCS.forEach(buildNpc);
+NPCS.forEach(buildNpc);nimpBuild();
 
 /* =================== VIDA: CIDADÃOS, GUARDAS, ANIMAIS =================== */
 for(const s of SIGNS)s.el=mkLabel(s.t,'npc');
@@ -3544,6 +3584,7 @@ function updateLife(dt,now){
   collide(p,o.crR||(typeof o.cr==='number'?o.cr:.4));clampMap(p);p.y=o.root._cr?0:mv?Math.abs(Math.sin(now*.018+o.ph))*(o.hop||.07):0;if(o.root._cr)CR.animW(o,mv);
   if(o.label){if(dP<14)place(o.label,p,2.7);else hideEl(o.label);}}
  for(const d of NPCS)if(d.limbs&&d.pos&&(!d.lod||d.lod.st===0)&&hyp(P.pos,d.pos)<30)animLimbs(d,d.pos.x,d.pos.z,now,0,true);
+ nimpAnim(now);
  for(const s of SIGNS){if(hyp(P.pos,s)<16)place(s.el,{x:s.x,y:0,z:s.z},1.9);else hideEl(s.el);}}
 
 

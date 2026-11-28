@@ -206,3 +206,11 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 
 ## 27. Cidadãos removidos (v2.5.6)
 - Os cidadãos que andavam pelas cidades (Aurora, Solara, Nevasca, Vulcânia) foram removidos do cliente. Guardas de patrulha e animais continuam; os guardas vão virar imagens paradas (impostores) quando as artes ficarem prontas.
+
+## 28. NPCs em imagem (v2.6.0)
+- 33 NPCs trocaram o boneco 3D por uma imagem (gerada pelo usuário no Gemini, fundo verde/magenta removido por chroma key + despill, recortada). Atlas único `npc_atlas_1.webp` (2048×1024, 465 KB; 157 px por unidade); `NPCIMG` no index.html guarda [x,y,w,h, largura, altura no mundo, pescoço] por id. Ferramentas: scratchpad `npcimg/key.py` (recorte) e `atlas.py` (atlas + mapa nome do arquivo → id). Para trocar uma arte: gerar de novo o atlas com outro número (npc_atlas_2.webp) e atualizar NPCIMG.
+- Cliente: `nimpBuild()` junta todos num só mesh (1 chamada de desenho) virado para a câmera fixa (eixos tirados da view matrix), grade 3×10 por NPC; `nimpAnim()` faz respiração e cabeça balançando/olhando (só NPCs a <40 do jogador), e escurece junto com o clima da região (hemi/sun). Sombra: disco antigo + silhueta projetada no chão (1 mesh, alfa .36).
+- Clique: plano invisível (visibility 0) do tamanho da figura com metadata do NPC — missões e janelas iguais. NPCs em imagem não entram no LOD.
+- Servidor: rota /modelos aceita .png/.webp; pages-build copia npc_atlas_*.webp.
+- Medido (praça de Aurora, renderizador por software): triângulos dos NPCs no mapa 254.862 → 27.182; malhas ativas 244 → 111; chamadas de desenho 298 → 164; quadro 16 → ~10,5 ms.
+- Faltam imagens de 37 NPCs (continuam 3D) e dos baús. Piscar de olhos não feito (precisaria marcar os olhos em cada imagem).
