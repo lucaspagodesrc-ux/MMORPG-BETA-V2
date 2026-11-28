@@ -959,6 +959,7 @@ export class WorldRoom extends Room<WorldState> {
       const op = String(m?.op || "");
       if (op === "on") { BOTS.launch(s.charId, s.c.name).then((t) => { this.sysTo(s, t); if (this.sess.get(client.sessionId) === s) client.send("botst", BOTS.status(s.charId)); }).catch(() => {}); client.send("botst", { ...BOTS.status(s.charId), busy: 1 }); return; }
       if (op === "off") { BOTS.stop(s.charId, "GM"); this.sysTo(s, "🤖 Seus bots saíram do mundo."); }
+      if (op === "all") { const n = BOTS.count(); BOTS.stopAll("GM " + s.c.name); this.sysTo(s, `🤖 Todos os bots saíram do mundo (${n}).`); client.send("botst", BOTS.status(s.charId)); }   // v3.0.3: retira os bots de todos os GMs
       if (op === "who") {   // v2.6.3: lista de quem está online (só GM), marcando os bots
         const RG: Record<number, string> = { 0: "Aurora", 300: "Solara", [-300]: "Nevasca", [-600]: "Vulcânia", [-900]: "Máquinas", 1200: "Praia", 1800: "Arena PK", 600: "Calabouço" };
         const L: any[] = [];

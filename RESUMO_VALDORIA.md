@@ -266,3 +266,11 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - **Retorno (B)** e renascer: `sp` das cidades = centro (Aurora: ao sul do chafariz, 6,−15).
 - **GM**: clique no mapa-múndi/região = teletransporte (servidor joga para o ponto andável mais perto se cair em água/muro).
 - Conferência automática: nenhum NPC fora do chão nem colado; nenhuma zona sobreposta ou encostada em cidade; zonas com nível coerente com a região; A* acha caminho para todas as cidades e zonas.
+
+## 36. Mais monstros, lava que queima, casas maiores (v3.0.3)
+- **Spots**: zonas comuns com 50% mais monstros (`n×1,5`) e um **spot gêmeo** de cada uma a 15 m de borda a borda (posições calculadas no `twins.py` e embutidas em `rules.js` → bloco `TW`, zona copiada com `twin: i`). **Chefes de spot** (n=1): o gêmeo fica na outra ponta da mesma região. Chefes de mundo (wb) e campos de treino não mudam. Mundo: 124 spots, ~1.470 monstros.
+- **Desempenho com mais monstros**: o modelo do monstro só é montado quando ele chega a 70 m (`MLAZY`, antes só no iPhone) e monstros a mais de 95 m não são atualizados a cada quadro. Malhas na cena: ~5.900 (antes ~10.000 com metade dos monstros).
+- **Pontes**: centro no meio do rio (célula de água mais longe da margem) e a direção é a travessia mais curta (perpendicular ao rio).
+- **Lava**: textura própria pintada (`wLavaTex`, antes a nuvem branca somava e ficava branca). Grade ganhou a marca 16 = lava (`WORLD.lavaNear`). Encostar (a menos de 1,3 m) queima 250 de vida por segundo, com fogo (`SFX2.status('dot_fire')`), e continua por 3 s depois de se afastar (`LAVA` no cliente; dano direto, sem defesa).
+- **Casas** de volta a 95% do tamanho original (atlas). 18 casinhas simples perto de NPCs espalhados fora das cidades (atrás deles, sem fechar caminho).
+- **GM**: botão “Retirar TODOS os bots do servidor” no painel (op `all` → `BOTS.stopAll`).

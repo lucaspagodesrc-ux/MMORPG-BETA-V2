@@ -116,7 +116,7 @@ class Bot {
       else if (m.st === "resp") { this.dead = false; this.pos = { x: m.x, z: m.z }; this.full(); }
     });
     room.onMessage("dgenter", () => { this.room.send("dgexit", {}); });    // bots não usam calabouços (sai na hora se cair num)
-    for (const k of ["chat", "xp", "ahr", "wbs", "wbmsg", "wbr", "wbend", "wbmy", "mailr", "mailn", "trr", "gs", "gr", "ginv", "gu", "ward", "abuff", "gmb", "dmg", "mat", "slam", "fx", "cl", "clspin", "clones", "dgleave", "dgmsg", "dg", "party", "pinv", "matk", "pdmg", "pkfeed", "pcc", "botst"]) room.onMessage(k, () => {});
+    for (const k of ["chat", "xp", "ahr", "wbs", "wbmsg", "wbr", "wbend", "wbmy", "mailr", "mailn", "trr", "gs", "gr", "ginv", "gu", "ward", "abuff", "gmb", "dmg", "mat", "slam", "fx", "cl", "clspin", "clones", "dgleave", "dgmsg", "dg", "party", "pinv", "matk", "pdmg", "pkfeed", "pcc", "botst", "txp"]) room.onMessage(k, () => {});
     room.onLeave(() => { this.room = null; if (this.alive) this.reconnect(1); });   // v2.6.4: caiu a conexão com o servidor ainda no ar → tenta voltar
     this.timer = setInterval(() => { try { this.tick(); } catch (e) { if (process.env.BOT_LOG) console.error(e); } }, TICK);
   }
@@ -556,6 +556,7 @@ export class BotManager {
   /** v2.6.3: de qual GM é o bot (nome do GM) */
   isBotSid(sid: string) { for (const q of this.squads.values()) if (q.bots.some((b) => b.sid === sid)) return true; return false; }
   ownerOf(charId: string) { for (const q of this.squads.values()) if (q.bots.some((b) => b.charId === charId)) return q.gmName; return ""; }
-  stopAll() { for (const q of [...this.squads.values()]) q.stop("servidor"); }
+  stopAll(why = "servidor") { for (const q of [...this.squads.values()]) q.stop(why); }
+  count() { let n = 0; for (const q of this.squads.values()) n += q.bots.length; return n; }
 }
 export const BOTS = new BotManager();
