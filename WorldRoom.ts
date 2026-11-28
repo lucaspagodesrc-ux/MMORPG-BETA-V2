@@ -963,6 +963,15 @@ export class WorldRoom extends Room<WorldState> {
       const op = String(m?.op || "");
       if (op === "on") { BOTS.launch(s.charId, s.c.name).then((t) => { this.sysTo(s, t); if (this.sess.get(client.sessionId) === s) client.send("botst", BOTS.status(s.charId)); }).catch(() => {}); client.send("botst", { ...BOTS.status(s.charId), busy: 1 }); return; }
       if (op === "off") { BOTS.stop(s.charId, "GM"); this.sysTo(s, "🤖 Seus bots saíram do mundo."); }
+      if (op === "who") {   // v2.6.3: lista de quem está online (só GM), marcando os bots
+        const RG: Record<number, string> = { 0: "Aurora", 300: "Solara", [-300]: "Nevasca", [-600]: "Vulcânia", [-900]: "Máquinas", 1800: "Arena PK", 600: "Guerra" };
+        const L: any[] = [];
+        for (const [sid, o] of this.sess) { const p = this.state.players.get(sid), c = o.c; if (!c) continue; const bot = String(o.acc && o.acc.username || "").startsWith("#bot_");
+          const x = p ? p.x : 0, rg = p && p.inst ? "Calabouço" : RG[x < -750 ? -900 : x < -450 ? -600 : x < -150 ? -300 : x > 1650 ? 1800 : x > 450 ? 600 : x > 150 ? 300 : 0] || "?";
+          L.push({ n: c.name, c: c.cls, l: c.level, r: rg, nt: c.nat || 0, gm: c.gm ? 1 : 0, b: bot ? 1 : 0, o: bot ? BOTS.ownerOf(o.charId) : "", d: p && p.dead ? 1 : 0 }); }
+        L.sort((a, b) => a.b - b.b || b.l - a.l || a.n.localeCompare(b.n));
+        client.send("gmwho", { L, t: Date.now() }); return;
+      }
       client.send("botst", BOTS.status(s.charId));
     });
     this.onMessage("hp", (client, m) => {      // vida informada pelo cliente: usada só nas barras do grupo

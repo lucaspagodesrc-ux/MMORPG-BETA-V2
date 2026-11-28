@@ -511,6 +511,8 @@ export class BotManager {
     return `🤖 O primeiro bot entrou. Os outros ${order.length - 1} entram um a cada 5 minutos. Cada um sai sozinho 2 horas depois de entrar (ou todos quando você retirar).`;
   }
   stop(gmChar: string, why = "GM") { const q = this.squads.get(gmChar); if (q) q.stop(why); }
+  /** v2.6.3: de qual GM é o bot (nome do GM) */
+  ownerOf(charId: string) { for (const q of this.squads.values()) if (q.bots.some((b) => b.charId === charId)) return q.gmName; return ""; }
   stopAll() { for (const q of [...this.squads.values()]) q.stop("servidor"); }
 }
 export const BOTS = new BotManager();

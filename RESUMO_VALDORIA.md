@@ -225,3 +225,8 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Agora (`questWork` / `chooseZone` em bots.ts, a cada 4 s): 1) entrega qualquer missão concluída (vai até o NPC, em qualquer mapa liberado); 2) com menos de 2 missões em andamento, aceita novas — primeiro no mapa atual, depois nos outros mapas que o nível libera (Solara 50, Nevasca 75, Vulcânia 100, Máquinas 130 + nação), as de nível menor primeiro, até 3 do mesmo NPC; 3) caça no spot do alvo da missão (o menos cheio) e prefere esse tipo de monstro; 4) sem missão possível: spot de maior XP (`R.xpFor` × nº de monstros); se já tem 2+ jogadores/bots nele, vai para o próximo de menos XP, e assim por diante (reavalia a cada 20 s).
 - Ignora missões de chefe, de calabouço (alvo sem spot) e com alvo muito acima (>Nv+3) ou muito abaixo (<Nv−22). Desiste de uma missão depois de 4 tentativas falhas (zera a cada 15 min).
 - Teste (6 bots novos, 7 min, BOT_TEST): todos chegaram ao Nv 10–11 com 12–15 missões entregues.
+
+## 31. Painel do GM: aba Online (v2.6.3)
+- O Painel do GM (✨ / Y) agora tem duas abas: "🤖 Bots e Buff" (o que já existia) e "👥 Online".
+- Online: lista todos os personagens conectados (classe, nível, região ou calabouço, nação, morto), com selo BOT (e de qual GM) e selo GM; filtros Todos/Jogadores/Bots; atualiza a cada 10 s enquanto a aba está aberta (botão 🔄 para na hora).
+- Servidor: `bot` com `op:"who"` (só GM) → `gmwho {L:[{n,c,l,r,nt,gm,b,o,d}]}`. Bot = conta `#bot_…`; dono via `BOTS.ownerOf(charId)`.
