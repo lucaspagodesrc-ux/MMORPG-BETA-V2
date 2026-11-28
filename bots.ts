@@ -72,7 +72,7 @@ class Bot {
   pos = { x: 0, z: 5 }; hp = 1; mp = 1; dead = false; deadAt = 0; lastT = Date.now(); rg = 0; lastCombat = 0;
   mons = new Map<number, Mon>(); drops = new Map<number, any>();
   cd: number[] = Array(9).fill(0); actUntil = 0; skUntil = 0; nextAtk = 0; potAt = 0; buffUntil: number[] = Array(9).fill(0);
-  mode = "idle"; modeUntil = 0; tasks: Task[] = []; taskAt = 0; zone: any = null; tgt: Mon | null = null; wander: any = null; stuckT = 0;
+  mode = "idle"; modeUntil = 0; tasks: Task[] = []; taskAt = 0; zone: any = null; zoneAt = 0; qAt = 0; prefT = ""; qTry: Record<string, number> = {}; qTryReset = 0; tgt: Mon | null = null; wander: any = null; stuckT = 0;
   until = Date.now() + LIFE_MS;
   pv = ""; foe = ""; pvAt = 0; pdownAt = 0; arenaUntil = 0; nextArena = Date.now() + (process.env.BOT_TEST ? rnd(20, 40) * 1000 : rnd(8, 25) * 60_000); nextWar = 0;
   lastAct = 0; hpSent = 0; recallAt = 0; nextTown = Date.now() + rnd(6, 12) * 60_000; lastPick = 0; deathLog = 0;
@@ -252,19 +252,59 @@ class Bot {
     const c = this.c, d = this.D(), reg = regOf(this.pos.x);
     if (reg === 600 || reg === 1800) { if (now - this.recallAt > 11_000) { this.recallAt = now; this.send("recall"); } return; }
     // 1) cidade: mochila cheia, sem poções, missões para entregar ou de tempos em tempos
-    const qDone = Object.keys(c.quests || {}).some((id) => { const st = c.quests[id], q = R.QUESTS.find((x: any) => x.id === id); return q && st && !st.done && st.n >= q.qty; });
-    if (now > this.nextTown || this.freeSlots() <= 3 || (this.potCount("hp") < 3 && c.gold >= 150) || qDone) { this.planTown(now); if (this.tasks.length) return; }
+    if (now > this.nextTown || this.freeSlots() <= 3 || (this.potCount("hp") < 3 && c.gold >= 150)) { this.planTown(now); if (this.tasks.length) return; }
     // 2) nação (Nv 50): metade do esquadrão em cada nação
     if (!c.nat && c.level >= R.NAT_LV) { const n = this.nearestNpc("nacao") || this.nearestNpc("nacao", 0); if (n) { this.task(n, () => this.act({ t: "nation", n: this.nat, npc: n.id }), "nação"); return; } }
     // 3) Arena PK de vez em quando
     if (c.level >= R.ARENA.minLv && now > this.nextArena && this.hp > d.maxHp * 0.9) { const n = this.nearestNpc("arena", reg); if (n) { this.nextArena = now + 60_000; this.task(n, () => this.send("arena", { op: "enter" }), "arena"); return; } }
     // 4) Cidade das Máquinas (guerra) para quem tem nação e Nv 130
-    let want = this.bestReg();
-    if (c.nat && c.level >= R.WAR.minLv) { if (now > this.nextWar) { this.nextWar = now + rnd(20, 40) * 60_000; this.mode = Math.random() < 0.55 ? "war" : "hunt"; } if (this.mode === "war") want = -900; }
-    if (!this.travel(want, now)) { this.zone = null; return; }
-    // 5) caçar
-    if (!this.zone || this.zone.reg !== reg || this.zone.lo > c.level + 2 || now > this.modeUntil) { this.zone = this.pickZone(reg); this.modeUntil = now + rnd(8, 15) * 60_000; this.wander = null; }
+    if (c.nat && c.level >= R.WAR.minLv) { if (now > this.nextWar) { this.nextWar = now + rnd(20, 40) * 60_000; this.mode = Math.random() < 0.55 ? "war" : "hunt"; }
+      if (this.mode === "war") { if (!this.travel(-900, now)) { this.zone = null; return; } if (!this.zone || this.zone.reg !== -900) this.zone = this.pickZone(-900); this.prefT = ""; this.hunt(now); return; } }
+    // 5) v2.6.2: missões — entrega as prontas, aceita novas (de qualquer mapa liberado), caça o alvo da missão
+    if (this.questWork(now)) return;
+    // 6) caçar: o alvo da missão ativa ou o spot que dá mais XP sem estar lotado (2+ jogadores → próximo spot)
+    if (!this.zone || now > this.zoneAt) { const z = this.chooseZone(); if (z !== this.zone) { this.zone = z; this.wander = null; this.tgt = null; if (z) this.log("spot:", z.t, "reg", z.reg, this.prefT ? "(missão)" : "(XP)"); } this.zoneAt = now + 20_000; }
+    if (!this.zone) { const t = R.TOWNS[0]; this.go(t.x, t.z + 8, 3); return; }
+    if (!this.travel(this.zone.reg, now)) return;
     this.hunt(now);
+  }
+  /* ---------- v2.6.2: missões ---------- */
+  regOk(r: number) { const lv = this.c.level; return r === 0 || (r === 300 && lv >= 50) || (r === -300 && lv >= 75) || (r === -600 && lv >= 100) || (r === -900 && lv >= 130 && !!this.c.nat); }
+  qZones(q: any) { return HUNT().filter((z) => z.t === q.tg && this.regOk(z.reg)); }
+  doable(q: any) { const T = R.MT[q.tg], lv = this.c.level; if (!T || T.boss || T.wb) return false; if (T.lv[0] > lv + 3 || T.lv[1] < lv - 22) return false; return this.qZones(q).length > 0; }
+  crowd(z: any) { let n = 0; const P = this.room && this.room.state && this.room.state.players; if (!P) return 0; P.forEach((p: any, sid: string) => { if (sid !== this.sid && hyp(p, z) < z.r + 6) n++; }); return n; }
+  questWork(now: number): boolean {
+    if (now < this.qAt) return false; this.qAt = now + 4000;
+    const c = this.c, st = c.quests || {}, cur = regOf(this.pos.x);
+    // 1) entregar as concluídas
+    for (const id of Object.keys(st)) { const s0 = st[id], q = R.QUESTS.find((x: any) => x.id === id); if (!q || s0.done || s0.n < q.qty) continue;
+      const n = R.NPCS.find((x: any) => x.id === q.npc); if (!n || !this.regOk(regOf(n.x))) continue;
+      if ((this.qTry[id] = (this.qTry[id] || 0) + 1) > 4) continue;   // não conseguiu entregar 4 vezes: deixa para depois
+      this.task(n, () => this.send("a", { t: "qt", id }), "entregar missão " + q.t); this.zoneAt = 0; return true; }
+    // 2) já tem missão em andamento que dá para fazer: vai caçar
+    const act = Object.keys(st).filter((id) => { const q = R.QUESTS.find((x: any) => x.id === id); return q && !st[id].done && st[id].n < q.qty && this.doable(q); });
+    if (act.length >= 2) return false;
+    // 3) aceitar: primeiro no mapa atual, depois nos outros mapas liberados; as mais antigas (nível menor) primeiro
+    const av = R.QUESTS.filter((q: any) => { if (st[q.id] || (this.qTry[q.id] || 0) > 3 || !R.qOpen(c, q) || (q.need && q.need > c.level) || !this.doable(q)) return false; const n = R.NPCS.find((x: any) => x.id === q.npc); return n && this.regOk(regOf(n.x)); })
+      .map((q: any) => ({ q, n: R.NPCS.find((x: any) => x.id === q.npc), lo: R.MT[q.tg].lv[0] }))
+      .sort((a: any, b: any) => (regOf(a.n.x) === cur ? 0 : 1) - (regOf(b.n.x) === cur ? 0 : 1) || a.lo - b.lo);
+    if (!av.length) return false;
+    const first = av[0], take = [first, ...av.slice(1).filter((x: any) => x.n.id === first.n.id)].slice(0, 3 - act.length);
+    for (const x of take) { this.qTry[x.q.id] = (this.qTry[x.q.id] || 0) + 1; this.task(x.n, () => this.send("a", { t: "qa", id: x.q.id }), "aceitar missão " + x.q.t); }
+    this.zoneAt = 0; if (now > (this.qTryReset || 0)) { this.qTryReset = now + 15 * 60_000; for (const k in this.qTry) if (!take.some((x: any) => x.q.id === k)) delete this.qTry[k]; }
+    return true;
+  }
+  zoneXp(z: any) { const T = R.MT[z.t]; try { return R.xpFor(T, Math.round((z.lo + z.hi) / 2), this.c.level) * (z.n || 1); } catch { return 0; } }
+  chooseZone() {
+    const c = this.c, st = c.quests || {};
+    // missão ativa: o spot do alvo (o menos cheio; empate → o mais perto)
+    for (const id of Object.keys(st)) { const q = R.QUESTS.find((x: any) => x.id === id); if (!q || st[id].done || st[id].n >= q.qty || !this.doable(q)) continue;
+      const zs = this.qZones(q).sort((a, b) => this.crowd(a) - this.crowd(b) || hyp(a, this.pos) - hyp(b, this.pos)); this.prefT = q.tg; return zs[0]; }
+    // sem missão: o spot de mais XP; com 2+ jogadores nele, o próximo (menos XP), e assim por diante
+    this.prefT = "";
+    const zs = HUNT().filter((z) => this.regOk(z.reg) && z.lo <= c.level + 2).sort((a, b) => this.zoneXp(b) - this.zoneXp(a));
+    for (const z of zs) { const cr = this.crowd(z) - (this.zone === z ? 0 : 0); if (cr < 2) return z; }
+    return zs[0] || null;
   }
   task(n: any, fn: () => void, why: string) { this.tasks.push({ x: n.x + rnd(-1.5, 1.5), z: n.z + rnd(1, 2.5), r: 2.2, reg: regOf(n.x), fn, why }); }
   runTasks(now: number) {
@@ -288,15 +328,6 @@ class Bot {
         this.tasks.push({ x: shop.x + rnd(-1, 1), z: shop.z + rnd(1, 2), r: 2.2, reg: regOf(shop.x), why: "comprar", fn: () => { const cost = (() => { try { return one.c(this.c); } catch { return 1e9; } })(); if (this.c.gold > cost * 2.5 && this.freeSlots() > 0) this.send("a", { t: "buy", npc: shop.id, id: one.id }); } }); } };
     buy("hp", 15 + Math.min(25, Math.floor(c.level / 4)));
     if (["mago", "pierrot", "cavaleiro"].includes(c.cls) || c.level > 30) buy("mp", 8 + Math.min(15, Math.floor(c.level / 6)));
-    // missões: entrega as concluídas e aceita as do nível
-    const qs = R.QUESTS.filter((q: any) => { const n = R.NPCS.find((x: any) => x.id === q.npc); return n && regOf(n.x) === reg && R.qOpen(c, q); });
-    const seen = new Set<string>();
-    for (const q of qs) {
-      const st = c.quests && c.quests[q.id], n = R.NPCS.find((x: any) => x.id === q.npc); if (!n) continue;
-      const lo = R.MT[q.tg] ? R.MT[q.tg].lv[0] : 999, boss = R.MT[q.tg] && R.MT[q.tg].boss;
-      if (st && !st.done && st.n >= q.qty) { this.task(n, () => this.send("a", { t: "qt", id: q.id }), "entregar missão"); seen.add(n.id); }
-      else if (!st && !boss && (!q.need || q.need <= c.level) && lo <= c.level + 1 && lo >= c.level - 12 && seen.size < 3) { this.task(n, () => this.send("a", { t: "qa", id: q.id }), "aceitar missão"); seen.add(n.id); }
-    }
     // gemas: compra e engasta quando sobra ouro e há engaste vazio
     const gn = this.nearestNpc("engastar", reg);
     if (gn) for (const key of Object.keys(c.eq || {})) {
@@ -333,7 +364,7 @@ class Bot {
     if (this.tgt && (!this.tgt.alive || !this.mons.has(this.tgt.id) || hyp(this.tgt, z) > z.r + 18)) this.tgt = null;
     if (!this.tgt) {
       let b: Mon | null = null, bd = 1e9;
-      for (const m of this.mons.values()) { if (!this.foeOk(m) || hyp(m, z) > z.r + 10) continue; const d = hyp(m, this.pos) + (m.hp < m.maxHp ? -4 : 0); if (d < bd) { bd = d; b = m; } }
+      for (const m of this.mons.values()) { if (!this.foeOk(m) || hyp(m, z) > z.r + 10) continue; const d = hyp(m, this.pos) + (m.hp < m.maxHp ? -4 : 0) + (this.prefT && m.type !== this.prefT ? 25 : 0); if (d < bd) { bd = d; b = m; } }
       this.tgt = b;
     }
     if (!this.tgt) { // anda pela zona procurando

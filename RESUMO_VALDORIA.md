@@ -219,3 +219,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Bots: ao lançar, entra 1 bot na hora e os outros 5 um a cada 5 minutos (ordem das classes embaralhada; `GAP_MS`, 20 s com BOT_TEST). Cada bot sai 2 h depois da própria entrada (`Bot.until`). "Retirar" cancela os que ainda iam entrar e tira todos na hora. Status (`botst`) ganhou `pend` e `next`; o painel mostra "X a caminho (próximo em N min)".
 - NPCs em imagem 22% maiores (largura/altura no mundo em NPCIMG ×1,22; o atlas não mudou).
 - Testado: bots entrando de 20 em 20 s no modo teste, retirar zerou tudo e nenhum entrou depois.
+
+## 30. Bots fazem missões de verdade (v2.6.2)
+- Antes: o bot caçava o spot de maior nível (não o alvo da missão) e só aceitava/entregava missões no mapa atual durante o "passeio na cidade" — ficava preso na 1ª missão (gosmas), que trava a corrente.
+- Agora (`questWork` / `chooseZone` em bots.ts, a cada 4 s): 1) entrega qualquer missão concluída (vai até o NPC, em qualquer mapa liberado); 2) com menos de 2 missões em andamento, aceita novas — primeiro no mapa atual, depois nos outros mapas que o nível libera (Solara 50, Nevasca 75, Vulcânia 100, Máquinas 130 + nação), as de nível menor primeiro, até 3 do mesmo NPC; 3) caça no spot do alvo da missão (o menos cheio) e prefere esse tipo de monstro; 4) sem missão possível: spot de maior XP (`R.xpFor` × nº de monstros); se já tem 2+ jogadores/bots nele, vai para o próximo de menos XP, e assim por diante (reavalia a cada 20 s).
+- Ignora missões de chefe, de calabouço (alvo sem spot) e com alvo muito acima (>Nv+3) ou muito abaixo (<Nv−22). Desiste de uma missão depois de 4 tentativas falhas (zera a cada 15 min).
+- Teste (6 bots novos, 7 min, BOT_TEST): todos chegaram ao Nv 10–11 com 12–15 missões entregues.
