@@ -254,3 +254,6 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Modelos dos monstros novos: sapo → `frog`, golem → `golem_r`, sacerdotisa/sereia/medusa → `sacerd`, enguia/leviatã/kraken → `snake2`.
 - `cenario.glb` (SCEN) desligado no mundo. Rota `/modelos` aceita .json; `pages-build.sh` copia `world_*`, `props_*`, `mapa_*` e o kit.
 - Testado (servidor local + Playwright): todas as cidades, gates, castelo, praia, Vulcânia, campos, mapa-múndi/região; montagem dos 2 calabouços novos sem erros; A* do servidor acha caminho de Aurora até todas as cidades e zonas (75/75); `tsc` sem erros.
+
+## 34. Bots só entram na Arena PK com jogador de verdade lá dentro (v3.0.1)
+- `bots.ts`: `humanInArena()` (alguém com x > 1650, fora de instância, que não seja bot — `BOTS.isBotSid`). O bot só vai à arena se houver jogador; se o último jogador sair, os bots saem depois de 30 s (`noHumanAt`). O limite de 3–7 min por visita continua.

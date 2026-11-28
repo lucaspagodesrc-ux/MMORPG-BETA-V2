@@ -268,7 +268,7 @@ class Bot {
     // 2) nação (Nv 50): metade do esquadrão em cada nação
     if (!c.nat && c.level >= R.NAT_LV) { const n = this.nearestNpc("nacao") || this.nearestNpc("nacao", 0); if (n) { this.task(n, () => this.act({ t: "nation", n: this.nat, npc: n.id }), "nação"); return; } }
     // 3) Arena PK de vez em quando
-    if (c.level >= R.ARENA.minLv && now > this.nextArena && this.hp > d.maxHp * 0.9) { const n = this.nearestNpc("arena", reg); if (n) { this.nextArena = now + 60_000; this.task(n, () => this.send("arena", { op: "enter" }), "arena"); return; } }
+    if (c.level >= R.ARENA.minLv && now > this.nextArena && this.hp > d.maxHp * 0.9 && this.humanInArena()) { /* v3.0.1: só vai se houver jogador de verdade na arena */ const n = this.nearestNpc("arena", reg); if (n) { this.nextArena = now + 60_000; this.task(n, () => this.send("arena", { op: "enter" }), "arena"); return; } }
     // 4) Cidade das Máquinas (guerra) para quem tem nação e Nv 130
     if (c.nat && c.level >= R.WAR.minLv) { if (now > this.nextWar) { this.nextWar = now + rnd(20, 40) * 60_000; this.mode = Math.random() < 0.55 ? "war" : "hunt"; }
       if (this.mode === "war") { if (!this.travel(-900, now)) { this.zone = null; return; } if (!this.zone || this.zone.reg !== -900) this.zone = this.pickZone(-900); this.prefT = ""; this.hunt(now); return; } }
@@ -426,6 +426,13 @@ class Bot {
   }
 
   /* ---------- PvP: duelo, Arena PK e guerra ---------- */
+  noHumanAt = 0;
+  /** v3.0.1: há algum jogador de verdade (não bot) vivo dentro da Arena PK? */
+  humanInArena(): boolean {
+    const P = this.room && this.room.state && this.room.state.players; if (!P) return false; let yes = false;
+    P.forEach((p: any, sid: string) => { if (!yes && p.x > 1650 && !p.inst && !BOTS.isBotSid(sid)) yes = true; });
+    return yes;
+  }
   foes(): any[] {
     const st = this.room && this.room.state; if (!st) return [];
     const out: any[] = [];
@@ -438,7 +445,8 @@ class Bot {
   }
   pvpTick(now: number) {
     if (now < this.pvAt) return;                          // contagem / proteção
-    if (this.pv === "arena" && now > this.arenaUntil) { if (now - this.recallAt > 3000) { this.recallAt = now; this.send("arena", { op: "leave" }); } return; }
+    if (this.pv === "arena" && !this.humanInArena()) { if (!this.noHumanAt) this.noHumanAt = now; } else this.noHumanAt = 0;
+    if (this.pv === "arena" && (now > this.arenaUntil || (this.noHumanAt && now - this.noHumanAt > 30_000))) { /* v3.0.1: sai 30 s depois que o último jogador sair */ if (now - this.recallAt > 3000) { this.recallAt = now; this.send("arena", { op: "leave" }); } return; }
     if (this.pv === "war" && now > this.nextWar + 10 * 60_000) { this.pv = ""; this.mode = "hunt"; return; }
     const F = this.foes(); let b: any = null, bd = this.pv === "war" ? 26 : 80;
     for (const f of F) { const d = hyp(f, this.pos); if (d < bd) { bd = d; b = f; } }
@@ -546,6 +554,7 @@ export class BotManager {
   }
   stop(gmChar: string, why = "GM") { const q = this.squads.get(gmChar); if (q) q.stop(why); }
   /** v2.6.3: de qual GM é o bot (nome do GM) */
+  isBotSid(sid: string) { for (const q of this.squads.values()) if (q.bots.some((b) => b.sid === sid)) return true; return false; }
   ownerOf(charId: string) { for (const q of this.squads.values()) if (q.bots.some((b) => b.charId === charId)) return q.gmName; return ""; }
   stopAll() { for (const q of [...this.squads.values()]) q.stop("servidor"); }
 }
