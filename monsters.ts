@@ -297,20 +297,23 @@ export class MonsterSim {
       }
       m.x = clampX(m.x, s.sx); m.z = clampZ(m.z);
     }
-    // separação simples entre monstros próximos
-    const L = this.list;
-    for (let i = 0; i < L.length; i++) { const a = L[i].m; if (!a.alive) continue;
-      for (let j = i + 1; j < L.length; j++) { const b = L[j].m; if (!b.alive) continue;
-        if (L[i].inst !== L[j].inst) continue;
-        const dx = a.x - b.x, dz = a.z - b.z; if (Math.abs(dx) > 1.4 || Math.abs(dz) > 1.4) continue;
-        const d = Math.hypot(dx, dz), min = 0.6 * (L[i].bs + L[j].bs);
-        if (d < min && d > 1e-3) {
-          const pa = !!(L[i].T.chest || L[i].T.node), pb = !!(L[j].T.chest || L[j].T.node);   // baús e cristais ficam parados: só o outro é empurrado
+    /* separação entre monstros próximos — v3.0.7: grade espacial de 1,4 m (antes comparava todos com todos: ~1,1 milhão de pares a cada
+       50 ms com ~1.500 monstros, o tick passava de 60 ms e o servidor derrubava as conexões). Só compara com as 9 casas vizinhas. */
+    const L = this.list, C = 1.4, cell = new Map<number, number[]>(), key = (i: number, cx: number, cz: number) => (i * 8192 + cx + 4096) * 8192 + cz + 4096;
+    const ax: number[] = new Array(L.length), az: number[] = new Array(L.length), live: number[] = [];
+    for (let i = 0; i < L.length; i++) { const m = L[i].m; if (!m.alive) continue; ax[i] = m.x; az[i] = m.z; live.push(i);
+      const k = key(L[i].inst || 0, Math.floor(ax[i] / C), Math.floor(az[i] / C)); const c = cell.get(k); if (c) c.push(i); else cell.set(k, [i]); }
+    for (const i of live) { const gi = L[i].inst || 0, cx = Math.floor(ax[i] / C), cz = Math.floor(az[i] / C);
+      for (let ox = -1; ox <= 1; ox++) for (let oz = -1; oz <= 1; oz++) { const c = cell.get(key(gi, cx + ox, cz + oz)); if (!c) continue;
+        for (const j of c) { if (j <= i) continue;
+          const a = L[i].m, b = L[j].m, dx = ax[i] - ax[j], dz = az[i] - az[j]; if (Math.abs(dx) > 1.4 || Math.abs(dz) > 1.4) continue;
+          const d = Math.hypot(dx, dz), min = 0.6 * (L[i].bs + L[j].bs);
+          if (!(d < min && d > 1e-3)) continue;
+          const pa = !!(L[i].T.chest || L[i].T.node || L[i].T.dummy), pb = !!(L[j].T.chest || L[j].T.node || L[j].T.dummy);   // baús, cristais e espantalhos ficam parados: só o outro é empurrado
           if (pa && pb) continue;
-          const k = (min - d) / (pa || pb ? 1 : 2) / d, gi = L[i].inst;
-          if (gi && this.hooks.walk && this.hooks.grid && this.hooks.grid(gi) >= 0) {         // dungeon em grade: nunca empurra para dentro da parede
-            if (!pa && this.hooks.walk(gi, a.x + dx * k, a.z + dz * k, 0.4)) { a.x += dx * k; a.z += dz * k; }
-            if (!pb && this.hooks.walk(gi, b.x - dx * k, b.z - dz * k, 0.4)) { b.x -= dx * k; b.z -= dz * k; }
-          } else { if (!pa) { a.x += dx * k; a.z += dz * k; } if (!pb) { b.x -= dx * k; b.z -= dz * k; } } } } }
+          const k = (min - d) / (pa || pb ? 1 : 2) / d;
+          const ok = (x: number, z: number) => gi ? (this.hooks.walk && this.hooks.grid && this.hooks.grid(gi) >= 0 ? this.hooks.walk(gi, x, z, 0.4) : true) : (x > 450 || R.walkAt(x, z));   // nunca empurra para parede, rio ou mar
+          if (!pa && ok(ax[i] + dx * k, az[i] + dz * k)) { ax[i] += dx * k; az[i] += dz * k; a.x = ax[i]; a.z = az[i]; }
+          if (!pb && ok(ax[j] - dx * k, az[j] - dz * k)) { ax[j] -= dx * k; az[j] -= dz * k; b.x = ax[j]; b.z = az[j]; } } } }
   }
 }

@@ -288,3 +288,10 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - **Conferência**: todas as células bloqueadas que eram chão livre no terreno têm um objeto visível em cima (casa, árvore, muro, torre, chafariz, barco) — sobraram só 7 células de um bolsão fechado à beira-mar.
 - **NPC nunca tampado**: `hides_npc` projeta a imagem do objeto na câmera do jogo; casa, árvore ou objeto mais perto da câmera que cubra pés, corpo ou cabeça de um NPC não é colocado (vale para casas da cidade, casinhas perto de NPCs e vegetação). Nenhum NPC encostado nos muros sul/leste.
 - **Aurora**: 60 casas (antes 38).
+
+## 40. Servidor parava de responder e derrubava todo mundo (v3.0.7)
+- Sintoma: "Conexão perdida. Reconectando..." a cada poucos segundos e "sem conexão com o mundo online".
+- Causa: a separação entre monstros (`monsters.ts`, fim do `update`) comparava todos os monstros com todos. Com ~1.500 monstros (spots gêmeos + ×1,5) eram ~1,1 milhão de pares a cada tick de 50 ms. O tick medido localmente chegou a **67 ms em média (máx. 128 ms)**, o laço do servidor nunca alcançava e o WebSocket caía (código 1006).
+- Correção: grade espacial de 1,4 m, comparando só com as 9 casas vizinhas. O tick caiu para **~2 ms com 1 jogador e ~3,7 ms com 7 clientes** (bots ligados), sem quedas em 2 minutos de teste.
+- A separação também não empurra mais monstros para dentro de rio, mar ou muro; espantalhos ficam parados.
+- Proteções: o tick inteiro do `WorldRoom` agora está em `try/catch` (com log a cada 10 s no máximo), e `index.ts` registra `uncaughtException` e `unhandledRejection` sem fechar o processo.

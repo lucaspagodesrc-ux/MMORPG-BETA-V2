@@ -10,6 +10,10 @@ import { authRouter } from "./auth";
 import { WorldRoom } from "./WorldRoom";
 import { BOTS } from "./bots";
 
+// v3.0.7: um erro solto não fecha o processo (senão todos os jogadores caem de uma vez); fica registrado no log
+process.on("uncaughtException", (e) => console.error("[uncaught]", e && (e as any).stack || e));
+process.on("unhandledRejection", (e) => console.error("[unhandled]", e && (e as any).stack || e));
+
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error("Defina DATABASE_URL (veja .env.example).");
   await migrate();

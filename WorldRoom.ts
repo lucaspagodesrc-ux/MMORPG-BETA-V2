@@ -752,7 +752,8 @@ export class WorldRoom extends Room<WorldState> {
     this.wb = new WorldBosses(this);
     this.pvp = new Pvp(this);
     let last = Date.now(), sweepAt = 0, saveAt = 0, dgAt = 0, gmAt = 0, wbAt = 0, ptAt = 0, mvAt = 0;
-    this.setSimulationInterval(() => {
+    let tickErrAt = 0;
+    this.setSimulationInterval(() => { try {     // v3.0.7: um erro num tick não derruba a sala (antes fechava o servidor e todo mundo caía)
       const now = Date.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
       if (this.clients.length) this.sim.update(dt);
       this.clonesTick(now, dt);
@@ -769,7 +770,7 @@ export class WorldRoom extends Room<WorldState> {
       if (now > saveAt) { saveAt = now + 12_000; for (const s of this.sess.values()) { if (s.partyId && now - (s.c.seen || 0) > 60_000) s.dirty = true; if (s.dirty) this.save(s); } }
       if (now > ptAt) { ptAt = now + 5000; this.partyTick(); }
       if (now > mvAt) { mvAt = now + 100; this.sendMonsters(); }
-    }, 50);
+    } catch (e: any) { const t = Date.now(); if (t > tickErrAt) { tickErrAt = t + 10_000; console.error("[tick] erro:", e && e.stack || e); } } }, 50);
 
     this.onMessage("move", (client, m) => {
       const p = this.state.players.get(client.sessionId), s = this.S(client);
