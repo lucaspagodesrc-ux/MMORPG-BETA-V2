@@ -82,8 +82,11 @@ class Bot {
   log(...a: any[]) { if (process.env.BOT_LOG) console.log(`[bot ${this.c ? this.c.name : this.charId}]`, ...a); }
 
   async start(port: number) {
-    const Cl = wsClient(), cl = new Cl(`ws://127.0.0.1:${port}`);
-    const room = await cl.join("world", { token: signToken(this.acc), charId: this.charId });   // join (nunca cria outra sala)
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    const Cl = wsClient(), cl = new Cl(`ws://127.0.0.1:${port}`), opt = { token: signToken(this.acc), charId: this.charId };
+    let room: any; try { room = await cl.join("world", opt); }                       // join (não cria outra sala)...
+    catch { room = await cl.joinOrCreate("world", opt); }                            // ...a não ser que o servidor tenha acabado de voltar e ainda não exista sala
+    this.mons.clear(); this.drops.clear(); this.tasks = []; this.zone = null; this.tgt = null; this.pv = ""; this.dead = false;
     this.room = room; this.sid = room.sessionId;
     room.onMessage("sync", (m: any) => { if (m && m.c) { const first = !this.c; this.c = m.c; if (first) { const d = this.D(); this.hp = d.maxHp; this.mp = d.maxMp; } this.afterSync(); } });
     room.onMessage("res", (m: any) => { for (const o of (m && m.out) || []) if (o && o.heal) { const d = this.D(), P = R.POTS[o.heal]; if (!P) continue; if (o.heal === "mp") this.mp = Math.min(d.maxMp, this.mp + d.maxMp * (P.pct || 0.4)); else this.hp = Math.min(d.maxHp, this.hp + d.maxHp * (P.pct || 0.4)); } });
@@ -117,8 +120,14 @@ class Bot {
     });
     room.onMessage("dgenter", () => { this.room.send("dgexit", {}); });    // bots não usam calabouços (sai na hora se cair num)
     for (const k of ["chat", "xp", "ahr", "wbs", "wbmsg", "wbr", "wbend", "wbmy", "mailr", "mailn", "trr", "gs", "gr", "ginv", "gu", "ward", "abuff", "gmb", "dmg", "mat", "slam", "fx", "cl", "clspin", "clones", "dgleave", "dgmsg", "dg", "party", "pinv", "matk", "pdmg", "pkfeed", "pcc", "botst"]) room.onMessage(k, () => {});
-    room.onLeave(() => { this.room = null; if (this.alive) this.sq.lost(this); });
+    room.onLeave(() => { this.room = null; if (this.alive) this.reconnect(1); });   // v2.6.4: caiu a conexão com o servidor ainda no ar → tenta voltar
     this.timer = setInterval(() => { try { this.tick(); } catch (e) { if (process.env.BOT_LOG) console.error(e); } }, TICK);
+  }
+  reconnect(n: number) {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (!this.alive || this.sq.stopped) return;
+    if (n > 6) { this.alive = false; this.sq.lost(this); return; }
+    setTimeout(() => { if (!this.alive || this.sq.stopped) return; this.start(this.sq.mgr.port).then(() => console.log(`[bots] ${this.c ? this.c.name : this.charId} voltou`)).catch(() => this.reconnect(n + 1)); }, 5000 * n);
   }
   stop() { this.alive = false; if (this.timer) clearInterval(this.timer); this.timer = null; try { this.room && this.room.leave(); } catch {} this.room = null; }
   send(t: string, m?: any) { if (this.room) try { this.room.send(t, m); } catch {} }
@@ -436,11 +445,14 @@ class Bot {
   }
 }
 
+type Plan = { c: string; i: number; at: number };   // classe, posição (nação), hora de entrada — sai em at + 2 h
 class Squad {
-  bots: Bot[] = []; until = Date.now() + LIFE_MS; stopped = false; pend = 0; nextAt = 0; timers: NodeJS.Timeout[] = [];
+  bots: Bot[] = []; until = Date.now() + LIFE_MS; stopped = false; pend = 0; nextAt = 0; timers: NodeJS.Timeout[] = []; plan: Plan[] = []; idx = 0;
   constructor(public mgr: BotManager, public gmChar: string, public gmName: string) {}
-  lost(b: Bot) { this.bots = this.bots.filter((x) => x !== b); if (!this.bots.length && !this.pend) this.stop("sem bots"); }
-  stop(why: string) { if (this.stopped) return; this.stopped = true; for (const t of this.timers) clearTimeout(t); this.timers = []; this.pend = 0; for (const b of this.bots) b.stop(); this.bots = []; this.mgr.squads.delete(this.gmChar); console.log(`[bots] esquadrão de ${this.gmName} retirado (${why})`); }
+  lost(b: Bot) { this.bots = this.bots.filter((x) => x !== b); if (!this.bots.length && !this.pend) this.stop("sem bots"); else this.save(); }
+  /** v2.6.4: guarda o esquadrão no banco — se o servidor cair/atualizar, os bots voltam sozinhos quando ele subir */
+  save() { if (this.stopped) return; pool.query("insert into bot_squads(gm,data,at) values($1,$2,now()) on conflict(gm) do update set data=excluded.data, at=now()", [this.gmChar, JSON.stringify({ name: this.gmName, idx: this.idx, plan: this.plan })]).catch(() => {}); }
+  stop(why: string) { if (this.stopped) return; this.stopped = true; pool.query("delete from bot_squads where gm=$1", [this.gmChar]).catch(() => {}); for (const t of this.timers) clearTimeout(t); this.timers = []; this.pend = 0; for (const b of this.bots) b.stop(); this.bots = []; this.mgr.squads.delete(this.gmChar); console.log(`[bots] esquadrão de ${this.gmName} retirado (${why})`); }
 }
 
 /* contas dos bots: uma por (personagem GM, classe) — ficam no banco e o bot continua evoluindo nas próximas vezes */
@@ -481,34 +493,53 @@ async function ensureBot(gmChar: string, cls: string, slot: number, sqIdx: numbe
 export class BotManager {
   port = 0; squads = new Map<string, Squad>();
   status(gmChar: string) { const q = this.squads.get(gmChar); let total = 0; for (const s of this.squads.values()) total += s.bots.length; return { on: q ? 1 : 0, n: q ? q.bots.length : 0, pend: q ? q.pend : 0, next: q && q.pend ? Math.max(0, q.nextAt - Date.now()) : 0, left: q ? Math.max(0, q.until - Date.now()) : 0, total, squads: this.squads.size, max: MAX_SQUADS * 6, names: q ? q.bots.map((b) => (b.c ? `${b.c.name} (${b.c.cls}, Nv ${b.c.level}${b.c.nat ? ", " + R.NATIONS[b.c.nat].n : ""})` : "...")) : [] }; }
+  /** entra um bot do plano; o bot sai sozinho em at + 2 h */
+  private async join(sq: Squad, p: Plan): Promise<boolean> {
+    if (sq.stopped) return false;
+    try {
+      const { acc, charId } = await ensureBot(sq.gmChar, p.c, p.i, sq.idx); if (sq.stopped) return false;
+      const b = new Bot(sq, acc, charId, p.i, (p.i % 2) + 1);   // 3 bots em cada nação
+      await b.start(this.port); if (sq.stopped) { b.stop(); return false; }
+      b.until = p.at + LIFE_MS; sq.bots.push(b); return true;
+    } catch (e: any) { console.error("[bots] falhou", p.c, e && e.message); return false; }
+  }
+  /** agenda os que ainda vão entrar (e põe na hora os atrasados) */
+  private schedule(sq: Squad, list: Plan[]) {
+    const now = Date.now(); sq.pend = list.length; sq.nextAt = list.length ? Math.max(now, list[0].at) : 0;
+    sq.until = Math.max(now, ...sq.plan.map((p) => p.at)) + LIFE_MS;
+    list.forEach((p, k) => sq.timers.push(setTimeout(async () => {
+      if (sq.stopped) return; const ok = await this.join(sq, p); if (!ok) p.at = 0;   // não conseguiu: não tenta de novo depois
+      sq.pend = Math.max(0, sq.pend - 1); sq.nextAt = list[k + 1] ? Math.max(Date.now(), list[k + 1].at) : 0; sq.save();
+      if (!sq.bots.length && !sq.pend) sq.stop("sem bots");
+    }, Math.max(0, p.at - now) + k * 2500 * (p.at <= now ? 1 : 0))));
+  }
   async launch(gmChar: string, gmName: string): Promise<string> {
     if (!this.port) return "🤖 O servidor ainda está iniciando.";
     if (this.squads.has(gmChar)) return "🤖 Seus bots já estão no jogo.";
     if (this.squads.size >= MAX_SQUADS) return `🤖 Limite de ${MAX_SQUADS * 6} bots no jogo (${MAX_SQUADS} GMs).`;
     const sq = new Squad(this, gmChar, gmName); this.squads.set(gmChar, sq);
-    const idx = [...this.squads.keys()].indexOf(gmChar), cls = ACTIVE().slice(0, 6);
-    // v2.6.1: ordem embaralhada e um bot a cada 5 minutos (não fazem tudo ao mesmo tempo)
-    const order = cls.map((c, i) => [c, i] as [string, number]).sort(() => Math.random() - 0.5);
-    const one = async (k: number) => {
-      if (sq.stopped) return false; const [c, i] = order[k];
-      try {
-        const { acc, charId } = await ensureBot(gmChar, c, i, idx); if (sq.stopped) return false;
-        const b = new Bot(sq, acc, charId, i, (i % 2) + 1);   // 3 bots em cada nação
-        await b.start(this.port); if (sq.stopped) { b.stop(); return false; }
-        b.until = Date.now() + LIFE_MS; sq.bots.push(b); return true;
-      } catch (e: any) { console.error("[bots] falhou", c, e && e.message); return false; }
-    };
-    if (!(await one(0))) { sq.stop("falha"); return "🤖 Não foi possível lançar os bots agora."; }
-    sq.pend = order.length - 1; sq.until = Date.now() + (order.length - 1) * GAP_MS + LIFE_MS;
-    for (let k = 1; k < order.length; k++) {
-      const at = Date.now() + k * GAP_MS; if (k === 1) sq.nextAt = at;
-      sq.timers.push(setTimeout(async () => {
-        if (sq.stopped) return; await one(k); sq.pend = Math.max(0, sq.pend - 1); sq.nextAt = sq.pend ? Date.now() + GAP_MS : 0;
-        if (!sq.bots.length && !sq.pend) sq.stop("sem bots");
-      }, k * GAP_MS));
+    sq.idx = [...this.squads.keys()].indexOf(gmChar);
+    // ordem embaralhada e um bot a cada 5 minutos (não fazem tudo ao mesmo tempo)
+    const now = Date.now(), cls = ACTIVE().slice(0, 6);
+    sq.plan = cls.map((c, i) => ({ c, i, at: 0 })).sort(() => Math.random() - 0.5).map((p, k) => ({ ...p, at: now + k * GAP_MS }));
+    if (!(await this.join(sq, sq.plan[0]))) { sq.stop("falha"); return "🤖 Não foi possível lançar os bots agora."; }
+    this.schedule(sq, sq.plan.slice(1)); sq.save();
+    console.log(`[bots] ${gmName} lançou os bots (1 agora, ${sq.plan.length - 1} a cada ${GAP_MS / 60000} min)`);
+    return `🤖 O primeiro bot entrou. Os outros ${sq.plan.length - 1} entram um a cada 5 minutos. Cada um sai sozinho 2 horas depois de entrar (ou todos quando você retirar).`;
+  }
+  /** v2.6.4: o servidor voltou (atualização/queda) — recoloca os esquadrões que estavam no jogo, cada bot com o tempo que ainda tinha */
+  async restore() {
+    let rows: any[] = []; try { rows = (await pool.query("select gm,data from bot_squads")).rows; } catch { return; }
+    for (const r of rows) {
+      const d = r.data || {}, now = Date.now(), plan: Plan[] = (d.plan || []).filter((p: Plan) => p && p.at > 0 && p.at + LIFE_MS > now);
+      if (!plan.length || this.squads.has(r.gm) || this.squads.size >= MAX_SQUADS) { if (!plan.length) pool.query("delete from bot_squads where gm=$1", [r.gm]).catch(() => {}); continue; }
+      const sq = new Squad(this, r.gm, d.name || "GM"); sq.idx = d.idx || 0; sq.plan = plan; this.squads.set(r.gm, sq);
+      const inGame = plan.filter((p) => p.at <= now), later = plan.filter((p) => p.at > now);
+      let ok = 0; for (const p of inGame) { if (await this.join(sq, p)) ok++; await new Promise((res) => setTimeout(res, rnd(1500, 3500))); }
+      this.schedule(sq, later); sq.save();
+      if (!ok && !later.length) sq.stop("sem bots");
+      console.log(`[bots] esquadrão de ${sq.gmName} voltou: ${ok} no jogo, ${later.length} a caminho`);
     }
-    console.log(`[bots] ${gmName} lançou os bots (1 agora, ${order.length - 1} a cada ${GAP_MS / 60000} min)`);
-    return `🤖 O primeiro bot entrou. Os outros ${order.length - 1} entram um a cada 5 minutos. Cada um sai sozinho 2 horas depois de entrar (ou todos quando você retirar).`;
   }
   stop(gmChar: string, why = "GM") { const q = this.squads.get(gmChar); if (q) q.stop(why); }
   /** v2.6.3: de qual GM é o bot (nome do GM) */

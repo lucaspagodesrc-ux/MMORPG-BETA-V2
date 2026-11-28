@@ -230,3 +230,9 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - O Painel do GM (✨ / Y) agora tem duas abas: "🤖 Bots e Buff" (o que já existia) e "👥 Online".
 - Online: lista todos os personagens conectados (classe, nível, região ou calabouço, nação, morto), com selo BOT (e de qual GM) e selo GM; filtros Todos/Jogadores/Bots; atualiza a cada 10 s enquanto a aba está aberta (botão 🔄 para na hora).
 - Servidor: `bot` com `op:"who"` (só GM) → `gmwho {L:[{n,c,l,r,nt,gm,b,o,d}]}`. Bot = conta `#bot_…`; dono via `BOTS.ownerOf(charId)`.
+
+## 32. Bots voltam depois de queda/atualização (v2.6.4)
+- Tabela `bot_squads(gm, data, at)`: cada esquadrão guarda o plano `[{c (classe), i (posição/nação), at (hora de entrada)}]`. Salvo ao lançar, a cada entrada/saída de bot; apagado ao Retirar ou quando todos acabam o tempo.
+- Ao subir o servidor (`BOTS.restore()`, 4 s depois do listen): recoloca cada esquadrão — bots que já estavam no jogo entram de novo (1,5–3,5 s entre eles) com o tempo que ainda tinham (saem em at + 2 h); os que ainda iam entrar seguem o horário original. O 1º bot usa joinOrCreate se a sala ainda não existir.
+- Conexão de um bot caiu com o servidor no ar: tenta voltar até 6 vezes (5 s, 10 s, 15 s...) antes de desistir.
+- Testado: 2 no jogo + 4 a caminho → servidor derrubado e religado → os 2 voltaram, os 4 continuaram entrando (6/6); Retirar apagou o registro.

@@ -29,6 +29,7 @@ export async function migrate() {
     create index if not exists characters_account on characters(account_id);
     alter table accounts add column if not exists ah_gold bigint not null default 0;
     create table if not exists once_flags(id text primary key, done_at timestamptz not null default now());
+    create table if not exists bot_squads(gm text primary key, data jsonb not null, at timestamptz not null default now());
     create table if not exists auction(
       id serial primary key,
       account_id int not null references accounts(id) on delete cascade,

@@ -87,6 +87,7 @@ async function main() {
   const port = Number(process.env.PORT) || 3000;
   await game.listen(port);
   BOTS.port = port;                                  // v2.5.0: os bots entram por aqui (WebSocket local)
+  setTimeout(() => BOTS.restore().catch((e) => console.error("[bots] restore", e)), 4000);   // v2.6.4: bots que estavam no jogo antes de o servidor cair voltam
   console.log(`Servidor no ar: http://localhost:${port}`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
