@@ -23,7 +23,8 @@ function wsClient() {
   return WsClient;
 }
 
-const LIFE_MS = 2 * 3600_000;        // 2 horas
+const LIFE_MS = 2 * 3600_000;        // 2 horas (cada bot, contando da entrada dele)
+const GAP_MS = process.env.BOT_TEST ? 20_000 : 5 * 60_000;   // v2.6.1: os 6 bots entram um a cada 5 minutos
 const MAX_SQUADS = 6;                // 6 GMs × 6 bots = 36
 const TICK = 200;
 const SPEED = 6.4;                   // m/s a pé (o servidor aceita até 14)
@@ -72,6 +73,7 @@ class Bot {
   mons = new Map<number, Mon>(); drops = new Map<number, any>();
   cd: number[] = Array(9).fill(0); actUntil = 0; skUntil = 0; nextAtk = 0; potAt = 0; buffUntil: number[] = Array(9).fill(0);
   mode = "idle"; modeUntil = 0; tasks: Task[] = []; taskAt = 0; zone: any = null; tgt: Mon | null = null; wander: any = null; stuckT = 0;
+  until = Date.now() + LIFE_MS;
   pv = ""; foe = ""; pvAt = 0; pdownAt = 0; arenaUntil = 0; nextArena = Date.now() + (process.env.BOT_TEST ? rnd(20, 40) * 1000 : rnd(8, 25) * 60_000); nextWar = 0;
   lastAct = 0; hpSent = 0; recallAt = 0; nextTown = Date.now() + rnd(6, 12) * 60_000; lastPick = 0; deathLog = 0;
   constructor(public sq: Squad, public acc: { id: number; username: string }, public charId: string, public slot: number, public nat: number) {}
@@ -197,7 +199,7 @@ class Bot {
   tick() {
     const now = Date.now(), dt = Math.min(1, (now - this.lastT) / 1000); this.lastT = now;
     if (!this.c || !this.room) return;
-    if (now > this.sq.until) return this.sq.stop("tempo");
+    if (now > this.until) { this.stop(); this.sq.lost(this); return; }   // v2.6.1: cada bot sai 2 h depois de entrar
     const me = this.me();
     if (me && hyp(me, this.pos) > 5) { this.pos.x = me.x; this.pos.z = me.z; }   // teleporte (portal, retorno, renascer, avanço)
     this.regen(dt);
@@ -404,10 +406,10 @@ class Bot {
 }
 
 class Squad {
-  bots: Bot[] = []; until = Date.now() + LIFE_MS; stopped = false;
+  bots: Bot[] = []; until = Date.now() + LIFE_MS; stopped = false; pend = 0; nextAt = 0; timers: NodeJS.Timeout[] = [];
   constructor(public mgr: BotManager, public gmChar: string, public gmName: string) {}
-  lost(b: Bot) { this.bots = this.bots.filter((x) => x !== b); if (!this.bots.length) this.stop("sem bots"); }
-  stop(why: string) { if (this.stopped) return; this.stopped = true; for (const b of this.bots) b.stop(); this.bots = []; this.mgr.squads.delete(this.gmChar); console.log(`[bots] esquadrão de ${this.gmName} retirado (${why})`); }
+  lost(b: Bot) { this.bots = this.bots.filter((x) => x !== b); if (!this.bots.length && !this.pend) this.stop("sem bots"); }
+  stop(why: string) { if (this.stopped) return; this.stopped = true; for (const t of this.timers) clearTimeout(t); this.timers = []; this.pend = 0; for (const b of this.bots) b.stop(); this.bots = []; this.mgr.squads.delete(this.gmChar); console.log(`[bots] esquadrão de ${this.gmName} retirado (${why})`); }
 }
 
 /* contas dos bots: uma por (personagem GM, classe) — ficam no banco e o bot continua evoluindo nas próximas vezes */
@@ -447,26 +449,35 @@ async function ensureBot(gmChar: string, cls: string, slot: number, sqIdx: numbe
 
 export class BotManager {
   port = 0; squads = new Map<string, Squad>();
-  status(gmChar: string) { const q = this.squads.get(gmChar); let total = 0; for (const s of this.squads.values()) total += s.bots.length; return { on: q ? 1 : 0, n: q ? q.bots.length : 0, left: q ? Math.max(0, q.until - Date.now()) : 0, total, squads: this.squads.size, max: MAX_SQUADS * 6, names: q ? q.bots.map((b) => (b.c ? `${b.c.name} (${b.c.cls}, Nv ${b.c.level}${b.c.nat ? ", " + R.NATIONS[b.c.nat].n : ""})` : "...")) : [] }; }
+  status(gmChar: string) { const q = this.squads.get(gmChar); let total = 0; for (const s of this.squads.values()) total += s.bots.length; return { on: q ? 1 : 0, n: q ? q.bots.length : 0, pend: q ? q.pend : 0, next: q && q.pend ? Math.max(0, q.nextAt - Date.now()) : 0, left: q ? Math.max(0, q.until - Date.now()) : 0, total, squads: this.squads.size, max: MAX_SQUADS * 6, names: q ? q.bots.map((b) => (b.c ? `${b.c.name} (${b.c.cls}, Nv ${b.c.level}${b.c.nat ? ", " + R.NATIONS[b.c.nat].n : ""})` : "...")) : [] }; }
   async launch(gmChar: string, gmName: string): Promise<string> {
     if (!this.port) return "🤖 O servidor ainda está iniciando.";
     if (this.squads.has(gmChar)) return "🤖 Seus bots já estão no jogo.";
     if (this.squads.size >= MAX_SQUADS) return `🤖 Limite de ${MAX_SQUADS * 6} bots no jogo (${MAX_SQUADS} GMs).`;
     const sq = new Squad(this, gmChar, gmName); this.squads.set(gmChar, sq);
     const idx = [...this.squads.keys()].indexOf(gmChar), cls = ACTIVE().slice(0, 6);
-    let ok = 0;
-    for (let i = 0; i < cls.length; i++) {
-      if (sq.stopped) break;
+    // v2.6.1: ordem embaralhada e um bot a cada 5 minutos (não fazem tudo ao mesmo tempo)
+    const order = cls.map((c, i) => [c, i] as [string, number]).sort(() => Math.random() - 0.5);
+    const one = async (k: number) => {
+      if (sq.stopped) return false; const [c, i] = order[k];
       try {
-        const { acc, charId } = await ensureBot(gmChar, cls[i], i, idx);
+        const { acc, charId } = await ensureBot(gmChar, c, i, idx); if (sq.stopped) return false;
         const b = new Bot(sq, acc, charId, i, (i % 2) + 1);   // 3 bots em cada nação
-        await b.start(this.port); sq.bots.push(b); ok++;
-        await new Promise((r) => setTimeout(r, rnd(400, 1200)));
-      } catch (e: any) { console.error("[bots] falhou", cls[i], e && e.message); }
+        await b.start(this.port); if (sq.stopped) { b.stop(); return false; }
+        b.until = Date.now() + LIFE_MS; sq.bots.push(b); return true;
+      } catch (e: any) { console.error("[bots] falhou", c, e && e.message); return false; }
+    };
+    if (!(await one(0))) { sq.stop("falha"); return "🤖 Não foi possível lançar os bots agora."; }
+    sq.pend = order.length - 1; sq.until = Date.now() + (order.length - 1) * GAP_MS + LIFE_MS;
+    for (let k = 1; k < order.length; k++) {
+      const at = Date.now() + k * GAP_MS; if (k === 1) sq.nextAt = at;
+      sq.timers.push(setTimeout(async () => {
+        if (sq.stopped) return; await one(k); sq.pend = Math.max(0, sq.pend - 1); sq.nextAt = sq.pend ? Date.now() + GAP_MS : 0;
+        if (!sq.bots.length && !sq.pend) sq.stop("sem bots");
+      }, k * GAP_MS));
     }
-    if (!ok) { sq.stop("falha"); return "🤖 Não foi possível lançar os bots agora."; }
-    console.log(`[bots] ${gmName} lançou ${ok} bots`);
-    return `🤖 ${ok} bots entraram no mundo. Eles saem sozinhos em 2 horas (ou quando você retirar).`;
+    console.log(`[bots] ${gmName} lançou os bots (1 agora, ${order.length - 1} a cada ${GAP_MS / 60000} min)`);
+    return `🤖 O primeiro bot entrou. Os outros ${order.length - 1} entram um a cada 5 minutos. Cada um sai sozinho 2 horas depois de entrar (ou todos quando você retirar).`;
   }
   stop(gmChar: string, why = "GM") { const q = this.squads.get(gmChar); if (q) q.stop(why); }
   stopAll() { for (const q of [...this.squads.values()]) q.stop("servidor"); }

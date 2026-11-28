@@ -214,3 +214,8 @@ Para achar um trecho no `index.html`: abra no navegador do GitHub, use **Ctrl+F*
 - Servidor: rota /modelos aceita .png/.webp; pages-build copia npc_atlas_*.webp.
 - Medido (praça de Aurora, renderizador por software): triângulos dos NPCs no mapa 254.862 → 27.182; malhas ativas 244 → 111; chamadas de desenho 298 → 164; quadro 16 → ~10,5 ms.
 - Faltam imagens de 37 NPCs (continuam 3D) e dos baús. Piscar de olhos não feito (precisaria marcar os olhos em cada imagem).
+
+## 29. Bots escalonados e NPCs maiores (v2.6.1)
+- Bots: ao lançar, entra 1 bot na hora e os outros 5 um a cada 5 minutos (ordem das classes embaralhada; `GAP_MS`, 20 s com BOT_TEST). Cada bot sai 2 h depois da própria entrada (`Bot.until`). "Retirar" cancela os que ainda iam entrar e tira todos na hora. Status (`botst`) ganhou `pend` e `next`; o painel mostra "X a caminho (próximo em N min)".
+- NPCs em imagem 22% maiores (largura/altura no mundo em NPCIMG ×1,22; o atlas não mudou).
+- Testado: bots entrando de 20 em 20 s no modo teste, retirar zerou tudo e nenhum entrou depois.
