@@ -5,6 +5,7 @@
 set -e
 rm -rf dist && mkdir -p dist/colyseus-client dist/modelos dist/audio dist/telas dist/fx
 cp index.html rules.js lang_en.js dist/
+BV="${CF_PAGES_COMMIT_SHA:-$(git rev-parse --short HEAD 2>/dev/null || date +%s)}"; BV="${BV:0:10}"; sed -i "s/__BV__/$BV/g" dist/index.html   # v3.0.5: versão dos arquivos do mundo = commit (o cache do navegador não mistura versões)
 cp colyseus-browser.js dist/colyseus-client/colyseus.js
 for f in *.glb; do [ -f "$f" ] && cp "$f" dist/modelos/; done
 for f in rostos_*.png rosto2_*.png npc_atlas_*.webp world_*.png world_*.json props_*.webp mapa_*.webp; do [ -f "$f" ] && cp "$f" dist/modelos/; done   # v1.95: camadas do rosto; v3.0.0: mundo único (terreno, objetos, atlas, mapa)

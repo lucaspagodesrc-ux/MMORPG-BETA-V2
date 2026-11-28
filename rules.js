@@ -59,7 +59,7 @@ function astralMo(mo, kind, tier) {
   const mc = Object.keys(OG).filter(k => /^mc_/.test(k) && OG[k].vset === 2); return mc.length ? mc[Math.floor(Math.random() * mc.length)] : mo;
 }
 const SUF=['do Dragão','da Tempestade','da Sombra','do Titã','da Aurora','do Lobo'];
-const MATS={/* v2.3.9: materiais de Vulcânia (forja do Brakk) */ escamamagma:{n:'Escama de Magma',i:'🦎',v:700},ferraobs:{n:'Ferrão de Obsidiana',i:'🗡️',v:760},nucleolava:{n:'Núcleo de Lava',i:'🌋',v:820},chamaeterna:{n:'Chama Eterna',i:'🔥',v:880},chifreinf:{n:'Chifre Infernal',i:'😈',v:960},cinzarunica:{n:'Cinza Rúnica',i:'⚱️',v:1040},coracaoifrit:{n:'Coração do Ifrit',i:'❤️‍🔥',v:5200},escamavulc:{n:'Escama do Dragão Ancestral',i:'🐉',v:7800},
+const MATS={/* v2.3.9: materiais de Vulcânia (forja do Brakk) */ escamamagma:{n:'Escama de Magma',i:'🦎',v:700},ferraobs:{n:'Ferrão de Obsidiana',i:'🗡️',v:760},nucleolava:{n:'Núcleo de Lava',i:'🌋',v:820},chamaeterna:{n:'Chama Eterna',i:'🔥',v:880},chifreinf:{n:'Chifre Infernal',i:'😈',v:960},cinzarunica:{n:'Cinza Rúnica',i:'⚱️',v:1040},coracaoifrit:{n:'Coração do Ifrit',i:'💗',v:5200},escamavulc:{n:'Escama do Dragão Ancestral',i:'🐉',v:7800},
  pelepolar:{n:'Pelagem Polar',i:'🤍',v:280},runabar:{n:'Runa Bárbara',i:'🔰',v:330},ossogelo:{n:'Osso Congelado',i:'❄️',v:380},fiocristal:{n:'Fio de Cristal',i:'🕸️',v:430},coracaogelo:{n:'Coração de Gelo',i:'💙',v:560},essenciagelo:{n:'Essência Glacial',i:'🔷',v:640},nucleogelo:{n:'Núcleo Glacial',i:'💠',v:2200},cristalpuro:{n:'Cristal Eterno',i:'💎',v:2800},escamagelo:{n:'Escama Glacial',i:'🐲',v:4500},gosma:{n:'Gosma Viscosa',i:'🟢',v:2},couro:{n:'Couro de Lobo',i:'🟤',v:4},ferro:{n:'Minério de Ferro',i:'⛏️',v:6},osso:{n:'Osso Antigo',i:'🦴',v:8},essencia:{n:'Essência Arcana',i:'✨',v:20},erva:{n:'Erva Verde',i:'🌿',v:3},nucleo:{n:'Núcleo de Golem',i:'💠',v:150},
  seda:{n:'Seda de Aranha',i:'🕸️',v:12},presa:{n:'Presa de Orc',i:'🦷',v:18},cristal:{n:'Cristal de Gelo',i:'🧊',v:25},brasa:{n:'Brasa Infernal',i:'🔥',v:35},escama:{n:'Escama de Dragão',i:'🐉',v:300},
  ferrao:{n:'Ferrão de Escorpião',i:'🦂',v:60},linho:{n:'Linho Amaldiçoado',i:'🧻',v:90},veneno:{n:'Glândula de Naja',i:'🐍',v:120},cristalsol:{n:'Cristal do Deserto',i:'🔶',v:160},garra:{n:'Garra de Chacal',i:'🐾',v:200},ankh:{n:'Ankh Sagrado',i:'☥',v:260},obsidiana:{n:'Obsidiana Negra',i:'⬛',v:700},selo:{n:'Selo do Faraó',i:'🔱',v:1200}};
@@ -1505,7 +1505,7 @@ const FZS = {
   soldado: { n: 'Patrulha de Elite', i: '🪖', rar: 0, m: 'Soldado', f: 'Soldada' },
   cowboy:  { n: 'Xerife do Deserto', i: '🤠', rar: 0, m: 'Cowboy', f: 'Cowgirl' },
   abobora: { n: 'Abóbora Encantada', i: '🎃', rar: 0, m: 'Rei Abóbora', f: 'Bruxinha da Abóbora' },
-  pirata:  { n: 'Capitão dos Sete Mares', i: '🏴‍☠️', rar: 1, m: 'Pirata', f: 'Corsária' },
+  pirata:  { n: 'Capitão dos Sete Mares', i: '☠️', rar: 1, m: 'Pirata', f: 'Corsária' },
   natal:   { n: 'Ajudante do Noel', i: '🎅', rar: 1, m: 'Noel', f: 'Mamãe Noel' },
   ninja:   { n: 'Sombra do Clã Kage', i: '🥷', rar: 1, m: 'Ninja', f: 'Kunoichi' },
   samurai: { n: 'Samurai da Lua', i: '⛩️', rar: 2, m: 'Samurai', f: 'Onna-bugeisha' },

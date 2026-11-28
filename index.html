@@ -147,15 +147,15 @@
   #win-inv{right:12px;top:230px}#win-char{left:12px;top:190px;width:300px}#charBody{max-height:calc(100vh - 262px);overflow-y:auto;padding-right:4px;scrollbar-width:thin}@media(max-width:700px){#charBody{max-height:calc(100vh - 130px)}}#win-quest{left:340px;top:140px;width:392px}#questBody{max-height:72vh;overflow:auto;padding-right:2px}
   .win h3{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
   .x{background:none;border:none;color:#9fb0c2;font-size:16px;cursor:pointer}
-  #invGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+  #invGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
   /* v1.70: abas da mochila e do baú */
   .ptabs{display:flex;gap:6px;margin:0 0 7px}.ptabs button{flex:1;padding:5px 6px;border-radius:7px;border:1px solid var(--line);background:#16212d;color:#cbd6e2;font-size:11.5px;font-weight:700;cursor:pointer}.ptabs button.on{border-color:var(--gold);color:#ffe28a;background:#3b3014}.ptabs small{font-weight:400;opacity:.8;display:inline;margin-left:4px}
   #invTools{display:flex;gap:6px;flex-wrap:wrap}#btnBrk.on{border-color:#ff8a6a;color:#ffd0c0;background:#4a2018}
   #invBrk{margin-top:8px;padding:8px;border:1px solid #ff8a6a66;border-radius:8px;background:#2a1612;font-size:11.5px}#invBrk .selbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
-  .slot{position:relative;aspect-ratio:1;border-radius:7px;border:2px solid #3b4b5c;background:#16212d;display:grid;place-items:center;font-size:20px;cursor:pointer}
+  .slot{position:relative;aspect-ratio:1;border-radius:7px;border:2px solid #3b4b5c;background:#16212d;display:grid;place-items:center;font-size:20px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}   /* v3.0.5: ícone largo não estica a mochila */
   .slot .cnt{position:absolute;right:2px;bottom:0;font-size:10px;font-weight:800;text-shadow:0 1px 2px #000}
   .slot .pl{position:absolute;left:2px;top:0;font-size:10px;font-weight:800;color:#ffd27a;text-shadow:0 1px 2px #000}
-  #eqGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:10px}
+  #eqGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:10px}
   .eqs small{display:block;text-align:center;font-size:9px;color:var(--mut);margin-top:2px}
   .stat{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:3px 0;border-bottom:1px solid #202c3a}
   .stat button{width:22px;height:22px;border-radius:5px;border:1px solid var(--gold);background:#3b3014;color:#ffe28a;font-weight:800;cursor:pointer;margin-left:6px}
@@ -2546,6 +2546,8 @@ function wLavaTex(){const N=256,t=new BABYLON.DynamicTexture('wLavaT',{width:N,h
  t.update();t.wrapU=t.wrapV=BABYLON.Texture.WRAP_ADDRESSMODE;return t;}
 /** cópia própria de uma textura pintada (para poder mexer em escala/deslocamento sem afetar as outras) */
 function wTexCopy(k){const src=PAINT.tex(k),sz=src.getSize(),t=new BABYLON.DynamicTexture('wc_'+k,{width:sz.width,height:sz.height},scene,true);t.getContext().drawImage(src.getContext().canvas,0,0);t.update();t.wrapU=t.wrapV=BABYLON.Texture.WRAP_ADDRESSMODE;t.anisotropicFilteringLevel=4;return t;}
+/** v3.0.5: versão dos arquivos do mundo (o build troca pelo commit) — sem isso o navegador guardava objetos de uma versão e a grade de outra */
+var WBV=(()=>{const v='__BV__';return v.indexOf('__')===0?String(Date.now()):v;})();
 const WD=RULES.WORLD;
 const WLD={root:new BABYLON.TransformNode('mundo',scene),IW:590,IH:480,X0:-620,Z1:470,H:null,on:true,pm:null,sm:null,tm:null,lava:null,ice:null,sea:null,ready:0};
 WLD.base=()=>window.GLB_BASE||'modelos/';
@@ -2634,7 +2636,7 @@ for(const f of WLDD.fence)fence(f[0],f[1],f[2],f[3]);
   cyl(4.6,.09,.11,6,0,2.9,.4,hullD),box(.06,2.6,1.9,0,2.9,-.5,sailM),box(1.0,.06,.06,0,1.6,.4,hullD)],.02);
  for(const b of WLDD.boats){const m=getInst('wboat',src);m.position.set(b[0],.02,b[1]);m.rotation.y=b[2];m.rotation.z=.08;m.isPickable=false;m.parent=WLD.root;}}
 /* ---- muros, torres e castelo (kit de castelo .glb, uma malha por peça com cópias "thin instance") ---- */
-WLD.kit=()=>{if(WLD.kp)return WLD.kp;return WLD.kp=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(WLD.base(),'castelo_kit.glb?v=300',scene,null,'.glb')).then(ct=>{
+WLD.kit=()=>{if(WLD.kp)return WLD.kp;return WLD.kp=GLB.loader().then(()=>BABYLON.SceneLoader.LoadAssetContainerAsync(WLD.base(),'castelo_kit.glb?v='+WBV,scene,null,'.glb')).then(ct=>{
  ct.addAllToScene();const pm=ct.materials.find(m=>m.albedoTexture)||ct.materials[0];
  const km=pm;try{km.metallic=0;km.roughness=1;km.environmentIntensity=0;km.specularIntensity=0;km.backFaceCulling=false;km.twoSidedLighting=true;km.imageProcessingConfiguration=GLB.MATTE();km.albedoColor=new C3(1,1,1);}catch(e){}   /* material do próprio .glb (paleta), sem reflexo */
  const piece=nm=>{const m=ct.meshes.find(q=>q.name&&q.name.indexOf(nm+'_Simple')===0&&q.getTotalVertices&&q.getTotalVertices()>0);if(!m)return null;
@@ -2656,7 +2658,7 @@ WLD.kit=()=>{if(WLD.kp)return WLD.kp;return WLD.kp=GLB.loader().then(()=>BABYLON
 /* ---- objetos parados em imagem (impostores virados para a câmera fixa) + sombra deitada no chão ---- */
 function wProps(D){
  const {R,U,F}=nimpAxes(),CD=F.scale(-1),AW=PROPIMG.w,AH=PROPIMG.h,L=new BABYLON.Vector3(-.5,0,.4).normalize(),Rh=new BABYLON.Vector3(R.x,0,R.z).normalize(),thin=IOS||PERF.low;
- const tex=new BABYLON.Texture(WLD.base()+'props_1.webp?v=300',scene,false,true,BABYLON.Texture.TRILINEAR_SAMPLINGMODE);tex.hasAlpha=true;tex.wrapU=tex.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;
+ const tex=new BABYLON.Texture(WLD.base()+'props_1.webp?v='+WBV,scene,false,true,BABYLON.Texture.TRILINEAR_SAMPLINGMODE);tex.hasAlpha=true;tex.wrapU=tex.wrapV=BABYLON.Texture.CLAMP_ADDRESSMODE;
  const pm=new BABYLON.StandardMaterial('wPropM',scene);pm.diffuseTexture=tex;pm.useAlphaFromDiffuseTexture=true;pm.transparencyMode=BABYLON.Material.MATERIAL_ALPHATEST;pm.alphaCutOff=.45;pm.disableLighting=true;pm.diffuseColor=C3.Black();pm.emissiveColor=C3.White();pm.specularColor=C3.Black();pm.backFaceCulling=false;
  const sm=new BABYLON.StandardMaterial('wPropS',scene);sm.diffuseColor=C3.Black();sm.emissiveColor=C3.Black();sm.specularColor=C3.Black();sm.disableLighting=true;sm.opacityTexture=tex;sm.alpha=.34;sm.backFaceCulling=false;sm.zOffset=-2;
  WLD.pm=pm;WLD.sm=sm;
@@ -2677,8 +2679,8 @@ function wProps(D){
 }
 /* ---- carrega o terreno, os objetos e o castelo ---- */
 {const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{try{const cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(im,0,0);WLD.IW=im.width;WLD.IH=im.height;wTerrain(c.getImageData(0,0,im.width,im.height).data);}catch(e){console.warn('terreno',e);}};
- im.onerror=()=>console.warn('terreno: world_1.png não carregou');im.src=WLD.base()+'world_1.png?v=300';
- fetch(WLD.base()+'world_1.json?v=300').then(r=>r.json()).then(D=>{try{wProps(D);}catch(e){console.warn('objetos',e);}}).catch(e=>console.warn('objetos',e));
+ im.onerror=()=>console.warn('terreno: world_1.png não carregou');im.src=WLD.base()+'world_1.png?v='+WBV;
+ fetch(WLD.base()+'world_1.json?v='+WBV).then(r=>r.json()).then(D=>{try{wProps(D);}catch(e){console.warn('objetos',e);}}).catch(e=>console.warn('objetos',e));
  setTimeout(()=>WLD.kit(),300);}
 /* v3.0.3: LAVA — encostar queima: 250 de vida por segundo, fogo saindo do corpo; depois de se afastar continua queimando por 3 s */
 const LAVA={until:0,next:0};
@@ -8150,7 +8152,7 @@ function refreshUI(){
 const mmC=$('mm'),mmx=mmC.getContext('2d');const mmS=mmC.width/(MAP*2);
 const mmP=(x,z)=>[mmC.width/2+(x-P.pos.x)*mmS,mmC.width/2-(z-P.pos.z)*mmS];   // v3.0.0: centrado no jogador, norte (+z) para cima
 /* v3.0.0: imagem do mapa (mapa_1.webp, 1,5 px por metro, x -500..440, z 350..-370) */
-const MAPI=new Image();MAPI.crossOrigin='anonymous';MAPI.src=(window.GLB_BASE||'modelos/')+'mapa_1.webp?v=300';
+const MAPI=new Image();MAPI.crossOrigin='anonymous';MAPI.src=(window.GLB_BASE||'modelos/')+'mapa_1.webp?v='+(typeof WBV!=='undefined'&&WBV||Date.now());
 const MAPK=1.5,mapOk=()=>MAPI.complete&&MAPI.naturalWidth>0;
 function mapBlit(c,x0,z1,wm,hm,W,H){c.fillStyle='#2a6aa0';c.fillRect(0,0,W,H);if(!mapOk())return;let sx=(x0+500)*MAPK,sy=(350-z1)*MAPK,sw=wm*MAPK,sh=hm*MAPK,dx=0,dy=0,dw=W,dh=H;
  if(sx<0){const k=-sx/sw;dx+=k*W;dw-=k*W;sw+=sx;sx=0;}if(sy<0){const k=-sy/sh;dy+=k*H;dh-=k*H;sh+=sy;sy=0;}
